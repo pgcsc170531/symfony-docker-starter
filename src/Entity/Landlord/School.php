@@ -1,11 +1,14 @@
 <?php
 
 namespace App\Entity\Landlord;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Validator\Constraints as Assert;
 
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'school')]
+#[UniqueEntity(fields: ['subdomain'], message: 'This subdomain is already being used by another school.')]
 class School
 {
     #[ORM\Id]
@@ -18,6 +21,12 @@ class School
 
     // This is the subdomain (e.g. "hopehigh")
     #[ORM\Column(length: 255, unique: true)]
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 3, max: 20)]
+    #[Assert\Regex(
+        pattern: '/^[a-z0-9]+$/',
+        message: 'Subdomain can only contain lowercase letters and numbers (no spaces).'
+    )]
     private ?string $subdomain = null;
 
     // This is the specific database name for this school (e.g. "school_a")

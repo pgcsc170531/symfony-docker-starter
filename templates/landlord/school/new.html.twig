@@ -1,0 +1,47 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}New School{% endblock %}
+
+{% block body %}
+<div class="container mx-auto mt-10 p-5">
+    <div class="max-w-2xl mx-auto bg-white p-8 rounded shadow">
+        <h1 class="text-3xl font-bold mb-6 text-gray-800">Register New School</h1>
+
+        {% for message in app.flashes('success') %}
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+                {{ message }}
+            </div>
+        {% endfor %}
+
+        {{ form_start(form) }}
+            <div class="mb-4">
+                {{ form_label(form.name, 'School Name', {'label_attr': {'class': 'block text-gray-700 font-bold mb-2'}}) }}
+                {{ form_widget(form.name, {'attr': {'class': 'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline'}}) }}
+            </div>
+
+            <div class="mb-4">
+
+                {{ form_label(form.subdomain, 'Subdomain (e.g. hope)', {'label_attr': {'class': 'block text-gray-700 font-bold mb-2'}}) }}
+                {{ form_widget(form.subdomain, {'attr': {'class': 'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline'}}) }}
+                <div class="text-red-500 text-xs italic mt-1">
+                    {{ form_errors(form.subdomain) }}
+                </div>
+            </div>
+
+            <div class="hidden">
+                {{ form_widget(form.databaseName, {'value': 'pending'}) }}
+            </div>
+            
+             <div class="mb-4">
+                <label class="block text-gray-700 font-bold mb-2">Active Status</label>
+                {{ form_widget(form.isActive, {'attr': {'class': 'h-5 w-5 text-blue-600'}}) }}
+                <span class="ml-2 text-gray-700">Is Active?</span>
+            </div>
+
+            <button type="submit" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                Create School & Database
+            </button>
+        {{ form_end(form) }}
+    </div>
+</div>
+{% endblock %}

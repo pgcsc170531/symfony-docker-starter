@@ -3,22 +3,27 @@
 namespace App\EventListener;
 
 use App\Entity\Landlord\School;
-use Doctrine\DBAL\Connection;
-use Doctrine\Persistence\ManagerRegistry;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
-use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\KernelEvents;
+use Doctrine\DBAL\Connection;
 
-#[AsEventListener(event: KernelEvents::REQUEST, priority: 500)]
+#[AsEventListener(event: KernelEvents::REQUEST, priority: 4096)]
 class TenantListener
 {
     public function __construct(
-        private ManagerRegistry $registry,
-        private Connection $defaultConnection
-    ) {
-    }
+        // We need the Landlord DB to find the school
+        #[Autowire(service: 'doctrine.orm.landlord_entity_manager')]
+        private EntityManagerInterface $landlordEm,
+        
+        // We need the Default (Tenant) Connection to switch it
+        #[Autowire(service: 'doctrine.dbal.default_connection')]
+        private Connection $tenantConnection
+    ) {}
 
     public function onKernelRequest(RequestEvent $event): void
     {
@@ -27,21 +32,22 @@ class TenantListener
         }
 
         $request = $event->getRequest();
-        $host = $request->getHost(); // e.g., "hopehigh.localhost"
+        $host = $request->getHost(); // e.g., "faith.localhost"
 
-        // 1. Identify the Subdomain
-        // Remove ".localhost" or your domain to get just the "hopehigh" part
-        $parts = explode('.', $host);
-        $subdomain = $parts[0];
-
-        // If visiting the main domain (e.g. "localhost"), do nothing (Landlord Mode)
-        if ($subdomain === 'localhost' || $subdomain === 'www') {
+        // 1. Check if we are on the Main Domain (Landlord Admin)
+        // Adjust 'localhost' to whatever your main domain logic is.
+        // If the host IS localhost (no subdomain), we do nothing (stay in Landlord mode logic)
+        if ($host === 'localhost' || $host === 'www.localhost') {
             return;
         }
 
-        // 2. Find the School in the Landlord DB
-        $landlordEm = $this->registry->getManager('landlord');
-        $school = $landlordEm->getRepository(School::class)->findOneBy(['subdomain' => $subdomain]);
+        // 2. Extract Subdomain
+        // faith.localhost -> parts[0] = faith
+        $parts = explode('.', $host);
+        $subdomain = $parts[0];
+
+        // 3. Find the School in Landlord DB
+        $school = $this->landlordEm->getRepository(School::class)->findOneBy(['subdomain' => $subdomain]);
 
         if (!$school) {
             throw new NotFoundHttpException("School '$subdomain' not found.");
@@ -51,18 +57,22 @@ class TenantListener
             throw new NotFoundHttpException("This school is currently inactive.");
         }
 
-        // 3. THE MAGIC: Switch the Database Connection
-        // We close the current connection and change the 'dbname' parameter
-        $this->defaultConnection->close();
+        // 4. THE MAGIC: Switch the Database Connection
+        // We close the generic connection and point it to the specific DB
+        $this->tenantConnection->close();
         
-        $params = $this->defaultConnection->getParams();
-        $params['dbname'] = $school->getDatabaseName();
+        // We override the 'dbname' parameter
+        $params = $this->tenantConnection->getParams();
+        $params['dbname'] = $school->getDatabaseName(); // e.g. 'school_faith'
         
-        // Use Reflection to force the new params (Symfony safety bypass)
-        $reflector = new \ReflectionProperty(Connection::class, 'params');
-        $reflector->setAccessible(true);
-        $reflector->setValue($this->defaultConnection, $params);
+        // We reopen the connection with the new params
+        // Note: Doctrine prevents setting params on an open connection, so we use a Reflection hack
+        // or the specific Doctrine method if available. 
+        // For simplicity in this stack, we can re-instantiate or use this trick:
         
-        // The next query will automatically connect to the new DB!
+        $reflector = new \ReflectionObject($this->tenantConnection);
+        $property = $reflector->getProperty('params');
+        $property->setAccessible(true);
+        $property->setValue($this->tenantConnection, $params);
     }
 }
