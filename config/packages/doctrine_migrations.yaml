@@ -1,6 +1,9 @@
 doctrine_migrations:
     migrations_paths:
-        # namespace is arbitrary but should be different from App\Migrations
-        # as migrations classes should NOT be autoloaded
-        'DoctrineMigrations': '%kernel.project_dir%/migrations'
+        # Map the Landlord namespace to the Landlord folder
+        'App\Migrations\Landlord': '%kernel.project_dir%/migrations/Landlord'
+
+        # Map the Tenant namespace to the Tenant folder
+        'App\Migrations\Tenant': '%kernel.project_dir%/migrations/Tenant'
+
     enable_profiler: false

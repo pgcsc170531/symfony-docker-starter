@@ -1,6 +1,6 @@
 services:
   php:
-    image: dunglas/frankenphp
+    build: .
     volumes:
       - ./:/app
     ports:

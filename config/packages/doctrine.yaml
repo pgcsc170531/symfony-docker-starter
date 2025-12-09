@@ -1,48 +1,42 @@
 doctrine:
     dbal:
-        url: '%env(resolve:DATABASE_URL)%'
+        default_connection: default
+        connections:
+            # 1. Tenant Connection (Dynamic)
+            default:
+                url: '%env(resolve:DATABASE_URL)%'
+                profiling_collect_backtrace: '%kernel.debug%'
+            
+            # 2. Landlord Connection (Static)
+            landlord:
+                url: '%env(resolve:LANDLORD_DATABASE_URL)%'
+                profiling_collect_backtrace: '%kernel.debug%'
 
-        # IMPORTANT: You MUST configure your server version,
-        # either here or in the DATABASE_URL env var (see .env file)
-        #server_version: '16'
-
-        profiling_collect_backtrace: '%kernel.debug%'
     orm:
-        validate_xml_mapping: true
-        naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware
-        identity_generation_preferences:
-            Doctrine\DBAL\Platforms\PostgreSQLPlatform: identity
-        auto_mapping: true
-        mappings:
-            App:
-                type: attribute
-                is_bundle: false
-                dir: '%kernel.project_dir%/src/Entity'
-                prefix: 'App\Entity'
-                alias: App
-        controller_resolver:
-            auto_mapping: false
+        # FIX: Use the new setting suggested by the error
+        enable_native_lazy_objects: true
+        
+        default_entity_manager: default
+        
+        entity_managers:
+            # Brain 1: Handles Tenant Data (Students, Fees)
+            default:
+                connection: default
+                naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware
+                mappings:
+                    Tenant:
+                        is_bundle: false
+                        dir: '%kernel.project_dir%/src/Entity/Tenant'
+                        prefix: 'App\Entity\Tenant'
+                        alias: Tenant
 
-when@test:
-    doctrine:
-        dbal:
-            # "TEST_TOKEN" is typically set by ParaTest
-            dbname_suffix: '_test%env(default::TEST_TOKEN)%'
-
-when@prod:
-    doctrine:
-        orm:
-            query_cache_driver:
-                type: pool
-                pool: doctrine.system_cache_pool
-            result_cache_driver:
-                type: pool
-                pool: doctrine.result_cache_pool
-
-    framework:
-        cache:
-            pools:
-                doctrine.result_cache_pool:
-                    adapter: cache.app
-                doctrine.system_cache_pool:
-                    adapter: cache.system
+            # Brain 2: Handles Landlord Data (Schools, Settings)
+            landlord:
+                connection: landlord
+                naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware
+                mappings:
+                    Landlord:
+                        is_bundle: false
+                        dir: '%kernel.project_dir%/src/Entity/Landlord'
+                        prefix: 'App\Entity\Landlord'
+                        alias: Landlord

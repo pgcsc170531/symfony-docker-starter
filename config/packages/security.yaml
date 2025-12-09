@@ -5,22 +5,31 @@ security:
 
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
-        users_in_memory: { memory: null }
-
+        # Used to reload user from session & other features (e.g. switch_user)
+        app_user_provider:
+            entity:
+                class: App\Entity\Landlord\User
+                property: email
     firewalls:
         dev:
-            # Ensure dev tools and static assets are always allowed
-            pattern: ^/(_profiler|_wdt|assets|build)/
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
         main:
             lazy: true
-            provider: users_in_memory
+            # This MUST match the provider name defined above
+            provider: app_user_provider
+            form_login:
+                login_path: app_login
+                check_path: app_login
+                enable_csrf: true
+            logout:
+                path: app_logout
+                # where to redirect after logout
+                # target: app_any_route
 
-            # Activate different ways to authenticate:
-            # https://symfony.com/doc/current/security.html#the-firewall
-
-            # https://symfony.com/doc/current/security/impersonating_user.html
-            # switch_user: true
+            # The form login settings will go here after the next command
+            # custom_authenticator: ...
+            # logout: ...
 
     # Note: Only the *first* matching rule is applied
     access_control:
