@@ -1,9 +1,8 @@
+# config/packages/doctrine_migrations.yaml
 doctrine_migrations:
     migrations_paths:
-        # Map the Landlord namespace to the Landlord folder
+        # ONLY include Landlord here for the default config
         'App\Migrations\Landlord': '%kernel.project_dir%/migrations/Landlord'
-
-        # Map the Tenant namespace to the Tenant folder
-        'App\Migrations\Tenant': '%kernel.project_dir%/migrations/Tenant'
-
-    enable_profiler: false
+    storage:
+        table_storage:
+            table_name: 'doctrine_migration_versions'
