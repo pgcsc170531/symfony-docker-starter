@@ -40,8 +40,4 @@ jobs:
             # 3. Restart containers with the new image
             docker compose up -d
             
-            # 4. Update the LANDLORD database (The main one for schools/users)
-            docker compose exec -T php bin/console doctrine:migrations:migrate --no-interaction --em=landlord
-            
-            # 5. Clear production cache
-            docker compose exec -T php bin/console cache:clear
+           
