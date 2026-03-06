@@ -31,13 +31,17 @@ jobs:
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            # 1. Move to project directory
             cd /root/projects
+            export TERMII_API_KEY=${{ secrets.TERMII_API_KEY }}
             
-            # 2. Pull the new image we just built
-            docker compose pull php
+            docker compose pull
+            docker compose up -d --force-recreate
             
-            # 3. Restart containers with the new image
-            docker compose up -d
+            # 1. Force the environment to prod during the command
+            docker compose exec -e APP_ENV=prod -T php bin/console doctrine:migrations:migrate --no-interaction --em=landlord || true
+            
+            # 2. Hard delete the cache and warm it up for production
+            docker compose exec -e APP_ENV=prod -T php bin/console cache:clear --no-warmup
+            docker compose exec -e APP_ENV=prod -T php bin/console cache:warmup
             
            
