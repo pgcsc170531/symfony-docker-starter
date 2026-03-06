@@ -32,22 +32,17 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd /root/projects
+            # Use the secret from GitHub
             export TERMII_API_KEY=${{ secrets.TERMII_API_KEY }}
             
-            docker compose pull
-            docker compose up -d --force-recreate
+            # Pull and Up with the variable explicitly passed
+            TERMII_API_KEY=$TERMII_API_KEY docker compose pull
+            TERMII_API_KEY=$TERMII_API_KEY docker compose up -d --force-recreate
             
-            echo "Waiting for database..."
-            sleep 10
-            
-            # 1. Update Landlord Schema (Safe & Direct)
+            # Run your custom schema updates
             docker compose exec -e APP_ENV=prod -T php bin/console app:landlord:update-schema
-            
-            # 2. Update all Tenant Schemas (The magic loop!)
             docker compose exec -e APP_ENV=prod -T php bin/console app:tenant:update-schema
             
-            # 3. Clear and Warmup Cache
-            docker compose exec -e APP_ENV=prod -T php bin/console cache:clear --no-warmup
-            docker compose exec -e APP_ENV=prod -T php bin/console cache:warmup
-            
+            # Final Cache Clear
+            docker compose exec -e APP_ENV=prod -T php bin/console cache:clear
            
