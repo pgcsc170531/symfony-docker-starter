@@ -32,17 +32,16 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd /root/projects
-            # Use the secret from GitHub
             export TERMII_API_KEY=${{ secrets.TERMII_API_KEY }}
             
-            # Pull and Up with the variable explicitly passed
+            # Pass the variable directly so the warning disappears
             TERMII_API_KEY=$TERMII_API_KEY docker compose pull
             TERMII_API_KEY=$TERMII_API_KEY docker compose up -d --force-recreate
             
-            # Run your custom schema updates
+            # Run your Landlord and Tenant updates
             docker compose exec -e APP_ENV=prod -T php bin/console app:landlord:update-schema
             docker compose exec -e APP_ENV=prod -T php bin/console app:tenant:update-schema
             
-            # Final Cache Clear
+            # Final cache wipe
             docker compose exec -e APP_ENV=prod -T php bin/console cache:clear
            
