@@ -1,0 +1,54 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Staff Directory{% endblock %}
+
+{% block body %}
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Staff Directory</h1>
+            <p class="text-gray-500">Manage user access and roles.</p>
+        </div>
+        <a href="{{ path('app_tenant_staff_new') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow flex items-center">
+            <span class="mr-2">+</span> Add New Staff
+        </a>
+    </div>
+
+    <div class="bg-white shadow rounded-lg overflow-hidden border border-gray-200">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-gray-50 border-b">
+                <tr>
+                    <th class="p-4 font-bold text-gray-600">Name</th>
+                    <th class="p-4 font-bold text-gray-600">Email</th>
+                    <th class="p-4 font-bold text-gray-600">Role</th>
+                    <th class="p-4 font-bold text-gray-600 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for user in users %}
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="p-4 font-bold text-gray-800">{{ user.fullName }}</td>
+                    <td class="p-4 text-gray-600">{{ user.email }}</td>
+                    <td class="p-4">
+                        {% if 'ROLE_ADMIN' in user.roles %}
+                            <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-bold">Principal</span>
+                        {% elseif 'ROLE_BURSAR' in user.roles %}
+                            <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-bold">Bursar</span>
+                        {% elseif 'ROLE_STORE' in user.roles %}
+                            <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-bold">Store</span>
+                        {% else %}
+                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs font-bold">Staff</span>
+                        {% endif %}
+                    </td>
+                    <td class="p-4 text-right">
+                        <button class="text-gray-400 hover:text-blue-600 font-bold">Edit</button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="p-8 text-center text-gray-500">No staff found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

@@ -1,0 +1,384 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}System Features - Edus{% endblock %}
+
+{% block body %}
+{# --- 0. NAVIGATION BAR --- #}
+<div class="relative bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center py-6 md:justify-start md:space-x-10">
+            <div class="flex justify-start lg:w-0 lg:flex-1">
+                <a href="{{ path('app_home') }}" class="text-3xl font-black tracking-tighter text-blue-600 no-underline hover:text-blue-700">
+                    Edus<span class="text-gray-900">.</span>
+                </a>
+            </div>
+            <div class="hidden md:flex space-x-10">
+                <a href="{{ path('app_features') }}" class="text-base font-medium text-gray-900 hover:text-blue-600">Features</a>
+                <a href="{{ path('app_partners') }}" class="text-base font-medium text-gray-500 hover:text-gray-900">Partners</a>
+                <a href="{{ path('app_login') }}" class="text-base font-medium text-blue-600 hover:text-blue-500">Log in</a>
+            </div>
+            <div class="hidden md:flex items-center justify-end md:flex-1 lg:w-0">
+                <a href="{{ path('app_login') }}" class="ml-8 whitespace-nowrap inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700">
+                    Get Started
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# 1. HEADER #}
+<div class="bg-white border-b border-gray-200">
+    <div class="max-w-7xl mx-auto py-16 px-4 sm:py-24 sm:px-6 lg:px-8 text-center">
+        <h2 class="text-base font-semibold text-blue-600 tracking-wide uppercase">Capabilities</h2>
+        <p class="mt-1 text-4xl font-extrabold text-gray-900 sm:text-5xl sm:tracking-tight lg:text-6xl">
+            See the Power of Edus.
+        </p>
+        <p class="max-w-xl mt-5 mx-auto text-xl text-gray-500">
+            Real tools for real school problems. From setup to daily operations.
+        </p>
+    </div>
+</div>
+
+{# 2. DEEP DIVE FEATURES #}
+<div class="relative bg-gray-50 pt-16 pb-20 px-4 sm:px-6 lg:pt-24 lg:pb-28 lg:px-8">
+    <div class="relative max-w-7xl mx-auto space-y-32">
+        
+        {# FEATURE 1: ONBOARDING #}
+        <div class="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center">
+            <div class="lg:sticky lg:top-10">
+                <h3 class="text-2xl font-extrabold text-gray-900 tracking-tight sm:text-3xl">
+                    1. Launch in 10 Minutes
+                </h3>
+                <p class="mt-3 text-lg text-gray-500">
+                    Setting up a school database used to take weeks. With our <strong>6-Step Wizard</strong>, you just click checkboxes. We auto-generate your Classes, Arms, and Fee Structure instantly.
+                </p>
+                <dl class="mt-10 space-y-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <div class="flex items-center justify-center h-12 w-12 rounded-md bg-blue-600 text-white">✓</div>
+                        </div>
+                        <div class="ml-4">
+                            <dt class="text-lg leading-6 font-medium text-gray-900">No IT Guy Needed</dt>
+                            <dd class="mt-2 text-base text-gray-500">If you can use Facebook, you can set up Edus.</dd>
+                        </div>
+                    </div>
+                </dl>
+            </div>
+            
+            <div class="mt-10 lg:mt-0 relative">
+                <div class="bg-white shadow-xl rounded-xl overflow-hidden border border-gray-200">
+                    <div class="bg-blue-600 p-6 text-white">
+                        <h1 class="text-xl font-bold">🏗️ Build Your Class Structure</h1>
+                        <p class="text-blue-100 text-sm mt-1">We detected you run a Secondary system.</p>
+                    </div>
+                    <div class="p-6">
+                        <div class="mb-6">
+                            <div class="flex justify-between text-xs font-bold text-gray-400 mb-2 uppercase tracking-wide">
+                                <span class="text-green-600">✓ Identity</span>
+                                <span class="text-blue-600">2. Classes</span>
+                                <span>3. Calendar</span>
+                                <span>4. Finish</span>
+                            </div>
+                            <div class="w-full bg-gray-100 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: 50%"></div>
+                            </div>
+                        </div>
+                        <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-4">
+                            <h3 class="font-bold text-gray-800 mb-3 text-sm">Which levels exist in your school?</h3>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label class="flex items-center space-x-3 bg-white p-2 rounded border border-blue-300 cursor-pointer shadow-sm">
+                                    <div class="h-4 w-4 bg-blue-600 rounded flex items-center justify-center text-white text-[10px]">✓</div>
+                                    <span class="text-gray-800 font-bold text-sm">JSS 1</span>
+                                </label>
+                                <label class="flex items-center space-x-3 bg-white p-2 rounded border border-gray-200 cursor-pointer shadow-sm opacity-60">
+                                    <div class="h-4 w-4 border border-gray-300 rounded"></div>
+                                    <span class="text-gray-500 font-medium text-sm">JSS 2</span>
+                                </label>
+                                <label class="flex items-center space-x-3 bg-white p-2 rounded border border-blue-300 cursor-pointer shadow-sm">
+                                    <div class="h-4 w-4 bg-blue-600 rounded flex items-center justify-center text-white text-[10px]">✓</div>
+                                    <span class="text-gray-800 font-bold text-sm">SS 1</span>
+                                </label>
+                                <label class="flex items-center space-x-3 bg-white p-2 rounded border border-gray-200 cursor-pointer shadow-sm opacity-60">
+                                    <div class="h-4 w-4 border border-gray-300 rounded"></div>
+                                    <span class="text-gray-500 font-medium text-sm">SS 2</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center pt-2">
+                            <span class="text-gray-400 text-sm">Back</span>
+                            <button class="bg-blue-600 text-white px-6 py-2 rounded shadow font-bold text-sm">Next Step &rarr;</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# FEATURE 2: PARENT DASHBOARD #}
+        <div class="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-start">
+            <div class="lg:order-2 lg:sticky lg:top-10">
+                <h3 class="text-2xl font-extrabold text-gray-900 tracking-tight sm:text-3xl">
+                    2. The Parent Experience
+                </h3>
+                <p class="mt-3 text-lg text-gray-500">
+                    Give parents a modern portal. They can view all their children in one dashboard, check outstanding balances, and verify payment history without calling the school.
+                </p>
+                <dl class="mt-10 space-y-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <div class="flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 text-white">✓</div>
+                        </div>
+                        <div class="ml-4">
+                            <dt class="text-lg leading-6 font-medium text-gray-900">Zero-Hassle Payments</dt>
+                            <dd class="mt-2 text-base text-gray-500">Parents see "Pay Now" only when they owe money. Receipts are generated instantly.</dd>
+                        </div>
+                    </div>
+                </dl>
+            </div>
+            <div class="mt-10 lg:mt-0 lg:order-1 relative">
+                <div class="bg-gray-100 p-6 rounded-xl border border-gray-300 shadow-inner">
+                    <div class="flex justify-between items-end mb-6 border-b border-gray-200 pb-4">
+                        <div>
+                            <h1 class="text-xl font-bold text-gray-800">Overview</h1>
+                            <p class="text-gray-500 text-xs">Welcome back, Mr. Ibrahim</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[10px] font-bold text-gray-400 uppercase">Today</span>
+                            <p class="text-gray-800 font-bold text-sm">{{ "now"|date('d M Y') }}</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4 flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <div class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">EO</div>
+                            <div>
+                                <h3 class="font-bold text-gray-900 text-sm">Emeka Ibrahim</h3>
+                                <p class="text-xs text-gray-500">JSS 2 Diamond</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] text-gray-400 uppercase font-bold">Outstanding</p>
+                            <p class="text-lg font-black text-gray-800"><span class="text-red-500">●</span> ₦45,000</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4 flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <div class="h-10 w-10 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 font-bold">AO</div>
+                            <div>
+                                <h3 class="font-bold text-gray-900 text-sm">Amaka Ibrahim</h3>
+                                <p class="text-xs text-gray-500">Primary 4</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded font-bold">✓ Cleared</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button class="bg-indigo-600 text-white text-xs font-bold py-2 px-6 rounded shadow-lg">
+                            Pay Outstanding (₦45,000)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# FEATURE 3: SMART ADMISSION #}
+        <div class="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-start">
+            <div class="lg:sticky lg:top-10">
+                <h3 class="text-2xl font-extrabold text-gray-900 tracking-tight sm:text-3xl">
+                    3. Smart Admission Engine
+                </h3>
+                <p class="mt-3 text-lg text-gray-500">
+                    Enroll students in seconds. Our smart form checks for duplicate parents by phone number and links siblings automatically.
+                </p>
+                <dl class="mt-10 space-y-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <div class="flex items-center justify-center h-12 w-12 rounded-md bg-green-600 text-white">✓</div>
+                        </div>
+                        <div class="ml-4">
+                            <dt class="text-lg leading-6 font-medium text-gray-900">Auto-Invoicing</dt>
+                            <dd class="mt-2 text-base text-gray-500">The moment you click "Admit", the system looks up the fee structure and generates the student's first bill instantly.</dd>
+                        </div>
+                    </div>
+                </dl>
+            </div>
+            
+            <div class="mt-10 lg:mt-0 relative">
+                <div class="bg-white p-6 rounded-lg shadow-xl border-t-4 border-green-600">
+                    <div class="flex justify-between items-center mb-6">
+                        <h1 class="text-xl font-bold text-gray-800">🎓 Student Admission</h1>
+                        <span class="bg-green-50 text-green-700 text-xs px-2 py-1 rounded-full border border-green-200">Step 2/2</span>
+                    </div>
+                    <div class="bg-green-50 p-3 rounded mb-6 border border-green-100 flex items-start gap-3">
+                        <div class="text-green-600 text-lg">👨‍👩‍👧</div>
+                        <div>
+                            <p class="text-xs text-green-800 font-bold uppercase">Guardian Profile Found</p>
+                            <p class="text-sm text-gray-700">Linking to: <strong>Ibrahim (0803 123 4567)</strong></p>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-500 uppercase">First Name</label>
+                                <div class="w-full border rounded p-2 text-sm bg-gray-50 text-gray-400">Kabir</div>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-500 uppercase">Last Name</label>
+                                <div class="w-full border rounded p-2 text-sm bg-gray-50 text-gray-400">Ibrahim</div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-500 uppercase">Assign Class</label>
+                            <select class="w-full border rounded p-2 text-sm bg-white">
+                                <option>JSS 1 (Gold)</option>
+                                <option>JSS 1 (Silver)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-6 pt-4 border-t flex justify-end">
+                        <button class="bg-green-600 text-white text-sm font-bold py-2 px-4 rounded shadow">
+                            ✅ Complete & Bill
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# FEATURE 4: INVOICE SYSTEM #}
+        <div class="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-start">
+            <div class="lg:order-2 lg:sticky lg:top-10">
+                <h3 class="text-2xl font-extrabold text-gray-900 tracking-tight sm:text-3xl">
+                    4. Professional Invoicing
+                </h3>
+                <p class="mt-3 text-lg text-gray-500">
+                    The system snapshots school details at creation. Even if you rebrand later, old invoices remain historically accurate for auditing.
+                </p>
+                <dl class="mt-10 space-y-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <div class="flex items-center justify-center h-12 w-12 rounded-md bg-gray-800 text-white">✓</div>
+                        </div>
+                        <div class="ml-4">
+                            <dt class="text-lg leading-6 font-medium text-gray-900">Status Tracking</dt>
+                            <dd class="mt-2 text-base text-gray-500">Instantly distinguish between PAID, UNPAID, and PARTIAL status.</dd>
+                        </div>
+                    </div>
+                </dl>
+            </div>
+            
+            <div class="mt-10 lg:mt-0 lg:order-1 relative">
+                <div class="bg-white shadow-xl rounded-lg overflow-hidden border border-gray-200 transform scale-95 hover:scale-100 transition duration-500">
+                    <div class="bg-gray-800 text-white p-5 flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <div class="h-10 w-10 bg-gray-700 rounded flex items-center justify-center text-xl">🏫</div>
+                            <div>
+                                <h1 class="text-sm font-bold uppercase tracking-wider">Springfield Academy</h1>
+                                <p class="text-gray-400 text-[10px]">Lagos, Nigeria</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <h2 class="text-xl font-mono font-bold text-white">#INV-001</h2>
+                            <span class="bg-yellow-500 text-white font-bold px-2 py-0.5 rounded-full text-[10px]">PARTIAL</span>
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <table class="w-full text-left text-sm mb-4">
+                            <tbody class="divide-y divide-gray-100">
+                                <tr><td class="py-2">Tuition Fee</td><td class="py-2 text-right">₦150,000</td></tr>
+                                <tr><td class="py-2">Uniform</td><td class="py-2 text-right">₦25,000</td></tr>
+                            </tbody>
+                        </table>
+                        <div class="flex justify-end border-t pt-3">
+                            <div class="w-1/2 text-right">
+                                <div class="flex justify-between text-red-600 font-bold">
+                                    <span>Balance:</span><span>₦85,000</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# FEATURE 5: SCHOOL STORE #}
+        <div class="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center">
+            <div class="lg:sticky lg:top-10">
+                <h3 class="text-2xl font-extrabold text-gray-900 tracking-tight sm:text-3xl">
+                    5. Integrated Point of Sale
+                </h3>
+                <p class="mt-3 text-lg text-gray-500">
+                    Sell uniforms and books directly to student accounts. The system auto-deducts stock and adds the debt to the invoice.
+                </p>
+            </div>
+            <div class="mt-10 lg:mt-0 relative">
+                <div class="bg-white p-6 rounded-lg shadow-xl border-t-4 border-teal-600">
+                    <h1 class="text-xl font-bold mb-2">School Store</h1>
+                    <p class="text-gray-500 text-sm mb-4 border-b pb-2">Cart for: <strong class="text-teal-700">Musa Ibrahim</strong></p>
+                    <div class="border rounded-lg overflow-hidden mb-4">
+                        <table class="min-w-full text-sm">
+                            <tbody class="divide-y divide-gray-200">
+                                <tr class="bg-gray-50"><td class="py-2 px-3">Maths Textbook (x1)</td><td class="py-2 px-3 text-right font-bold">₦2,500</td></tr>
+                                <tr class="bg-gray-50"><td class="py-2 px-3">School Tie (x2)</td><td class="py-2 px-3 text-right font-bold">₦3,000</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="flex justify-between items-center bg-gray-100 p-3 rounded-lg">
+                        <span class="font-bold text-gray-700">Total:</span>
+                        <p class="text-xl font-black text-red-600">₦5,500</p>
+                    </div>
+                    <div class="mt-3 w-full bg-red-600 text-white py-2 rounded font-bold text-center text-sm">Charge to Account</div>
+                </div>
+            </div>
+        </div>
+
+        {# FEATURE 6: ID CARDS #}
+        <div class="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center">
+            <div class="lg:order-2 lg:sticky lg:top-10">
+                <h3 class="text-2xl font-extrabold text-gray-900 tracking-tight sm:text-3xl">
+                    6. One-Click ID Cards
+                </h3>
+                <p class="mt-3 text-lg text-gray-500">
+                    Generate professional, standard CR80 ID cards for your entire student body instantly. QR-code ready.
+                </p>
+            </div>
+            <div class="mt-10 lg:mt-0 relative flex justify-center">
+                <div class="relative w-[180px] h-[280px] bg-white border border-gray-300 rounded shadow-2xl overflow-hidden flex flex-col transform hover:rotate-3 transition duration-500">
+                    <div class="bg-blue-800 w-full h-12 flex flex-col items-center justify-center p-1">
+                        <div class="text-white text-[10px] font-bold uppercase tracking-wider text-center">Springfield</div>
+                    </div>
+                    <div class="flex-grow flex flex-col items-center pt-3 px-2 bg-gradient-to-b from-gray-50 to-white">
+                        <div class="w-16 h-20 rounded border-2 border-white shadow-sm bg-gray-200 overflow-hidden mb-2 flex items-center justify-center text-xl">👤</div>
+                        <div class="text-center mb-2">
+                            <h2 class="text-gray-900 font-extrabold text-xs uppercase">Muhammad</h2>
+                            <h2 class="text-blue-800 font-extrabold text-sm uppercase">Ibrahim</h2>
+                        </div>
+                        <div class="w-full text-[8px] border-t border-b border-gray-200 py-1 grid grid-cols-2 gap-y-1">
+                            <span class="text-gray-500 font-bold">ID No:</span><span class="text-right font-bold">2024/52</span>
+                            <span class="text-gray-500 font-bold">Class:</span><span class="text-right font-bold">SS 2</span>
+                        </div>
+                    </div>
+                    <div class="bg-gray-100 h-6 flex items-center justify-center border-t-2 border-blue-800">
+                        <p class="text-[8px] font-bold text-gray-500 uppercase">Expires: <span class="text-blue-800">JUL 25</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{# 3. CTA #}
+<div class="bg-blue-700">
+    <div class="max-w-2xl mx-auto text-center py-16 px-4 sm:py-20 sm:px-6 lg:px-8">
+        <h2 class="text-3xl font-extrabold text-white sm:text-4xl">
+            <span class="block">Seen enough?</span>
+            <span class="block">Start your free trial today.</span>
+        </h2>
+        <p class="mt-4 text-lg leading-6 text-blue-200">
+            Join schools across Nigeria who trust Edus to manage their finances and operations.
+        </p>
+        <a href="{{ path('app_login') }}" class="mt-8 w-full inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-blue-600 bg-white hover:bg-blue-50 sm:w-auto">
+            Get Started
+        </a>
+    </div>
+</div>
+{% endblock %}

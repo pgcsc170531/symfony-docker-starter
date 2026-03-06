@@ -1,0 +1,102 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Verify Payment{% endblock %}
+
+{% block body %}
+<div class="max-w-xl mx-auto mt-10">
+    
+    <h1 class="text-2xl font-bold text-gray-800 mb-6 text-center">Verify Bank Transfer</h1>
+
+    {# SEARCH FORM #}
+    <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+        <form action="{{ path('app_tenant_payment_verify') }}" method="get" class="flex gap-2">
+            <input type="text" name="code" value="{{ search_code }}" 
+                   placeholder="Enter Code (e.g. PAY-A1B2)" 
+                   class="flex-1 border border-gray-300 rounded px-4 py-2 focus:ring-2 focus:ring-indigo-500 outline-none uppercase font-mono"
+                   required>
+            <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700 font-bold">
+                Search
+            </button>
+        </form>
+    </div>
+
+    {# RESULTS AREA #}
+    {% if search_code %}
+        {% if payment %}
+            <div class="bg-white border-l-4 {{ payment.status == 'CONFIRMED' ? 'border-green-500' : 'border-yellow-500' }} shadow-md rounded p-6">
+                
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase">Student</p>
+                        <h2 class="text-xl font-bold text-gray-800">{{ payment.invoice.student.fullName }}</h2>
+                        <p class="text-sm text-gray-600">{{ payment.invoice.student.admissionNumber }}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs text-gray-500 uppercase">Amount</p>
+                        <h2 class="text-2xl font-black text-indigo-600">₦{{ payment.amount|number_format(2) }}</h2>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 text-sm mb-6 bg-gray-50 p-3 rounded">
+                    <div>
+                        <span class="block text-xs text-gray-500">Status:</span>
+                        {% if payment.status == 'CONFIRMED' %}
+                            <span class="bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs font-bold">Verified ✅</span>
+                        {% else %}
+                            <span class="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs font-bold">Pending ⏳</span>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <span class="block text-xs text-gray-500">Date Initiated:</span>
+                        <span class="font-medium">{{ payment.createdAt|date('d M Y') }}</span>
+                    </div>
+                </div>
+
+                {# CONFIRM ACTION #}
+                {% if payment.status != 'CONFIRMED' %}
+                    <form action="{{ path('app_tenant_payment_confirm', {id: payment.id}) }}" method="post" onsubmit="return confirm('Are you sure the money is in the bank?');">
+                        <button type="submit" class="w-full bg-green-600 text-white py-3 rounded hover:bg-green-700 font-bold shadow">
+                            ✅ Confirm Payment Received
+                        </button>
+                    </form>
+                {% else %}
+                {# 1. Show Confirmation Details #}
+                <div class="text-center text-gray-500 text-sm mb-4">
+                    Confirmed by {{ payment.confirmedBy }} on {{ payment.confirmedAt|date('d M Y') }}
+                </div>
+
+                {# 2. NEW: Show Print Receipt Button #}
+                <div class="border-t pt-4">
+                    <a href="{{ path('app_tenant_payment_receipt', {id: payment.id}) }}" target="_blank" 
+                       class="w-full block text-center bg-gray-800 text-white py-3 rounded hover:bg-gray-900 font-bold shadow transition-transform transform hover:scale-105">
+                        🖨️ Print Official Receipt
+                    </a>
+                </div>
+            {% endif %}
+
+            </div>
+        {% else %}
+            {# 🔴 ERROR STATE: Code provided, but no payment found #}
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded shadow-sm">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <span class="text-red-500 text-xl">🚫</span>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-red-700 font-bold">
+                            Payment Not Found
+                        </p>
+                        <p class="text-xs text-red-600 mt-1">
+                            The code <span class="font-mono bg-red-100 px-1 rounded">{{ search_code }}</span> does not exist in the system.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        
+
+    
+    {% endif %}
+
+</div>
+{% endblock %}

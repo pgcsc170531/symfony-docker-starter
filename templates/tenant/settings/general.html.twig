@@ -1,0 +1,193 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}School Settings{% endblock %}
+
+{% block body %}
+<div class="w-full max-w-7xl mx-auto">
+    
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">General Settings</h1>
+        <p class="text-gray-500 text-sm">Update your school's official details and branding.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        {# === LEFT COLUMN: THE FORM === #}
+        <div class="md:col-span-2 bg-white rounded-lg shadow p-6">
+            {{ form_start(form) }}
+            
+            {# --- SECTION 1: CONTACT INFO --- #}
+            <h2 class="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Contact Details</h2>
+            
+            <div class="mb-4">
+                {{ form_label(form.name, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                {{ form_widget(form.name, {'attr': {'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'}}) }}
+                {{ form_errors(form.name) }}
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    {{ form_label(form.email, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                    {{ form_widget(form.email, {'attr': {'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'}}) }}
+                </div>
+                <div>
+                    {{ form_label(form.phoneNumber, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                    {{ form_widget(form.phoneNumber, {'attr': {'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'}}) }}
+                </div>
+            </div>
+
+            <div class="mb-6">
+                {{ form_label(form.address, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                {{ form_widget(form.address, {'attr': {'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'}}) }}
+            </div>
+
+            {# --- SECTION 2: IDENTITY (Motto & Website) --- #}
+            <h2 class="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Identity & Branding</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    {{ form_label(form.motto, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                    {{ form_widget(form.motto, {'attr': {'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500', 'placeholder': 'e.g. Excellence in Education'}}) }}
+                </div>
+                <div>
+                    {{ form_label(form.website, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                    {{ form_widget(form.website, {'attr': {'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'}}) }}
+                </div>
+            </div>
+
+            {# --- SECTION 3: VISUALS (Logo & Color) --- #}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 items-end">
+                <div>
+                    {{ form_label(form.primaryColor, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                    <div class="mt-1 flex items-center">
+                        {{ form_widget(form.primaryColor, {'attr': {'class': 'h-10 w-20 p-1 border border-gray-300 rounded cursor-pointer'}}) }}
+                        <span class="ml-2 text-xs text-gray-500">Brand Color</span>
+                    </div>
+                </div>
+                <div>
+                    {{ form_label(form.logoFile, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                    {{ form_widget(form.logoFile, {'attr': {'class': 'mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100'}}) }}
+                </div>
+            </div>
+            {# ... (Your existing Visuals/Logo Section) ... #}
+
+            {# === NEW: BANKING DETAILS SECTION === #}
+            <h2 class="text-lg font-semibold text-gray-700 border-b pb-2 mb-4 mt-8">
+                🏦 Banking Details <span class="text-xs font-normal text-gray-500">(For Payment Slips)</span>
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                <div>
+                    {{ form_label(form.bankName, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                    {{ form_widget(form.bankName, {'attr': {'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500', 'placeholder': 'e.g. Zenith Bank'}}) }}
+                    {{ form_errors(form.bankName) }}
+                </div>
+                <div>
+                    {{ form_label(form.accountNumber, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                    {{ form_widget(form.accountNumber, {'attr': {'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'}}) }}
+                    {{ form_errors(form.accountNumber) }}
+                </div>
+                <div class="md:col-span-2">
+                    {{ form_label(form.accountName, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                    {{ form_widget(form.accountName, {'attr': {'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'}}) }}
+                    {{ form_errors(form.accountName) }}
+                </div>
+            </div>
+
+           <h2 class="text-lg font-semibold text-gray-700 border-b pb-2 mb-4 mt-8">
+    <h2 class="text-lg font-semibold text-gray-700 border-b pb-2 mb-4 mt-8">
+                    📱 Notification Settings <span class="text-xs font-normal text-gray-500">(SMS Toggles)</span>
+                </h2>
+
+                <div class="space-y-4 mb-8">
+                    {# Enrollment Toggle #}
+                    <div class="bg-indigo-50 p-4 rounded-md border border-indigo-100 flex items-start">
+                        <div class="flex h-5 items-center">
+                            {{ form_widget(form.smsOnEnrollment, {'attr': {'class': 'h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500'}}) }}
+                        </div>
+                        <div class="ml-3 text-sm">
+                            {{ form_label(form.smsOnEnrollment, null, {'label_attr': {'class': 'font-bold text-indigo-900'}}) }}
+                            <p class="text-indigo-700 opacity-80 text-xs text-xs">
+                                Send SMS to parents when a new student is enrolled (₦{{ smsPrice }}/unit).
+                            </p>
+                        </div>
+                    </div>
+
+                    {# Fee Payment Toggle #}
+                    <div class="bg-indigo-50 p-4 rounded-md border border-indigo-100 flex items-start">
+                        <div class="flex h-5 items-center">
+                            {{ form_widget(form.smsOnFeePayment, {'attr': {'class': 'h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500'}}) }}
+                        </div>
+                        <div class="ml-3 text-sm">
+                            {{ form_label(form.smsOnFeePayment, null, {'label_attr': {'class': 'font-bold text-indigo-900'}}) }}
+                            <p class="text-indigo-700 opacity-80 text-xs">
+                                Send an automated receipt to parents upon fee payment (₦{{ smsPrice }}/unit).
+                            </p>
+                        </div>
+                    </div>
+
+                    {# Calendar Event Toggle #}
+                    <div class="bg-indigo-50 p-4 rounded-md border border-indigo-100 flex items-start">
+                        <div class="flex h-5 items-center">
+                            {{ form_widget(form.smsOnCalendarEvent, {'attr': {'class': 'h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500'}}) }}
+                        </div>
+                        <div class="ml-3 text-sm">
+                            {{ form_label(form.smsOnCalendarEvent, null, {'label_attr': {'class': 'font-bold text-indigo-900'}}) }}
+                            <p class="text-indigo-700 opacity-80 text-xs">
+                                Notify parents about school events and holidays (₦{{ smsPrice }}/unit).
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+            
+            {# --- SAVE BUTTON (Situated below everything) --- #}
+            <div class="pt-4 border-t">
+                <button type="submit" class="w-full md:w-auto md:px-8 bg-indigo-600 text-white font-bold py-3 rounded hover:bg-indigo-700 transition-colors shadow-sm">
+                    💾 Save School Settings
+                </button>
+            </div>
+
+            {{ form_end(form) }}
+        </div>
+
+        {# === RIGHT COLUMN: LIVE PREVIEW === #}
+        <div class="md:col-span-1">
+            <div class="bg-white rounded-lg shadow p-6 sticky top-6">
+                <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Live Preview</h3>
+
+                {# LOGO PREVIEW #}
+                <div class="mb-6 text-center border rounded p-4 bg-gray-50">
+                    <p class="text-xs text-gray-400 mb-2">School Logo</p>
+                    {% if tenant.logoFilename %}
+                        <img src="{{ asset('uploads/logos/' ~ tenant.logoFilename) }}" alt="Logo" class="mx-auto max-h-24 object-contain">
+                    {% else %}
+                        <div class="text-4xl text-gray-300">🏫</div>
+                        <p class="text-xs text-gray-400 mt-1">No logo uploaded</p>
+                    {% endif %}
+                </div>
+
+                {# IDENTITY PREVIEW #}
+                <div class="mb-6 text-center">
+                    <h4 class="font-bold text-gray-800">{{ tenant.name }}</h4>
+                    <p class="text-sm text-gray-500 italic">"{{ tenant.motto|default('Your Motto Here') }}"</p>
+                    {% if tenant.website %}
+                        <a href="{{ tenant.website }}" class="text-xs text-indigo-500 hover:underline mt-1 block">{{ tenant.website }}</a>
+                    {% endif %}
+                </div>
+
+                {# COLOR PREVIEW #}
+                <div class="text-center border rounded p-4 bg-gray-50">
+                    <p class="text-xs text-gray-400 mb-2">Primary Color</p>
+                    <div class="h-12 w-full rounded shadow-sm flex items-center justify-center text-white font-bold text-xs" 
+                         style="background-color: {{ tenant.primaryColor|default('#1e40af') }};">
+                        {{ tenant.primaryColor|default('#1e40af') }}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% use 'form_div_layout.html.twig' %}
+
+{# --- 1. THE ROW WRAPPER (Spacing between fields) --- #}
+{% block form_row %}
+    <div class="mb-4">
+        {{ form_label(form) }}
+        <div class="mt-1">
+            {{ form_errors(form) }}
+            {{ form_widget(form) }}
+            {{ form_help(form) }}
+        </div>
+    </div>
+{% endblock %}
+
+{# --- 2. THE LABEL STYLING --- #}
+{% block form_label %}
+    {% set label_attr = label_attr|merge({'class': (label_attr.class|default('') ~ ' block text-sm font-medium text-gray-700')|trim}) %}
+    {{ parent() }}
+{% endblock %}
+
+{# --- 3. THE INPUT STYLING (Text, Email, Date, etc) --- #}
+{% block form_widget_simple %}
+    {% set attr = attr|merge({'class': (attr.class|default('') ~ ' block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3 border')|trim}) %}
+    {{ parent() }}
+{% endblock %}
+
+{# --- 4. THE DROPDOWN STYLING (Selects) --- #}
+{% block choice_widget_collapsed %}
+    {% set attr = attr|merge({'class': (attr.class|default('') ~ ' block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3 border bg-white')|trim}) %}
+    {{ parent() }}
+{% endblock %}
+
+{# --- 5. THE TEXTAREA STYLING --- #}
+{% block textarea_widget %}
+    {% set attr = attr|merge({'class': (attr.class|default('') ~ ' block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3 border')|trim}) %}
+    {{ parent() }}
+{% endblock %}
+
+{# --- 6. ERROR MESSAGES (Red text) --- #}
+{% block form_errors %}
+    {% if errors|length > 0 %}
+        <div class="text-red-600 text-sm mt-1">
+            {% for error in errors %}
+                <p>⚠️ {{ error.message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}

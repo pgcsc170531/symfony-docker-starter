@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Add New Staff{% endblock %}
+
+{% block body %}
+<div class="max-w-xl mx-auto mt-6">
+    <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
+        <h1 class="text-2xl font-bold mb-6 text-gray-800">New Employee Account</h1>
+        
+        {{ form_start(form) }}
+            <div class="space-y-4">
+                <div>
+                    {{ form_label(form.fullName, null, {'label_attr': {'class': 'block font-bold text-gray-700 mb-1'}}) }}
+                    {{ form_widget(form.fullName, {'attr': {'class': 'w-full border p-2 rounded'}}) }}
+                </div>
+                
+                <div>
+                    {{ form_label(form.email, null, {'label_attr': {'class': 'block font-bold text-gray-700 mb-1'}}) }}
+                    {{ form_widget(form.email, {'attr': {'class': 'w-full border p-2 rounded'}}) }}
+                </div>
+                
+                <div>
+                    {{ form_label(form.roles, null, {'label_attr': {'class': 'block font-bold text-gray-700 mb-1'}}) }}
+                    {{ form_widget(form.roles, {'attr': {'class': 'w-full border p-2 rounded bg-gray-50'}}) }}
+                </div>
+
+                <div>
+                    {{ form_label(form.plainPassword, null, {'label_attr': {'class': 'block font-bold text-gray-700 mb-1'}}) }}
+                    {{ form_widget(form.plainPassword, {'attr': {'class': 'w-full border p-2 rounded'}}) }}
+                </div>
+            </div>
+
+            <button type="submit" class="mt-6 w-full bg-blue-600 text-white font-bold py-3 rounded hover:bg-blue-700">
+                Create Account
+            </button>
+        {{ form_end(form) }}
+    </div>
+</div>
+{% endblock %}

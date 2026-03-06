@@ -1,0 +1,102 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}School Calendar{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto mt-6 px-4">
+
+    {# HEADER & CONTROLS #}
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            📅 {{ currentMonth|date('F Y') }}
+        </h1>
+        
+        <div class="flex gap-2 mt-4 md:mt-0">
+            {# Previous Month #}
+            <a href="{{ path('app_parent_calendar', {
+                'year': currentMonth|date_modify('-1 month')|date('Y'), 
+                'month': currentMonth|date_modify('-1 month')|date('m')
+            }) }}" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200">
+                &larr; Prev
+            </a>
+
+            {# Today #}
+            <a href="{{ path('app_parent_calendar') }}" class="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 rounded hover:bg-blue-100">
+                Today
+            </a>
+
+            {# Next Month #}
+            <a href="{{ path('app_parent_calendar', {
+                'year': currentMonth|date_modify('+1 month')|date('Y'), 
+                'month': currentMonth|date_modify('+1 month')|date('m')
+            }) }}" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200">
+                Next &rarr;
+            </a>
+        </div>
+    </div>
+
+    {# CALENDAR GRID #}
+    <div class="bg-white shadow-lg rounded-xl overflow-hidden border border-gray-200">
+        
+        {# Days of Week Header #}
+        <div class="grid grid-cols-7 border-b border-gray-200 bg-gray-50 text-center">
+            {% for day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] %}
+                <div class="py-3 text-xs font-bold text-gray-500 uppercase tracking-wide">{{ day }}</div>
+            {% endfor %}
+        </div>
+
+        {# Days Grid #}
+        <div class="grid grid-cols-7 auto-rows-fr bg-gray-200 gap-px">
+            
+            {# 1. Empty Cells (Gray blocks before the 1st of the month) #}
+            {% set firstDayOfWeek = currentMonth|date('w') %}
+            {% for i in 0..firstDayOfWeek - 1 %}
+                {% if firstDayOfWeek > 0 %}
+                    <div class="bg-gray-50/50 min-h-[120px]"></div>
+                {% endif %}
+            {% endfor %}
+
+            {# 2. Actual Days #}
+            {% set daysInMonth = currentMonth|date('t') %}
+            {% for day in 1..daysInMonth %}
+                
+                {# Construct the date string for this cell (e.g. "2026-01-05") #}
+                {% set currentCellDate = currentMonth|date('Y-m-') ~ "%02d"|format(day) %}
+                
+                <div class="bg-white min-h-[120px] p-2 hover:bg-gray-50 transition-colors relative group">
+                    
+                    {# Date Number #}
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm font-bold 
+                            {% if currentCellDate == today|date('Y-m-d') %}
+                                bg-blue-600 text-white h-7 w-7 rounded-full flex items-center justify-center shadow-sm
+                            {% else %}
+                                text-gray-700
+                            {% endif %}
+                        ">
+                            {{ day }}
+                        </span>
+                    </div>
+
+                    {# Events List #}
+                    <div class="mt-2 space-y-1">
+                        {% for event in events %}
+                            {# Strict String Comparison #}
+                            {% if event.startDate|date('Y-m-d') == currentCellDate %}
+                                
+                                <div class="px-2 py-1 rounded text-[10px] font-semibold truncate border-l-2 shadow-sm
+                                    {% if event.type == 'Holiday' %}bg-red-50 text-red-700 border-red-500
+                                    {% elseif event.type == 'Exam' %}bg-yellow-50 text-yellow-700 border-yellow-500
+                                    {% else %}bg-blue-50 text-blue-700 border-blue-500{% endif %}">
+                                    {{ event.title }}
+                                </div>
+
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

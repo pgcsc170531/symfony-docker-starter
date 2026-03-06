@@ -1,0 +1,185 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Student Registration{% endblock %}
+
+{% block body %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    {# --- HEADER --- #}
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">🎓 Student Admission</h1>
+            <p class="text-gray-500">
+                Guardian: <span class="font-bold text-indigo-600">{{ guardian.title }} {{ guardian.fullName }}</span>
+            </p>
+        </div>
+        <div class="text-sm bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full border border-indigo-200">
+            Step 2 of 2
+        </div>
+    </div>
+
+    {{ form_start(form) }}
+    
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden border border-gray-100">
+        
+        {# === SECTION A: STUDENT IDENTITY === #}
+        <div class="p-6 border-b border-gray-100">
+            <h3 class="text-lg font-bold text-gray-700 mb-4 flex items-center">
+                <span class="bg-gray-100 text-gray-600 w-8 h-8 rounded-full flex items-center justify-center mr-2 text-sm">1</span> 
+                Basic Identity
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {{ form_row(form.firstName) }}
+                {{ form_row(form.middleName) }}
+                {{ form_row(form.lastName) }}
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                {{ form_row(form.gender) }}
+                {{ form_row(form.dateOfBirth) }}
+                {{ form_row(form.religion) }}
+            </div>
+        </div>
+
+        {# === SECTION B: CLASSROOM & HISTORY === #}
+        <div class="p-6 border-b border-gray-100 bg-gray-50">
+            <h3 class="text-lg font-bold text-gray-700 mb-4 flex items-center">
+                <span class="bg-gray-200 text-gray-600 w-8 h-8 rounded-full flex items-center justify-center mr-2 text-sm">2</span> 
+                Academic Placement
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white p-4 rounded border border-gray-200">
+                    {{ form_row(form.currentClass) }}
+                </div>
+                <div>
+                    {{ form_row(form.previousSchool) }}
+                </div>
+            </div>
+        </div>
+
+        {# === SECTION C: DEMOGRAPHICS (West Africa) === #}
+        <div class="p-6 border-b border-gray-100">
+            <h3 class="text-lg font-bold text-gray-700 mb-4 flex items-center">
+                <span class="bg-gray-100 text-gray-600 w-8 h-8 rounded-full flex items-center justify-center mr-2 text-sm">3</span> 
+                Origin & Location
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {{ form_row(form.nationality) }}
+                {{ form_row(form.homeTown) }}
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+    <div class="form-group">
+        {{ form_label(form.stateOfOrigin) }}
+        {{ form_widget(form.stateOfOrigin, {'attr': {'id': 'select-state'}}) }} 
+        {{ form_errors(form.stateOfOrigin) }}
+    </div>
+    <div class="form-group">
+        {{ form_label(form.lga) }}
+        {{ form_widget(form.lga, {'attr': {'id': 'select-lga'}}) }}
+        {{ form_errors(form.lga) }}
+    </div>
+</div>
+        </div>
+
+        {# === SECTION D: MEDICAL INFO === #}
+        <div class="p-6 bg-red-50 border-t border-red-100">
+            <h3 class="text-lg font-bold text-red-800 mb-4 flex items-center">
+                <span class="bg-white text-red-600 border border-red-200 w-8 h-8 rounded-full flex items-center justify-center mr-2 text-sm">4</span> 
+                Medical Profile <span class="text-xs font-normal ml-2 text-red-600">(Critical for emergencies)</span>
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {{ form_row(form.bloodGroup) }}
+                {{ form_row(form.genotype) }}
+            </div>
+            
+            <div class="mt-4">
+                {{ form_row(form.medicalConditions) }}
+            </div>
+        </div>
+
+        {# === FOOTER ACTION === #}
+        <div class="p-6 bg-gray-50 flex justify-end">
+            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition transform hover:-translate-y-0.5">
+                ✅ Complete Admission
+            </button>
+        </div>
+
+    </div>
+    {{ form_end(form) }}
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check the IDs that we are now forcing in the Twig template
+            const stateSelect = document.getElementById('student_admission_stateOfOrigin'); 
+const lgaSelect = document.getElementById('student_admission_lga');
+
+            // This CRITICAL check prevents the script from running if the IDs are wrong
+            if (!stateSelect || !lgaSelect) {
+                console.error("CRITICAL: State or LGA select element not found. Please ensure the IDs 'select-state' and 'select-lga' are correctly set in the form_row calls.");
+                // We stop here if elements aren't found.
+                return;
+            }
+
+            // 1. GENERATE THE URL BASE DYNAMICALLY
+            const apiBaseUrl = "{{ path('app_tenant_api_lgas', {id: 0}) }}".slice(0, -1);
+
+            stateSelect.addEventListener('change', function() {
+                const stateId = this.value;
+
+                // Disable and show 'Loading...' while fetching
+                lgaSelect.innerHTML = '<option value="">Loading...</option>';
+                lgaSelect.setAttribute('disabled', 'disabled');
+
+                if (!stateId) {
+                    lgaSelect.innerHTML = '<option value="">Select State First</option>';
+                    return;
+                }
+
+                // 2. FETCH LGAs via AJAX
+                fetch(apiBaseUrl + stateId)
+                    .then(response => {
+                        // Check for network errors (404, 500, etc.)
+                        if (!response.ok) {
+                             throw new Error('API request failed: ' + response.statusText);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Clear existing options and add the default "Select" option
+                        lgaSelect.innerHTML = '<option value="">Select LGA</option>';
+                        
+                        // Add new options from the returned JSON array
+                        data.forEach(lga => {
+                            const option = document.createElement('option');
+                            option.value = lga.id;
+                            option.textContent = lga.name;
+                            lgaSelect.appendChild(option);
+                        });
+
+                        // ✅ SUCCESS: Enable the dropdown after options are loaded
+                        lgaSelect.removeAttribute('disabled');
+                    })
+                    .catch(error => {
+                        console.error('Error fetching LGAs:', error);
+                        // Display error message in the dropdown and keep disabled
+                        lgaSelect.innerHTML = '<option value="">Error loading data</option>';
+                        lgaSelect.setAttribute('disabled', 'disabled');
+                    });
+            });
+
+            // Trigger the change event on load if a state is already selected (e.g., on validation error)
+            if (stateSelect.value) {
+                stateSelect.dispatchEvent(new Event('change'));
+            }
+        });
+    </script>
+{% endblock %}

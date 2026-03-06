@@ -1,0 +1,38 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Academic Calendar{% endblock %}
+
+{% block body %}
+<div class="container mx-auto mt-10 p-5">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Academic Sessions</h1>
+        <a href="{{ path('app_tenant_session_new') }}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            + New Session
+        </a>
+    </div>
+
+    {% for session in sessions %}
+        <div class="bg-white shadow rounded mb-6 p-6 border-l-4 {{ session.isActive ? 'border-green-500' : 'border-gray-300' }}">
+            <div class="flex justify-between">
+                <h2 class="text-xl font-bold">{{ session.name }} {{ session.isActive ? '(Current)' : '' }}</h2>
+                <a href="{{ path('app_tenant_term_new', {id: session.id}) }}" class="text-blue-600 hover:underline">+ Add Term</a>
+            </div>
+
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                {% for term in session.terms %}
+                    <div class="p-4 rounded border {{ term.isActive ? 'bg-green-100 border-green-500' : 'bg-gray-50 border-gray-200' }}">
+                        <span class="font-bold">{{ term.name }}</span>
+                        {% if term.isActive %}
+                            <span class="text-xs bg-green-600 text-white px-2 py-1 rounded ml-2">Active</span>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <p class="text-gray-500 italic">No terms added yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <p class="text-center text-gray-600">No academic sessions found. Please create one.</p>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,39 @@
+services:
+  php:
+    image: muammil/edus-saas:v1
+    restart: always
+    ports:
+      - "8082:80"
+    environment:
+      SERVER_NAME: :80
+      APP_ENV: prod
+      BASE_DOMAIN: edus.ng
+      DATABASE_URL: "mysql://root:PASS@database:3306/landlord_db"
+      LANDLORD_DATABASE_URL: "mysql://root:PASS@database:3306/landlord_db"
+      # These CIDR blocks cover Docker's internal networks for safety
+      TRUSTED_PROXIES: 127.0.0.1,172.16.0.0/12,10.0.0.0/8
+      TRUSTED_HOSTS: ^edus\.ng$$|.*\.edus\.ng$$
+
+  database:
+    image: mysql:8.0
+    restart: always
+    volumes:
+      - db_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: PASS
+      MYSQL_DATABASE: landlord_db
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    restart: always
+    ports:
+      - "8083:80"
+    environment:
+      PMA_HOST: database
+      PMA_USER: root
+      PMA_PASSWORD: PASS
+    depends_on:
+      - database
+
+volumes:
+  db_data:

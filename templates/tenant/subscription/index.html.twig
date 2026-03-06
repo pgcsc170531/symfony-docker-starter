@@ -1,0 +1,137 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}My Subscription{% endblock %}
+
+{% block body %}
+<div class="max-w-6xl mx-auto mt-8 px-6">
+
+    {# 1. CURRENT STATUS DASHBOARD #}
+    <div class="bg-gray-900 rounded-3xl p-8 md:p-12 text-white shadow-2xl mb-16 relative overflow-hidden">
+        <div class="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-indigo-600 rounded-full blur-3xl opacity-30"></div>
+
+        <div class="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
+            <div>
+                <h2 class="text-indigo-300 font-bold text-xs uppercase tracking-widest mb-2">Current Status</h2>
+                
+                {# Check if subscription exists AND has a plan assigned #}
+                {% if subscription and subscription.plan %}
+                    <h1 class="text-4xl md:text-5xl font-black mb-2">{{ subscription.plan.name }}</h1>
+                    
+                    <div class="flex items-center gap-3">
+                        {% if subscription.isValid %}
+                            <span class="bg-green-500 text-black text-xs font-bold px-3 py-1 rounded-full uppercase">Active</span>
+                            <span class="text-gray-400">Expires on <strong class="text-white">{{ subscription.endDate|date('M d, Y') }}</strong></span>
+                        {% else %}
+                            <span class="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase">Expired</span>
+                            <span class="text-red-300">Expired on {{ subscription.endDate|date('M d, Y') }}</span>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <h1 class="text-4xl font-black mb-2">Free Trial / No Plan</h1>
+                    <span class="bg-yellow-500 text-black text-xs font-bold px-3 py-1 rounded-full uppercase">Trial Mode</span>
+                {% endif %}
+            </div>
+
+            {# Action Button #}
+            <div>
+                {% if subscription and subscription.isValid %}
+                    <div class="text-right">
+                        {# Ensure Subscription entity has getDaysRemaining() #}
+                        <p class="text-4xl font-black">{{ subscription.daysRemaining }}</p>
+                        <p class="text-xs text-gray-400 uppercase tracking-widest">Days Remaining</p>
+                    </div>
+                {% else %}
+                    <a href="#plans" class="bg-white text-gray-900 px-8 py-4 rounded-xl font-bold hover:bg-gray-100 transition-colors shadow-lg">
+                        Upgrade Now
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# 2. AVAILABLE PLANS #}
+    <div id="plans" class="text-center mb-12">
+        <h3 class="text-2xl font-bold text-gray-900">Available Plans</h3>
+        <p class="text-gray-500">Choose a plan to extend your access.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+        {% for plan in plans %}
+            <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100 hover:border-indigo-500 transition-all flex flex-col">
+                <div class="p-8 flex-grow">
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">{{ plan.name }}</h3>
+                    
+                    <div class="flex items-baseline mb-6">
+                        {% if plan.price > 0 %}
+                            <span class="text-4xl font-black text-gray-900">₦{{ plan.price|number_format }}</span>
+                            <span class="text-gray-500 ml-2">/ {{ plan.durationMonths }} months</span>
+                        {% else %}
+                            <span class="text-4xl font-black text-gray-900">Free</span>
+                            <span class="text-gray-500 ml-2">/ Trial</span>
+                        {% endif %}
+                    </div>
+
+                    <ul class="space-y-4 mb-8">
+                        {# 1. STUDENT LIMIT (Logic: Null = Unlimited) #}
+                        <li class="flex items-start text-gray-600">
+                            <span class="bg-green-100 text-green-600 rounded-full p-0.5 mr-3 mt-0.5 flex-shrink-0">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                            </span>
+                            <span class="text-sm font-medium">
+                                {% if plan.maxStudents is null %}
+                                    Unlimited Students
+                                {% else %}
+                                    Up to {{ plan.maxStudents }} Students
+                                {% endif %}
+                            </span>
+                        </li>
+
+                        {# 2. DURATION #}
+                        <li class="flex items-start text-gray-600">
+                            <span class="bg-green-100 text-green-600 rounded-full p-0.5 mr-3 mt-0.5 flex-shrink-0">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                            </span>
+                            <span class="text-sm">Valid for {{ plan.durationMonths }} Months</span>
+                        </li>
+
+                        {# 3. FREE CREDITS (Only show if amount > 0) #}
+                        {% if plan.freeCreditAmount > 0 %}
+                        <li class="flex items-start text-indigo-700 font-bold">
+                            <span class="bg-indigo-100 text-indigo-600 rounded-full p-0.5 mr-3 mt-0.5 flex-shrink-0">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            </span>
+                            <span class="text-sm">Includes ₦{{ plan.freeCreditAmount|number_format }} Credits</span>
+                        </li>
+                        {% endif %}
+
+                        {# 4. GENERIC FEATURES (Applies to all plans) #}
+                        <li class="flex items-start text-gray-600">
+                            <span class="bg-green-100 text-green-600 rounded-full p-0.5 mr-3 mt-0.5 flex-shrink-0">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                            </span>
+                            <span class="text-sm">Full System Access</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="p-6 bg-gray-50 border-t border-gray-100 mt-auto">
+                    <form action="{{ path('tenant_subscription_initiate', {planId: plan.id}) }}" method="POST">
+                        <button type="submit" class="block w-full text-center bg-gray-900 text-white font-bold py-4 rounded-xl hover:bg-black transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all">
+                            {% if subscription and subscription.plan and subscription.plan.id == plan.id %}
+                                Renew {{ plan.name }}
+                            {% else %}
+                                Switch to {{ plan.name }}
+                            {% endif %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        {% else %}
+            <div class="col-span-3 text-center py-20 text-gray-400">
+                <p>No paid plans available.</p>
+            </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

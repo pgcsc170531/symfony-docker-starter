@@ -1,0 +1,98 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Financial History - {{ student.firstName }}{% endblock %}
+
+{% block body %}
+<div class="container mx-auto mt-10 p-5">
+    
+    {# 🟢 HEADER WITH BACK BUTTON #}
+    <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <div class="flex items-center gap-4">
+            <a href="{{ path('app_tenant_student_profile', {id: student.id}) }}" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg font-bold shadow-sm transition-colors flex items-center gap-2 text-sm">
+                <span>&larr;</span> Back to Profile
+            </a>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">Financial History</h1>
+                <p class="text-gray-500 text-sm">
+                    Student: <span class="font-semibold text-gray-700">{{ student.fullName }}</span>
+                </p>
+            </div>
+        </div>
+
+        {# Quick Action: New Payment #}
+        <a href="{{ path('app_tenant_payment_terminal', {id: student.id}) }}" class="bg-indigo-600 text-white px-6 py-2.5 rounded-lg shadow hover:bg-indigo-700 font-bold flex items-center gap-2 transition-transform transform hover:-translate-y-0.5">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+            Open Payment Terminal
+        </a>
+    </div>
+
+    {# INVOICE LIST #}
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="px-6 py-4 font-bold text-gray-500 uppercase text-xs">Invoice #</th>
+                    <th class="px-6 py-4 font-bold text-gray-500 uppercase text-xs">Date</th>
+                    <th class="px-6 py-4 font-bold text-gray-500 uppercase text-xs">Term / Session</th>
+                    <th class="px-6 py-4 font-bold text-gray-500 uppercase text-xs text-right">Total</th>
+                    <th class="px-6 py-4 font-bold text-gray-500 uppercase text-xs text-right">Paid</th>
+                    <th class="px-6 py-4 font-bold text-gray-500 uppercase text-xs text-right">Balance</th>
+                    <th class="px-6 py-4 font-bold text-gray-500 uppercase text-xs text-center">Status</th>
+                    <th class="px-6 py-4 font-bold text-gray-500 uppercase text-xs text-right">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for invoice in invoices %}
+                <tr class="hover:bg-gray-50 transition group">
+                    <td class="px-6 py-4 font-mono font-bold text-indigo-600">
+                        #{{ invoice.invoiceNumber }}
+                    </td>
+                    <td class="px-6 py-4 text-gray-600">
+                        {{ invoice.createdAt|date('M j, Y') }}
+                    </td>
+                    <td class="px-6 py-4 text-gray-800 font-medium">
+                        {{ invoice.term.name }} <span class="text-gray-400 text-xs">({{ invoice.session.name }})</span>
+                    </td>
+                    <td class="px-6 py-4 text-right font-medium text-gray-900">
+                        ₦{{ invoice.totalAmount|number_format(2) }}
+                    </td>
+                    <td class="px-6 py-4 text-right text-green-600 font-medium">
+                        ₦{{ invoice.paidAmount|number_format(2) }}
+                    </td>
+                    <td class="px-6 py-4 text-right font-bold text-red-600">
+                        {# Use helper if exists, otherwise calc manually #}
+                        ₦{{ (invoice.totalAmount - invoice.paidAmount)|number_format(2) }}
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        {% if invoice.status == 'PAID' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Paid
+                            </span>
+                        {% elseif invoice.status == 'PARTIAL' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                Partial
+                            </span>
+                        {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                Unpaid
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <a href="{{ path('app_tenant_invoice_show', {id: invoice.id}) }}" class="text-indigo-600 hover:text-indigo-900 font-bold hover:underline">
+                            View
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="px-6 py-12 text-center text-gray-400">
+                        No invoices found for this student.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

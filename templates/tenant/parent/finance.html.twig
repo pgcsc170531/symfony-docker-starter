@@ -1,0 +1,85 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Finance: {{ student.firstName }}{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto mt-10 px-4">
+    
+    {# HEADER #}
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Fee History</h1>
+            <p class="text-gray-500">Financial records for <span class="font-bold text-blue-600">{{ student.fullName }}</span></p>
+        </div>
+        <a href="{{ path('app_parent_dashboard') }}" class="text-sm font-bold text-gray-500 hover:text-gray-800">
+            &larr; Back to Dashboard
+        </a>
+    </div>
+
+    {# INVOICE LIST #}
+    <div class="bg-white shadow-md rounded-lg overflow-hidden border border-gray-200">
+        {% if invoices|length > 0 %}
+            <table class="w-full text-left">
+                <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-bold border-b border-gray-200">
+                    <tr>
+                        <th class="px-6 py-3">Term</th>
+                        <th class="px-6 py-3">Invoice #</th>
+                        <th class="px-6 py-3">Date</th>
+                        <th class="px-6 py-3 text-right">Total</th>
+                        <th class="px-6 py-3 text-right">Balance</th>
+                        <th class="px-6 py-3 text-center">Status</th>
+                        <th class="px-6 py-3 text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for invoice in invoices %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4">
+                            <span class="block text-gray-800 font-bold text-sm">{{ invoice.term.name }}</span>
+                            <span class="text-xs text-gray-500">{{ invoice.session.name }}</span>
+                        </td>
+                        <td class="px-6 py-4 font-mono text-xs text-gray-600">
+                            {{ invoice.invoiceNumber }}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600">
+                            {{ invoice.createdAt|date('d M Y') }}
+                        </td>
+                        <td class="px-6 py-4 text-right text-gray-800 font-medium">
+                            ₦{{ invoice.totalAmount|number_format(0) }}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            {% set balance = invoice.totalAmount - invoice.paidAmount %}
+                            {% if balance > 0 %}
+                                <span class="text-red-600 font-bold">₦{{ balance|number_format(0) }}</span>
+                            {% else %}
+                                <span class="text-green-600 font-bold">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            {% if invoice.status == 'PAID' %}
+                                <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">Paid</span>
+                            {% elseif invoice.status == 'PARTIAL' %}
+                                <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-bold">Partial</span>
+                            {% else %}
+                                <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold">Unpaid</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <a href="{{ path('app_tenant_invoice_show', {id: invoice.id}) }}" class="bg-blue-600 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-blue-700 shadow-sm whitespace-nowrap">
+                                {{ invoice.status == 'PAID' ? 'View Receipt' : 'Pay Now' }}
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="p-12 text-center text-gray-400">
+                <p class="text-4xl mb-3">🧾</p>
+                <p>No invoices found for this student yet.</p>
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Global Settings | Edus Ng{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto mt-6 px-4 sm:px-6 lg:px-8">
+
+    {# 1. HEADER SECTION - Matches your Plan Index #}
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-6 gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">⚙️ Global Settings</h1>
+            <p class="text-gray-500 text-sm mt-1">Manage system-wide variables and notification costs.</p>
+        </div>
+    </div>
+
+    {# 2. SETTINGS TABLE - Matches your Table UI #}
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <table class="w-full text-left text-sm text-gray-600">
+            <thead class="bg-gray-50 text-xs uppercase font-bold text-gray-500 border-b border-gray-100">
+                <tr>
+                    <th class="px-6 py-3">Configuration Key</th>
+                    <th class="px-6 py-3">Current Value</th>
+                    <th class="px-6 py-3">Description</th>
+                    <th class="px-6 py-3 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for setting in settings %}
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="px-6 py-4 font-mono text-xs text-indigo-600 font-bold">
+                            {{ setting.settingKey }}
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if setting.settingKey == 'sms_price' %}
+                                <span class="bg-green-100 text-green-800 px-2 py-1 rounded font-bold text-xs">
+                                    ₦{{ setting.settingValue|number_format(2) }}
+                                </span>
+                            {% else %}
+                                <span class="text-gray-900 font-medium">{{ setting.settingValue }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-gray-500 text-xs italic">
+                            {{ setting.description|default('System configuration variable.') }}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <a href="{{ path('landlord_settings_edit', {'id': setting.id}) }}" 
+                               class="text-indigo-600 hover:text-indigo-900 font-medium px-2">
+                                Edit Value
+                            </a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-12 text-center text-gray-500">
+                            <p class="text-sm">No global settings found. Please seed your database.</p>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,125 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Payment History{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto mt-10 px-4">
+    
+    {# HEADER #}
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Payment History</h1>
+            <p class="text-gray-500">A log of all confirmed cash and transfer payments.</p>
+        </div>
+        <a href="{{ path('app_tenant_payment_index') }}" class="bg-indigo-600 text-white px-6 py-2 rounded-lg shadow hover:bg-indigo-700 font-bold text-sm flex items-center gap-2">
+            <span>&larr;</span> Back to Terminal
+        </a>
+    </div>
+
+    {# TABLE #}
+    <div class="bg-white shadow rounded-lg overflow-hidden border border-gray-200">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-gray-50 border-b">
+                <tr>
+                    <th class="p-4 font-bold text-gray-600 uppercase text-xs">Date</th>
+                    <th class="p-4 font-bold text-gray-600 uppercase text-xs">Student</th>
+                    <th class="p-4 font-bold text-gray-600 uppercase text-xs">Transaction Ref</th>
+                    <th class="p-4 font-bold text-gray-600 uppercase text-xs">Method</th>
+                    <th class="p-4 font-bold text-gray-600 uppercase text-xs text-right">Amount</th>
+                    <th class="p-4 font-bold text-gray-600 uppercase text-xs text-right">Status</th>
+                    <th class="p-4 font-bold text-gray-600 uppercase text-xs text-right">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for payment in payments %}
+                <tr class="hover:bg-gray-50 transition group">
+                    {# 1. Date #}
+                    <td class="p-4 text-gray-600">
+                        <span class="block font-bold text-gray-800">{{ payment.createdAt|date('M j, Y') }}</span>
+                        <span class="text-xs text-gray-400">{{ payment.createdAt|date('h:i A') }}</span>
+                    </td>
+                    
+                    {# 2. Student #}
+                    <td class="p-4">
+                        <a href="{{ path('app_tenant_payment_terminal', {id: payment.invoice.student.id}) }}" class="font-bold text-indigo-600 hover:underline block">
+                            {{ payment.invoice.student.fullName }}
+                        </a>
+                        <span class="text-xs text-gray-500">{{ payment.invoice.student.admissionNumber }}</span>
+                    </td>
+
+                    {# 3. Reference #}
+                    <td class="p-4 font-mono text-gray-500 text-xs">
+                        {{ payment.referenceCode }}
+                        {% if payment.reference %}
+                            <br><span class="text-[10px] text-gray-400">Bank: {{ payment.reference }}</span>
+                        {% endif %}
+                    </td>
+
+                    {# 4. Method #}
+                    <td class="p-4">
+                        <span class="px-2 py-1 rounded text-xs font-bold uppercase
+                            {% if payment.method == 'CASH' %}bg-green-100 text-green-800
+                            {% elseif payment.method == 'BANK_TRANSFER' %}bg-blue-100 text-blue-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ payment.method }}
+                        </span>
+                    </td>
+
+                    {# 5. Amount #}
+                    <td class="p-4 text-right font-bold text-gray-800 text-base">
+                        ₦{{ payment.amount|number_format(2) }}
+                    </td>
+
+                    {# 6. Status (UPDATED LOGIC) #}
+                    <td class="p-4 text-right">
+                        {% if payment.status == 'CONFIRMED' %}
+                            <span class="inline-flex items-center gap-1 text-green-600 font-bold text-xs bg-green-50 px-2 py-1 rounded-full">
+                                Verified ✅
+                            </span>
+                        
+                        {# Check if Cancelled OR (Pending but Invoice is Paid) #}
+                        {% elseif payment.status == 'CANCELLED' or (payment.status == 'PENDING' and payment.invoice.status == 'PAID') %}
+                            <span class="inline-flex items-center gap-1 text-gray-500 font-bold text-xs bg-gray-100 px-2 py-1 rounded-full line-through">
+                                Void / Cancelled
+                            </span>
+
+                        {% else %}
+                            <span class="inline-flex items-center gap-1 text-yellow-600 font-bold text-xs bg-yellow-50 px-2 py-1 rounded-full">
+                                Pending ⏳
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    {# 7. Actions (UPDATED LOGIC) #}
+                    <td class="p-4 text-right">
+                        {% if payment.status == 'CONFIRMED' %}
+                            <a href="{{ path('app_tenant_payment_receipt', {id: payment.id}) }}" target="_blank" class="text-gray-500 hover:text-indigo-600 font-bold text-xs border border-gray-300 px-3 py-1 rounded hover:bg-indigo-50 transition-colors">
+                                🖨️ Receipt
+                            </a>
+                        
+                        {# Only show Verify if Pending AND Invoice is NOT Paid #}
+                        {% elseif payment.status == 'PENDING' and payment.invoice.status != 'PAID' %}
+                             {# Note: Using the POST form method is safer than a GET link for actions #}
+                             <form action="{{ path('app_tenant_payment_confirm', {id: payment.id}) }}" method="post" class="inline-block" onsubmit="return confirm('Verify this payment now?');">
+                                <button type="submit" class="text-white bg-yellow-500 hover:bg-yellow-600 font-bold text-xs px-3 py-1 rounded transition-colors shadow-sm">
+                                    Verify Now
+                                </button>
+                             </form>
+                        {% else %}
+                            <span class="text-gray-300 text-xs">--</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="p-12 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-lg m-4">
+                        <div class="text-4xl mb-2">📂</div>
+                        <p class="text-lg font-medium">No payments recorded yet.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

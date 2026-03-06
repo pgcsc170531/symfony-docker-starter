@@ -1,0 +1,176 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Agent Management{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto mt-6 px-4 sm:px-6 lg:px-8">
+
+    {# HEADER & ACTIONS #}
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-6 gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">🕵️ Agent Management</h1>
+            <p class="text-gray-500 text-sm mt-1">Oversee your sales agents, commissions, and performance.</p>
+        </div>
+        <div class="w-full sm:w-auto">
+            <a href="{{ path('landlord_agent_new') }}" class="w-full sm:w-auto justify-center bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-bold hover:bg-indigo-700 shadow-sm transition flex items-center gap-2">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Register New Agent</span>
+            </a>
+        </div>
+    </div>
+
+    {# EMPTY STATE #}
+    {% if agents|length == 0 %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center text-gray-500">
+            <div class="text-5xl mb-4">📭</div>
+            <p class="text-lg font-medium text-gray-900">No agents found</p>
+            <p class="text-sm mt-1">Click the button above to register your first agent.</p>
+        </div>
+    {% else %}
+
+        {# ========================================== #}
+        {# 📱 MOBILE VIEW (Cards) - Visible < md      #}
+        {# ========================================== #}
+        <div class="grid grid-cols-1 gap-4 md:hidden">
+            {% for agent in agents %}
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-4">
+                    
+                    {# Top Row: Avatar & Name #}
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold border border-indigo-200">
+                                {{ agent.fullName|slice(0,1)|upper }}
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-gray-900">{{ agent.fullName }}</h3>
+                                <p class="text-xs text-gray-500">#{{ agent.id }}</p>
+                            </div>
+                        </div>
+                        <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                            {{ agent.commissionPercentage }}% Comm.
+                        </span>
+                    </div>
+
+                    {# Middle Row: Details #}
+                    <div class="text-sm text-gray-600 space-y-1 border-t border-gray-100 pt-3">
+                        <p class="flex items-center">
+                            <svg class="mr-2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            {{ agent.email }}
+                        </p>
+                        <p class="flex items-center">
+                            <svg class="mr-2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                            {% set schoolCount = agent.schools|length %}
+                            <span class="{{ schoolCount > 0 ? 'text-indigo-600 font-medium' : 'text-gray-400' }}">
+                                {{ schoolCount }} Managed School{{ schoolCount != 1 ? 's' : '' }}
+                            </span>
+                        </p>
+                    </div>
+
+                    {# Bottom Row: Actions #}
+                    <div class="grid grid-cols-2 gap-3 pt-2">
+                        <a href="{{ path('landlord_agent_edit', {'id': agent.id}) }}" class="flex items-center justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                            <svg class="mr-1.5 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Edit
+                        </a>
+                        <a href="{{ path('landlord_agent_show', {'id': agent.id}) }}" class="flex items-center justify-center rounded-md bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-600 hover:bg-indigo-100">
+                            View Profile
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        {# ========================================== #}
+        {# 💻 DESKTOP VIEW (Table) - Visible >= md    #}
+        {# ========================================== #}
+        <div class="hidden md:block bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-xs uppercase font-bold text-gray-500 border-b border-gray-100">
+                    <tr>
+                        <th class="px-6 py-3">Agent Details</th>
+                        <th class="px-6 py-3">Contact</th>
+                        <th class="px-6 py-3">Commission</th>
+                        <th class="px-6 py-3">Schools Managed</th>
+                        <th class="px-6 py-3">Joined</th>
+                        <th class="px-6 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for agent in agents %}
+                        <tr class="hover:bg-gray-50 transition group">
+                            {# Name & ID #}
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-bold text-xs">
+                                        {{ agent.fullName|slice(0,1)|upper }}
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-gray-900">{{ agent.fullName }}</div>
+                                        <div class="text-xs text-gray-400">ID: #{{ agent.id }}</div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            {# Email & Phone #}
+                            <td class="px-6 py-4">
+                                <div class="text-gray-900">{{ agent.email }}</div>
+                                <div class="text-xs text-gray-500">{{ agent.phoneNumber|default('-') }}</div>
+                            </td>
+
+                            {# Commission #}
+                            <td class="px-6 py-4">
+                                <span class="bg-green-100 text-green-700 px-2 py-1 rounded-md text-xs font-bold border border-green-200">
+                                    {{ agent.commissionPercentage }}%
+                                </span>
+                            </td>
+
+                            {# Schools Count #}
+                            <td class="px-6 py-4">
+                                {% set schoolCount = agent.schools|length %}
+                                {% if schoolCount > 0 %}
+                                    <span class="font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full text-xs">
+                                        {{ schoolCount }} School{{ schoolCount > 1 ? 's' : '' }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-gray-400 text-xs">None yet</span>
+                                {% endif %}
+                            </td>
+
+                            {# Date #}
+                            <td class="px-6 py-4">
+                                {{ agent.createdAt|date('M d, Y') }}
+                            </td>
+
+                            {# Actions #}
+                            <td class="px-6 py-4 text-right">
+                                <div class="flex justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                    {# IMPROVED EDIT BUTTON #}
+                                    <a href="{{ path('landlord_agent_edit', {'id': agent.id}) }}" class="text-gray-500 hover:text-indigo-600 hover:bg-gray-100 p-1.5 rounded-md transition" title="Edit Agent">
+                                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                    </a>
+                                    
+                                    {# VIEW BUTTON #}
+                                    <a href="{{ path('landlord_agent_show', {'id': agent.id}) }}" class="text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 px-3 py-1.5 rounded-md text-xs font-bold transition flex items-center border border-transparent hover:border-indigo-200">
+                                        View
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    {% endif %}
+</div>
+{% endblock %}

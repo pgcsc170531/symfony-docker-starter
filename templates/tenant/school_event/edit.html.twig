@@ -1,0 +1,31 @@
+{# templates/tenant/school_event/edit.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit Event{% endblock %}
+
+{% block body %}
+<div class="max-w-4xl mx-auto mt-6">
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">✏️ Edit Event</h1>
+            <p class="text-sm text-gray-500">Update details for: {{ school_event.title }}</p>
+        </div>
+        <a href="{{ path('app_tenant_event_index') }}" class="text-gray-500 hover:text-gray-700 text-sm">Back to Calendar</a>
+    </div>
+
+    <div class="bg-white shadow rounded-lg p-6">
+        {{ form_start(form) }}
+            <div class="space-y-4">
+                {{ form_widget(form) }}
+            </div>
+
+            <div class="mt-8 flex justify-end gap-3">
+                <a href="{{ path('app_tenant_event_index') }}" class="px-4 py-2 border rounded text-gray-600 hover:bg-gray-50">Cancel</a>
+                <button class="bg-indigo-600 text-white px-6 py-2 rounded font-bold shadow hover:bg-indigo-700 transition">
+                    Update Event
+                </button>
+            </div>
+        {{ form_end(form) }}
+    </div>
+</div>
+{% endblock %}

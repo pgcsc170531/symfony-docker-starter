@@ -1,0 +1,47 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Upload Photo for {{ student.fullName }}{% endblock %}
+
+{% block body %}
+<div class="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <h1 class="text-2xl font-bold text-gray-800 mb-6">📸 Upload Profile Picture: {{ student.fullName }}</h1>
+
+    <div class="bg-white shadow-lg rounded-lg p-6 border border-gray-100">
+        
+        {{ form_start(form, {'attr': {'novalidate': 'novalidate'}}) }}
+            
+            <p class="mb-4 text-gray-600">
+                The image must be a JPEG or PNG file, and its size should not exceed 2MB.
+            </p>
+
+            <div class="mb-4">
+                {# --- CRITICAL FIX: Custom rendering for visibility --- #}
+                <label for="{{ form.photoFile.vars.id }}" class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ form.photoFile.vars.label }}
+                </label>
+                
+                {{ form_widget(form.photoFile, {
+                    'attr': {
+                        'class': 'block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 p-2.5'
+                        ~ (form.photoFile.vars.errors|length > 0 ? ' border-red-500' : '')
+                    }
+                }) }}
+                
+                {{ form_errors(form.photoFile) }}
+                {# --- END CRITICAL FIX --- #}
+            </div>
+
+            <div class="flex justify-between items-center mt-6">
+                <a href="{{ path('app_tenant_student_profile', {'id': student.id}) }}" class="text-gray-600 hover:text-gray-800 font-medium py-2 px-4 rounded transition border border-gray-200">
+                    Cancel
+                </a>
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow transition">
+                    <i class="fas fa-upload mr-2"></i> Upload Picture
+                </button>
+            </div>
+            
+        {{ form_end(form) }}
+
+    </div>
+</div>
+{% endblock %}

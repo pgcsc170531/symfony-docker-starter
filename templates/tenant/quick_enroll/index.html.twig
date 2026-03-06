@@ -1,0 +1,113 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Quick Student Migration{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto mt-10 px-4">
+    
+    <div class="mb-8">
+        <h1 class="text-3xl font-black text-gray-800">🚀 Quick Student Migration</h1>
+        <p class="text-gray-600 mt-2">
+            Onboard existing students via Excel (CSV) or Manual Entry.
+        </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+        
+        {# OPTION A: CSV UPLOAD #}
+        <div class="bg-green-50 p-6 rounded-lg border border-green-200 relative">
+            <h3 class="font-bold text-green-800 text-lg mb-2">📂 Option A: Upload CSV</h3>
+            <p class="text-xs text-green-700 mb-4">
+                Best for bulk import. 
+                <button onclick="toggleModal()" type="button" class="underline font-bold text-green-900 ml-1">
+                    See Accepted Class Names
+                </button>
+            </p>
+
+            <form action="{{ path('app_tenant_quick_enroll_csv') }}" method="POST" enctype="multipart/form-data" class="flex flex-col gap-3">
+                <div class="grid grid-cols-2 gap-2">
+                    <select name="term_id" class="border-green-300 rounded text-sm w-full" required>
+                        <option value="">Select Term...</option>
+                        {% for term in terms %}
+                            <option value="{{ term.id }}">{{ term.name }}</option>
+                        {% endfor %}
+                    </select>
+                    
+                    <div class="flex items-center pl-2">
+                        <input type="checkbox" name="generate_invoices" value="yes" id="csvInv" class="text-green-600 rounded">
+                        <label for="csvInv" class="ml-2 text-xs font-bold text-green-800">Generate Bills?</label>
+                    </div>
+                </div>
+
+                <input type="file" name="csv_file" accept=".csv" class="block w-full text-sm text-green-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-green-100 file:text-green-700 hover:file:bg-green-200" required>
+                
+                <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded font-bold shadow hover:bg-green-700 text-sm">
+                    Upload & Process
+                </button>
+            </form>
+        </div>
+
+        {# OPTION B: MANUAL GRID INFO #}
+        <div class="bg-indigo-50 p-6 rounded-lg border border-indigo-200 flex flex-col justify-center">
+            <h3 class="font-bold text-indigo-800 text-lg mb-2">✍️ Option B: Manual Grid</h3>
+            <p class="text-sm text-indigo-600 mb-2">
+                Use the table below to enter students one by one.
+            </p>
+            <div class="text-xs font-mono bg-white p-2 rounded border border-indigo-100 text-center text-indigo-400">
+                ↓ Scroll down for Manual Grid
+            </div>
+        </div>
+    </div>
+
+    {# ... (Insert the GRID FORM code from the previous response here) ... #}
+    {# Ensure you include the Manual Grid Form I sent previously below this section #}
+
+</div>
+
+{# 🟢 THE CLASS HELPER MODAL #}
+<div id="classModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl max-w-lg w-full p-6 m-4">
+        <div class="flex justify-between items-center mb-4 border-b pb-2">
+            <h3 class="font-bold text-xl text-gray-800">Accepted Class Names</h3>
+            <button onclick="toggleModal()" class="text-gray-500 hover:text-red-500 font-bold text-2xl">&times;</button>
+        </div>
+        
+        <p class="text-sm text-gray-600 mb-4">
+            Our system is smart! If your Excel sheet uses any of these variations, we will match it automatically.
+        </p>
+
+        <div class="h-64 overflow-y-auto bg-gray-50 p-4 rounded border">
+            <table class="w-full text-sm text-left">
+                <thead class="text-xs text-gray-500 uppercase border-b">
+                    <tr>
+                        <th class="pb-2">Database Name</th>
+                        <th class="pb-2">Accepted Variations (Examples)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y">
+                    {% for class in classes %}
+                        <tr>
+                            <td class="py-2 font-bold text-gray-800">{{ class.name }}</td>
+                            <td class="py-2 text-gray-500 font-mono text-xs">
+                                {{ class.name|replace({' ': ''})|lower }}, 
+                                {{ class.name|replace({' ': '.'}) }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-4 text-right">
+            <button onclick="toggleModal()" class="bg-gray-200 text-gray-800 px-4 py-2 rounded font-bold hover:bg-gray-300">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleModal() {
+        const modal = document.getElementById('classModal');
+        modal.classList.toggle('hidden');
+    }
+</script>
+{% endblock %}

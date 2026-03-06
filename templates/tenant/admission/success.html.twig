@@ -1,0 +1,31 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+<div class="max-w-xl mx-auto text-center mt-10">
+    <div class="bg-green-100 text-green-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">
+        🎉
+    </div>
+    
+    <h1 class="text-3xl font-black text-gray-800 mb-2">Admission Complete!</h1>
+    <p class="text-gray-600 mb-8">
+        <strong>{{ student.fullName }}</strong> has been successfully registered under 
+        <strong>{{ guardian.fullName }}</strong>.
+    </p>
+
+    <div class="grid grid-cols-1 gap-4">
+        <a href="{{ path('app_tenant_admission_register', {id: guardian.id}) }}" 
+           class="bg-blue-600 text-white font-bold py-3 rounded hover:bg-blue-700">
+           ➕ Register Sibling (Same Parent)
+        </a>
+        
+        <a href="{{ path('app_tenant_admission_index') }}" 
+           class="bg-gray-200 text-gray-700 font-bold py-3 rounded hover:bg-gray-300">
+           🏠 Start New Admission
+        </a>
+        
+        <a href="{{ path('app_tenant_student_index') }}" class="text-sm text-gray-500 mt-4 hover:underline">
+            Go to Student List
+        </a>
+    </div>
+</div>
+{% endblock %}

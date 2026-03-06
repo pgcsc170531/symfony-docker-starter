@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Classes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+<div class="max-w-3xl mx-auto mt-10">
+    
+    {# PROGRESS BAR #}
+    <div class="mb-8">
+        <div class="flex justify-between text-sm font-medium text-gray-500 mb-2">
+            <span class="text-green-600">✓ Identity</span>
+            <span class="text-green-600">✓ Classes</span>
+            <span class="text-blue-600 font-bold">3. Calendar</span>
+            <span>4. Finish</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2.5">
+            <div class="bg-blue-600 h-2.5 rounded-full" style="width: 75%"></div>
+        </div>
+    </div>
+
+    <div class="bg-white shadow-xl rounded-xl overflow-hidden">
+        <div class="bg-green-600 p-6 text-white">
+            <h1 class="text-2xl font-bold">📅 Set Your Academic Calendar</h1>
+            <p class="text-green-100 mt-2">
+                Define the current Session and Term to start admitting students.
+            </p>
+        </div>
+
+        <div class="p-8">
+            {{ form_start(form) }}
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    {# Session & Term #}
+                    <div class="col-span-2 md:col-span-1">
+                        {{ form_row(form.sessionName) }}
+                    </div>
+                    <div class="col-span-2 md:col-span-1">
+                        {{ form_row(form.termName) }}
+                    </div>
+
+                    {# Dates #}
+                    <div class="col-span-2 md:col-span-1">
+                        {{ form_row(form.startDate) }}
+                    </div>
+                    <div class="col-span-2 md:col-span-1">
+                        {{ form_row(form.endDate) }}
+                    </div>
+                </div>
+
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-8 text-sm text-yellow-800">
+                    <strong>Note:</strong> Once you click  <strong>Set Calendar & Continue</strong>, the system will set this term as <strong>Active</strong>.
+                </div>
+
+                <div class="flex justify-between items-center pt-6 border-t border-gray-100">
+                    <a href="{{ path('app_tenant_onboarding_structure') }}" class="text-gray-500 hover:text-gray-700 font-medium">
+                        &larr; Back
+                    </a>
+                    {{ form_row(form.save) }}
+                </div>
+
+            {{ form_end(form) }}
+        </div>
+    </div>
+</div>
+</body>
+</html> 

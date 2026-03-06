@@ -1,0 +1,67 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Manage Students{% endblock %}
+
+{% block body %}
+<div class="container mx-auto mt-10 p-5 grid grid-cols-1 md:grid-cols-3 gap-8">
+    
+    <div class="md:col-span-1">
+        <div class="bg-white p-6 rounded shadow border-t-4 border-indigo-600">
+            <h2 class="text-xl font-bold mb-4 text-gray-800">Register Student</h2>
+            {{ form_start(form) }}
+                <div class="mb-3">
+                    {{ form_label(form.firstName) }}
+                    {{ form_widget(form.firstName, {'attr': {'class': 'w-full border p-2 rounded'}}) }}
+                </div>
+                <div class="mb-3">
+                    {{ form_label(form.lastName) }}
+                    {{ form_widget(form.lastName, {'attr': {'class': 'w-full border p-2 rounded'}}) }}
+                </div>
+                <div class="mb-4">
+                    {{ form_label(form.admissionNumber) }}
+                    {{ form_widget(form.admissionNumber, {'attr': {'class': 'w-full border p-2 rounded'}}) }}
+                </div>
+                <button class="bg-indigo-600 text-white w-full py-2 rounded font-bold hover:bg-indigo-700">Register</button>
+            {{ form_end(form) }}
+        </div>
+    </div>
+
+    <div class="md:col-span-2">
+        <div class="bg-white rounded shadow overflow-hidden">
+            <h2 class="text-xl font-bold p-6 border-b text-gray-800">Student Directory</h2>
+           <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead class="bg-gray-50 border-b">
+                    <tr>
+                        <th class="text-left py-3 px-6 text-sm text-gray-600">Admission No.</th>
+                        <th class="text-left py-3 px-6 text-sm text-gray-600">Full Name</th>
+                        <th class="text-right py-3 px-6 text-sm text-gray-600">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="py-3 px-6 font-mono text-sm">{{ student.admissionNumber }}</td>
+                        <td class="py-3 px-6 font-bold text-gray-800">{{ student.fullName }}</td>
+                        <td class="py-3 px-6 text-right space-x-2">
+                        <a href="{{ path('app_tenant_student_profile', {'id': student.id}) }}" class="text-indigo-600 hover:underline text-sm">View Profile</a>
+                        
+                       <a href="{{ path('app_tenant_student_finance', {'id': student.id}) }}" 
+                        class="bg-gray-100 text-gray-700 px-3 py-1 rounded text-xs font-bold hover:bg-gray-200 border">
+                        Manage Finance
+                        </a>
+                    </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" class="text-center py-8 text-gray-500 italic">No students registered yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            </div>dock
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html class="h-full bg-white">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ school is defined and school ? school.name : 'School Portal Login' }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    {# 1. DYNAMIC FAVICON #}
+    {% if school is defined and school and school.logoFilename %}
+        <link rel="icon" href="{{ asset('uploads/logos/' ~ school.logoFilename) }}">
+    {% else %}
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><text y='1.2em' font-size='96'>🎓</text></svg>">
+    {% endif %}
+
+    {# 2. DYNAMIC BRANDING COLORS #}
+    {% if school is defined and school and school.primaryColor %}
+    <style>
+        /* Override specific Tailwind-like classes with School Color */
+        .bg-brand { background-color: {{ school.primaryColor }} !important; }
+        .text-brand { color: {{ school.primaryColor }} !important; }
+        .border-brand { border-color: {{ school.primaryColor }} !important; }
+        .ring-brand:focus { --tw-ring-color: {{ school.primaryColor }} !important; }
+        
+        /* Button Hover Effect (Darken slightly) */
+        .btn-brand {
+            background-color: {{ school.primaryColor }};
+        }
+        .btn-brand:hover {
+            filter: brightness(85%);
+        }
+    </style>
+    {% else %}
+    <style>
+        /* Default Fallback (Blue-900) */
+        .bg-brand { background-color: #1e3a8a; } 
+        .text-brand { color: #1e3a8a; }
+        .border-brand { border-color: #1e3a8a; }
+        .btn-brand { background-color: #1e3a8a; }
+        .btn-brand:hover { background-color: #1e40af; }
+    </style>
+    {% endif %}
+</head>
+<body class="h-full">
+
+<div class="flex min-h-full">
+    
+    {# === LEFT SIDE: VISUAL (Now uses School Color) === #}
+    <div class="relative hidden w-0 flex-1 lg:block bg-brand">
+        <div class="absolute inset-0 h-full w-full object-cover" 
+             style="background-image: url('https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80'); 
+                    background-size: cover; background-position: center; opacity: 0.2; mix-blend-mode: multiply;">
+        </div>
+        
+        <div class="relative z-10 flex flex-col justify-center h-full px-12 text-white">
+            <h2 class="text-4xl font-bold mb-4">
+                {{ school is defined and school ? school.name : 'Welcome Back' }}
+            </h2>
+            <p class="text-blue-100 text-lg">
+                {% if school is defined and school and school.motto %}
+                    "{{ school.motto }}"
+                {% else %}
+                    Manage your school, students, and finances all in one secure place.
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    {# === RIGHT SIDE: LOGIN FORM === #}
+    <div class="flex flex-1 flex-col justify-center px-4 py-12 sm:px-6 lg:flex-none lg:px-20 xl:px-24 bg-gray-50">
+        <div class="mx-auto w-full max-w-sm lg:w-96">
+            
+            <div class="text-center lg:text-left">
+                {# 3. DYNAMIC LOGO #}
+                {% if school is defined and school and school.logoFilename %}
+                    <img src="{{ asset('uploads/logos/' ~ school.logoFilename) }}" 
+                         alt="Logo" 
+                         class="h-20 w-auto mb-4 mx-auto lg:mx-0 object-contain">
+                {% else %}
+                    <span class="text-5xl block mb-4">🏫</span>
+                {% endif %}
+
+                <h2 class="mt-2 text-3xl font-bold tracking-tight text-gray-900">
+                    {{ school is defined and school ? 'Sign In' : 'Staff Portal' }}
+                </h2>
+                <p class="mt-2 text-sm text-gray-600">
+                    Please sign in to access your dashboard.
+                </p>
+            </div>
+
+            <div class="mt-8">
+                <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-gray-200">
+                    
+                    <form action="{{ path('app_login') }}" method="post" class="space-y-6">
+                        
+                        {# ERROR ALERT #}
+                        {% if error %}
+                            <div class="rounded-md bg-red-50 p-4 border border-red-200 mb-4">
+                                <div class="flex">
+                                    <div class="flex-shrink-0 text-red-400">🚫</div>
+                                    <div class="ml-3">
+                                        <h3 class="text-sm font-medium text-red-800">Login Failed</h3>
+                                        <div class="mt-1 text-sm text-red-700">
+                                            {{ error.messageKey|trans(error.messageData, 'security') }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700">Email Address</label>
+                            <div class="mt-1">
+                                <input id="email" name="_username" type="email" autocomplete="email" required 
+                                       value="{{ last_username }}"
+                                       placeholder="e.g. principal@school.com"
+                                       class="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none ring-brand focus:ring-1 focus:ring-indigo-500 sm:text-sm">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                            <div class="mt-1">
+                                <input id="password" name="_password" type="password" autocomplete="current-password" required 
+                                       class="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none ring-brand focus:ring-1 focus:ring-indigo-500 sm:text-sm">
+                            </div>
+                        </div>
+
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+                        <div>
+                            {# 4. DYNAMIC BUTTON COLOR #}
+                            <button type="submit" class="flex w-full justify-center rounded-md border border-transparent btn-brand py-2 px-4 text-sm font-medium text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors">
+                                Sign in to Portal
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+                
+                <div class="mt-6 text-center">
+                    <p class="text-xs text-gray-500">
+                        Protected by {{ school is defined and school ? school.name : 'SchoolSaaS' }} Security
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,135 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Super Admin Dashboard | Edus{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-50 pb-10">
+    
+    {# 1. TOP STATS BAR #}
+    <div class="bg-white border-b border-gray-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <h1 class="text-2xl font-bold text-gray-900">Landlord Overview</h1>
+            <p class="text-sm text-gray-500">Monitor system health and revenue.</p>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {# 2. METRICS GRID #}
+        <dl class="grid grid-cols-1 gap-5 sm:grid-cols-4 mb-8">
+            {# Total Schools #}
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow border border-gray-100 hover:border-indigo-500 transition-colors">
+                <dt class="truncate text-sm font-medium text-gray-500">Total Schools</dt>
+                <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">{{ schools_count|default(0) }}</dd>
+            </div>
+            
+            {# Active Subscriptions #}
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow border border-gray-100 hover:border-green-500 transition-colors">
+                <dt class="truncate text-sm font-medium text-gray-500">Active Subscriptions</dt>
+                <dd class="mt-1 text-3xl font-semibold tracking-tight text-green-600">{{ active_subs_count|default(0) }}</dd>
+            </div>
+
+            {# Expiring Soon (Need Poke) #}
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow border border-gray-100 hover:border-yellow-500 transition-colors">
+                <dt class="truncate text-sm font-medium text-gray-500">Expiring Soon (14 days)</dt>
+                <dd class="mt-1 text-3xl font-semibold tracking-tight text-yellow-600">{{ expiring_count|default(0) }}</dd>
+            </div>
+
+            {# Pending Revenue #}
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow border border-gray-100 hover:border-indigo-500 transition-colors">
+                <dt class="truncate text-sm font-medium text-gray-500">Pending Revenue</dt>
+                <dd class="mt-1 text-3xl font-semibold tracking-tight text-indigo-600">₦{{ pending_revenue|number_format }}</dd>
+            </div>
+        </dl>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {# 3. MAIN COLUMN: Verification Queue #}
+            <div class="lg:col-span-2 space-y-6">
+                
+                <div class="bg-white shadow rounded-lg border border-gray-200">
+                    <div class="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="text-lg font-bold text-gray-900">⚡ Verification Queue</h3>
+                        {% if verification_queue|length > 0 %}
+                            <span class="bg-indigo-100 text-indigo-800 text-xs font-bold px-2.5 py-0.5 rounded-full">{{ verification_queue|length }} New</span>
+                        {% endif %}
+                    </div>
+                    
+                    <ul class="divide-y divide-gray-100">
+                        {% for payment in verification_queue %}
+                        <li class="p-6 hover:bg-gray-50 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-4">
+                                    <div class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
+                                        {{ payment.school.name|slice(0,1) }}
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-bold text-gray-900">{{ payment.school.name }}</p>
+                                        <p class="text-xs text-gray-500">Uploaded receipt for <span class="font-bold">₦{{ payment.amount|number_format }}</span></p>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2">
+                                    <a href="{{ asset('uploads/proofs/' ~ payment.proofOfPayment) }}" target="_blank" class="text-gray-400 hover:text-gray-600 text-xs font-bold border border-gray-200 px-3 py-2 rounded-lg">View</a>
+                                    
+                                    {# Direct Approve Button #}
+                                    <form action="{{ path('landlord_subscription_verify', {id: payment.id}) }}" method="POST" onsubmit="return confirm('Approve this payment?');">
+                                        <button class="bg-indigo-600 text-white text-xs font-bold px-3 py-2 rounded-lg hover:bg-indigo-700 shadow-sm">
+                                            Verify
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </li>
+                        {% else %}
+                        <li class="p-12 text-center text-gray-400">
+                            <div class="text-4xl mb-2">🎉</div>
+                            All payments verified!
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+                        <a href="{{ path('landlord_subscription_pending') }}" class="text-sm font-bold text-indigo-600 hover:text-indigo-900">View all pending requests &rarr;</a>
+                    </div>
+                </div>
+            </div>
+
+            {# 4. SIDE COLUMN: Quick Actions & Activity #}
+            <div class="space-y-6">
+                
+                {# Quick Actions #}
+                <div class="bg-white shadow rounded-lg border border-gray-200 p-6">
+                    <h3 class="text-sm font-bold text-gray-900 uppercase mb-4">Quick Actions</h3>
+                    <div class="flex flex-col gap-2">
+                        <a href="{{ path('landlord_subscription_active') }}" class="block w-full text-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
+                            Create Invoice / Renew
+                        </a>
+                        <a href="{{ path('landlord_agent_index') }}" class="block w-full text-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                            Manage Agents
+                        </a>
+                    </div>
+                </div>
+
+                {# Recent Activity Log #}
+                <div class="bg-white shadow rounded-lg border border-gray-200 p-6">
+                    <h3 class="text-sm font-bold text-gray-900 uppercase mb-4">Recent Activity</h3>
+                    <ul class="space-y-6">
+                        {% for activity in recent_activity %}
+                            <li class="flex gap-3 relative">
+                                <div class="absolute left-1 top-2 bottom-[-24px] w-0.5 bg-gray-100"></div>
+                                <div class="h-2.5 w-2.5 mt-1.5 rounded-full bg-green-500 relative z-10 flex-shrink-0"></div>
+                                <p class="text-xs text-gray-600">
+                                    <span class="font-bold text-gray-900">{{ activity.school.name }}</span> plan approved.
+                                    <br><span class="text-gray-400">₦{{ activity.amount|number_format }} • {{ activity.verifiedAt|date('h:i A') }}</span>
+                                </p>
+                            </li>
+                        {% else %}
+                            <li class="text-xs text-gray-400 italic">No recent activity.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,9 @@
+doctrine_migrations:
+    migrations_paths:
+        # Map the Landlord namespace to the Landlord folder
+        'App\Migrations\Landlord': '%kernel.project_dir%/migrations/Landlord'
+
+        # Map the Tenant namespace to the Tenant folder
+        'App\Migrations\Tenant': '%kernel.project_dir%/migrations/Tenant'
+
+    enable_profiler: false

@@ -1,0 +1,242 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Agent Dashboard | SchoolManager{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-50">
+    
+
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {# 2. HEADER SECTION #}
+        <div class="md:flex md:items-center md:justify-between mb-8">
+            <div class="min-w-0 flex-1">
+                <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+                    Overview
+                </h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    Welcome back, <span class="font-semibold text-gray-900">{{ app.user.fullName }}</span>. Manage your schools and subscriptions.
+                </p>
+            </div>
+            <div class="mt-4 flex md:ml-4 md:mt-0 gap-3">
+                <button type="button" class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                    Request Payout
+                </button>
+                <a href="{{ path('app_landlord_school_new') }}" class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">
+                    <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clip-rule="evenodd" />
+                    </svg>
+                    Enroll New School
+                </a>
+            </div>
+        </div>
+
+        {# 3. RENEWAL ALERTS #}
+        {% set expiring_soon = false %}
+        {% for school in schools %}
+            {# Ensure daysToExpiry method exists in your School Entity or use date math here #}
+            {% if school.daysToExpiry is defined and school.daysToExpiry <= 7 and school.isActive %}
+                {% set expiring_soon = true %}
+            {% endif %}
+        {% endfor %}
+
+        {% if expiring_soon %}
+        <div class="rounded-md bg-yellow-50 p-4 mb-8 border border-yellow-200">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-yellow-800">Attention Needed: Renewals Due</h3>
+                    <div class="mt-2 text-sm text-yellow-700">
+                        <p>Some schools in your portfolio are expiring within 7 days. Contact them to renew.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {# 3.5 ACTION CENTER (Payments & Tickets) #}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            
+            {# A. PENDING PAYMENTS CARD #}
+            <div class="bg-white overflow-hidden shadow rounded-lg border border-gray-100">
+                <div class="px-4 py-5 sm:p-6">
+                    <h3 class="text-base font-semibold leading-6 text-gray-900 flex items-center">
+                        <svg class="h-5 w-5 text-red-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Pending Payments ({{ pending_payments|length }})
+                    </h3>
+                    <div class="mt-4 flow-root">
+                        <ul class="-my-5 divide-y divide-gray-200">
+                            {% for payment in pending_payments %}
+                            <li class="py-4">
+                                <div class="flex items-center space-x-4">
+                                    <div class="min-w-0 flex-1">
+                                        <p class="truncate text-sm font-medium text-gray-900">{{ payment.school.name }}</p>
+                                        <p class="truncate text-xs text-gray-500">Ref: {{ payment.referenceCode }}</p>
+                                    </div>
+                                    <div class="inline-flex items-center text-base font-semibold text-gray-900">
+                                        ₦{{ payment.amount|number_format(2) }}
+                                    </div>
+                                    {# NOTE: Ensure 'app_agent_payment_resolve' route exists #}
+                                    <a href="{{ path('app_agent_payment_resolve', {id: payment.id}) }}" class="rounded-md bg-indigo-50 px-2.5 py-1.5 text-sm font-semibold text-indigo-600 shadow-sm hover:bg-indigo-100">
+                                        Verify
+                                    </a>
+                                </div>
+                            </li>
+                            {% else %}
+                            <li class="py-4 text-center text-sm text-gray-500 italic">No payments pending verification.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            {# B. SUPPORT REQUESTS CARD #}
+            <div class="bg-white overflow-hidden shadow rounded-lg border border-gray-100">
+                <div class="px-4 py-5 sm:p-6">
+                    <h3 class="text-base font-semibold leading-6 text-gray-900 flex items-center">
+                        <svg class="h-5 w-5 text-indigo-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                        </svg>
+                        Support Needs ({{ open_tickets|length }})
+                    </h3>
+                    <div class="mt-4 flow-root">
+                        <ul class="-my-5 divide-y divide-gray-200">
+                            {% for ticket in open_tickets %}
+                            <li class="py-4">
+                                <div class="flex items-center justify-between">
+                                    <div class="min-w-0 flex-1">
+                                        <p class="truncate text-sm font-medium text-gray-900">{{ ticket.subject }}</p>
+                                        <p class="truncate text-xs text-gray-500">{{ ticket.school.name }} • {{ ticket.createdAt|date('M d') }}</p>
+                                    </div>
+                                    {# NOTE: Ensure 'app_agent_ticket_reply' route exists #}
+                                    <a href="{{ path('app_agent_ticket_reply', {id: ticket.id}) }}" class="ml-4 rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                                        Reply
+                                    </a>
+                                </div>
+                            </li>
+                            {% else %}
+                            <li class="py-4 text-center text-sm text-gray-500 italic">All caught up! No open tickets.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# 4. STATS OVERVIEW #}
+        <dl class="grid grid-cols-1 gap-5 sm:grid-cols-4 mb-10">
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6 border border-gray-100">
+                <dt class="truncate text-sm font-medium text-gray-500">Total Schools</dt>
+                <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">{{ schools|length }}</dd>
+            </div>
+            
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6 border border-gray-100">
+                <dt class="truncate text-sm font-medium text-gray-500">Active Subscriptions</dt>
+                {% set active_count = 0 %}
+                {% for s in schools %}
+                    {% if s.isActive is defined and s.isActive %}
+                        {% set active_count = active_count + 1 %}
+                    {% endif %}
+                {% endfor %}
+                <dd class="mt-1 text-3xl font-semibold tracking-tight text-green-600">{{ active_count }}</dd>
+            </div>
+
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6 border border-gray-100">
+                <dt class="truncate text-sm font-medium text-gray-500">Your Commission</dt>
+                <dd class="mt-1 text-3xl font-semibold tracking-tight text-indigo-600">{{ app.user.commissionPercentage }}%</dd>
+            </div>
+            
+            <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6 border border-gray-100">
+                <dt class="truncate text-sm font-medium text-gray-500">Pending Payouts</dt>
+                <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">₦0.00</dd>
+            </div>
+        </dl>
+
+        {# 5. SCHOOLS LIST #}
+        <div class="border-t border-gray-200 pt-8">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-base font-semibold leading-6 text-gray-900">Your Portfolio</h3>
+            </div>
+
+            {% if schools|length > 0 %}
+                <ul role="list" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {% for school in schools %}
+                        <li class="col-span-1 divide-y divide-gray-200 rounded-lg bg-white shadow border border-gray-200 hover:border-indigo-300 transition-colors">
+                            
+                            {# Card Header #}
+                            <div class="flex w-full items-center justify-between space-x-6 p-6">
+                                <div class="flex-1 truncate">
+                                    <div class="flex items-center space-x-3">
+                                        <h3 class="truncate text-sm font-medium text-gray-900">{{ school.name }}</h3>
+                                        {% if school.isActive is defined and school.isActive %}
+                                            <span class="inline-flex flex-shrink-0 items-center rounded-full bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Active</span>
+                                        {% else %}
+                                            <span class="inline-flex flex-shrink-0 items-center rounded-full bg-red-50 px-1.5 py-0.5 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/20">Inactive</span>
+                                        {% endif %}
+                                    </div>
+                                    <p class="mt-1 truncate text-xs text-gray-500">
+                                        {# Assuming school entity has subdomain property #}
+                                        <a href="http://{{ school.subdomain }}.yoursite.com" target="_blank" class="hover:text-indigo-600 hover:underline">
+                                            {{ school.subdomain }}.yoursite.com
+                                        </a>
+                                    </p>
+                                </div>
+                                <div class="h-10 w-10 flex-shrink-0 rounded-full bg-indigo-50 flex items-center justify-center text-xl">
+                                    🏫
+                                </div>
+                            </div>
+                            
+                            {# Card Details #}
+                            <div class="px-6 py-4 bg-gray-50/50">
+                                <div class="flex justify-between text-xs text-gray-500 mb-2">
+                                    <span>Plan</span>
+                                    <span class="font-medium text-gray-900">Premium Termly</span>
+                                </div>
+                                <div class="flex justify-between text-xs text-gray-500 items-center">
+                                    <span>Expires</span>
+                                    {% if school.daysToExpiry is defined %}
+                                        {% if school.daysToExpiry <= 7 %}
+                                            <span class="font-bold text-red-600">{{ school.expiryDate|date('M d, Y') }} ({{ school.daysToExpiry }} days)</span>
+                                        {% else %}
+                                            <span class="font-medium text-gray-700">{{ school.expiryDate|date('M d, Y') }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="font-medium text-gray-700">--</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            {# Card Actions #}
+                            <div>
+                                <div class="-mt-px flex divide-x divide-gray-200">
+                                    <div class="flex w-0 flex-1">
+                                        <a href="#" class="relative -mr-px inline-flex w-0 flex-1 items-center justify-center gap-x-3 rounded-bl-lg border border-transparent py-4 text-sm font-semibold text-gray-900 hover:bg-gray-50">
+                                            Manage
+                                        </a>
+                                    </div>
+                                    <div class="flex w-0 flex-1">
+                                        <a href="#" class="relative inline-flex w-0 flex-1 items-center justify-center gap-x-3 rounded-br-lg border border-transparent py-4 text-sm font-semibold text-indigo-600 hover:bg-indigo-50">
+                                            Renew
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="text-center py-20 bg-white rounded-lg border-2 border-dashed border-gray-300">
+                    <p class="mt-1 text-sm text-gray-500">No schools found.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,164 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Batch Promotion{% endblock %}
+
+{% block body %}
+<div class="container mx-auto mt-10 p-5">
+    <div class="bg-white rounded shadow-lg p-8">
+        <h1 class="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">Student Promotion & Repetition</h1>
+
+        <form method="POST" action="{{ path('app_tenant_enrollment_promote') }}">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <div class="bg-gray-50 p-4 rounded border">
+                    <h3 class="font-bold text-gray-600 mb-4 uppercase text-sm">Moving From (Old Session)</h3>
+                    <div class="mb-3">
+                        <label class="block text-sm font-bold mb-1">Source Session</label>
+                        <select id="source_session" name="source_session" class="w-full border p-2 rounded" required>
+                            <option value="">Select Session...</option>
+                            {% for session in sessions %}
+                                <option value="{{ session.id }}">{{ session.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="block text-sm font-bold mb-1">Source Class</label>
+                        <select id="source_class" name="source_class" class="w-full border p-2 rounded" required>
+                            <option value="">Select Class...</option>
+                            {% for class in classrooms %}
+                                <option value="{{ class.id }}">{{ class.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="button" id="btn-fetch" class="mt-2 bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 w-full">
+                        Load Students
+                    </button>
+                </div>
+
+                <div class="bg-blue-50 p-4 rounded border border-blue-200">
+                    <h3 class="font-bold text-blue-800 mb-4 uppercase text-sm">Moving To (New Session)</h3>
+                    <div class="mb-3">
+                        <label class="block text-sm font-bold mb-1">Target Session</label>
+                        <select name="target_session" class="w-full border p-2 rounded" required>
+                            {% for session in sessions %}
+                                <option value="{{ session.id }}">{{ session.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="block text-sm font-bold mb-1">Target Class (Promoted)</label>
+                        <select name="target_class" class="w-full border p-2 rounded" required>
+                            {% for class in classrooms %}
+                                <option value="{{ class.id }}">{{ class.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <p class="text-xs text-blue-600 mt-2">
+                        * Students <strong>NOT selected</strong> below will repeat the Source Class.
+                    </p>
+                </div>
+            </div>
+
+            <div id="student-list-container" class="hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold">Select Students to Promote</h3>
+                    <div class="space-x-2">
+                        <button type="button" onclick="toggleAll(true)" class="text-xs text-blue-600 hover:underline">Select All</button>
+                        <span class="text-gray-300">|</span>
+                        <button type="button" onclick="toggleAll(false)" class="text-xs text-blue-600 hover:underline">Deselect All</button>
+                    </div>
+                </div>
+
+                <div class="border rounded overflow-hidden max-h-96 overflow-y-auto">
+                 <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white">
+                        <thead class="bg-gray-100 border-b">
+                            <tr>
+                                <th class="py-2 px-4 w-10">
+                                    <input type="checkbox" onclick="toggleAll(this.checked)">
+                                </th>
+                                <th class="text-left py-2 px-4">Name</th>
+                                <th class="text-left py-2 px-4">Admission No</th>
+                                <th class="text-right py-2 px-4">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="student-table-body">
+                            </tbody>
+                    </table>
+                </div>
+                </div>
+
+                <div class="mt-6 flex justify-end">
+                    <button type="submit" class="bg-green-600 text-white px-6 py-3 rounded font-bold hover:bg-green-700 shadow">
+                        Process Promotion
+                    </button>
+                </div>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<script>
+    document.getElementById('btn-fetch').addEventListener('click', function() {
+        const sessionId = document.getElementById('source_session').value;
+        const classId = document.getElementById('source_class').value;
+        const container = document.getElementById('student-list-container');
+        const tbody = document.getElementById('student-table-body');
+
+        // Debug: Show what we are trying to fetch
+        console.log(`Fetching: /enrollment/api/students/${sessionId}/${classId}`);
+
+        if (!sessionId || !classId) {
+            alert("Please select Source Session and Class first.");
+            return;
+        }
+
+        // --- THE FIX IS HERE ---
+        // We use the correct '/enrollment/' path inside the fetch function
+        fetch(`/enrollment/api/students/${sessionId}/${classId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("Data received:", data); // Debug: Show data in console
+
+                tbody.innerHTML = ''; // Clear old list
+                
+                if(data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">No students found in this class.</td></tr>';
+                }
+
+                data.forEach(student => {
+                    const row = `
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="py-2 px-4 text-center">
+                                <input type="checkbox" name="students[]" value="${student.id}" checked class="student-checkbox w-4 h-4 text-blue-600">
+                            </td>
+                            <td class="py-2 px-4 font-bold text-gray-700">${student.name}</td>
+                            <td class="py-2 px-4 font-mono text-sm">${student.adm}</td>
+                            <td class="py-2 px-4 text-right">
+                                <span class="text-xs font-bold text-green-600">Promote</span>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.insertAdjacentHTML('beforeend', row);
+                });
+
+                // Reveal the list
+                container.classList.remove('hidden');
+            })
+            .catch(error => {
+                console.error('There was a problem with the fetch operation:', error);
+                alert("Error loading students. Check console for details.");
+            });
+    });
+
+    function toggleAll(checked) {
+        document.querySelectorAll('.student-checkbox').forEach(cb => cb.checked = checked);
+    }
+</script>
+{% endblock %}

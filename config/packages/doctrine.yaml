@@ -1,0 +1,42 @@
+doctrine:
+    dbal:
+        default_connection: default
+        connections:
+            # 1. Tenant Connection (Dynamic)
+            default:
+                url: '%env(resolve:DATABASE_URL)%'
+                profiling_collect_backtrace: '%kernel.debug%'
+            
+            # 2. Landlord Connection (Static)
+            landlord:
+                url: '%env(resolve:LANDLORD_DATABASE_URL)%'
+                profiling_collect_backtrace: '%kernel.debug%'
+
+    orm:
+        # FIX: Use the new setting suggested by the error
+        enable_native_lazy_objects: true
+        
+        default_entity_manager: default
+        
+        entity_managers:
+            # Brain 1: Handles Tenant Data (Students, Fees)
+            default:
+                connection: default
+                naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware
+                mappings:
+                    Tenant:
+                        is_bundle: false
+                        dir: '%kernel.project_dir%/src/Entity/Tenant'
+                        prefix: 'App\Entity\Tenant'
+                        alias: Tenant
+
+            # Brain 2: Handles Landlord Data (Schools, Settings)
+            landlord:
+                connection: landlord
+                naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware
+                mappings:
+                    Landlord:
+                        is_bundle: false
+                        dir: '%kernel.project_dir%/src/Entity/Landlord'
+                        prefix: 'App\Entity\Landlord'
+                        alias: Landlord

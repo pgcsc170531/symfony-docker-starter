@@ -1,0 +1,145 @@
+{% extends 'base.html.twig' %}
+{% block title %}Scholarship Board{% endblock %}
+
+{% block body %}
+{# REMOVED 'max-w-5xl' to let the page expand fully #}
+<div class="container mx-auto mt-10 p-5">
+    
+    <div class="flex justify-between items-center mb-8 border-b pb-4">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">Scholarship Board</h1>
+            <p class="text-gray-500">Search for students and assign discount rules.</p>
+        </div>
+        <a href="{{ path('app_tenant_discount_types') }}" class="bg-indigo-100 text-indigo-700 px-4 py-2 rounded font-bold hover:bg-indigo-200 border border-indigo-200">
+            Manage Rules &rarr;
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <div class="lg:col-span-1 space-y-6">
+            
+            <div class="bg-white p-6 rounded shadow-md border-t-4 border-blue-600">
+                <h2 class="text-lg font-bold text-gray-800 mb-4">1. Find Student</h2>
+                <form method="get" action="{{ path('app_tenant_discount_assign') }}" class="flex gap-2">
+                    <input type="text" name="q" value="{{ searchQuery }}" placeholder="Enter Name or Adm No." 
+                           class="w-full border-2 border-gray-300 rounded-md p-3 focus:outline-none focus:border-blue-500 text-gray-700">
+                    <button type="submit" class="bg-blue-600 text-white px-5 py-3 rounded-md font-bold hover:bg-blue-700 shadow">
+                        Search
+                    </button>
+                </form>
+
+                {# SHOW SEARCH RESULTS #}
+                {% if searchResults is not empty %}
+                    <div class="mt-4 border-t pt-4">
+                        <p class="text-xs text-gray-400 font-bold uppercase mb-2">Select a student:</p>
+                        <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                            {% for student in searchResults %}
+                                <a href="{{ path('app_tenant_discount_assign', {'student_id': student.id, 'q': searchQuery}) }}" 
+                                   class="block p-3 rounded border border-gray-200 hover:bg-blue-50 hover:border-blue-300 transition duration-150 group">
+                                    <div class="flex justify-between items-center">
+                                        <div>
+                                            <span class="font-bold text-gray-800 group-hover:text-blue-700">{{ student.fullName }}</span>
+                                            <span class="text-gray-500 text-xs block">{{ student.admissionNumber }}</span>
+                                        </div>
+                                        <span class="text-blue-500 text-sm font-bold opacity-0 group-hover:opacity-100">&rarr;</span>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% elseif searchQuery %}
+                    <div class="mt-4 p-3 bg-red-50 text-red-600 rounded text-sm text-center border border-red-100">
+                        No students found matching "<strong>{{ searchQuery }}</strong>"
+                    </div>
+                {% endif %}
+            </div>
+
+            {% if selectedStudent %}
+            <div class="bg-white p-6 rounded shadow-md border-t-4 border-green-600 relative animate-fade-in-down">
+                <div class="flex justify-between items-start mb-4">
+                    <h2 class="text-lg font-bold text-green-700">2. Assign Rule</h2>
+                    <a href="{{ path('app_tenant_discount_assign') }}" class="text-gray-400 hover:text-red-500 font-bold text-xl leading-none">&times;</a>
+                </div>
+                
+                <div class="mb-5 p-4 bg-green-50 rounded-lg border border-green-100">
+                    <p class="text-xs text-green-600 uppercase font-bold mb-1">Beneficiary:</p>
+                    <p class="font-bold text-xl text-gray-800">{{ selectedStudent.fullName }}</p>
+                    <p class="text-sm text-gray-500">{{ selectedStudent.admissionNumber }}</p>
+                </div>
+
+                {{ form_start(form) }}
+                    <div class="hidden">
+                        {{ form_widget(form.student) }}
+                    </div>
+
+                    <div class="mb-5">
+                        {{ form_label(form.discountType, 'Select Discount Rule', {'label_attr': {'class': 'block text-sm font-bold text-gray-700 mb-2'}}) }}
+                        {{ form_widget(form.discountType, {'attr': {'class': 'w-full border-2 border-gray-300 rounded-md p-3 bg-white focus:border-green-500 focus:outline-none'}}) }}
+                    </div>
+
+                    <button class="bg-green-600 text-white w-full py-3 rounded-md font-bold hover:bg-green-700 shadow-lg transform active:scale-95 transition">
+                        Confirm Assignment
+                    </button>
+                {{ form_end(form) }}
+            </div>
+            {% endif %}
+
+        </div>
+
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded shadow-md p-6 h-full">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-800">Active Scholarships</h2>
+                    <span class="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full font-bold border">{{ activeDiscounts|length }} Students</span>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead class="bg-gray-50 border-b-2 border-gray-100">
+                            <tr>
+                                <th class="text-left py-3 px-4 text-gray-500 font-bold uppercase text-xs tracking-wider">Student</th>
+                                <th class="text-left py-3 px-4 text-gray-500 font-bold uppercase text-xs tracking-wider">Class</th>
+                                <th class="text-left py-3 px-4 text-gray-500 font-bold uppercase text-xs tracking-wider">Discount Rule</th>
+                                <th class="text-right py-3 px-4 text-gray-500 font-bold uppercase text-xs tracking-wider">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            {% for item in activeDiscounts %}
+                            <tr class="hover:bg-gray-50 transition duration-150">
+                                <td class="py-4 px-4">
+                                    <span class="font-bold block text-gray-800 text-base">{{ item.student.fullName }}</span>
+                                    <span class="text-xs text-gray-500">{{ item.student.admissionNumber }}</span>
+                                </td>
+                                <td class="py-4 px-4 text-sm text-gray-600">
+                                    {{ item.student.currentClass ? item.student.currentClass.name : 'N/A' }}
+                                </td>
+                                <td class="py-4 px-4">
+                                    <span class="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded font-bold border border-green-200">
+                                        {{ item.discountType.name }}
+                                        {% if item.discountType.mode == 'PERCENTAGE' %}
+                                            ({{ item.discountType.value }}%)
+                                        {% else %}
+                                            (₦{{ item.discountType.value|number_format }})
+                                        {% endif %}
+                                    </span>
+                                </td>
+                                <td class="py-4 px-4 text-right">
+                                    <form method="post" action="{{ path('app_tenant_discount_remove', {'id': item.id}) }}" onsubmit="return confirm('Are you sure you want to revoke this scholarship for {{ item.student.fullName }}?');">
+                                        <button class="text-red-500 hover:text-red-700 text-xs font-bold border border-red-200 bg-red-50 px-3 py-1 rounded hover:bg-red-100 transition">
+                                            REVOKE
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="4" class="p-10 text-center text-gray-400 italic">No scholarships assigned yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,274 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Invoice #{{ invoice.invoiceNumber }}{% endblock %}
+
+{% block body %}
+
+{# 
+    LOGIC: 
+    1. Try to get data saved on the Invoice (Snapshot)
+    2. If missing, fall back to the Live School settings passed from Controller
+#}
+{% set name = invoice.schoolName|default(liveSchool ? liveSchool.name : 'School Name') %}
+{% set address = invoice.schoolAddress|default(liveSchool ? liveSchool.address : '') %}
+{% set email = invoice.schoolEmail|default(liveSchool ? liveSchool.email : '') %}
+{% set logo = invoice.schoolLogo|default(liveSchool ? liveSchool.logoFilename : null) %}
+
+<div class="container mx-auto mt-10 p-5 max-w-4xl">
+    
+    {# === INVOICE CONTAINER === #}
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden border border-gray-200">
+        
+        {# HEADER #}
+        <div class="bg-gray-800 text-white p-8 flex flex-col md:flex-row justify-between items-start md:items-center">
+            
+            {# LEFT: School Info #}
+            <div class="flex items-center gap-5 mb-4 md:mb-0">
+                
+                {# LOGO #}
+                {% if logo %}
+                    <img src="{{ asset('uploads/logos/' ~ logo) }}" 
+                         alt="{{ name }}" 
+                         class="h-20 w-auto max-w-[120px] bg-white rounded p-1 object-contain">
+                {% else %}
+                    <div class="h-16 w-16 bg-gray-700 rounded flex items-center justify-center text-3xl">🏫</div>
+                {% endif %}
+                
+                {# NAME & ADDRESS #}
+                <div>
+                    <h1 class="text-xl font-bold uppercase tracking-wider">
+                        {{ name }}
+                    </h1>
+                    <p class="text-gray-400 text-sm">
+                        {{ address }}
+                    </p>
+                    {% if email %}
+                        <p class="text-gray-500 text-xs mt-0.5">{{ email }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# RIGHT: Invoice Meta #}
+            <div class="text-left md:text-right">
+                <p class="text-gray-400 text-xs uppercase tracking-widest">Invoice Number</p>
+                <h2 class="text-3xl font-mono font-bold text-white mb-2">#{{ invoice.invoiceNumber }}</h2>
+                
+                {% if invoice.status == 'PAID' %}
+                    <span class="bg-green-500 text-white font-bold px-4 py-1 rounded-full text-xs tracking-wide">PAID IN FULL</span>
+                {% elseif invoice.status == 'PARTIAL' %}
+                    <span class="bg-yellow-500 text-white font-bold px-4 py-1 rounded-full text-xs tracking-wide">PARTIAL PAYMENT</span>
+                {% else %}
+                    <span class="bg-red-500 text-white font-bold px-4 py-1 rounded-full text-xs tracking-wide">UNPAID</span>
+                {% endif %}
+                
+                <p class="text-sm text-gray-400 mt-2">Date: {{ invoice.createdAt|date('d M Y') }}</p>
+            </div>
+        </div>
+
+        {# STUDENT & CLASS INFO #}
+        <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-8 border-b">
+            <div>
+                <p class="text-gray-400 text-xs uppercase font-bold mb-1">Billed To Student</p>
+                <p class="text-2xl font-bold text-gray-800">{{ invoice.student.fullName }}</p>
+                
+                <div class="flex gap-4 mt-2">
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase">Admission No</p>
+                        <p class="font-mono font-bold">{{ invoice.student.admissionNumber }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase">Class</p>
+                        <p class="font-bold">
+                            {{ invoice.classroom ? invoice.classroom.name : (invoice.student.currentClass ? invoice.student.currentClass.name : 'N/A') }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="md:text-right">
+                <p class="text-gray-400 text-xs uppercase font-bold mb-1">Academic Session</p>
+                <p class="text-xl font-bold text-gray-800">{{ invoice.term.name }}</p>
+                <p class="text-gray-600">{{ invoice.session.name }}</p>
+            </div>
+        </div>
+
+        {# === ITEMS TABLE === #}
+        <div class="p-8">
+            <h3 class="font-bold text-gray-800 uppercase tracking-wide text-sm border-b-2 border-blue-600 inline-block mb-6">
+                Fee Breakdown
+            </h3>
+            
+            <table class="w-full text-left mb-8">
+                <thead>
+                    <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+                        <th class="py-3 px-4 rounded-l">Description</th>
+                        <th class="py-3 px-4 text-right rounded-r">Amount</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm">
+                    {% for item in invoice.items %}
+                    <tr class="border-b border-gray-100 last:border-0">
+                        <td class="py-4 px-4 font-medium text-gray-700">
+                            {{ item.description }}
+                            {% if item.product %}
+                                <span class="text-xs text-gray-400 block mt-0.5">Qty: {{ item.quantity }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-4 px-4 text-right font-mono text-gray-800">₦{{ item.amount|number_format(2) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            {# TOTALS SECTION #}
+            <div class="border-t-2 border-gray-200 pt-6 flex justify-end">
+                <div class="w-full md:w-1/2 lg:w-1/3 space-y-3">
+                    
+                    {# Subtotal #}
+                    <div class="flex justify-between text-gray-500 text-sm">
+                        <span>Subtotal</span>
+                        <span>₦{{ (invoice.totalAmount + invoice.discountApplied)|number_format(2) }}</span>
+                    </div>
+
+                    {# Discount #}
+                    {% if invoice.discountApplied > 0 %}
+                    <div class="flex justify-between text-green-600 text-sm font-bold">
+                        <span>Discount Applied</span>
+                        <span>- ₦{{ invoice.discountApplied|number_format(2) }}</span>
+                    </div>
+                    {% endif %}
+
+                    {# Grand Total #}
+                    <div class="flex justify-between text-gray-800 text-lg font-bold pt-2 border-t">
+                        <span>Total Due</span>
+                        <span>₦{{ invoice.totalAmount|number_format(2) }}</span>
+                    </div>
+
+                    {# Paid Amount #}
+                    <div class="flex justify-between text-green-700 text-sm font-medium">
+                        <span>Amount Paid</span>
+                        <span>- ₦{{ invoice.paidAmount|number_format(2) }}</span>
+                    </div>
+
+                    {# Balance Due #}
+                    <div class="flex justify-between bg-red-50 p-3 rounded text-red-700 text-xl font-black mt-2">
+                        <span>Balance To Pay</span>
+                        <span>₦{{ (invoice.totalAmount - invoice.paidAmount)|number_format(2) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# === TRANSACTION HISTORY (THE FIX IS HERE) === #}
+        {% if invoice.payments|length > 0 %}
+        <div class="bg-gray-50 p-8 border-t border-gray-200">
+            <h4 class="font-bold text-gray-700 uppercase text-xs tracking-wider mb-4">Transaction History</h4>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead>
+                        <tr class="text-gray-400 border-b">
+                            <th class="pb-2">Date</th>
+                            <th class="pb-2">Reference</th>
+                            <th class="pb-2">Method</th>
+                            <th class="pb-2">Status</th>
+                            <th class="pb-2 text-right">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in invoice.payments %}
+                        <tr class="border-b border-gray-200 last:border-0">
+                            <td class="py-3 text-gray-600">{{ payment.createdAt|date('d M Y, h:i A') }}</td>
+                            <td class="py-3 font-mono text-xs">
+                                {{ payment.referenceCode|default('-') }}
+                                {% if payment.reference %}
+                                    <span class="block text-[10px] text-gray-400">Bank: {{ payment.reference }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3">{{ payment.method }}</td>
+                            
+                            {# 🔴 VISUAL FIX: Correctly show Cancelled Slips #}
+                            <td class="py-3">
+                                {% if payment.status == 'CONFIRMED' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Verified</span>
+                                
+                                {% elseif payment.status == 'CANCELLED' or (payment.status == 'PENDING' and invoice.status == 'PAID') %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500 line-through">Void / Cancelled</span>
+                                
+                                {% else %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">Pending</span>
+                                {% endif %}
+                            </td>
+                            
+                            <td class="py-3 text-right font-bold text-gray-700">₦{{ payment.amount|number_format(2) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        {# === ACTIONS FOOTER === #}
+        <div class="bg-gray-100 p-6 flex flex-col md:flex-row justify-between items-center gap-4 no-print">
+            
+            {% if is_granted('ROLE_BURSAR') or is_granted('ROLE_ADMIN') %}
+                <a href="{{ path('app_tenant_student_finance', {'id': invoice.student.id}) }}" class="text-gray-500 hover:text-gray-800 font-bold text-sm">
+                    &larr; Back to Finance Dashboard
+                </a>
+            {% else %}
+                <a href="{{ path('app_parent_dashboard') }}" class="text-gray-500 hover:text-gray-800 font-bold text-sm">
+                    &larr; Back to Dashboard
+                </a>
+            {% endif %}
+            
+            <div class="flex flex-wrap gap-3 items-center justify-end">
+                
+                <button onclick="window.print()" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded shadow-sm hover:bg-gray-50 font-medium">
+                    🖨️ Print
+                </button>
+
+                {% if invoice.type == 'STORE' and (is_granted('ROLE_BURSAR') or is_granted('ROLE_ADMIN')) %}
+                    <a href="{{ path('app_tenant_store_cart_sale', {'studentId': invoice.student.id}) }}" 
+                       class="bg-purple-100 text-purple-700 px-4 py-2 rounded font-medium hover:bg-purple-200">
+                        + Add Items
+                    </a>
+                {% endif %}
+                
+                {# BUTTONS SAFETY: These only show if NOT PAID #}
+                {% if invoice.status != 'PAID' %}
+                    
+                    {% if is_granted('ROLE_BURSAR') %}
+                    <a href="{{ path('app_tenant_payment_terminal', {'id': invoice.student.id}) }}" 
+                       class="bg-gray-700 text-white px-5 py-2.5 rounded font-bold hover:bg-gray-800 shadow-sm flex items-center gap-2">
+                        <span>💵</span> Record Cash
+                    </a>
+                    {% endif %}
+
+                    <form action="{{ path('app_tenant_payment_initiate', {invoice_id: invoice.id}) }}" method="post" class="inline-block">
+                        <input type="hidden" name="amount" value="{{ invoice.balanceDue }}">
+                        <button type="submit" class="bg-blue-600 text-white px-5 py-2.5 rounded font-bold hover:bg-blue-700 shadow-md flex items-center gap-2">
+                            <span>📄</span> Generate Payment Slip
+                        </button>
+                    </form>
+
+                {% else %}
+                    <div class="bg-green-100 text-green-700 px-4 py-2 rounded font-bold border border-green-200 flex items-center gap-2">
+                        <span>✅</span> Payment Complete
+                    </div>
+                {% endif %}
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    @media print {
+        .no-print { display: none !important; }
+        body { background-color: white; }
+        .shadow-lg { box-shadow: none !important; }
+        .container { max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
+    }
+</style>
+{% endblock %}

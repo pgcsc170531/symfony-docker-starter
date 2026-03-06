@@ -1,0 +1,245 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block body %}
+
+{# === 1. HEADER SECTION === #}
+<div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 mt-14 md:mt-0">
+    
+    {# Title Section #}
+    <div>
+        <h1 class="text-3xl font-black text-gray-900 tracking-tight">Dashboard</h1>
+        <p class="text-sm text-gray-500 font-medium">
+            {% if currentSession %}
+                <span class="text-indigo-600 font-bold">{{ currentSession.name }}</span> 
+                <span class="text-gray-300 mx-2">|</span> 
+                {{ currentTerm.name|default('No Term') }}
+            {% else %}
+                <span class="text-red-500 bg-red-50 px-2 py-0.5 rounded text-xs font-bold">System Halted</span>
+            {% endif %}
+        </p>
+    </div>
+    
+    {# Date Pill (Full width on mobile for touch target, Auto on desktop) #}
+    <div class="flex items-center gap-3 bg-white px-5 py-2.5 rounded-full border border-gray-200 shadow-sm w-full md:w-auto justify-between md:justify-start">
+        <div class="text-left md:text-right">
+            <div class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Today</div>
+            <div class="text-sm font-bold text-gray-800 leading-none">{{ "now"|date("l, M j") }}</div>
+        </div>
+        <div class="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600">
+            📅
+        </div>
+    </div>
+
+</div>
+
+{# === 2. METRICS CARDS (The "Gourmet Salad" - Gradients) === #}
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 to-purple-700 p-6 shadow-lg shadow-purple-200 group">
+        <div class="relative z-10 flex justify-between items-start">
+            <div>
+                <p class="text-xs font-bold text-violet-100 uppercase tracking-wider mb-1 opacity-80">Wallet Balance</p>
+                {# Using landlordSchool variable passed from controller #}
+                <h3 class="text-3xl font-black text-white tracking-tight">₦{{ landlordSchool.walletBalance|default(0)|number_format(0) }}</h3>
+            </div>
+            <div class="h-12 w-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-2xl group-hover:scale-110 transition-transform">
+                💳
+            </div>
+        </div>
+        {# Quick Link to Top Up #}
+        <div class="relative z-10 mt-4">
+            <a href="{{ path('tenant_wallet_index') }}" class="text-xs font-bold text-white/90 hover:text-white underline flex items-center gap-1">
+                Top Up / History &rarr;
+            </a>
+        </div>
+        <div class="absolute -bottom-6 -right-6 h-24 w-24 rounded-full bg-white/10"></div>
+    </div>
+
+    {# CARD 1: STUDENTS (Blue Gradient) #}
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-6 shadow-lg shadow-blue-200 group">
+        <div class="relative z-10 flex justify-between items-start">
+            <div>
+                <p class="text-xs font-bold text-blue-100 uppercase tracking-wider mb-1 opacity-80">Total Students</p>
+                <h3 class="text-4xl font-black text-white tracking-tight">{{ studentCount }}</h3>
+            </div>
+            <div class="h-12 w-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-2xl group-hover:scale-110 transition-transform">
+                🎓
+            </div>
+        </div>
+        {# Decorative Circle #}
+        <div class="absolute -bottom-6 -right-6 h-24 w-24 rounded-full bg-white/10"></div>
+        <a href="{{ path('app_tenant_student_index') }}" class="absolute inset-0 z-20" aria-label="View Students"></a>
+    </div>
+
+    {# CARD 2: CASH TODAY (Emerald Gradient) #}
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 p-6 shadow-lg shadow-emerald-200 group">
+        <div class="relative z-10 flex justify-between items-start">
+            <div>
+                <p class="text-xs font-bold text-emerald-100 uppercase tracking-wider mb-1 opacity-80">Cash In Today</p>
+                <h3 class="text-3xl font-black text-white tracking-tight">₦{{ cashInToday|number_format(0) }}</h3>
+            </div>
+            <div class="h-12 w-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-2xl group-hover:scale-110 transition-transform">
+                💸
+            </div>
+        </div>
+        <div class="absolute -bottom-6 -right-6 h-24 w-24 rounded-full bg-white/10"></div>
+    </div>
+
+    {# CARD 3: DEBT (Rose Gradient) #}
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-rose-500 to-red-600 p-6 shadow-lg shadow-rose-200 group">
+        <div class="relative z-10 flex justify-between items-start">
+            <div>
+                <p class="text-xs font-bold text-rose-100 uppercase tracking-wider mb-1 opacity-80">Pending Fees</p>
+                <h3 class="text-3xl font-black text-white tracking-tight">₦{{ totalDebt|number_format(0) }}</h3>
+            </div>
+            <div class="h-12 w-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-2xl group-hover:scale-110 transition-transform">
+                📉
+            </div>
+        </div>
+        <div class="absolute -bottom-6 -right-6 h-24 w-24 rounded-full bg-white/10"></div>
+        <a href="{{ path('app_tenant_report_profit_loss') }}" class="absolute inset-0 z-20" aria-label="View Reports"></a>
+    </div>
+
+    {# CARD 4: DEBTORS (Amber Gradient) #}
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 p-6 shadow-lg shadow-orange-200 group">
+        <div class="relative z-10 flex justify-between items-start">
+            <div>
+                <p class="text-xs font-bold text-amber-100 uppercase tracking-wider mb-1 opacity-80">Active Debtors</p>
+                <h3 class="text-4xl font-black text-white tracking-tight">{{ debtors|length }}</h3>
+            </div>
+            <div class="h-12 w-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-2xl group-hover:scale-110 transition-transform">
+                ⚠️
+            </div>
+        </div>
+        <div class="absolute -bottom-6 -right-6 h-24 w-24 rounded-full bg-white/10"></div>
+    </div>
+
+</div>
+
+{# === 3. DATA TABLES === #}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    
+    {# LOW STOCK TABLE #}
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm flex flex-col h-full overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+            <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                <span class="h-2 w-2 rounded-full bg-orange-500"></span> Low Stock Alert
+            </h3>
+            <a href="{{ path('app_tenant_product_index') }}" class="text-xs font-bold text-gray-500 hover:text-gray-800 transition-colors">Manage &rarr;</a>
+        </div>
+        <div class="flex-1 overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-white text-gray-400 border-b border-gray-100">
+                    <tr>
+                        <th class="px-6 py-3 font-semibold uppercase text-xs tracking-wider">Item</th>
+                        <th class="px-6 py-3 font-semibold uppercase text-xs tracking-wider text-center">Qty</th>
+                        <th class="px-6 py-3 font-semibold uppercase text-xs tracking-wider text-right">Price</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    {% for product in lowStock %}
+                    <tr class="hover:bg-orange-50/30 transition-colors">
+                        <td class="px-6 py-4 font-medium text-gray-700">{{ product.name }}</td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="inline-flex items-center justify-center px-2.5 py-0.5 text-xs font-bold text-red-600 bg-red-100 rounded-md">
+                                {{ product.stockQuantity }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-right text-gray-500">₦{{ product.unitPrice|number_format(2) }}</td>
+                    </tr>
+                    {% else %}
+                        <tr><td colspan="3" class="px-6 py-8 text-center text-gray-400 italic">Inventory is healthy.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {# DEBTORS TABLE #}
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm flex flex-col h-full overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+            <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                <span class="h-2 w-2 rounded-full bg-red-500"></span> Highest Debts
+            </h3>
+            <a href="{{ path('app_tenant_invoice_index') }}" class="text-xs font-bold text-gray-500 hover:text-gray-800 transition-colors">View All &rarr;</a>
+        </div>
+        <div class="flex-1 overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-white text-gray-400 border-b border-gray-100">
+                    <tr>
+                        <th class="px-6 py-3 font-semibold uppercase text-xs tracking-wider">Student</th>
+                        <th class="px-6 py-3 font-semibold uppercase text-xs tracking-wider">Invoice</th>
+                        <th class="px-6 py-3 font-semibold uppercase text-xs tracking-wider text-right">Owing</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    {% for invoice in debtors %}
+                    <tr class="hover:bg-red-50/30 transition-colors cursor-pointer" onclick="window.location='{{ path('app_tenant_invoice_show', {id: invoice.id}) }}'">
+                        <td class="px-6 py-4">
+                            <div class="font-bold text-gray-800">{{ invoice.student.fullName }}</div>
+                            <div class="text-xs text-gray-400">{{ invoice.student.admissionNumber }}</div>
+                        </td>
+                        <td class="px-6 py-4 text-gray-500 text-xs">
+                            <span class="bg-gray-100 px-2 py-1 rounded">{{ invoice.invoiceNumber }}</span>
+                        </td>
+                        <td class="px-6 py-4 text-right font-black text-rose-600">
+                            ₦{{ (invoice.totalAmount - invoice.paidAmount)|number_format(2) }}
+                        </td>
+                    </tr>
+                    {% else %}
+                        <tr><td colspan="3" class="px-6 py-8 text-center text-gray-400 italic">No debts found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# ================================================================= #}
+{#  THE "STEVE JOBS" WELCOME MODAL                                  #}
+{# Simple. Clean. Focused. No "Step 1, Step 2" clutter.              #}
+{# ================================================================= #}
+{% if show_onboarding_modal|default(false) %}
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/90 backdrop-blur-md transition-opacity duration-500" 
+         role="dialog" aria-modal="true">
+        
+        <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all scale-100 animate-fade-in-up">
+            
+            {# 1. VISUAL HERO: Clean Iconography #}
+            <div class="pt-12 pb-6 flex justify-center">
+                <div class="h-24 w-24 bg-indigo-50 rounded-full flex items-center justify-center shadow-inner">
+                    <span class="text-5xl">🏫</span>
+                </div>
+            </div>
+
+            {# 2. THE "HELLO" MOMENT: Simple Text #}
+            <div class="px-8 pb-8 text-center">
+                <h2 class="text-3xl font-black text-gray-900 mb-3 tracking-tight">
+                    Welcome to Edus.
+                </h2>
+                <p class="text-gray-500 text-lg leading-relaxed mb-8">
+                    Your school is empty right now. <br>
+                    Let's bring it to life in just a few clicks.
+                </p>
+
+                {# 3. THE ONE BUTTON: Clear Action #}
+                <a href="{{ path('app_tenant_onboarding_identity') }}" 
+                   class="group block w-full bg-black text-white text-lg font-bold py-4 rounded-xl shadow-lg hover:bg-gray-800 transition-all transform hover:scale-[1.02] flex items-center justify-center gap-3">
+                    <span>Get Started</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                </a>
+                
+                <p class="mt-4 text-xs text-gray-400 font-medium uppercase tracking-widest">
+                    Takes about 2 minutes
+                </p>
+            </div>
+
+        </div>
+    </div>
+{% endif %}
+
+{% endblock %}

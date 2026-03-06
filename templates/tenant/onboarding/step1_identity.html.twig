@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Classes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+<div class="max-w-3xl mx-auto mt-10">
+    
+    {# PROGRESS BAR #}
+    <div class="mb-8">
+        <div class="flex justify-between text-sm font-medium text-gray-500 mb-2">
+            <span class="text-blue-600 font-bold">1. Identity</span>
+            <span>2. Classes</span>
+            <span>3. Calendar</span>
+            <span>4. Finish</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2.5">
+            <div class="bg-blue-600 h-2.5 rounded-full" style="width: 25%"></div>
+        </div>
+    </div>
+
+    <div class="bg-white shadow-xl rounded-xl overflow-hidden">
+        <div class="bg-blue-600 p-6 text-white">
+            <h1 class="text-2xl font-bold">👋 Welcome! Let's get started.</h1>
+            <p class="text-blue-100 mt-2">Tell us a bit about your institution.</p>
+        </div>
+
+        <div class="p-8">
+            {{ form_start(form) }}
+                
+                {# IDENTITY SECTION #}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="col-span-2">
+                        {{ form_row(form.name, {'attr': {'class': 'text-lg font-bold'}}) }}
+                    </div>
+                    
+                    <div class="col-span-2 bg-blue-50 p-4 rounded-lg border border-blue-100">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Type of Institution</label>
+                        <div class="flex gap-6">
+                            {% for child in form.institutionType %}
+                                <div class="flex items-center">
+                                    {{ form_widget(child, {'attr': {'class': 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300'}}) }}
+                                    <span class="ml-2 text-sm text-gray-700 font-medium">{{ child.vars.label }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">
+                            * Select <strong>Secondary</strong> for Term System (1st, 2nd, 3rd Term).<br>
+                            * Select <strong>College</strong> for Semester System (1st, 2nd Semester).
+                        </p>
+                    </div>
+
+                    <div>{{ form_row(form.motto) }}</div>
+                    <div>{{ form_row(form.primaryColor) }}</div>
+                    <div class="col-span-2">{{ form_row(form.logoFile) }}</div>
+                </div>
+
+                <hr class="my-6 border-gray-100">
+
+                {# CONTACT SECTION #}
+                <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Contact Details (For Receipts)</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>{{ form_row(form.email) }}</div>
+                    <div>{{ form_row(form.phoneNumber) }}</div>
+                    <div class="col-span-2">{{ form_row(form.address) }}</div>
+                </div>
+
+                <div class="mt-8 flex justify-end">
+                    <button type="submit" class="bg-blue-600 text-white px-8 py-3 rounded-lg shadow-lg font-bold hover:bg-blue-700 transition-transform transform hover:-translate-y-0.5">
+                        Next: Set Up Classes &rarr;
+                    </button>
+                </div>
+
+            {{ form_end(form) }}
+        </div>
+    </div>
+</div>
+</body>
+</html>

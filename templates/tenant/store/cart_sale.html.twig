@@ -1,0 +1,211 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}POS Cart Sale{% endblock %}
+
+{% block body %}
+<div class="container mx-auto mt-10 p-5 max-w-4xl">
+    <div class="bg-white p-8 rounded shadow border-t-4 border-teal-600">
+        <h1 class="text-2xl font-bold mb-2">Point of Sale (POS)</h1>
+        <p class="text-gray-600 mb-6 border-b pb-4">
+            Billing: <strong class="text-teal-700">{{ student.fullName }}</strong> ({{ student.admissionNumber }})
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="md:col-span-2">
+                <label for="product-select" class="block text-sm font-medium text-gray-700">Select Item</label>
+                <select id="product-select" class="w-full border p-2 rounded">
+                    <option value="">-- Choose Product --</option>
+                    {% for product in products %}
+                        <option value="{{ product.id }}" data-price="{{ product.unitPrice }}" data-stock="{{ product.stockQuantity }}">
+                            {{ product.name }} (₦{{ product.unitPrice|number_format(2) }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="quantity-input" class="block text-sm font-medium text-gray-700">Quantity</label>
+                <input type="number" id="quantity-input" value="1" min="1" class="w-full border p-2 rounded">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 invisible">Add</label>
+                <button id="add-to-cart-btn" class="bg-teal-600 text-white w-full py-2 rounded font-bold hover:bg-teal-700">
+                    Add to Cart
+                </button>
+            </div>
+        </div>
+
+        <h2 class="text-xl font-bold mb-4 mt-6">Current Sale Cart</h2>
+        <div class="overflow-x-auto border rounded mb-6">
+            <table class="min-w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="py-2 px-4 text-left">Item</th>
+                        <th class="py-2 px-4 text-center">Qty</th>
+                        <th class="py-2 px-4 text-right">Unit Price</th>
+                        <th class="py-2 px-4 text-right">Subtotal</th>
+                        <th class="py-2 px-4 text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="cart-items-body" class="divide-y divide-gray-200">
+                    <tr><td colspan="5" class="text-center py-4 text-gray-500 italic">Cart is empty.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="flex justify-between items-center bg-gray-100 p-4 rounded-lg shadow-inner">
+            <h3 class="text-xl font-bold">Grand Total:</h3>
+            <p id="grand-total" class="text-3xl font-black text-red-600">₦0.00</p>
+            <button id="checkout-btn" class="bg-red-600 text-white px-8 py-3 rounded font-bold hover:bg-red-700 disabled:opacity-50" disabled>
+                Process Sale
+            </button>
+        </div>
+        
+        <p id="cart-error" class="text-red-500 mt-4 hidden"></p>
+    </div>
+</div>
+
+<script>
+    const cart = [];
+    const productsData = {}; // Cache product data for quick lookup
+    const cartItemsBody = document.getElementById('cart-items-body');
+    const grandTotalElement = document.getElementById('grand-total');
+    const checkoutBtn = document.getElementById('checkout-btn');
+    const productSelect = document.getElementById('product-select');
+    const quantityInput = document.getElementById('quantity-input');
+    const studentId = '{{ student.id }}';
+    const postUrl = '{{ path('app_tenant_store_cart_sale', {'studentId': student.id}) }}';
+
+    // Initialize product cache from the twig data
+    productSelect.querySelectorAll('option').forEach(option => {
+        if (option.value) {
+            productsData[option.value] = {
+                id: option.value,
+                name: option.text.split('(')[0].trim(),
+                price: parseFloat(option.dataset.price),
+                stock: parseInt(option.dataset.stock)
+            };
+        }
+    });
+
+    // --- CART MANIPULATION ---
+
+    function updateCartDisplay() {
+        let total = 0;
+        cartItemsBody.innerHTML = '';
+
+        if (cart.length === 0) {
+            cartItemsBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500 italic">Cart is empty.</td></tr>';
+            checkoutBtn.disabled = true;
+            grandTotalElement.textContent = '₦0.00';
+            return;
+        }
+
+        cart.forEach((item, index) => {
+            const product = productsData[item.productId];
+            const subtotal = item.quantity * product.price;
+            total += subtotal;
+
+            const row = document.createElement('tr');
+            row.className = 'hover:bg-gray-50';
+            row.innerHTML = `
+                <td class="py-2 px-4 font-medium">${product.name}</td>
+                <td class="py-2 px-4 text-center">${item.quantity}</td>
+                <td class="py-2 px-4 text-right">₦${product.price.toFixed(2)}</td>
+                <td class="py-2 px-4 text-right font-bold">₦${subtotal.toFixed(2)}</td>
+                <td class="py-2 px-4 text-center">
+                    <button data-index="${index}" class="remove-btn text-red-500 hover:text-red-700 text-sm">Remove</button>
+                </td>
+            `;
+            cartItemsBody.appendChild(row);
+        });
+
+        // Update totals
+        grandTotalElement.textContent = '₦' + total.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        checkoutBtn.disabled = total === 0;
+
+        // Attach remove listeners
+        document.querySelectorAll('.remove-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const index = e.target.dataset.index;
+                cart.splice(index, 1);
+                updateCartDisplay();
+            });
+        });
+    }
+
+    // --- EVENT LISTENERS ---
+
+    document.getElementById('add-to-cart-btn').addEventListener('click', () => {
+        const productId = productSelect.value;
+        const quantity = parseInt(quantityInput.value);
+
+        if (!productId || quantity <= 0) {
+            document.getElementById('cart-error').textContent = 'Please select a product and quantity.';
+            document.getElementById('cart-error').classList.remove('hidden');
+            return;
+        }
+
+        const product = productsData[productId];
+
+        if (quantity > product.stock) {
+            document.getElementById('cart-error').textContent = `Stock Error: Only ${product.stock} of ${product.name} available.`;
+            document.getElementById('cart-error').classList.remove('hidden');
+            return;
+        }
+        
+        document.getElementById('cart-error').classList.add('hidden');
+
+        // Check if item already exists in cart, then update quantity
+        const existingItemIndex = cart.findIndex(item => item.productId === productId);
+
+        if (existingItemIndex > -1) {
+            cart[existingItemIndex].quantity += quantity;
+        } else {
+            cart.push({ productId, quantity });
+        }
+
+        // Reset inputs and update display
+        productSelect.value = '';
+        quantityInput.value = 1;
+        updateCartDisplay();
+    });
+
+    checkoutBtn.addEventListener('click', async () => {
+        if (cart.length === 0) return;
+        
+        checkoutBtn.disabled = true;
+        checkoutBtn.textContent = 'Processing...';
+
+        try {
+            const response = await fetch(postUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ items: cart })
+            });
+
+            const result = await response.json();
+            
+            if (response.ok && result.redirect) {
+                window.location.href = result.redirect; // Redirect to the new Invoice
+            } else {
+                // Handle server-side errors (like stock issues)
+                document.getElementById('cart-error').textContent = result.error || 'A server error occurred during checkout.';
+                document.getElementById('cart-error').classList.remove('hidden');
+            }
+
+        } catch (error) {
+            console.error('Checkout failed:', error);
+            document.getElementById('cart-error').textContent = 'Network error. Please try again.';
+            document.getElementById('cart-error').classList.remove('hidden');
+        } finally {
+            checkoutBtn.disabled = false;
+            checkoutBtn.textContent = 'Process Sale';
+        }
+    });
+
+    // Initial load check
+    updateCartDisplay();
+</script>
+{% endblock %}

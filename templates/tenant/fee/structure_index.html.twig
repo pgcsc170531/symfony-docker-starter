@@ -1,0 +1,66 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Fee Structure{% endblock %}
+
+{% block body %}
+<div class="container mx-auto mt-10 p-5 grid grid-cols-1 md:grid-cols-3 gap-8">
+    
+    <div class="md:col-span-1">
+        <div class="bg-white p-6 rounded shadow border-t-4 border-green-600">
+            <h2 class="text-xl font-bold mb-4">Assign Fees</h2>
+            {{ form_start(form) }}
+                <div class="mb-3">
+                    {{ form_label(form.classroom) }}
+                    {{ form_widget(form.classroom, {'attr': {'class': 'w-full border p-2 rounded'}}) }}
+                </div>
+                <div class="mb-3">
+                    {{ form_label(form.term) }}
+                    {{ form_widget(form.term, {'attr': {'class': 'w-full border p-2 rounded'}}) }}
+                </div>
+                <div class="mb-3">
+                    {{ form_label(form.feeItem) }}
+                    {{ form_widget(form.feeItem, {'attr': {'class': 'w-full border p-2 rounded'}}) }}
+                </div>
+                <div class="mb-4">
+                    {{ form_label(form.amount) }}
+                    {{ form_widget(form.amount, {'attr': {'class': 'w-full border p-2 rounded font-bold text-lg'}}) }}
+                </div>
+                <button class="bg-green-600 text-white w-full py-2 rounded font-bold hover:bg-green-700">Save Fee</button>
+            {{ form_end(form) }}
+        </div>
+    </div>
+
+    <div class="md:col-span-2">
+        <div class="bg-white rounded shadow p-6">
+            <h2 class="text-xl font-bold mb-4">Current Fee Structure</h2>
+             <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead class="bg-gray-100 border-b">
+                    <tr>
+                        <th class="text-left py-2 px-4 text-sm text-gray-600">Class</th>
+                        <th class="text-left py-2 px-4 text-sm text-gray-600">Term</th>
+                        <th class="text-left py-2 px-4 text-sm text-gray-600">Item</th>
+                        <th class="text-right py-2 px-4 text-sm text-gray-600">Amount (₦)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in structures %}
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="py-2 px-4 font-bold">{{ item.classroom.name }}</td>
+                        <td class="py-2 px-4 text-sm">{{ item.term.name }}</td>
+                        <td class="py-2 px-4">{{ item.feeItem.name }}</td>
+                        <td class="py-2 px-4 text-right font-mono font-bold">{{ item.amount|number_format(2) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-4 text-gray-500">No fees assigned yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

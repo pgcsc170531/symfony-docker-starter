@@ -1,0 +1,35 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Record Payment{% endblock %}
+
+{% block body %}
+<div class="container mx-auto mt-10 p-5 max-w-md">
+    <div class="bg-white p-6 rounded shadow border-t-4 border-green-600">
+        <h2 class="text-xl font-bold mb-2">Record Payment</h2>
+        <p class="text-gray-600 mb-6 text-sm">
+            For Invoice: <strong>#{{ invoice.invoiceNumber }}</strong><br>
+            Student: <strong>{{ invoice.student.fullName }}</strong>
+        </p>
+
+        {{ form_start(form) }}
+            <div class="mb-4">
+                {{ form_label(form.amount) }}
+                {{ form_widget(form.amount, {'attr': {'class': 'w-full border p-2 rounded font-bold text-xl'}}) }}
+            </div>
+            <div class="mb-4">
+                {{ form_label(form.method) }}
+                {{ form_widget(form.method, {'attr': {'class': 'w-full border p-2 rounded'}}) }}
+            </div>
+            <div class="mb-6">
+                {{ form_label(form.reference) }}
+                {{ form_widget(form.reference, {'attr': {'class': 'w-full border p-2 rounded'}}) }}
+            </div>
+            
+            <div class="flex justify-between items-center">
+                 <a href="{{ path('app_tenant_invoice_show', {'id': invoice.id}) }}" class="text-gray-500 text-sm">Cancel</a>
+                 <button class="bg-green-600 text-white px-6 py-2 rounded font-bold hover:bg-green-700">Confirm Payment</button>
+            </div>
+        {{ form_end(form) }}
+    </div>
+</div>
+{% endblock %}

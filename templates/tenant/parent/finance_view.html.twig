@@ -1,0 +1,121 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Financial History - {{ student.firstName }}{% endblock %}
+
+{% block body %}
+<div class="max-w-5xl mx-auto mt-8 px-4 pb-12">
+
+    {# HEADER #}
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <a href="{{ path('app_parent_dashboard') }}" class="text-sm font-bold text-gray-500 hover:text-gray-800 mb-2 inline-block">&larr; Back to Dashboard</a>
+            <h1 class="text-2xl font-bold text-gray-800">Financial History</h1>
+            <p class="text-gray-500">Records for <span class="font-bold text-gray-700">{{ student.fullName }}</span></p>
+        </div>
+        
+        <div class="text-right">
+            <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Admission No</div>
+            <div class="font-mono font-bold text-gray-700 bg-gray-100 px-3 py-1 rounded">{{ student.admissionNumber }}</div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        {# === LEFT: INVOICE LIST === #}
+        <div class="lg:col-span-2">
+            <h3 class="font-bold text-gray-700 border-b border-gray-200 pb-2 mb-4 flex items-center gap-2">
+                <span>📄</span> Invoices (Bills)
+            </h3>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                {% if invoices|length > 0 %}
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-50 text-gray-500 font-bold">
+                            <tr>
+                                <th class="p-4">Reference</th>
+                                <th class="p-4">Term</th>
+                                <th class="p-4">Status</th>
+                                <th class="p-4 text-right">Amount</th>
+                                <th class="p-4"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            {% for invoice in invoices %}
+                                <tr class="hover:bg-gray-50 transition-colors">
+                                    <td class="p-4">
+                                        <div class="font-mono font-bold text-gray-700">#{{ invoice.invoiceNumber }}</div>
+                                        <div class="text-xs text-gray-400">{{ invoice.createdAt|date('d M Y') }}</div>
+                                    </td>
+                                    <td class="p-4">
+                                        <div class="font-bold text-gray-800">{{ invoice.term.name }}</div>
+                                        <div class="text-xs text-gray-500">{{ invoice.session.name }}</div>
+                                    </td>
+                                    <td class="p-4">
+                                        {% if invoice.status == 'PAID' %}
+                                            <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">Paid</span>
+                                        {% elseif invoice.status == 'PARTIAL' %}
+                                            <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-bold">Partial</span>
+                                        {% else %}
+                                            <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold">Unpaid</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <div class="font-bold text-gray-800">₦{{ invoice.totalAmount|number_format }}</div>
+                                        {% if invoice.balanceDue > 0 %}
+                                            <div class="text-xs text-red-500 font-bold">Due: ₦{{ invoice.balanceDue|number_format }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <a href="{{ path('app_tenant_invoice_show', {id: invoice.id}) }}" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs border border-indigo-200 px-3 py-1.5 rounded hover:bg-indigo-50">
+                                            View
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <div class="p-8 text-center text-gray-400">No invoices found.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# === RIGHT: PAYMENT HISTORY === #}
+        <div>
+            <h3 class="font-bold text-gray-700 border-b border-gray-200 pb-2 mb-4 flex items-center gap-2">
+                <span>🧾</span> Payment Receipts
+            </h3>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                {% if payments|length > 0 %}
+                    <div class="divide-y divide-gray-100">
+                        {% for payment in payments %}
+                            <div class="p-4 hover:bg-gray-50 transition-colors flex justify-between items-center">
+                                <div>
+                                    <div class="font-bold text-gray-800">₦{{ payment.amount|number_format }}</div>
+                                    <div class="text-xs text-gray-500">{{ payment.createdAt|date('d M Y') }}</div>
+                                    <div class="text-[10px] text-gray-400 mt-0.5">{{ payment.method }}</div>
+                                </div>
+                                <div class="text-right">
+                                    {% if payment.status == 'CONFIRMED' %}
+                                        <span class="text-[10px] uppercase font-bold text-green-600 block mb-1">Confirmed</span>
+                                    {% else %}
+                                        <span class="text-[10px] uppercase font-bold text-yellow-600 block mb-1">Pending</span>
+                                    {% endif %}
+                                    
+                                    <a href="{{ path('app_tenant_payment_receipt', {id: payment.id}) }}" target="_blank" class="text-indigo-600 hover:text-indigo-900 text-xs font-bold underline">
+                                        Receipt
+                                    </a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="p-8 text-center text-gray-400 text-sm">No payments recorded yet.</div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

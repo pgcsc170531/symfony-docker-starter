@@ -1,0 +1,92 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}New Admission - Step 1{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <h1 class="text-3xl font-bold text-gray-800 mb-8">📝 New Admission</h1>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {# === LEFT COLUMN: SEARCH EXISTING PARENT === #}
+        <div class="lg:col-span-1">
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 sticky top-6">
+                <h2 class="text-lg font-semibold text-gray-700 mb-4">🔍 Existing Parent?</h2>
+                <p class="text-sm text-gray-500 mb-4">Search by Phone or Email to skip registration.</p>
+                
+                <form method="get" action="{{ path('app_tenant_admission_index') }}">
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" name="q" value="{{ searchQuery }}" placeholder="080..." 
+                               class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border">
+                        <button type="submit" class="bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-gray-700">Go</button>
+                    </div>
+                </form>
+
+                {% if foundGuardian %}
+                    <div class="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
+                        <p class="font-bold text-green-800">{{ foundGuardian.fullName }}</p>
+                        <p class="text-sm text-green-600">{{ foundGuardian.email }}</p>
+                        <a href="{{ path('app_tenant_admission_register', {id: foundGuardian.id}) }}" 
+                           class="block mt-3 text-center bg-green-600 text-white py-2 rounded-md text-sm hover:bg-green-700">
+                           Continue with this Parent &rarr;
+                        </a>
+                    </div>
+                {% elseif searchQuery %}
+                    <div class="mt-4 p-4 bg-yellow-50 text-yellow-700 text-sm rounded-md">
+                        Parent not found. Please register them on the right. &rarr;
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# === RIGHT COLUMN: NEW PARENT FORM === #}
+        <div class="lg:col-span-2">
+            <div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-indigo-600">
+                <h2 class="text-xl font-bold text-gray-800 mb-6 border-b pb-2">1. Parent / Guardian Profile</h2>
+
+                {{ form_start(form) }}
+                    
+                    {# --- GRID SECTION 1: IDENTITY --- #}
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
+                        <div class="md:col-span-3">
+                            {{ form_row(form.title) }}
+                        </div>
+                        <div class="md:col-span-9">
+                            {{ form_row(form.fullName) }}
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        {{ form_row(form.relationshipToStudent) }}
+                        {{ form_row(form.occupation) }}
+                    </div>
+
+                    {# --- GRID SECTION 2: CONTACT --- #}
+                    <h3 class="text-sm uppercase tracking-wide text-gray-500 font-bold mb-3 mt-6">Contact Information</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        {{ form_row(form.phoneNumber) }}
+                        {{ form_row(form.alternatePhoneNumber) }}
+                    </div>
+                    
+                    <div class="mb-4">
+                        {{ form_row(form.email) }}
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        {{ form_row(form.address) }}
+                        {{ form_row(form.officeAddress) }}
+                    </div>
+
+                    <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-md hover:bg-indigo-700 transition duration-150">
+                        Create Parent Profile & Next Step &rarr;
+                    </button>
+
+                {{ form_end(form) }}
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

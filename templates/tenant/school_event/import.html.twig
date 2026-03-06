@@ -1,0 +1,46 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Import Calendar{% endblock %}
+
+{% block body %}
+<div class="max-w-2xl mx-auto mt-10">
+    <div class="bg-white shadow-lg rounded-xl overflow-hidden">
+        
+        {# Header #}
+        <div class="bg-green-600 p-6 text-white">
+            <h1 class="text-2xl font-bold">📂 Bulk Import Calendar</h1>
+            <p class="text-green-100 mt-2">Upload an Excel file to schedule the whole term.</p>
+        </div>
+
+        <div class="p-8">
+            {# Instructions #}
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-8 text-sm text-yellow-800">
+                <p class="font-bold mb-2">💡 Excel Format Guide (Columns A-E):</p>
+                <ul class="list-disc ml-5 space-y-1">
+                    <li><strong>A: Title</strong> (e.g., "Mid-Term Break")</li>
+                    <li><strong>B: Date</strong> (YYYY-MM-DD or Excel Date)</li>
+                    <li><strong>C: Type</strong> (Academic, Holiday, Social, Exam)</li>
+                    <li><strong>D: Description</strong> (Optional details)</li>
+                    <li><strong>E: Flash Notice?</strong> (Type "Yes" for urgent alerts)</li>
+                </ul>
+            </div>
+
+            {{ form_start(form) }}
+                <div class="space-y-6">
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-gray-50 transition-colors">
+                        {{ form_widget(form.file) }}
+                        {{ form_errors(form.file) }}
+                    </div>
+
+                    <div class="flex justify-between items-center pt-4">
+                        <a href="{{ path('app_tenant_event_index') }}" class="text-gray-500 font-medium hover:text-gray-800">Cancel</a>
+                        <button type="submit" class="bg-green-600 text-white px-6 py-2.5 rounded-lg shadow font-bold hover:bg-green-700 transition-transform transform hover:-translate-y-0.5">
+                            🚀 Import Events
+                        </button>
+                    </div>
+                </div>
+            {{ form_end(form) }}
+        </div>
+    </div>
+</div>
+{% endblock %}

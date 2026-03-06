@@ -1,0 +1,282 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edus - The School Operating System{% endblock %}
+
+{% block body %}
+{# --- 0. NAVIGATION BAR --- #}
+<div class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center py-4">
+            <div class="flex justify-start lg:w-0 lg:flex-1">
+                <a href="{{ path('app_home') }}" class="text-3xl font-black tracking-tighter text-blue-600 no-underline hover:text-blue-700">
+                    Edus<span class="text-gray-900">.</span>
+                </a>
+            </div>
+            <div class="hidden md:flex space-x-8">
+                <a href="{{ path('app_features') }}" class="text-sm font-medium text-gray-700 hover:text-blue-600">Features</a>
+                <a href="{{ path('app_partners') }}" class="text-sm font-medium text-gray-700 hover:text-blue-600">Partners</a>
+                <a href="{{ path('app_login') }}" class="text-sm font-medium text-blue-600 hover:text-blue-500">Log in</a>
+            </div>
+            <div class="hidden md:flex items-center justify-end md:flex-1 lg:w-0">
+                <a href="{{ path('app_login') }}" class="ml-8 inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-all">
+                    Get Started
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# --- 1. HERO SECTION: The "Product Stack" --- #}
+<div class="relative bg-white overflow-hidden pt-12 pb-16 lg:pt-20 lg:pb-28">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+        <div class="lg:grid lg:grid-cols-12 lg:gap-8">
+            
+            {# Left: Copy #}
+            <div class="sm:text-center md:max-w-2xl md:mx-auto lg:col-span-6 lg:text-left">
+                <div class="inline-flex items-center px-3 py-1 rounded-full border border-blue-100 bg-blue-50 text-blue-700 text-xs font-bold uppercase tracking-wide mb-6">
+                    🚀 New: WhatsApp Receipts & ID Cards
+                </div>
+                <h1 class="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
+                    <span class="block">Don't just track fees.</span>
+                    <span class="block text-blue-600">Run your entire school.</span>
+                </h1>
+                <p class="mt-4 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
+                    Replace Excel sheets and manual receipts with <strong>Edus</strong>. We automate Invoicing, Inventory, Results, and ID Cards in one secure platform.
+                </p>
+                <div class="mt-8 sm:max-w-lg sm:mx-auto sm:text-center lg:text-left lg:mx-0">
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <a href="{{ path('app_login') }}" class="flex items-center justify-center px-8 py-3 border border-transparent text-base font-bold rounded-lg text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1">
+                            Start School Pilot
+                        </a>
+                        <a href="{{ path('app_partners') }}" class="flex items-center justify-center px-8 py-3 border border-gray-200 text-base font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 md:py-4 md:text-lg">
+                            I'm a Developer
+                        </a>
+                    </div>
+                    <p class="mt-3 text-sm text-gray-400">Trusted by 100+ Schools • Instant Setup</p>
+                </div>
+            </div>
+
+            {# Right: Visual Stack (Using your Real UI HTML) #}
+            <div class="mt-12 relative sm:max-w-lg sm:mx-auto lg:mt-0 lg:max-w-none lg:mx-0 lg:col-span-6 lg:flex lg:items-center">
+                <div class="relative mx-auto w-full rounded-lg shadow-lg lg:max-w-md transform lg:scale-110 origin-top-left">
+                    
+                    <div class="relative block w-full bg-white rounded-lg overflow-hidden border border-gray-200 shadow-2xl z-10">
+                        <div class="bg-gray-800 p-4 flex justify-between items-center text-white">
+                            <div class="flex items-center space-x-2">
+                                <div class="h-8 w-8 bg-gray-700 rounded flex items-center justify-center text-xs">🏫</div>
+                                <div>
+                                    <div class="text-xs font-bold uppercase">Springfield</div>
+                                    <div class="text-[0.6rem] text-gray-400">Lagos, NG</div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm font-mono font-bold">#INV-001</div>
+                                <span class="bg-yellow-500 text-black text-[0.6rem] px-1 rounded font-bold">PARTIAL</span>
+                            </div>
+                        </div>
+                        <div class="p-4 space-y-2">
+                            <div class="flex justify-between text-xs text-gray-600 border-b pb-2">
+                                <span>Tuition Fee</span><span>₦150,000</span>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-600 border-b pb-2">
+                                <span>Uniform</span><span>₦25,000</span>
+                            </div>
+                            <div class="mt-1 text-right text-red-600 font-bold text-xs">Balance: ₦85,000</div>
+                        </div>
+                    </div>
+
+                    <div class="absolute -bottom-12 -right-6 w-40 bg-white border border-gray-200 rounded shadow-2xl overflow-hidden transform -rotate-6 z-20 hover:rotate-0 transition duration-500">
+                        <div class="bg-blue-800 h-6 flex items-center justify-center">
+                            <span class="text-white text-[0.4rem] font-bold uppercase">Springfield Academy</span>
+                        </div>
+                        <div class="p-2 text-center">
+                             <div class="h-10 w-10 bg-gray-200 rounded mx-auto mb-1 border border-gray-300"></div>
+                             <div class="text-[0.5rem] font-bold">Emmanuel O.</div>
+                             <div class="text-[0.4rem] text-gray-500">SS 2 Science</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# --- 2. SOCIAL PROOF --- #}
+<div class="bg-blue-900 py-10 border-t border-blue-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-2 gap-8 md:grid-cols-4 text-center">
+            <div>
+                <p class="text-3xl font-extrabold text-white">100+</p>
+                <p class="text-xs font-medium text-blue-200 uppercase mt-1">Schools Active</p>
+            </div>
+            <div>
+                <p class="text-3xl font-extrabold text-white">50k+</p>
+                <p class="text-xs font-medium text-blue-200 uppercase mt-1">Invoices Generated</p>
+            </div>
+            <div>
+                <p class="text-3xl font-extrabold text-white">₦500M+</p>
+                <p class="text-xs font-medium text-blue-200 uppercase mt-1">Fees Processed</p>
+            </div>
+            <div>
+                <p class="text-3xl font-extrabold text-white">99.9%</p>
+                <p class="text-xs font-medium text-blue-200 uppercase mt-1">Uptime</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# --- 3. BENTO GRID FEATURES (The "Why Edus" Section) --- #}
+<div class="py-20 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+            <h2 class="text-base text-blue-600 font-semibold tracking-wide uppercase">All-in-One Platform</h2>
+            <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+                Everything you need to run a modern school.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            {# CARD 1: PARENT PORTAL (Wide) #}
+            <div class="md:col-span-2 bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-md transition relative overflow-hidden group">
+                <div class="relative z-10">
+                    <h3 class="text-2xl font-bold text-gray-900">Parent Portal</h3>
+                    <p class="text-gray-500 mt-2 max-w-md">Parents can view all their children, check debts, and pay fees from their phone. No more calling the bursar.</p>
+                </div>
+                <div class="mt-8 bg-gray-50 rounded-xl p-4 border border-gray-200 w-full md:w-3/4 shadow-inner">
+                    <div class="bg-white p-3 rounded-lg shadow-sm flex justify-between items-center mb-2">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs">EO</div>
+                            <div><p class="text-xs font-bold">Emeka I.</p><p class="text-[10px] text-gray-500">JSS 2</p></div>
+                        </div>
+                        <p class="text-red-600 font-bold text-xs">Owning: ₦45,000</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg shadow-sm flex justify-between items-center opacity-75">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 font-bold text-xs">AO</div>
+                            <div><p class="text-xs font-bold">Amaka I.</p><p class="text-[10px] text-gray-500">Primary 4</p></div>
+                        </div>
+                        <p class="text-green-600 font-bold text-xs">✓ Cleared</p>
+                    </div>
+                </div>
+            </div>
+
+            {# CARD 2: POS (Tall) #}
+            <div class="bg-gray-900 rounded-2xl p-8 shadow-lg text-white flex flex-col justify-between relative overflow-hidden group">
+                <div class="relative z-10">
+                    <div class="h-10 w-10 bg-gray-800 rounded flex items-center justify-center mb-4 text-xl">🛒</div>
+                    <h3 class="text-xl font-bold">School Store</h3>
+                    <p class="text-gray-400 mt-2 text-sm">Sell uniforms & books. Auto-deduct stock and add the bill to the student's profile.</p>
+                </div>
+                <div class="absolute -bottom-10 -right-10 w-48 bg-gray-800 rounded-xl p-4 transform rotate-12 opacity-50 group-hover:opacity-80 transition">
+                    <div class="h-2 w-20 bg-gray-600 rounded mb-2"></div>
+                    <div class="h-2 w-12 bg-gray-600 rounded"></div>
+                </div>
+            </div>
+
+            {# CARD 3: ID CARDS #}
+            <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-md transition">
+                <div class="h-10 w-10 bg-blue-50 rounded flex items-center justify-center mb-4 text-xl">🆔</div>
+                <h3 class="text-xl font-bold text-gray-900">Instant ID Cards</h3>
+                <p class="text-gray-500 mt-2 text-sm">Generate standard CR80 ID cards with QR codes for your entire school in one click.</p>
+            </div>
+
+            {# CARD 4: RESULTS #}
+            <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-md transition">
+                <div class="h-10 w-10 bg-green-50 rounded flex items-center justify-center mb-4 text-xl">📊</div>
+                <h3 class="text-xl font-bold text-gray-900">Results & Broadsheets</h3>
+                <p class="text-gray-500 mt-2 text-sm">Auto-calculate averages, positions, and generate PDF report cards in bulk.</p>
+            </div>
+
+            {# CARD 5: FINANCE (Wide) #}
+            <div class="md:col-span-1 bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-md transition">
+                <div class="h-10 w-10 bg-orange-50 rounded flex items-center justify-center mb-4 text-xl">💰</div>
+                <h3 class="text-xl font-bold text-gray-900">Smart Finance</h3>
+                <p class="text-gray-500 mt-2 text-sm">Snapshot invoicing ensures historical accuracy. Track partial payments and daily income reports.</p>
+            </div>
+        </div>
+
+        <div class="mt-12 text-center">
+            <a href="{{ path('app_features') }}" class="inline-flex items-center text-blue-600 font-bold hover:text-blue-800">
+                Explore all system capabilities <span class="ml-2">&rarr;</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+{# --- 4. PARTNER STRIP (The "Second Door") --- #}
+<div class="bg-gray-900 py-16 border-t border-gray-800 relative overflow-hidden">
+    <div class="absolute inset-0 opacity-10">
+        <svg class="h-full w-full" fill="none" viewBox="0 0 800 800">
+            <path stroke="currentColor" stroke-width="2" d="M0 0 L800 800 M800 0 L0 800" class="text-white"/>
+        </svg>
+    </div>
+    
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div class="lg:flex lg:items-center lg:justify-between">
+            <div class="lg:w-1/2">
+                <h2 class="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+                    <span class="block">Are you a Developer?</span>
+                    <span class="block text-indigo-400">Build your own EdTech Agency.</span>
+                </h2>
+                <p class="mt-3 text-lg text-gray-400">
+                    Use our <strong>Agent Engine</strong> to deploy schools in seconds. Manage 50+ clients from one dashboard and earn recurring commissions.
+                </p>
+                <div class="mt-8 flex gap-4">
+                    <a href="{{ path('app_partners') }}" class="px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg">
+                        View Agent Dashboard
+                    </a>
+                </div>
+            </div>
+            <div class="mt-8 lg:mt-0 lg:w-1/2 flex justify-center lg:justify-end">
+                <div class="bg-gray-800 rounded-lg p-6 border border-gray-700 w-full max-w-sm shadow-2xl transform rotate-2">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-xs font-bold text-gray-500 uppercase">Your Wallet</span>
+                        <span class="text-green-400 text-xs flex items-center gap-1"><span class="w-2 h-2 bg-green-500 rounded-full"></span> Live</span>
+                    </div>
+                    <div class="text-3xl font-mono text-white mb-6">₦450,000.00</div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between text-sm border-b border-gray-700 pb-2">
+                            <span class="text-gray-400">Divine Wisdom Int'l</span>
+                            <span class="text-green-400">+₦25,000</span>
+                        </div>
+                        <div class="flex justify-between text-sm border-b border-gray-700 pb-2">
+                            <span class="text-gray-400">Springfield College</span>
+                            <span class="text-green-400">+₦15,000</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# --- 5. FINAL CTA --- #}
+<div class="bg-white py-24">
+    <div class="max-w-4xl mx-auto px-4 text-center">
+        <h2 class="text-4xl font-extrabold text-gray-900 mb-6">Ready to transform your school?</h2>
+        <p class="text-xl text-gray-500 mb-10">
+            Join the platform that is changing how Nigerian schools operate. No setup fees. No credit card required.
+        </p>
+        <a href="{{ path('app_login') }}" class="inline-flex items-center justify-center px-10 py-4 border border-transparent text-lg font-bold rounded-full text-white bg-blue-600 hover:bg-blue-700 shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
+            Get Started for Free
+        </a>
+    </div>
+</div>
+
+{# --- 6. FOOTER --- #}
+<footer class="bg-gray-50 border-t border-gray-200">
+    <div class="max-w-7xl mx-auto py-12 px-4 overflow-hidden sm:px-6 lg:px-8">
+        <div class="flex justify-center space-x-8 mb-8 text-gray-400">
+            <a href="{{ path('app_home') }}" class="hover:text-gray-900 transition">Home</a>
+            <a href="{{ path('app_features') }}" class="hover:text-gray-900 transition">Features</a>
+            <a href="{{ path('app_partners') }}" class="hover:text-gray-900 transition">Partners</a>
+            <a href="{{ path('app_login') }}" class="hover:text-gray-900 transition">Login</a>
+        </div>
+        <p class="mt-8 text-center text-base text-gray-400">
+            &copy; {{ "now"|date("Y") }} Edus. Built for Nigerian Schools.
+        </p>
+    </div>
+</footer>
+{% endblock %}

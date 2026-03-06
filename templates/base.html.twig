@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Welcome!{% endblock %} - Edus School SaaS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    {# 🛡️ LOGO LOGIC #}
+    {% if app.user 
+          and not is_granted('ROLE_SUPER_ADMIN') 
+          and not is_granted('ROLE_AGENT')
+          and app.user.tenant is defined 
+          and app.user.tenant 
+          and app.user.tenant.logoFilename %}
+        <link rel="icon" href="{{ asset('uploads/logos/' ~ app.user.tenant.logoFilename) }}">
+    {% else %}
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><text y='1.2em' font-size='96'>🏫</text></svg>">
+    {% endif %}
+    
+    <style>
+        body { background-color: #f3f4f6; }
+        #sidebar { transition: transform 0.3s ease-in-out; }
+        /* Scrollbar for sidebar */
+        #sidebar nav::-webkit-scrollbar { width: 6px; }
+        #sidebar nav::-webkit-scrollbar-thumb { background-color: #374151; border-radius: 3px; }
+        
+        /* Print Hiding */
+        @media print {
+            #sidebar, #sidebar-toggle { display: none !important; }
+            main { margin: 0 !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; }
+        }
+    </style>
+
+    {% block stylesheets %}{% endblock %}
+    {% block javascripts %}{% endblock %}
+</head>
+<body class="flex min-h-screen">
+    
+    {# === ONLY SHOW SIDEBAR IF LOGGED IN === #}
+    {% if app.user %}
+        
+        {# Mobile Toggle Button #}
+        <button id="sidebar-toggle" class="md:hidden fixed top-4 left-4 z-50 p-2 bg-gray-800 text-white rounded shadow-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+            </svg>
+        </button>
+
+        {# SIDEBAR #}
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-gray-900 text-white flex flex-col p-4 shadow-lg 
+                                transform -translate-x-full md:translate-x-0 md:relative md:flex-shrink-0 border-r border-gray-800">
+            
+        <div class="mb-6 border-b border-gray-700 pb-4">
+                {# ========================================== #}
+                {# 👑 IDENTITY SECTION                        #}
+                {# ========================================== #}
+                
+                {# 1. SUPER ADMIN #}
+                {% if is_granted('ROLE_SUPER_ADMIN') %}
+                    <div class="flex items-center text-2xl font-black text-white">
+                        <span class="mr-2">🏢</span> Edus Admin
+                    </div>
+                    <p class="text-xs text-gray-400 uppercase tracking-widest mt-1">Super User</p>
+                
+                {# 🟢 2. AGENT #}
+                {% elseif is_granted('ROLE_AGENT') %}
+                    <div class="flex items-center gap-3">
+                        <div class="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center text-xl text-white shadow-md">🕵️</div>
+                        <div>
+                            <h2 class="text-sm font-bold text-white uppercase tracking-wide">Partner Portal</h2>
+                            <p class="text-xs text-gray-400">Agent Access</p>
+                        </div>
+                    </div>
+
+                {# 3. TENANT (SCHOOL) #}
+                {% else %}
+                    {# 🛡️ SAFETY CHECK: Ensure tenant exists #}
+                    {% if app.user.tenant is defined and app.user.tenant %}
+                        <div class="flex items-center gap-3">
+                            {# A. LOGO #}
+                            {% if app.user.tenant.logoFilename %}
+                                <img src="{{ asset('uploads/logos/' ~ app.user.tenant.logoFilename) }}" 
+                                    class="h-10 w-10 rounded-full bg-white p-1 object-contain shadow-sm" 
+                                    alt="School Logo">
+                            {% else %}
+                                <div class="h-10 w-10 rounded-full bg-gray-700 flex items-center justify-center text-xl text-white">
+                                    🏫
+                                </div>
+                            {% endif %}
+                            
+                            {# B. SCHOOL NAME #}
+                            <div class="overflow-hidden">
+                                <h2 class="text-sm font-bold text-white uppercase leading-tight truncate w-40">
+                                    {{ app.user.tenant.name }}
+                                </h2>
+                                <p class="text-xs text-gray-400 truncate w-40">
+                                    {{ app.user.tenant.motto|default('Portal') }}
+                                </p>
+                            </div>
+                        </div>
+                    {% else %}
+                        {# Fallback #}
+                         <div class="flex items-center gap-3">
+                            <div class="h-10 w-10 rounded-full bg-gray-700 flex items-center justify-center text-xl text-white">👤</div>
+                            <h2 class="text-sm font-bold text-white">User Portal</h2>
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+            
+            <nav class="space-y-1 overflow-y-auto flex-1 text-sm pr-2">
+                
+                {% set route = app.request.attributes.get('_route') %}
+                
+                {# ========================================== #}
+                {# 🏢 PART A: LANDLORD MENU (Super Admin)     #}
+                {# ========================================== #}
+                {% if is_granted('ROLE_SUPER_ADMIN') %}
+                                
+                    {# === SECTION 1: OVERVIEW === #}
+                    <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-2 tracking-wider">Overview</div>
+                    
+                    <a href="{{ path('app_landlord_dashboard') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                        {% if route == 'app_landlord_dashboard' %}bg-gray-800 text-white shadow-sm ring-1 ring-gray-700{% endif %}">
+                        <span class="text-xl mr-3 opacity-80">📊</span>
+                        <span class="font-medium">Dashboard</span>
+                    </a>
+
+                    {# === SECTION 2: OPERATIONS === #}
+                    <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-4 tracking-wider">Operations</div>
+
+                    {# AGENTS #}
+                    <a href="{{ path('landlord_agent_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                        {% if 'agent' in route %}bg-gray-800 text-white shadow-sm ring-1 ring-gray-700{% endif %}">
+                        <span class="text-xl mr-3 opacity-80">🕵️</span>
+                        <span class="font-medium">Agents</span>
+                    </a>
+
+                    {# SCHOOLS #}
+                    <a href="{{ path('landlord_school_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                        {% if 'school' in route %}bg-gray-800 text-white shadow-sm ring-1 ring-gray-700{% endif %}">
+                        <span class="text-xl mr-3 opacity-80">🏫</span>
+                        <span class="font-medium">Schools</span>
+                    </a>
+
+                    {# === SECTION 3: BILLING & REVENUE (New Section) === #}
+                    <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-4 tracking-wider">Billing & Revenue</div>
+
+                    {# 1. VERIFY PAYMENTS #}
+                    <a href="{{ path('landlord_subscription_pending') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                        {% if 'subscription_pending' in route %}bg-gray-800 text-white shadow-sm ring-1 ring-gray-700{% endif %}">
+                        <span class="text-xl mr-3 opacity-80">💰</span>
+                        <span class="font-medium">Verify Payments</span>
+                    </a>
+
+                    {# 2. ACTIVE SUBSCRIPTIONS (🟢 NEW) #}
+                    <a href="{{ path('landlord_subscription_active') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                        {% if 'subscription_active' in route or 'generate_slip' in route %}bg-gray-800 text-white shadow-sm ring-1 ring-gray-700{% endif %}">
+                        <span class="text-xl mr-3 opacity-80">📡</span>
+                        <span class="font-medium">Active Subscriptions</span>
+                    </a>
+
+                    <a href="{{ path('landlord_credit_request_index') }}" class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">
+                        <span class="mr-3 text-lg">💰</span>
+                        Credit Requests
+                    </a>
+
+                    {# 3. PLANS #}
+                    <a href="{{ path('landlord_plan_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                        {% if 'plan' in route %}bg-gray-800 text-white shadow-sm ring-1 ring-gray-700{% endif %}">
+                        <span class="text-xl mr-3 opacity-80">💳</span>
+                        <span class="font-medium">Pricing Plans</span>
+                    </a>
+
+                
+
+
+
+                {# ========================================== #}
+                {# 🟢 PART B: AGENT MENU (Partner)            #}
+                {# ========================================== #}
+                {% elseif is_granted('ROLE_AGENT') %}
+                    
+                    <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-2 tracking-wider">Agency</div>
+                    
+                    <a href="{{ path('app_agent_dashboard') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                        {% if route == 'app_agent_dashboard' %}bg-indigo-900 text-white shadow-sm{% endif %}">
+                        <span class="text-xl mr-3 opacity-80">📊</span>
+                        <span class="font-medium">Dashboard</span>
+                    </a>
+
+                    <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-4 tracking-wider">Clients</div>
+
+                    {# MY SCHOOLS LIST #}
+                    <a href="{{ path('app_agent_school_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                        {% if 'school_index' in route or 'school_show' in route %}bg-indigo-900 text-white shadow-sm{% endif %}">
+                        <span class="text-xl mr-3 opacity-80">📋</span>
+                        <span class="font-medium">My Schools</span>
+                    </a>
+
+                    {# ENROLL NEW #}
+                    <a href="{{ path('app_agent_school_new') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                        {% if route == 'app_agent_school_new' %}bg-indigo-900 text-white shadow-sm{% endif %}">
+                        <span class="text-xl mr-3 opacity-80">➕</span>
+                        <span class="font-medium">Enroll New School</span>
+                    </a>
+                    
+                    <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-4 tracking-wider">Finance</div>
+                    
+                    {# EARNINGS #}
+                    <a href="#" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors">
+                        <span class="text-xl mr-3 opacity-80">💰</span>
+                        <span class="font-medium">My Earnings</span>
+                    </a>
+
+                {# ========================================== #}
+                {# 👨‍👩‍👧 PART C: PARENT MENU                     #}
+                {# ========================================== #}
+                {% elseif is_granted('ROLE_PARENT') %}
+
+                    <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-2 tracking-wider">Parent Portal</div>
+                    
+                    <a href="{{ path('app_parent_dashboard') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                        {% if 'parent' in route %}bg-blue-900 text-white shadow-sm ring-1 ring-blue-700{% endif %}">
+                        <span class="text-xl mr-3 opacity-80">🏠</span>
+                        <span class="font-medium">My Dashboard</span>
+                    </a>
+                    
+                {# ========================================== #}
+                {# 🏫 PART D: TENANT MENU (School Staff)      #}
+                {# ========================================== #}
+                {% else %}
+                    
+                    {# === 1. OVERVIEW === #}
+                    <a href="{{ path('app_tenant_dashboard') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                        {% if route == 'app_tenant_dashboard' %}bg-gray-800 text-white shadow-sm{% endif %}">
+                        <span class="text-xl mr-3 opacity-80">📊</span>
+                        <span class="font-medium">Dashboard</span>
+                    </a>
+
+                    {# === 2. ACADEMIC OPERATIONS === #}
+                    {% if is_granted('ROLE_BURSAR') or is_granted('ROLE_ADMIN') %}
+                        <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-4 tracking-wider">Academic</div>
+
+                        
+
+                        <a href="{{ path('app_tenant_academic_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'academic' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">🗓️</span>
+                            <span class="font-medium">Sessions & Terms</span>
+                        </a>
+
+                        {# 📅 NEW: SCHOOL CALENDAR LINK #}
+                        <a href="{{ path('app_tenant_event_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'event' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">📅</span>
+                            <span class="font-medium">School Calendar</span>
+                        </a>
+
+                        <a href="{{ path('app_tenant_admission_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'admission' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">📝</span>
+                            <span class="font-medium">New Admission</span>
+                        </a>
+                        <a href="{{ path('app_tenant_quick_enroll') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'quick_enroll' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">🚀</span>
+                            <span class="font-medium">Bulk Import</span>
+                        </a>
+                        <a href="{{ path('app_tenant_student_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'student' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">🎓</span>
+                            <span class="font-medium">Students</span>
+                        </a>
+
+                        <a href="{{ path('app_tenant_enrollment_promote') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'promote' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">📈</span>
+                            <span class="font-medium">Promote Students</span>
+                        </a>
+                        <a href="{{ path('app_tenant_classroom_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'classroom' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">📚</span>
+                            <span class="font-medium">Classes</span>
+                        </a>
+                    {% endif %}
+                    
+                    {# === 3. FINANCE OPERATIONS === #}
+                    {% if is_granted('ROLE_BURSAR') or is_granted('ROLE_ADMIN') %}
+                        <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-4 tracking-wider">Finance</div>
+                        
+                        <a href="{{ path('app_tenant_fee_schedule') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'fee_schedule' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">📋</span>
+                            <span class="font-medium">Fee Schedule</span>
+                        </a>
+                        <a href="{{ path('app_tenant_invoice_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'invoice' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">🧾</span>
+                            <span class="font-medium">Invoices & Bills</span>
+                        </a>
+                        <a href="{{ path('app_tenant_payment_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'payment' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">🏦</span>
+                            <span class="font-medium">Payment History</span>
+                        </a>
+
+                        <a href="{{ path('app_tenant_discount_assign') }}" 
+                        class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors mb-1">
+                            <span class="text-xl mr-3">🎖️</span> {# Medal Icon for Scholarship #}
+                            <div>
+                                <span class="block font-bold text-sm">Scholarships</span>
+                                <span class="block text-[10px] text-gray-500 uppercase tracking-wider">Assign Discounts</span>
+                            </div>
+                        </a>
+
+
+                        {# === NEW: EXPENSES & REPORTS === #}
+                        <a href="{{ path('app_tenant_expense_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'expense' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">💸</span>
+                            <span class="font-medium">Expenses</span>
+                        </a>
+
+                        <a href="{{ path('app_tenant_report_profit_loss') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'report' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">📈</span>
+                            <span class="font-medium">Profit & Loss</span>
+                        </a>
+                    {% endif %}
+
+                    {# === 4. CONFIGURATION === #}
+                    {% if is_granted('ROLE_ADMIN') %}
+
+                     <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-4 tracking-wider">System</div>
+                        <a href="{{ path('tenant_subscription_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'subscription' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">💎</span>
+                            <span class="font-medium">My Subscription</span>
+                         </a>
+
+                         <a href="{{ path('tenant_wallet_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'wallet' in app.request.get('_route') %}bg-gray-800 text-white shadow-sm ring-1 ring-gray-700{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">💳</span>
+                            <span class="font-medium">My Wallet</span>
+                        </a>
+
+                         <a href="{{ path('app_tenant_settings_general') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'settings' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">🔧</span>
+                            <span class="font-medium">Settings</span>
+                        </a>
+                    {% endif %}
+
+                {% endif %}
+                
+            </nav>
+            
+            {# USER FOOTER #}
+            <div class="mt-auto pt-4 border-t border-gray-700 flex-shrink-0">
+                
+                {# 1. ADMIN LOGOUT #}
+                {% if is_granted('ROLE_SUPER_ADMIN') %}
+                    <div class="mb-3">
+                        <p class="text-xs text-gray-400 uppercase font-bold">Logged in as</p>
+                        <p class="text-sm font-bold text-white truncate">{{ app.user.email }}</p>
+                    </div>
+                    <a href="{{ path('app_landlord_logout') }}" class="flex items-center justify-center w-full p-2 bg-red-900/50 hover:bg-red-800 text-red-200 rounded text-sm transition-colors">
+                        🚪 Logout Admin
+                    </a>
+                
+                {# 🟢 2. AGENT LOGOUT (New) #}
+                {% elseif is_granted('ROLE_AGENT') %}
+                    <div class="mb-3">
+                        <p class="text-xs text-gray-400 uppercase font-bold">Logged in as</p>
+                        <p class="text-sm font-bold text-white truncate">{{ app.user.fullName }}</p>
+                         <span class="text-xs bg-indigo-800 text-indigo-200 px-2 py-0.5 rounded">Sales Partner</span>
+                    </div>
+                    <a href="{{ path('app_agent_logout') }}" class="flex items-center justify-center w-full p-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded text-sm transition-colors">
+                        🚪 Logout Agent
+                    </a>
+
+                {# 3. REGULAR USER LOGOUT #}
+                {% else %}
+                    <div class="mb-3">
+                        <p class="text-xs text-gray-400 uppercase font-bold">Current User</p>
+                        <p class="text-sm font-bold text-white truncate">{{ app.user.fullName|default(app.user.email) }}</p>
+                    </div>
+                    <a href="{{ path('app_logout') }}" class="flex items-center justify-center w-full p-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded text-sm transition-colors">
+                        🚪 Logout
+                    </a>
+                {% endif %}
+            </div>
+        </aside>
+
+    {% endif %} {# End if app.user #}
+
+    {# === MAIN CONTENT === #}
+    <main class="flex-1 p-6 {% if app.user %}md:ml-0{% else %}w-full max-w-7xl mx-auto{% endif %} overflow-x-hidden">
+        
+        {# FLASH MESSAGES #}
+        {% for category, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="p-4 mb-4 text-sm rounded-lg shadow-sm border
+                    {% if category == 'success' %}bg-green-50 text-green-800 border-green-200
+                    {% elseif category == 'error' %}bg-red-50 text-red-800 border-red-200
+                    {% else %}bg-yellow-50 text-yellow-800 border-yellow-200{% endif %}" 
+                    role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        {% block body %}{% endblock %}
+    </main>
+
+    {# 🛡️ SCRIPTS BLOCK #}
+    {% if app.user %}
+    <script>
+        // Sidebar Toggle Logic
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        
+        if (sidebarToggle && sidebar) {
+            sidebarToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('-translate-x-full');
+            });
+            // Hide on mobile when clicking links
+            document.querySelectorAll('aside a').forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth < 768) {
+                        sidebar.classList.add('-translate-x-full');
+                    }
+                });
+            });
+             window.addEventListener('resize', () => {
+                if (window.innerWidth >= 768) sidebar.classList.remove('-translate-x-full');
+            });
+        }
+
+        // Auto-Hide Flash Messages
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashes = document.querySelectorAll('[role="alert"]');
+            if (flashes.length > 0) {
+                setTimeout(() => {
+                    flashes.forEach(flash => {
+                        flash.style.transition = "opacity 0.5s ease";
+                        flash.style.opacity = "0";
+                        setTimeout(() => flash.remove(), 600);
+                    });
+                }, 4000); // 4 Seconds
+            }
+        });
+    </script>
+    {% endif %}
+
+</body>
+</html>

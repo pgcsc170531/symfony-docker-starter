@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student ID: {{ student.fullName }}</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        /* --- PRINT CONFIGURATION --- */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f3f4f6;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            font-family: ui-sans-serif, system-ui, sans-serif;
+        }
+
+        /* DYNAMIC THEME ENGINE */
+        {% set themeColor = app.user.tenant.primaryColor|default('#1e40af') %}
+
+        .bg-theme { background-color: {{ themeColor }} !important; }
+        .text-theme { color: {{ themeColor }} !important; }
+        .border-theme { border-color: {{ themeColor }} !important; }
+
+        .print-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            gap: 0;
+        }
+
+        /* --- CARD DIMENSIONS (CR80 Portrait) --- */
+        .id-card {
+            width: 2.125in;
+            height: 3.375in;
+            background-color: #ffffff;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            border: 1px solid #e5e7eb;
+        }
+
+        .fold-line {
+            width: 0;
+            height: 3.375in;
+            border-left: 1px dashed #ccc;
+            margin: 0 1px;
+        }
+
+        /* --- PRINT SPECIFIC RULES --- */
+        @media print {
+            body { background-color: #ffffff; }
+            body * { visibility: hidden; }
+            .print-wrapper, .print-wrapper * { visibility: visible; }
+            .print-wrapper {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                margin: 0;
+                box-shadow: none;
+            }
+            .id-card { border: 1px solid #ddd; box-shadow: none; }
+            @page { margin: 0; size: auto; }
+        }
+
+        .barcode {
+            background-image: repeating-linear-gradient(90deg, black 0, black 1px, transparent 1px, transparent 3px);
+            height: 25px;
+            width: 80%;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="print-wrapper">
+        
+        {# ========================================== #}
+        {#               FRONT OF CARD                #}
+        {# ========================================== #}
+        <div class="id-card">
+            
+            {# HEADER: STACKED LAYOUT (Full Width for Long Names) #}
+            <div class="bg-theme w-full h-[3.8rem] flex flex-col items-center justify-center flex-shrink-0 relative overflow-hidden px-1 pt-1">
+                
+                {# 1. Logo (Compact) #}
+                {% if app.user.tenant.logoFilename %}
+                    <img src="{{ asset('uploads/logos/' ~ app.user.tenant.logoFilename) }}" 
+                         alt="Logo" 
+                         class="h-6 object-contain mb-0.5 filter drop-shadow-sm">
+                {% endif %}
+
+                {# 2. Name (Full Width, Centered, Wraps if needed) #}
+                <div class="w-full text-center leading-none pb-1">
+                    <h1 class="text-white font-bold text-[0.6rem] uppercase tracking-wide break-words">
+                        {{ app.user.tenant.name|default('ACADEMY NAME') }}
+                    </h1>
+                </div>
+            </div>
+
+            {# MAIN CONTENT #}
+            <div class="flex-grow flex flex-col items-center pt-2 pb-1 px-2 bg-gradient-to-b from-gray-50 to-white">
+                
+                {# PHOTO #}
+                <div class="w-[0.9in] h-[1.1in] rounded border-[3px] border-white shadow-sm bg-gray-200 overflow-hidden mb-1 flex-shrink-0 relative">
+                    {% if student.profilePictureFilename %}
+                        <img src="{{ asset('uploads/students/' ~ student.profilePictureFilename) }}" class="w-full h-full object-cover">
+                    {% else %}
+                        <div class="w-full h-full flex items-center justify-center text-gray-400 text-3xl">👤</div>
+                    {% endif %}
+                </div>
+
+                {# NAME #}
+                <div class="flex-shrink-0 mb-1 w-full">
+                    <h2 class="text-gray-900 font-extrabold text-[0.7rem] uppercase text-center leading-tight truncate px-1">
+                        {{ student.firstName }}
+                    </h2>
+                    <h2 class="text-theme font-extrabold text-[0.8rem] uppercase text-center leading-tight truncate px-1">
+                        {{ student.lastName }}
+                    </h2>
+                </div>
+
+                {# DETAILS GRID #}
+                <div class="w-full px-1 mt-auto mb-1">
+                    <div class="grid grid-cols-2 gap-y-0.5 text-[0.55rem] border-t border-b border-gray-200 py-1">
+                        <div class="text-gray-500 font-bold uppercase">ID No:</div>
+                        <div class="text-gray-900 font-bold text-right">{{ student.admissionNumber }}</div>
+
+                        <div class="text-gray-500 font-bold uppercase">Class:</div>
+                        <div class="text-gray-900 font-bold text-right truncate">
+                             {{ enrollment.classroom.name|default('-') }}
+                        </div>
+                        
+                        <div class="text-gray-500 font-bold uppercase">Gender:</div>
+                        <div class="text-gray-900 font-bold text-right">{{ student.gender|default('-')|capitalize }}</div>
+                    </div>
+                </div>
+            </div>
+
+            {# FOOTER #}
+            <div class="bg-gray-100 h-6 flex items-center justify-center border-t-2 border-theme flex-shrink-0">
+                <p class="text-[0.5rem] font-bold text-gray-600 uppercase leading-none">
+                    Expires: 
+                    <span class="text-theme">
+                    {% if enrollment and enrollment.session and enrollment.session.endDate %}
+                        {{ enrollment.session.endDate|date('M Y') }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                    </span>
+                </p>
+            </div>
+        </div>
+
+        {# ========================================== #}
+        {#                FOLD LINE                   #}
+        {# ========================================== #}
+        <div class="fold-line"></div>
+
+        {# ========================================== #}
+        {#               BACK OF CARD                 #}
+        {# ========================================== #}
+        <div class="id-card">
+            <div class="flex flex-col h-full p-3 text-center justify-between bg-white">
+                
+                {# TOP #}
+                <div class="mt-1">
+                    <h3 class="text-theme font-bold text-[0.6rem] uppercase tracking-widest mb-1">Instructions</h3>
+                    <div class="space-y-1">
+                        <p class="text-[0.5rem] text-gray-600 leading-tight text-justify">
+                            1. Property of <strong>{{ app.user.tenant.name|default('the School') }}</strong>.
+                        </p>
+                        <p class="text-[0.5rem] text-gray-600 leading-tight text-justify">
+                            2. Present upon request by authorized personnel.
+                        </p>
+                        <p class="text-[0.5rem] text-gray-600 leading-tight text-justify">
+                            3. If found, please return to the address below.
+                        </p>
+                    </div>
+                </div>
+
+                {# MIDDLE #}
+                <div class="py-1">
+                    <div class="w-3/4 mx-auto border-b border-gray-800 mb-1"></div>
+                    <p class="text-[0.5rem] font-bold text-gray-500 uppercase">Authorized Signature</p>
+                </div>
+
+                {# BARCODE #}
+                <div class="py-1">
+                    <div class="barcode opacity-80"></div>
+                    <p class="text-[0.5rem] text-gray-400 mt-0.5 tracking-widest">{{ student.admissionNumber }}</p>
+                </div>
+
+                {# BOTTOM (School Address) #}
+                <div class="bg-gray-50 -mx-3 -mb-3 p-2 border-t border-gray-200">
+                    <p class="text-[0.55rem] font-bold text-gray-800 leading-tight uppercase">
+                        {{ app.user.tenant.name|default('School Address') }}
+                    </p>
+                    <p class="text-[0.5rem] text-gray-500 mt-0.5 leading-tight px-1">
+                        {{ app.user.tenant.address|default('123 Education Street, Lagos') }}
+                    </p>
+                    <p class="text-[0.55rem] text-theme font-bold mt-0.5">
+                        {{ app.user.tenant.phoneNumber|default('+234 ...') }}
+                    </p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.addEventListener('load', function() {
+             setTimeout(() => window.print(), 500);
+        });
+    </script>
+</body>
+</html>

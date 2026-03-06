@@ -1,0 +1,260 @@
+{% extends 'base.html.twig' %}
+{% block title %}Payment Terminal{% endblock %}
+
+{% block body %}
+<div class="max-w-6xl mx-auto mt-6 px-4 pb-12">
+    
+    {# 🟢 NAVIGATION HEADER #}
+    <div class="mb-6 flex justify-between items-center">
+        <a href="{{ path('app_tenant_payment_index') }}" class="inline-flex items-center gap-2 text-gray-500 hover:text-indigo-600 font-bold transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Back to Search
+        </a>
+
+        {# Optional: Link to Full Profile #}
+        <a href="{{ path('app_tenant_student_profile', {id: student.id}) }}" class="text-sm font-medium text-indigo-600 hover:underline">
+            View Student Profile &rarr;
+        </a>
+    </div>
+
+    {# HEADER: Student Info #}
+    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex flex-col md:flex-row justify-between items-center mb-8">
+        <div class="flex items-center gap-4">
+            <div class="h-16 w-16 rounded-full bg-indigo-100 flex items-center justify-center text-2xl font-bold text-indigo-700">
+                {{ student.firstName|first }}{{ student.lastName|first }}
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">{{ student.firstName }} {{ student.lastName }}</h1>
+                <p class="text-gray-500">
+                    {{ student.admissionNumber }} • 
+                    {% if classroom %}
+                        <span class="font-medium text-gray-700">{{ classroom.name }}</span>
+                    {% else %}
+                        <span class="text-red-500 font-bold">Not Enrolled</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        <div class="mt-4 md:mt-0 text-right">
+            <span class="block text-xs text-gray-500 uppercase font-bold tracking-wider">Active Term</span>
+            <span class="block font-bold text-gray-800 text-lg">{{ term.session.name }}</span>
+            <span class="text-indigo-600 font-medium">{{ term.name }}</span>
+        </div>
+    </div>
+
+    {# CONTENT #}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        
+        {# LEFT: The Bill #}
+        <div class="md:col-span-2">
+            
+            {% if invoice %}
+                {# SCENARIO A: Invoice Exists #}
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                        <span class="font-bold text-gray-700">Invoice #{{ invoice.invoiceNumber }}</span>
+                        <span class="px-3 py-1 rounded-full text-xs font-bold 
+                            {% if invoice.status == 'PAID' %}bg-green-100 text-green-800
+                            {% elseif invoice.status == 'PARTIAL' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-red-100 text-red-800{% endif %}">
+                            {{ invoice.status }}
+                        </span>
+                    </div>
+                    
+                    <div class="p-6">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="text-left text-gray-500 border-b">
+                                    <th class="pb-2">Description</th>
+                                    <th class="pb-2 text-right">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                                {% for item in invoice.items %}
+                                <tr>
+                                    <td class="py-3">{{ item.description }}</td>
+                                    <td class="py-3 text-right font-mono">₦{{ item.amount|number_format(2) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="border-t-2 border-gray-200">
+                                <tr>
+                                    <td class="pt-4 font-bold text-right">Total Due:</td>
+                                    <td class="pt-4 text-right font-bold font-mono text-lg">₦{{ invoice.totalAmount|number_format(2) }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="pt-1 text-right text-green-600">Paid So Far:</td>
+                                    <td class="pt-1 text-right font-bold font-mono text-green-600">- ₦{{ invoice.paidAmount|number_format(2) }}</td>
+                                </tr>
+                                <tr class="text-xl">
+                                    <td class="pt-4 text-right font-black text-indigo-900">Balance to Pay:</td>
+                                    <td class="pt-4 text-right font-black font-mono text-indigo-900">
+                                        ₦{{ (invoice.totalAmount - invoice.paidAmount)|number_format(2) }}
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+            {% else %}
+                
+                {# SCENARIO B: No Invoice Yet (Show Preview) #}
+                <div class="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-8 text-center">
+                    <div class="inline-block p-3 bg-yellow-100 rounded-full text-yellow-600 mb-4">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    </div>
+                    <h2 class="text-xl font-bold text-yellow-800 mb-2">No Invoice Found</h2>
+                    <p class="text-yellow-700 mb-6 max-w-md mx-auto">This student has not been billed for the current term yet.</p>
+                    
+                    {% if classroom %}
+                        <div class="bg-white rounded-lg p-5 mb-8 shadow-sm text-left max-w-md mx-auto border border-yellow-100">
+                            <p class="text-xs text-gray-500 uppercase font-bold mb-3 border-b pb-2">
+                                Expected Bill ({{ classroom.name }})
+                            </p>
+                            <ul class="space-y-2 text-sm">
+                                {% for fee in feePreview %}
+                                    <li class="flex justify-between">
+                                        <span class="text-gray-700">{{ fee.feeItem.name }}</span>
+                                        <span class="font-mono font-bold">₦{{ fee.amount|number_format(2) }}</span>
+                                    </li>
+                                {% else %}
+                                    <li class="text-gray-400 italic text-center py-2">No fees configured for this class.</li>
+                                {% endfor %}
+                                <li class="border-t pt-2 flex justify-between font-bold text-gray-900 mt-2">
+                                    <span>Total</span>
+                                    <span>₦{{ previewTotal|number_format(2) }}</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        {% if previewTotal > 0 %}
+                            <form method="post" action="{{ path('app_tenant_payment_generate_invoice', {studentId: student.id}) }}">
+                                <button type="submit" class="bg-indigo-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-indigo-700 shadow-lg transition-transform transform hover:-translate-y-1 flex items-center justify-center gap-2 w-full md:w-auto mx-auto">
+                                    <span>📄 Generate Invoice Now</span>
+                                </button>
+                            </form>
+                        {% else %}
+                             <div class="text-red-500 text-sm font-bold">
+                                ⚠️ Cannot generate invoice: Total is 0. Check Fee Schedule.
+                             </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-red-600 font-bold mb-4">
+                            ⚠️ Student is not assigned to a class.
+                        </div>
+                        <a href="{{ path('app_tenant_enrollment_promote') }}" class="text-indigo-600 hover:underline">Go to Enrollment Manager</a>
+                    {% endif %}
+                </div>
+
+            {% endif %}
+
+        </div>
+
+        {# RIGHT: Actions (Only show if Invoice Exists) #}
+        <div class="md:col-span-1 space-y-6">
+            
+            {% if invoice and invoice.status != 'PAID' %}
+
+                {# 🔴 1. PENDING TRANSFER CHECK (Updated with Editable Amount) #}
+                {% set pendingPayments = [] %}
+                {% for payment in invoice.payments %}
+                    {% if payment.status == 'PENDING' %}
+                        {% set pendingPayments = pendingPayments|merge([payment]) %}
+                    {% endif %}
+                {% endfor %}
+
+                {% if pendingPayments|length > 0 %}
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 shadow-sm rounded-r-lg">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div class="ml-3 w-full">
+                                <h3 class="text-sm font-bold text-yellow-800 uppercase tracking-wide">
+                                    Pending Slip Found
+                                </h3>
+                                <div class="mt-2 text-sm text-yellow-700">
+                                    <p class="mb-2 text-xs">A payment slip exists. Check bank app for this amount.</p>
+                                    
+                                    <div class="space-y-3">
+                                        {% for payment in pendingPayments %}
+                                        <div class="bg-white p-3 rounded border border-yellow-200 shadow-sm">
+                                            <div class="flex justify-between items-center mb-1">
+                                                <span class="font-mono font-bold text-xs text-gray-500">{{ payment.referenceCode }}</span>
+                                                <span class="text-[10px] uppercase font-bold text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded">Pending</span>
+                                            </div>
+
+                                            <form action="{{ path('app_tenant_payment_confirm', {id: payment.id}) }}" method="post" 
+                                                  onsubmit="return confirm('Is this EXACT amount confirmed in the bank account?');">
+                                                
+                                                <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Received Amount (₦)</label>
+                                                
+                                                <div class="flex gap-2">
+                                                    {# EDITABLE AMOUNT FIELD #}
+                                                    <input type="number" 
+                                                           name="actual_amount" 
+                                                           value="{{ payment.amount }}" 
+                                                           step="0.01"
+                                                           class="w-full text-sm font-bold border-gray-300 rounded focus:border-green-500 focus:ring-1 focus:ring-green-500 py-1 px-2"
+                                                           required>
+                                                    
+                                                    <button type="submit" class="bg-green-600 text-white text-xs px-3 py-1 rounded hover:bg-green-700 font-bold flex items-center gap-1">
+                                                        <span>✓</span> Verify
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    <p class="mt-2 text-[10px] text-yellow-600 italic">Note: You can edit the amount above if they paid less than the slip value.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+
+                {# 💰 2. CASH PAYMENT FORM #}
+                <div class="bg-indigo-900 text-white p-6 rounded-lg shadow-lg sticky top-6">
+                    <h3 class="font-bold text-lg mb-4 border-b border-indigo-700 pb-2">💰 Record New Cash</h3>
+                    
+                    <form method="post" action="{{ path('app_tenant_payment_cash', {invoiceId: invoice.id}) }}" class="space-y-4" onsubmit="return confirm('Confirm Cash Payment?');">
+                        <div>
+                            <label class="text-xs uppercase text-indigo-200 font-bold block mb-1">Amount to Pay</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-2.5 text-gray-500">₦</span>
+                                <input type="number" name="amount" step="0.01" 
+                                       value="{{ (invoice.totalAmount - invoice.paidAmount) }}" 
+                                       class="w-full pl-8 pr-3 py-3 rounded text-gray-900 font-bold font-mono focus:ring-2 focus:ring-indigo-400 shadow-inner">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded shadow transition-colors flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                            Confirm Cash Payment
+                        </button>
+                    </form>
+
+                    <div class="mt-6 border-t border-indigo-800 pt-4 text-center">
+                        <p class="text-xs text-indigo-300 mb-2">Or via Bank Transfer?</p>
+                        {# Link to generate slip #}
+                        <form method="post" action="{{ path('app_tenant_payment_initiate', {invoice_id: invoice.id}) }}">
+                             <button type="submit" class="text-sm font-bold text-white bg-indigo-800 hover:bg-indigo-700 py-2 px-4 rounded w-full transition-colors border border-indigo-600">
+                                 Generate Payment Slip
+                             </button>
+                        </form>
+                    </div>
+                </div>
+            {% elseif invoice and invoice.status == 'PAID' %}
+                <div class="bg-green-50 border border-green-200 p-8 rounded-lg text-center">
+                    <div class="text-green-600 text-5xl mb-4">🎉</div>
+                    <h3 class="text-green-800 font-bold text-xl mb-1">Fully Paid</h3>
+                    <p class="text-green-600 text-sm">No further payments needed for this term.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

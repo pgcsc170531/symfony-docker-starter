@@ -1,0 +1,56 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}POS Student Search{% endblock %}
+
+{% block body %}
+<div class="container mx-auto mt-10 p-5 max-w-3xl">
+    <div class="bg-white p-8 rounded shadow border-t-4 border-teal-600">
+        <h1 class="text-2xl font-bold mb-6 text-gray-800">Point of Sale: Select Student</h1>
+
+        {# Search Form #}
+        {{ form_start(form, {'attr': {'class': 'flex mb-8'}}) }}
+            <div class="flex-1">
+                {{ form_widget(form.query) }}
+            </div>
+            <button class="bg-teal-600 text-white px-6 py-3 rounded-r-md font-bold hover:bg-teal-700">
+                Search
+            </button>
+        {{ form_end(form) }}
+        
+        {# Display Results #}
+        <h2 class="text-xl font-bold mb-4">Results ({{ students|length }} found)</h2>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student Name</th>
+                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admission No</th>
+                        <th class="py-3 px-6 text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for student in students %}
+                    <tr class="hover:bg-gray-100">
+                        <td class="py-4 px-6 font-medium text-gray-900">{{ student.fullName }}</td>
+                        <td class="py-4 px-6 text-gray-500">{{ student.admissionNumber }}</td>
+                        <td class="py-4 px-6 text-right">
+                            <a href="{{ path('app_tenant_store_cart_sale', {'studentId': student.id}) }}" 
+                            class="bg-green-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-green-700">
+                            Select & Bill
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                        {% if query is not empty %}
+                            <tr><td colspan="3" class="text-center py-6 text-gray-500">No students matched "{{ query }}".</td></tr>
+                        {% else %}
+                            <tr><td colspan="3" class="text-center py-6 text-gray-500">Search for a student to begin a sale.</td></tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

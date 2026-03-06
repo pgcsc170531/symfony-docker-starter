@@ -1,0 +1,302 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edus Partner Program - White Label School Management Software{% endblock %}
+
+{% block body %}
+{# --- 0. NAVIGATION BAR --- #}
+<div class="relative bg-white border-b border-gray-100">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center py-6 md:justify-start md:space-x-10">
+            <div class="flex justify-start lg:w-0 lg:flex-1">
+                <a href="{{ path('app_home') }}" class="text-3xl font-black tracking-tighter text-blue-600 no-underline hover:text-blue-700">
+                    Edus<span class="text-gray-900">.</span>
+                </a>
+            </div>
+            <div class="hidden md:flex space-x-10">
+                <a href="{{ path('app_features') }}" class="text-base font-medium text-gray-900 hover:text-blue-600">Features</a>
+                <a href="{{ path('app_partners') }}" class="text-base font-medium text-blue-600 hover:text-blue-700">Partners</a>
+                <a href="{{ path('app_login') }}" class="text-base font-medium text-gray-500 hover:text-blue-600">Log in</a>
+            </div>
+            <div class="hidden md:flex items-center justify-end md:flex-1 lg:w-0">
+                <a href="{{ path('app_login') }}" class="ml-8 whitespace-nowrap inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700">
+                    Get Started
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# 1. HERO SECTION: SEO Optimized H1 --- #}
+<div class="relative bg-blue-900 overflow-hidden">
+    <div class="absolute inset-0">
+        <svg class="h-full w-full" preserveAspectRatio="xMidYMid slice" fill="none" viewBox="0 0 1463 1024">
+            <path class="text-blue-800 text-opacity-40" fill="currentColor" d="M-82.673 72l1761.849 472.086-134.327 501.315-1761.85-472.086z" />
+            <path class="text-blue-950 text-opacity-40" fill="currentColor" d="M-217.088 544.086L1544.761 72l134.327 501.316-1761.849 472.086z" />
+        </svg>
+    </div>
+    <div class="relative max-w-7xl mx-auto py-24 px-4 sm:py-32 sm:px-6 lg:px-8">
+        <h1 class="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">
+            Start your own <br class="hidden sm:block">
+            <span class="text-blue-200">School Management Agency.</span>
+        </h1>
+        <p class="mt-6 max-w-3xl text-xl text-blue-100">
+            Edus provides the technology; you provide the relationship. <strong>Deploy, Manage, and Bill</strong> schools from a single white-label dashboard.
+        </p>
+        <div class="mt-10 max-w-sm sm:flex sm:max-w-none">
+            <a href="{{ path('app_login') }}" class="flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-blue-900 bg-white hover:bg-gray-50 md:py-4 md:text-lg md:px-10 shadow-lg">
+                Become a Partner
+            </a>
+        </div>
+    </div>
+</div>
+
+{# 2. SPLIT SECTION: Feature Text (Left) vs Visual Proof (Right) --- #}
+<div class="relative bg-gray-50 py-16 sm:py-24">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-start">
+            
+            {# LEFT COLUMN: TEXT & SEO BENEFITS #}
+            <div class="mb-12 lg:mb-0 lg:sticky lg:top-10">
+                <h2 class="text-base text-blue-600 font-semibold tracking-wide uppercase">The Agent Command Center</h2>
+                <h3 class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+                    Run 50 Schools from One Screen.
+                </h3>
+                <p class="mt-4 text-lg text-gray-500">
+                    Stop juggling passwords. Our Multi-Tenant Architecture gives you root access to every school you manage.
+                </p>
+
+                <div class="mt-10 space-y-8">
+                    {# Point 1: Deployment #}
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <div class="flex items-center justify-center h-12 w-12 rounded-md bg-blue-500 text-white">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="text-lg leading-6 font-medium text-gray-900">Instant School Deployment</h4>
+                            <p class="mt-2 text-base text-gray-500">
+                                No coding required. Click <strong>"Deploy New School"</strong>, enter the school name, and our system automatically provisions a dedicated database and subdomain (e.g., <em>glory.edus.app</em>) in 30 seconds.
+                            </p>
+                        </div>
+                    </div>
+
+                    {# Point 2: Revenue Monitoring #}
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <div class="flex items-center justify-center h-12 w-12 rounded-md bg-green-500 text-white">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="text-lg leading-6 font-medium text-gray-900">Revenue Tracking</h4>
+                            <p class="mt-2 text-base text-gray-500">
+                                See exactly how much your schools are earning. The <strong>Pending Payments</strong> widget alerts you when a school makes a subscription payment so you can track your commission.
+                            </p>
+                        </div>
+                    </div>
+
+                    {# Point 3: Centralized Support #}
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <div class="flex items-center justify-center h-12 w-12 rounded-md bg-orange-500 text-white">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="text-lg leading-6 font-medium text-gray-900">Centralized Support</h4>
+                            <p class="mt-2 text-base text-gray-500">
+                                View <strong>Open Tickets</strong> from all your clients in one place. Fix issues faster without logging into 50 different admin panels.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# RIGHT COLUMN: VISUAL PROOF (HTML Mockup) #}
+            <div class="relative">
+                <div class="bg-gray-100 rounded-xl overflow-hidden border border-gray-300 shadow-2xl transform transition hover:scale-[1.02] duration-500">
+                    
+                    {# Mock Browser Bar #}
+                    <div class="bg-gray-800 px-4 py-3 flex items-center gap-3">
+                        <div class="flex gap-2">
+                            <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                            <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                        </div>
+                        <div class="bg-gray-700 text-gray-400 text-xs px-4 py-1.5 rounded-md flex-1 text-center font-mono">
+                            agent.edus.app/dashboard
+                        </div>
+                    </div>
+
+                    {# Dashboard Body #}
+                    <div class="p-6 bg-gray-50">
+                        {# Header Row #}
+                        <div class="flex justify-between items-center mb-6">
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-900">Overview</h2>
+                                <p class="text-xs text-gray-500">Welcome, Partner</p>
+                            </div>
+                            <button class="bg-indigo-600 text-white text-xs px-3 py-1.5 rounded font-bold shadow-sm hover:bg-indigo-700">
+                                + Deploy New School
+                            </button>
+                        </div>
+
+                        {# Stats Grid #}
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div class="bg-white p-3 rounded shadow-sm border border-gray-200">
+                                <p class="text-[10px] text-gray-500 uppercase font-bold">Active Clients</p>
+                                <p class="text-xl font-black text-gray-800">12</p>
+                            </div>
+                            <div class="bg-white p-3 rounded shadow-sm border border-gray-200">
+                                <p class="text-[10px] text-gray-500 uppercase font-bold">Commission</p>
+                                <p class="text-xl font-black text-green-600">₦450k</p>
+                            </div>
+                        </div>
+
+                        {# List & Sidebar #}
+                        <div class="flex flex-col gap-6">
+                            
+                            {# School List #}
+                            <div class="space-y-3">
+                                <h3 class="text-xs font-bold text-gray-900 uppercase">Managed Schools</h3>
+                                
+                                <div class="bg-white p-4 rounded shadow border border-gray-200 flex justify-between items-center">
+                                    <div class="flex items-center gap-3">
+                                        <div class="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs">D</div>
+                                        <div>
+                                            <p class="text-sm font-bold text-gray-800">Divine Wisdom Int'l</p>
+                                            <p class="text-[10px] text-gray-500">divine.edus.app</p>
+                                        </div>
+                                    </div>
+                                    <span class="bg-green-100 text-green-800 text-[10px] px-2 py-0.5 rounded-full font-bold">Active</span>
+                                </div>
+
+                                <div class="bg-white p-4 rounded shadow border border-gray-200 flex justify-between items-center">
+                                    <div class="flex items-center gap-3">
+                                        <div class="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs">S</div>
+                                        <div>
+                                            <p class="text-sm font-bold text-gray-800">Springfield College</p>
+                                            <p class="text-[10px] text-gray-500">springfield.edus.app</p>
+                                        </div>
+                                    </div>
+                                    <span class="bg-yellow-100 text-yellow-800 text-[10px] px-2 py-0.5 rounded-full font-bold">Due</span>
+                                </div>
+                            </div>
+
+                            {# Action Center #}
+                            <div class="bg-white rounded shadow border border-gray-200 p-4">
+                                <h3 class="text-xs font-bold text-gray-900 uppercase mb-3">Live Feed</h3>
+                                <div class="space-y-3">
+                                    <div class="flex gap-2">
+                                        <div class="text-green-500">💰</div>
+                                        <div>
+                                            <p class="text-xs font-bold text-gray-800">Payment: ₦25,000</p>
+                                            <p class="text-[10px] text-gray-500">Divine Wisdom • Just now</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <div class="text-red-500">🚨</div>
+                                        <div>
+                                            <p class="text-xs font-bold text-gray-800">Ticket: Printing Error</p>
+                                            <p class="text-[10px] text-gray-500">Grace High • 2 mins ago</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                </div>
+        </div>
+    </div>
+</div>
+
+{# 3. PRICING & COMMISSION MODEL --- #}
+<div class="bg-white py-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-extrabold text-gray-900">Transparent Revenue Share</h2>
+            <p class="mt-4 text-lg text-gray-500">We share revenue. You keep the schools happy, we keep the servers running.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {# Tier 1 #}
+            <div class="border border-gray-200 rounded-lg p-6 text-center hover:border-blue-500 transition cursor-default">
+                <h3 class="text-lg font-medium text-gray-900">Setup Fees</h3>
+                <div class="mt-4 flex items-baseline justify-center text-5xl font-extrabold text-gray-900">
+                    100<span class="text-2xl font-medium text-gray-500">%</span>
+                </div>
+                <p class="mt-2 text-sm text-gray-500">You keep it all.</p>
+                <p class="mt-4 text-gray-600 text-sm">
+                    Charge schools whatever you want for training, onboarding, and setup. We don't touch your service fees.
+                </p>
+            </div>
+
+            {# Tier 2 #}
+            <div class="border-2 border-blue-600 rounded-lg p-6 text-center shadow-lg transform scale-105 bg-white relative">
+                <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                    <span class="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Recurring</span>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mt-2">Subscription Commission</h3>
+                <div class="mt-4 flex items-baseline justify-center text-5xl font-extrabold text-blue-600">
+                    20<span class="text-2xl font-medium text-gray-500">%</span>
+                </div>
+                <p class="mt-2 text-sm text-gray-500">Every single term.</p>
+                <p class="mt-4 text-gray-600 text-sm">
+                    For the lifetime of the school. If they pay ₦200k/term, you get ₦40k automatically credited to your wallet.
+                </p>
+            </div>
+
+            {# Tier 3 #}
+            <div class="border border-gray-200 rounded-lg p-6 text-center hover:border-blue-500 transition cursor-default">
+                <h3 class="text-lg font-medium text-gray-900">Hardware Sales</h3>
+                <div class="mt-4 flex items-baseline justify-center text-5xl font-extrabold text-gray-900">
+                    10<span class="text-2xl font-medium text-gray-500">%</span>
+                </div>
+                <p class="mt-2 text-sm text-gray-500">On Edus Hardware.</p>
+                <p class="mt-4 text-gray-600 text-sm">
+                    If you sell our ID Card Printers or POS Terminals to your schools, you get a cut of the hardware cost too.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# 4. FOOTER CTA --- #}
+<div class="bg-gray-50 py-12 border-t border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h2 class="text-3xl font-extrabold text-gray-900">Ready to launch your agency?</h2>
+        <div class="mt-8 flex justify-center gap-4">
+            <a href="mailto:partners@edus.app" class="inline-flex items-center justify-center px-5 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Contact Sales
+            </a>
+            <a href="{{ path('app_login') }}" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                Register Partner Account
+            </a>
+        </div>
+        <p class="mt-4 text-sm text-gray-500">
+            No credit card required. Instant approval for developers.
+        </p>
+    </div>
+</div>
+
+{# 5. FOOTER LINKS --- #}
+<footer class="bg-white border-t border-gray-200">
+    <div class="max-w-7xl mx-auto py-12 px-4 overflow-hidden sm:px-6 lg:px-8">
+        <div class="flex justify-center space-x-6 mb-4 text-gray-400">
+            <a href="{{ path('app_home') }}" class="hover:text-gray-500">Home</a>
+            <span>•</span>
+            <a href="{{ path('app_features') }}" class="hover:text-gray-500">Features</a>
+            <span>•</span>
+            <a href="{{ path('app_partners') }}" class="hover:text-gray-500">Partners</a>
+            <span>•</span>
+            <a href="{{ path('app_login') }}" class="hover:text-gray-500">Login</a>
+        </div>
+        <p class="mt-8 text-center text-base text-gray-400">
+            &copy; {{ "now"|date("Y") }} Edus. Built for Nigerian Schools.
+        </p>
+    </div>
+</footer>
+{% endblock %}

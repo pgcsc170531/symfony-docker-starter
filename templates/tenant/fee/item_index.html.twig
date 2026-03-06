@@ -1,0 +1,67 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Fee Items{% endblock %}
+
+{% block body %}
+<div class="container mx-auto mt-10 p-5">
+    <div class="flex flex-col md:flex-row gap-8">
+        
+        <div class="md:w-1/3">
+            <div class="bg-white p-6 rounded shadow border-t-4 border-blue-600">
+                <h2 class="text-xl font-bold mb-4 text-gray-800">New Fee Category</h2>
+                {{ form_start(form) }}
+                    <div class="mb-4">
+                        {{ form_label(form.name, null, {'label_attr': {'class': 'block text-sm font-bold text-gray-700'}}) }}
+                        {{ form_widget(form.name, {'attr': {'class': 'mt-1 block w-full rounded border-gray-300 shadow-sm p-2 border'}}) }}
+                    </div>
+                    <div class="mb-4">
+                        <label class="flex items-center space-x-2">
+                            {{ form_widget(form.isOptional, {'attr': {'class': 'rounded text-blue-600'}}) }}
+                            <span class="text-sm font-medium text-gray-700">Optional Fee?</span>
+                        </label>
+                        <p class="text-xs text-gray-500 mt-1 ml-6">Example: School Bus, Excursion</p>
+                    </div>
+                    <button class="bg-blue-600 text-white w-full py-2 rounded font-bold hover:bg-blue-700 transition">Save Item</button>
+                {{ form_end(form) }}
+            </div>
+        </div>
+
+        <div class="md:w-2/3">
+            <div class="bg-white rounded shadow overflow-hidden">
+                <div class="bg-gray-50 px-6 py-4 border-b">
+                    <h3 class="text-lg font-bold text-gray-800">Defined Fee Items</h3>
+                </div>
+                 <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead class="bg-gray-100 border-b">
+                        <tr>
+                            <th class="text-left py-3 px-6 font-semibold text-sm text-gray-600">Name</th>
+                            <th class="text-left py-3 px-6 font-semibold text-sm text-gray-600">Type</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="py-3 px-6 font-medium text-gray-800">{{ item.name }}</td>
+                            <td class="py-3 px-6">
+                                {% if item.isOptional %}
+                                    <span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full font-bold">Optional</span>
+                                {% else %}
+                                    <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">Compulsory</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="2" class="text-center py-8 text-gray-500 italic">No fee items yet. Create one on the left!</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Active Subscriptions{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto mt-10 px-6">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-black text-gray-900">📡 Subscription Monitor</h1>
+            <p class="text-gray-500">Track expiration dates and renew on behalf of schools.</p>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <table class="w-full text-left">
+            <thead class="bg-gray-50 border-b border-gray-100">
+                <tr>
+                    <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase">School</th>
+                    <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Current Plan</th>
+                    <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Status / Expiry</th>
+                    <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase text-right">Management</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+                {% for sub in subscriptions %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4">
+                        <div class="font-bold text-gray-900">{{ sub.school.name }}</div>
+                        <div class="text-xs text-gray-400">{{ sub.school.subdomain }}.edus.ng</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded text-xs font-bold">{{ sub.plan.name }}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        {% set days = sub.daysRemaining %}
+                        <div class="flex items-center gap-2">
+                            {% if sub.isValid %}
+                                {% if days < 7 %}
+                                    <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold">Expires in {{ days }} days</span>
+                                {% else %}
+                                    <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">{{ days }} days left</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="bg-gray-200 text-gray-600 px-2 py-1 rounded text-xs font-bold">EXPIRED</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-xs text-gray-400 mt-1">
+                            Ends: {{ sub.endDate|date('M d, Y') }}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-right flex justify-end gap-2">
+                        
+                        {# 1. REMIND BUTTON #}
+                        {% if sub.isValid and days < 14 %}
+                            <a href="{{ path('landlord_subscription_remind', {id: sub.id}) }}" class="bg-yellow-100 text-yellow-700 px-3 py-2 rounded-lg text-xs font-bold hover:bg-yellow-200 flex items-center gap-1">
+                                🔔 Poke
+                            </a>
+                        {% endif %}
+
+                        {# 2. GENERATE SLIP BUTTON #}
+                        <a href="{{ path('landlord_subscription_generate_slip', {schoolId: sub.school.id}) }}" class="bg-indigo-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-indigo-700 flex items-center gap-1">
+                            🧾 Create Invoice
+                        </a>
+
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="p-8 text-center text-gray-400">No active subscriptions found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

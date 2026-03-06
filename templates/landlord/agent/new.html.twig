@@ -1,0 +1,96 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Register New Agent{% endblock %}
+
+{% block body %}
+<div class="max-w-6xl mx-auto mt-6 px-4 pb-12">
+    
+    {# HEADER SECTION #}
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">🕵️ Agent Management</h1>
+            <p class="text-gray-500 text-sm">Register new sales agents and resellers.</p>
+        </div>
+        <a href="{{ path('landlord_agent_index') }}" class="text-indigo-600 hover:text-indigo-800 font-medium text-sm">
+            ← Back to Agent List
+        </a>
+    </div>
+
+    {# THE "SMART CREATOR" CARD STYLE #}
+    <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+        
+        <h2 class="text-lg font-bold text-indigo-700 mb-6 flex items-center gap-2">
+            <span>✨ Agent Registration</span>
+        </h2>
+        
+        {{ form_start(form) }}
+        
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                {# 1. LEFT COLUMN: Personal Details #}
+                <div class="space-y-4">
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider border-b pb-1">Personal Details</h3>
+
+                    {# FULL NAME #}
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Full Name</label>
+                        {{ form_widget(form.fullName, {'attr': {'class': 'block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3', 'placeholder': 'e.g. John Doe'}}) }}
+                        {{ form_errors(form.fullName) }}
+                    </div>
+
+                    {# EMAIL #}
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Email Address</label>
+                        {{ form_widget(form.email, {'attr': {'class': 'block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3', 'placeholder': 'agent@example.com'}}) }}
+                        {{ form_errors(form.email) }}
+                    </div>
+
+                    {# PHONE #}
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Phone Number</label>
+                        {{ form_widget(form.phoneNumber, {'attr': {'class': 'block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3', 'placeholder': '+234...'}}) }}
+                        {{ form_errors(form.phoneNumber) }}
+                    </div>
+                </div>
+
+                {# 2. RIGHT COLUMN: Account & Financials #}
+                <div class="space-y-4">
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider border-b pb-1">Account & Finance</h3>
+
+                    {# PASSWORD #}
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Initial Password</label>
+                        {{ form_widget(form.plainPassword, {'attr': {'class': 'block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3', 'placeholder': '******'}}) }}
+                        <p class="text-xs text-gray-500 mt-1">Agent will use this to log in.</p>
+                        {{ form_errors(form.plainPassword) }}
+                    </div>
+
+                    {# COMMISSION #}
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Commission (%)</label>
+                        {{ form_widget(form.commissionPercentage, {'attr': {'class': 'block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3', 'placeholder': '10.00'}}) }}
+                        {{ form_errors(form.commissionPercentage) }}
+                    </div>
+
+                    {# BANK DETAILS #}
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Bank Details</label>
+                        {{ form_widget(form.bankDetails, {'attr': {'class': 'block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3', 'rows': 2, 'placeholder': 'Bank Name & Account No.'}}) }}
+                        {{ form_errors(form.bankDetails) }}
+                    </div>
+                </div>
+
+            </div>
+
+            {# SUBMIT BUTTON #}
+            <div class="mt-8 pt-4 border-t border-gray-100">
+                <button type="submit" class="w-full md:w-auto md:ml-auto float-right bg-indigo-600 text-white font-bold py-2.5 px-6 rounded shadow hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 text-sm">
+                    <span>🚀 Create Agent Account</span>
+                </button>
+                <div class="clear-both"></div>
+            </div>
+
+        {{ form_end(form) }}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,118 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}My Clients{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto">
+    
+    {# === HEADER === #}
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">My Client Schools</h1>
+            <p class="text-sm text-gray-500 mt-1">Manage the schools you have referred to the platform.</p>
+        </div>
+        <a href="{{ path('app_agent_school_new') }}" 
+           class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Enroll New School
+        </a>
+    </div>
+
+    {# === TABLE CARD === #}
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-gray-500">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
+                    <tr>
+                        <th scope="col" class="px-6 py-4 font-bold">School Name</th>
+                        <th scope="col" class="px-6 py-4 font-bold">Domain info</th>
+                        <th scope="col" class="px-6 py-4 font-bold">Database</th>
+                        <th scope="col" class="px-6 py-4 font-bold">Status</th>
+                        <th scope="col" class="px-6 py-4 text-right font-bold">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for school in schools %}
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            {# 1. Name & Identity #}
+                            <td class="px-6 py-4 text-gray-900">
+                                <div class="flex items-center">
+                                    <div class="h-10 w-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-lg mr-3">
+                                        {{ school.name|slice(0,1)|upper }}
+                                    </div>
+                                    <div>
+                                        <div class="font-semibold">{{ school.name }}</div>
+                                        <div class="text-xs text-gray-500">ID: {{ school.id }}</div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            {# 2. Domain Info #}
+                            <td class="px-6 py-4">
+                                <div class="flex flex-col">
+                                    <span class="font-medium text-gray-700">{{ school.subdomain }}.yourdomain.com</span>
+                                    {% if school.customDomain %}
+                                        <span class="text-xs text-gray-400">{{ school.customDomain }}</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+
+                            {# 3. Database Info #}
+                            <td class="px-6 py-4 font-mono text-xs text-gray-500">
+                                {{ school.databaseName }}
+                            </td>
+
+                            {# 4. Status Badge #}
+                            <td class="px-6 py-4">
+                                {% if school.isActive %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        <span class="w-2 h-2 mr-1 bg-green-500 rounded-full"></span>
+                                        Active
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        <span class="w-2 h-2 mr-1 bg-red-500 rounded-full"></span>
+                                        Inactive
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            {# 5. Actions #}
+                            <td class="px-6 py-4 text-right">
+                                <a href="{{ path('app_agent_school_show', {id: school.id}) }}" class="font-medium text-indigo-600 dark:text-indigo-500 hover:underline">
+    Manage</a>
+                            </td>
+                        </tr>
+                    {% else %}
+                        {# EMPTY STATE #}
+                        <tr>
+                            <td colspan="5" class="px-6 py-12 text-center">
+                                <div class="flex flex-col items-center justify-center">
+                                    <div class="h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center mb-3 text-gray-400 text-2xl">
+                                        🏫
+                                    </div>
+                                    <h3 class="text-lg font-medium text-gray-900">No schools enrolled yet</h3>
+                                    <p class="text-gray-500 max-w-sm mt-1 mb-4">You haven't added any schools to your portfolio yet. Start by enrolling your first client.</p>
+                                    <a href="{{ path('app_agent_school_new') }}" class="text-indigo-600 font-bold hover:text-indigo-800">
+                                        Create First School &rarr;
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {# Optional Footer for pagination or count #}
+        {% if schools|length > 0 %}
+        <div class="bg-gray-50 px-6 py-3 border-t border-gray-200 text-xs text-gray-500 flex justify-between items-center">
+            <span>Showing {{ schools|length }} school(s)</span>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
