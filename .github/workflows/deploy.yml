@@ -37,10 +37,14 @@ jobs:
             docker compose pull
             docker compose up -d --force-recreate
             
-            # 1. Force the environment to prod during the command
+            # --- THE FIX: WAIT FOR DATABASE ---
+            echo "Waiting for database to be ready..."
+            sleep 10
+            
+            # Now run migrations
             docker compose exec -e APP_ENV=prod -T php bin/console doctrine:migrations:migrate --no-interaction --em=landlord || true
             
-            # 2. Hard delete the cache and warm it up for production
+            # Clear and warm up cache
             docker compose exec -e APP_ENV=prod -T php bin/console cache:clear --no-warmup
             docker compose exec -e APP_ENV=prod -T php bin/console cache:warmup
             
