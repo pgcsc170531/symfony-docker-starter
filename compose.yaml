@@ -1,18 +1,26 @@
 services:
   php:
-    image: muammil/edus-saas:v1
+    # Changed to match the image name used in your GitHub Action/VPS
+    image: ibraheemrumah/edus-saas:latest
+    pull_policy: always
     restart: always
     ports:
       - "8082:80"
     environment:
       SERVER_NAME: :80
-      APP_ENV: prod
-      BASE_DOMAIN: edus.ng
-      DATABASE_URL: "mysql://root:PASS@database:3306/landlord_db"
-      LANDLORD_DATABASE_URL: "mysql://root:PASS@database:3306/landlord_db"
-      # These CIDR blocks cover Docker's internal networks for safety
+      APP_ENV: dev # Use 'dev' locally for better error reporting
+      BASE_DOMAIN: localhost # Use localhost for easier local testing
+      # Database URLs updated to use 'root' as the password to match the DB service below
+      DATABASE_URL: "mysql://root:root@database:3306/school_a?serverVersion=8.0"
+      LANDLORD_DATABASE_URL: "mysql://root:root@database:3306/landlord_db?serverVersion=8.0"
+      # Termii configuration
+      TERMII_API_KEY: "${TERMII_API_KEY}"
+      TERMII_SENDER_ID: "${TERMII_SENDER_ID}"
+      # Trust all for local development
       TRUSTED_PROXIES: 127.0.0.1,172.16.0.0/12,10.0.0.0/8
-      TRUSTED_HOSTS: ^edus\.ng$$|.*\.edus\.ng$$
+      TRUSTED_HOSTS: '.*'
+    depends_on:
+      - database
 
   database:
     image: mysql:8.0
@@ -20,8 +28,10 @@ services:
     volumes:
       - db_data:/var/lib/mysql
     environment:
-      MYSQL_ROOT_PASSWORD: PASS
+      MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: landlord_db
+    ports:
+      - "3306:3306" # Allows you to connect via TablePlus or HeidiSQL locally
 
   phpmyadmin:
     image: phpmyadmin:latest
@@ -31,7 +41,7 @@ services:
     environment:
       PMA_HOST: database
       PMA_USER: root
-      PMA_PASSWORD: PASS
+      PMA_PASSWORD: root
     depends_on:
       - database
 
