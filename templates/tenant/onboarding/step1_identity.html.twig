@@ -8,71 +8,125 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; }</style>
 </head>
-<body class="bg-gray-100 min-h-screen py-10 px-4">
-<div class="max-w-3xl mx-auto mt-10">
+<body class="bg-gray-100 min-h-screen pb-20 antialiased"> {# Added pb-20 for mobile button clearance #}
+
+<div class="max-w-3xl mx-auto px-4 pt-6 md:pt-12">
     
-    {# PROGRESS BAR #}
+    {# PROGRESS BAR - Responsive #}
     <div class="mb-8">
-        <div class="flex justify-between text-sm font-medium text-gray-500 mb-2">
-            <span class="text-blue-600 font-bold">1. Identity</span>
-            <span>2. Classes</span>
-            <span>3. Calendar</span>
-            <span>4. Finish</span>
+        <div class="flex justify-between items-end mb-3">
+            <div>
+                <p class="text-xs font-bold text-blue-600 uppercase tracking-widest md:hidden">Step 1 of 4</p>
+                <h2 class="text-sm font-bold text-gray-900 hidden md:block">1. Identity</h2>
+            </div>
+            <div class="hidden md:flex gap-8 text-sm font-medium text-gray-400">
+                <span>2. Classes</span>
+                <span>3. Calendar</span>
+                <span>4. Finish</span>
+            </div>
         </div>
-        <div class="w-full bg-gray-200 rounded-full h-2.5">
-            <div class="bg-blue-600 h-2.5 rounded-full" style="width: 25%"></div>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+            <div class="bg-blue-600 h-2 rounded-full transition-all duration-500" style="width: 25%"></div>
         </div>
     </div>
 
-    <div class="bg-white shadow-xl rounded-xl overflow-hidden">
-        <div class="bg-blue-600 p-6 text-white">
-            <h1 class="text-2xl font-bold">👋 Welcome! Let's get started.</h1>
-            <p class="text-blue-100 mt-2">Tell us a bit about your institution.</p>
+    <div class="bg-white shadow-2xl rounded-3xl overflow-hidden border border-gray-100">
+        <div class="bg-blue-600 p-8 text-white relative overflow-hidden">
+            {# Subtle Background Pattern #}
+            <div class="absolute top-0 right-0 opacity-10 transform translate-x-10 -translate-y-10">
+                <i class="fas fa-university fa-9x"></i>
+            </div>
+            
+            <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight">👋 Welcome!</h1>
+            <p class="text-blue-100 mt-2 font-medium">Let's set up your institution's digital identity.</p>
         </div>
 
-        <div class="p-8">
-            {{ form_start(form) }}
+        <div class="p-6 md:p-10">
+            {{ form_start(form, {'attr': {'class': 'space-y-8'}}) }}
                 
                 {# IDENTITY SECTION #}
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div class="col-span-2">
-                        {{ form_row(form.name, {'attr': {'class': 'text-lg font-bold'}}) }}
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">School Name</label>
+                        {{ form_widget(form.name, {'attr': {'class': 'w-full px-4 py-4 rounded-xl border-gray-300 focus:ring-blue-500 focus:border-blue-500 text-lg font-bold shadow-sm'}}) }}
                     </div>
                     
-                    <div class="col-span-2 bg-blue-50 p-4 rounded-lg border border-blue-100">
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Type of Institution</label>
-                        <div class="flex gap-6">
+                    <div class="bg-blue-50 p-5 rounded-2xl border border-blue-100">
+                        <label class="block text-sm font-bold text-gray-800 mb-3 text-center md:text-left">What type of institution is this?</label>
+                        <div class="grid grid-cols-2 gap-4">
                             {% for child in form.institutionType %}
-                                <div class="flex items-center">
-                                    {{ form_widget(child, {'attr': {'class': 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300'}}) }}
-                                    <span class="ml-2 text-sm text-gray-700 font-medium">{{ child.vars.label }}</span>
-                                </div>
+                                <label class="relative flex items-center justify-center p-4 bg-white border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-400 has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50 transition-all">
+                                    {{ form_widget(child, {'attr': {'class': 'sr-only'}}) }} {# sr-only hides actual radio but keeps it functional #}
+                                    <span class="text-sm font-bold text-gray-700">{{ child.vars.label }}</span>
+                                </label>
                             {% endfor %}
                         </div>
-                        <p class="text-xs text-gray-500 mt-2">
-                            * Select <strong>Secondary</strong> for Term System (1st, 2nd, 3rd Term).<br>
-                            * Select <strong>College</strong> for Semester System (1st, 2nd Semester).
-                        </p>
+                        <div class="mt-4 flex items-start gap-2 bg-white/50 p-3 rounded-lg">
+                            <i class="fas fa-info-circle text-blue-500 mt-0.5"></i>
+                            <p class="text-[11px] leading-relaxed text-blue-800">
+                                <strong>Secondary:</strong> Terms (1st, 2nd, 3rd) <br>
+                                <strong>College:</strong> Semesters (1st, 2nd)
+                            </p>
+                        </div>
                     </div>
 
-                    <div>{{ form_row(form.motto) }}</div>
-                    <div>{{ form_row(form.primaryColor) }}</div>
-                    <div class="col-span-2">{{ form_row(form.logoFile) }}</div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            {{ form_label(form.motto, null, {'label_attr': {'class': 'text-sm font-bold text-gray-700'}}) }}
+                            {{ form_widget(form.motto, {'attr': {'class': 'mt-1 w-full px-4 py-3 rounded-xl border-gray-300'}}) }}
+                        </div>
+                        <div>
+                            {{ form_label(form.primaryColor, 'School Color', {'label_attr': {'class': 'text-sm font-bold text-gray-700'}}) }}
+                            {{ form_widget(form.primaryColor, {'attr': {'class': 'mt-1 h-12 w-full p-1 rounded-xl border-gray-300 cursor-pointer'}}) }}
+                        </div>
+                    </div>
+
+                    <div class="col-span-2">
+                         {{ form_label(form.logoFile, 'Upload School Logo', {'label_attr': {'class': 'text-sm font-bold text-gray-700'}}) }}
+                         <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-2xl hover:border-blue-400 transition-colors">
+                            <div class="space-y-1 text-center">
+                                <i class="fas fa-cloud-upload-alt text-gray-400 text-3xl mb-2"></i>
+                                <div class="flex text-sm text-gray-600">
+                                    {{ form_widget(form.logoFile, {'attr': {'class': 'sr-only', 'id': 'file-upload'}}) }}
+                                    <label for="file-upload" class="relative cursor-pointer bg-white rounded-md font-bold text-blue-600 hover:text-blue-500 focus-within:outline-none">
+                                        <span>Click to upload a logo</span>
+                                    </label>
+                                </div>
+                                <p class="text-xs text-gray-500">PNG, JPG up to 2MB</p>
+                            </div>
+                         </div>
+                    </div>
                 </div>
 
-                <hr class="my-6 border-gray-100">
+                <div class="relative py-4">
+                    <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                        <div class="w-full border-t border-gray-100"></div>
+                    </div>
+                </div>
 
                 {# CONTACT SECTION #}
-                <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Contact Details (For Receipts)</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>{{ form_row(form.email) }}</div>
-                    <div>{{ form_row(form.phoneNumber) }}</div>
-                    <div class="col-span-2">{{ form_row(form.address) }}</div>
+                <div>
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">Contact Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            {{ form_label(form.email, null, {'label_attr': {'class': 'text-sm font-bold text-gray-700'}}) }}
+                            {{ form_widget(form.email, {'attr': {'class': 'mt-1 w-full px-4 py-3 rounded-xl border-gray-300', 'inputmode': 'email'}}) }}
+                        </div>
+                        <div>
+                            {{ form_label(form.phoneNumber, null, {'label_attr': {'class': 'text-sm font-bold text-gray-700'}}) }}
+                            {{ form_widget(form.phoneNumber, {'attr': {'class': 'mt-1 w-full px-4 py-3 rounded-xl border-gray-300', 'inputmode': 'tel'}}) }}
+                        </div>
+                        <div class="md:col-span-2">
+                            {{ form_label(form.address, null, {'label_attr': {'class': 'text-sm font-bold text-gray-700'}}) }}
+                            {{ form_widget(form.address, {'attr': {'class': 'mt-1 w-full px-4 py-3 rounded-xl border-gray-300', 'rows': '2'}}) }}
+                        </div>
+                    </div>
                 </div>
 
-                <div class="mt-8 flex justify-end">
-                    <button type="submit" class="bg-blue-600 text-white px-8 py-3 rounded-lg shadow-lg font-bold hover:bg-blue-700 transition-transform transform hover:-translate-y-0.5">
-                        Next: Set Up Classes &rarr;
+                {# FOOTER ACTIONS - Fixed on Mobile? #}
+                <div class="mt-10">
+                    <button type="submit" class="w-full md:w-auto md:float-right bg-blue-600 text-white px-10 py-5 rounded-2xl shadow-xl font-bold text-lg hover:bg-blue-700 active:scale-95 transition-all">
+                        Next Step &rarr;
                     </button>
                 </div>
 
@@ -80,5 +134,6 @@
         </div>
     </div>
 </div>
+
 </body>
 </html>
