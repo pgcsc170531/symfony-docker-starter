@@ -1,68 +1,104 @@
 {% extends 'base.html.twig' %}
 
+{% block title %}School Identity{% endblock %}
+
 {% block body %}
-{# 1. Changed max-w-3xl to w-full on mobile, and removed top padding to sit higher #}
-<div class="w-full max-w-4xl mx-auto md:px-4 md:pt-12 pb-32"> 
+{# 
+   We use -m-6 to counteract the p-6 in your base.html.twig <main> tag.
+   This makes the blue header touch the very top and sides of the screen.
+#}
+<div class="-m-6 md:m-0 bg-gray-100 min-h-screen">
     
-    {# PROGRESS BAR - Full width on mobile #}
-    <div class="px-4 mb-6 md:mb-8">
-        <div class="w-full bg-gray-200 rounded-full h-1.5">
-            <div class="bg-blue-600 h-1.5 rounded-full transition-all duration-500" style="width: 25%"></div>
-        </div>
-        <div class="flex justify-between mt-2">
-            <p class="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Step 1: Identity</p>
-            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest md:hidden">Next: Classes</p>
-        </div>
-    </div>
-
-    {# MAIN CARD - Rounded-none on mobile for "Full Page" look, Rounded-3xl on Desktop #}
-    <div class="bg-white shadow-xl md:rounded-3xl overflow-hidden border-b md:border border-gray-100 min-h-[60vh]">
+    <div class="max-w-4xl mx-auto md:pt-12 pb-32">
         
-        <div class="bg-blue-600 p-6 md:p-8 text-white">
-            <h1 class="text-xl md:text-3xl font-extrabold tracking-tight text-center md:text-left">👋 School Setup</h1>
-            <p class="text-blue-100 mt-1 font-medium text-sm text-center md:text-left">Let's create your digital identity.</p>
-        </div>
-
-        <div class="p-5 md:p-10">
-            {{ form_start(form, {'attr': {'class': 'space-y-6 md:space-y-8'}}) }}
-                
-                {# School Name #}
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Institution Name</label>
-                    {{ form_widget(form.name, {'attr': {'class': 'w-full px-4 py-4 rounded-xl border-gray-300 border-2 focus:border-blue-600 text-lg font-bold shadow-sm', 'placeholder': 'e.g. Gobarau Academy'}}) }}
+        {# MAIN CARD #}
+        <div class="bg-white shadow-2xl md:rounded-3xl overflow-hidden min-h-screen md:min-h-[60vh] flex flex-col">
+            
+            {# BLUE HEADER #}
+            <div class="bg-blue-600 p-8 md:p-12 text-white relative">
+                <div class="absolute top-0 right-0 opacity-10 transform translate-x-10 -translate-y-10 hidden md:block">
+                    <i class="fas fa-university fa-9x"></i>
                 </div>
+                <h1 class="text-2xl md:text-4xl font-black tracking-tight">👋 School Identity</h1>
+                <p class="text-blue-100 mt-2 font-medium">Step 1: Let's build your brand.</p>
+                
+                {# Progress Dots #}
+                <div class="flex gap-2 mt-6">
+                    <div class="h-1.5 w-8 bg-white rounded-full"></div>
+                    <div class="h-1.5 w-2 bg-blue-400 rounded-full"></div>
+                    <div class="h-1.5 w-2 bg-blue-400 rounded-full"></div>
+                    <div class="h-1.5 w-2 bg-blue-400 rounded-full"></div>
+                </div>
+            </div>
 
-                {# Logo Upload - Large touch area #}
-                <div>
-                    <label class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Official Logo</label>
-                    <div class="mt-1 flex flex-col justify-center px-6 py-10 border-2 border-gray-300 border-dashed rounded-2xl bg-gray-50 hover:bg-blue-50 transition-colors cursor-pointer" 
-                         onclick="this.querySelector('input[type=file]').click()">
-                        
-                        <div id="preview-wrapper" class="hidden mb-4 self-center text-center">
-                            <img id="image-preview" src="#" class="h-28 w-28 object-contain rounded-2xl shadow-lg border-4 border-white mx-auto">
-                        </div>
+            <div class="p-6 md:p-12 flex-1">
+                {{ form_start(form, {'attr': {'class': 'space-y-8', 'id': 'onboarding-form'}}) }}
+                    
+                    {# School Name #}
+                    <div class="space-y-2">
+                        <label class="text-xs font-black text-gray-400 uppercase tracking-widest">Institution Name</label>
+                        {{ form_widget(form.name, {'attr': {'class': 'w-full px-5 py-5 rounded-2xl border-2 border-gray-100 focus:border-blue-600 focus:ring-0 text-xl font-bold transition-all', 'placeholder': 'e.g. Gobarau Academy'}}) }}
+                    </div>
 
-                        <div class="text-center" id="upload-instruction">
-                            <div class="h-12 w-12 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm">
-                                <i class="fas fa-camera text-blue-600"></i>
+                    {# Logo Upload #}
+                    <div class="space-y-2">
+                        <label class="text-xs font-black text-gray-400 uppercase tracking-widest">School Logo</label>
+                        <div class="relative border-2 border-dashed border-gray-200 rounded-3xl p-10 bg-gray-50 hover:bg-blue-50 transition-all cursor-pointer text-center"
+                             onclick="document.getElementById('{{ form.logoFile.vars.id }}').click()">
+                            
+                            <div id="preview-wrapper" class="hidden mb-4 animate-in fade-in zoom-in duration-300">
+                                <img id="image-preview" src="#" class="h-32 w-32 object-contain rounded-2xl mx-auto shadow-xl border-4 border-white">
                             </div>
-                            <p class="font-bold text-gray-700 text-sm">Tap to Select Logo</p>
-                            <p class="text-[10px] text-gray-400 mt-1 uppercase">PNG / JPG (MAX 2MB)</p>
-                            {{ form_widget(form.logoFile, {'attr': {'class': 'sr-only', 'onchange': 'previewImage(this)'}}) }}
+
+                            <div id="upload-instruction">
+                                <div class="h-16 w-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+                                    <i class="fas fa-camera text-blue-600 text-xl"></i>
+                                </div>
+                                <p class="font-bold text-gray-700">Tap to Upload Logo</p>
+                            </div>
+
+                            <div class="hidden">
+                                {{ form_widget(form.logoFile, {'attr': {'onchange': 'previewImage(this)'}}) }}
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {# 2. THE STICKY FOOTER - FIXED AT BOTTOM ON MOBILE #}
-                <div class="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 shadow-[0_-10px_20px_rgba(0,0,0,0.05)] md:relative md:bg-transparent md:border-none md:shadow-none md:p-0 md:mt-10 z-50">
-                    <button type="submit" class="w-full md:w-auto md:float-right bg-blue-600 text-white px-10 py-5 rounded-2xl shadow-xl font-extrabold text-lg active:scale-95 transition-all flex justify-center items-center gap-3">
-                        Continue to Classes
-                        <i class="fas fa-arrow-right text-sm"></i>
-                    </button>
-                </div>
+                    {# 
+                       THE FOOTER FIX: 
+                       w-full ensures it stretches across the screen.
+                       left-0 right-0 ensures it stays centered even with the sidebar logic.
+                    #}
+                    <div class="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-gray-100 md:relative md:p-0 md:bg-transparent md:border-none md:mt-12 z-[100]">
+                        <button type="submit" class="w-full md:w-auto md:float-right bg-blue-600 text-white px-12 py-5 rounded-2xl shadow-2xl font-black text-lg active:scale-95 transition-all flex justify-center items-center gap-3">
+                            Next Step
+                            <i class="fas fa-chevron-right text-sm"></i>
+                        </button>
+                    </div>
 
-            {{ form_end(form) }}
+                {{ form_end(form) }}
+            </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+    function previewImage(input) {
+        const wrapper = document.getElementById('preview-wrapper');
+        const image = document.getElementById('image-preview');
+        const instruction = document.getElementById('upload-instruction');
+
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                image.src = e.target.result;
+                wrapper.classList.remove('hidden');
+                instruction.classList.add('hidden');
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+    </script>
 {% endblock %}
