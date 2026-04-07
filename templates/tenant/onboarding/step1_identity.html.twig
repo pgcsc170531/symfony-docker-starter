@@ -1,150 +1,79 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Setup Classes</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>body { font-family: 'Inter', sans-serif; }</style>
-</head>
-<body class="bg-gray-100 min-h-screen pb-20 antialiased"> {# Added pb-20 for mobile button clearance #}
+{% extends 'base.html.twig' %}
 
-<div class="max-w-3xl mx-auto px-4 pt-6 md:pt-12">
-    
-    {# PROGRESS BAR - Responsive #}
+{% block title %}School Identity - Gobarau Academy{% endblock %}
+
+{% block body %}
+<div class="max-w-3xl mx-auto px-4 pt-6 md:pt-12 pb-20">
+    {# Progress Bar #}
     <div class="mb-8">
-        <div class="flex justify-between items-end mb-3">
-            <div>
-                <p class="text-xs font-bold text-blue-600 uppercase tracking-widest md:hidden">Step 1 of 4</p>
-                <h2 class="text-sm font-bold text-gray-900 hidden md:block">1. Identity</h2>
-            </div>
-            <div class="hidden md:flex gap-8 text-sm font-medium text-gray-400">
-                <span>2. Classes</span>
-                <span>3. Calendar</span>
-                <span>4. Finish</span>
-            </div>
-        </div>
         <div class="w-full bg-gray-200 rounded-full h-2">
             <div class="bg-blue-600 h-2 rounded-full transition-all duration-500" style="width: 25%"></div>
         </div>
+        <p class="text-xs font-bold text-blue-600 mt-2">STEP 1: IDENTITY</p>
     </div>
 
     <div class="bg-white shadow-2xl rounded-3xl overflow-hidden border border-gray-100">
-        <div class="bg-blue-600 p-8 text-white relative overflow-hidden">
-            {# Subtle Background Pattern #}
-            <div class="absolute top-0 right-0 opacity-10 transform translate-x-10 -translate-y-10">
-                <i class="fas fa-university fa-9x"></i>
-            </div>
-            
-            <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight">👋 Welcome!</h1>
-            <p class="text-blue-100 mt-2 font-medium">Let's set up your institution's digital identity.</p>
+        <div class="bg-blue-600 p-8 text-white">
+            <h1 class="text-2xl font-extrabold">👋 Welcome!</h1>
+            <p class="text-blue-100 mt-1 font-medium">Let's set up your institution's digital identity.</p>
         </div>
 
         <div class="p-6 md:p-10">
             {{ form_start(form, {'attr': {'class': 'space-y-8'}}) }}
                 
-                {# IDENTITY SECTION #}
-                <div class="space-y-6">
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">School Name</label>
-                        {{ form_widget(form.name, {'attr': {'class': 'w-full px-4 py-4 rounded-xl border-gray-300 focus:ring-blue-500 focus:border-blue-500 text-lg font-bold shadow-sm'}}) }}
-                    </div>
-                    
-                    <div class="bg-blue-50 p-5 rounded-2xl border border-blue-100">
-                        <label class="block text-sm font-bold text-gray-800 mb-3 text-center md:text-left">What type of institution is this?</label>
-                        <div class="grid grid-cols-2 gap-4">
-                            {% for child in form.institutionType %}
-                                <label class="relative flex items-center justify-center p-4 bg-white border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-400 has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50 transition-all">
-                                    {{ form_widget(child, {'attr': {'class': 'sr-only'}}) }} {# sr-only hides actual radio but keeps it functional #}
-                                    <span class="text-sm font-bold text-gray-700">{{ child.vars.label }}</span>
-                                </label>
-                            {% endfor %}
-                        </div>
-                        <div class="mt-4 flex items-start gap-2 bg-white/50 p-3 rounded-lg">
-                            <i class="fas fa-info-circle text-blue-500 mt-0.5"></i>
-                            <p class="text-[11px] leading-relaxed text-blue-800">
-                                <strong>Secondary:</strong> Terms (1st, 2nd, 3rd) <br>
-                                <strong>College:</strong> Semesters (1st, 2nd)
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            {{ form_label(form.motto, null, {'label_attr': {'class': 'text-sm font-bold text-gray-700'}}) }}
-                            {{ form_widget(form.motto, {'attr': {'class': 'mt-1 w-full px-4 py-3 rounded-xl border-gray-300'}}) }}
-                        </div>
-                        <div>
-                            {{ form_label(form.primaryColor, 'School Color', {'label_attr': {'class': 'text-sm font-bold text-gray-700'}}) }}
-                            {{ form_widget(form.primaryColor, {'attr': {'class': 'mt-1 h-12 w-full p-1 rounded-xl border-gray-300 cursor-pointer'}}) }}
-                        </div>
-                    </div>
-
-                    <div class="col-span-2" id="logo-upload-container">
-     {{ form_label(form.logoFile, 'Upload School Logo', {'label_attr': {'class': 'text-sm font-bold text-gray-700'}}) }}
-     <div class="mt-1 flex flex-col justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-2xl hover:border-blue-400 transition-colors cursor-pointer" onclick="document.getElementById('file-upload').click()">
-        
-        {# PREVIEW IMAGE (Hidden by default) #}
-        <div id="preview-wrapper" class="hidden mb-4 self-center">
-            <img id="image-preview" src="#" alt="Logo Preview" class="h-24 w-24 object-contain rounded-xl shadow-md border-2 border-white">
-        </div>
-
-        <div class="space-y-1 text-center" id="upload-instruction">
-            <i class="fas fa-cloud-upload-alt text-gray-400 text-3xl mb-2"></i>
-            <div class="flex text-sm text-gray-600 justify-center">
-                {# Notice we added an ID and an ONCHANGE event #}
-                {{ form_widget(form.logoFile, {'attr': {
-                    'class': 'sr-only', 
-                    'id': 'file-upload',
-                    'onchange': 'previewImage(this)'
-                }}) }}
-                <span class="relative cursor-pointer bg-white rounded-md font-bold text-blue-600 hover:text-blue-500">
-                    Click to upload a logo
-                </span>
-            </div>
-            <p class="text-xs text-gray-500">PNG, JPG up to 2MB</p>
-        </div>
-     </div>
-</div>
-                </div>
-
-                <div class="relative py-4">
-                    <div class="absolute inset-0 flex items-center" aria-hidden="true">
-                        <div class="w-full border-t border-gray-100"></div>
-                    </div>
-                </div>
-
-                {# CONTACT SECTION #}
                 <div>
-                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">Contact Information</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            {{ form_label(form.email, null, {'label_attr': {'class': 'text-sm font-bold text-gray-700'}}) }}
-                            {{ form_widget(form.email, {'attr': {'class': 'mt-1 w-full px-4 py-3 rounded-xl border-gray-300', 'inputmode': 'email'}}) }}
+                    <label class="block text-sm font-bold text-gray-700 mb-2">School Name</label>
+                    {{ form_widget(form.name, {'attr': {'class': 'w-full px-4 py-4 rounded-xl border-gray-300 border text-lg font-bold'}}) }}
+                </div>
+
+                {# LOGO UPLOAD #}
+                <div class="col-span-2">
+                    <label class="text-sm font-bold text-gray-700">Upload School Logo</label>
+                    <div class="mt-1 flex flex-col justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-2xl hover:border-blue-400 transition-colors cursor-pointer" 
+                         onclick="this.querySelector('input[type=file]').click()">
+                        
+                        <div id="preview-wrapper" class="hidden mb-4 self-center text-center">
+                            <img id="image-preview" src="#" class="h-24 w-24 object-contain rounded-xl shadow-md border-2 border-white mx-auto">
                         </div>
-                        <div>
-                            {{ form_label(form.phoneNumber, null, {'label_attr': {'class': 'text-sm font-bold text-gray-700'}}) }}
-                            {{ form_widget(form.phoneNumber, {'attr': {'class': 'mt-1 w-full px-4 py-3 rounded-xl border-gray-300', 'inputmode': 'tel'}}) }}
-                        </div>
-                        <div class="md:col-span-2">
-                            {{ form_label(form.address, null, {'label_attr': {'class': 'text-sm font-bold text-gray-700'}}) }}
-                            {{ form_widget(form.address, {'attr': {'class': 'mt-1 w-full px-4 py-3 rounded-xl border-gray-300', 'rows': '2'}}) }}
+
+                        <div class="space-y-1 text-center" id="upload-instruction">
+                            <i class="fas fa-camera text-gray-400 text-3xl mb-2"></i>
+                            <div class="text-sm text-gray-600">
+                                {{ form_widget(form.logoFile, {'attr': {'class': 'sr-only', 'onchange': 'previewImage(this)'}}) }}
+                                <span class="font-bold text-blue-600">Click to upload logo</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {# FOOTER ACTIONS - Fixed on Mobile? #}
                 <div class="mt-10">
-                    <button type="submit" class="w-full md:w-auto md:float-right bg-blue-600 text-white px-10 py-5 rounded-2xl shadow-xl font-bold text-lg hover:bg-blue-700 active:scale-95 transition-all">
+                    <button type="submit" class="w-full md:w-auto md:float-right bg-blue-600 text-white px-10 py-4 rounded-2xl shadow-xl font-bold">
                         Next Step &rarr;
                     </button>
                 </div>
-
             {{ form_end(form) }}
         </div>
     </div>
 </div>
+{% endblock %}
 
-</body>
-</html>
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+    function previewImage(input) {
+        const wrapper = document.getElementById('preview-wrapper');
+        const image = document.getElementById('image-preview');
+        const instruction = document.getElementById('upload-instruction');
+
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                image.src = e.target.result;
+                wrapper.classList.remove('hidden');
+                instruction.classList.add('opacity-50');
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+    </script>
+{% endblock %} 
