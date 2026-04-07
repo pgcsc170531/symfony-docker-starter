@@ -81,21 +81,32 @@
                         </div>
                     </div>
 
-                    <div class="col-span-2">
-                         {{ form_label(form.logoFile, 'Upload School Logo', {'label_attr': {'class': 'text-sm font-bold text-gray-700'}}) }}
-                         <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-2xl hover:border-blue-400 transition-colors">
-                            <div class="space-y-1 text-center">
-                                <i class="fas fa-cloud-upload-alt text-gray-400 text-3xl mb-2"></i>
-                                <div class="flex text-sm text-gray-600">
-                                    {{ form_widget(form.logoFile, {'attr': {'class': 'sr-only', 'id': 'file-upload'}}) }}
-                                    <label for="file-upload" class="relative cursor-pointer bg-white rounded-md font-bold text-blue-600 hover:text-blue-500 focus-within:outline-none">
-                                        <span>Click to upload a logo</span>
-                                    </label>
-                                </div>
-                                <p class="text-xs text-gray-500">PNG, JPG up to 2MB</p>
-                            </div>
-                         </div>
-                    </div>
+                    <div class="col-span-2" id="logo-upload-container">
+     {{ form_label(form.logoFile, 'Upload School Logo', {'label_attr': {'class': 'text-sm font-bold text-gray-700'}}) }}
+     <div class="mt-1 flex flex-col justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-2xl hover:border-blue-400 transition-colors cursor-pointer" onclick="document.getElementById('file-upload').click()">
+        
+        {# PREVIEW IMAGE (Hidden by default) #}
+        <div id="preview-wrapper" class="hidden mb-4 self-center">
+            <img id="image-preview" src="#" alt="Logo Preview" class="h-24 w-24 object-contain rounded-xl shadow-md border-2 border-white">
+        </div>
+
+        <div class="space-y-1 text-center" id="upload-instruction">
+            <i class="fas fa-cloud-upload-alt text-gray-400 text-3xl mb-2"></i>
+            <div class="flex text-sm text-gray-600 justify-center">
+                {# Notice we added an ID and an ONCHANGE event #}
+                {{ form_widget(form.logoFile, {'attr': {
+                    'class': 'sr-only', 
+                    'id': 'file-upload',
+                    'onchange': 'previewImage(this)'
+                }}) }}
+                <span class="relative cursor-pointer bg-white rounded-md font-bold text-blue-600 hover:text-blue-500">
+                    Click to upload a logo
+                </span>
+            </div>
+            <p class="text-xs text-gray-500">PNG, JPG up to 2MB</p>
+        </div>
+     </div>
+</div>
                 </div>
 
                 <div class="relative py-4">
