@@ -1,14 +1,20 @@
 services:
   php:
-    # Changed to match the image name used in your GitHub Action/VPS
     image: ibraheemrumah/edus-saas:latest
-    pull_policy: always
     restart: always
+    user: root
     ports:
       - "8082:80"
+    volumes:
+      # 🔴 THE BRIDGE: Ensure this points to the right internal path
+      - ./:/app:rw
     environment:
       SERVER_NAME: :80
-      APP_ENV: dev # Use 'dev' locally for better error reporting
+      # 🚀 IMPORTANT: Tell Symfony to look for changes
+      APP_ENV: dev
+      APP_DEBUG: 1
+      WATCH: 1
+      FRANKENPHP_CONFIG: "worker /app/public/index.php 0"
       BASE_DOMAIN: localhost # Use localhost for easier local testing
       # Database URLs updated to use 'root' as the password to match the DB service below
       DATABASE_URL: "mysql://root:root@database:3306/school_a?serverVersion=8.0"

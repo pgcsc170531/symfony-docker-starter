@@ -1,269 +1,257 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Setup Classes</title>
+    <title>Setup Fee Structure</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>body { font-family: 'Inter', sans-serif; }</style>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .dragging { opacity: 0.5; transform: scale(0.98); }
+    </style>
 </head>
-<body class="bg-gray-100 min-h-screen py-10 px-4">
+<body class="bg-gray-50 min-h-screen">
 
-<div class="max-w-6xl mx-auto mt-10 pb-20 px-4">
+<div class="max-w-6xl mx-auto md:py-10">
     
     {# HEADER #}
-    <div class="bg-indigo-600 p-6 rounded-t-xl text-white shadow-lg flex justify-between items-center">
+    <div class="bg-indigo-600 p-5 md:p-6 md:rounded-t-xl text-white shadow-lg flex justify-between items-center">
         <div>
-            <h1 class="text-2xl font-bold">⚙️ Configure Your Fee Structure</h1>
-            <p class="text-indigo-100 mt-1">Select standard fees or add your own custom ones.</p>
+            <h1 class="text-xl md:text-2xl font-bold">⚙️ Fee Structure</h1>
+            <p class="text-indigo-100 text-sm mt-1">Configure standard or custom fees.</p>
         </div>
-        <div class="text-sm bg-indigo-700 py-1 px-3 rounded-lg border border-indigo-500">
-            Step 4 of 5
+        <div class="text-xs font-bold bg-indigo-700 py-1 px-3 rounded-lg border border-indigo-500">
+            Step 4 / 5
         </div>
     </div>
 
-    {# MAIN FORM #}
-    <div class="bg-white shadow-xl rounded-b-xl overflow-hidden p-6 border border-gray-200">
-        {{ form_start(form) }}
+    <div class="bg-white shadow-xl md:rounded-b-xl pb-24 md:pb-6 p-4 md:p-6 border border-gray-200">
+        {{ form_start(form, {'attr': {'id': 'fee-form'}}) }}
             
-        <div class="overflow-x-auto rounded-lg border border-gray-100">
-           <table class="min-w-full divide-y divide-gray-200" id="fee-table">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="w-10 px-4 py-3"></th> {# Drag Handle Column #}
-                        <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase w-16">Active</th>
-                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase w-1/3">Fee Name</th>
-                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Frequency</th>
-                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Target Audience</th>
-                        <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase w-24">Optional?</th>
-                        <th class="px-4 py-3 w-16"></th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200" id="fee-list">
-                    {% for row in form.items %}
-                        {# 🟢 ADD 'draggable="true"' and 'data-index' #}
-                        <tr class="hover:bg-gray-50 transition-colors group draggable-row cursor-move" draggable="true">
-                            {# 🟢 1. DRAG HANDLE #}
-                            <td class="px-4 py-3 text-center text-gray-400 cursor-grab active:cursor-grabbing">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
-                                {# Hidden Position Field #}
-                                {{ form_widget(row.position) }}
-                            </td>
-
-                            <td class="px-4 py-3 text-center">
-                                {{ form_widget(row.id) }}
-                                {{ form_widget(row.isSelected, {'attr': {'class': 'h-5 w-5 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer border-gray-300'}}) }}
-                            </td>
-                            <td class="px-4 py-3">
-                                {{ form_widget(row.name, {'attr': {'class': 'block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3 border'}}) }}
-                            </td>
-                            <td class="px-4 py-3">
-                                {{ form_widget(row.frequency, {'attr': {'class': 'block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3 border bg-white'}}) }}
-                            </td>
-                            <td class="px-4 py-3">
-                                {{ form_widget(row.target, {'attr': {'class': 'block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3 border bg-white'}}) }}
-                            </td>
-                            <td class="px-4 py-3 text-center">
-                                {{ form_widget(row.isOptional, {'attr': {'class': 'h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 cursor-pointer'}}) }}
-                            </td>
-                            <td class="px-4 py-3 text-center">
-                                <button type="button" class="text-gray-400 hover:text-red-600 transition-colors" onclick="this.closest('tr').remove()">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                </button>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        {# 🖥️ DESKTOP TABLE HEADER (Hidden on mobile) #}
+        <div class="hidden md:grid md:grid-cols-[40px_60px_minmax(150px,1fr)_minmax(120px,1fr)_minmax(120px,1fr)_80px_50px] md:gap-4 bg-gray-50 p-3 rounded-t-lg font-bold text-xs text-gray-500 uppercase border border-gray-200 border-b-0">
+            <div></div>
+            <div class="text-center">Active</div>
+            <div>Fee Name</div>
+            <div>Frequency</div>
+            <div>Target</div>
+            <div class="text-center">Optional?</div>
+            <div></div>
         </div>
 
-        <div class="mt-4 mb-8">
+        {# MAIN LIST CONTAINER (Single Loop) #}
+        <div id="fee-list" class="md:border md:border-gray-200 md:rounded-b-lg md:overflow-hidden bg-white">
+            
+            {% for row in form.items %}
+                
+                {# RESPONSIVE ROW: Card on Mobile -> Table Row on Desktop #}
+                <div class="draggable-row flex flex-col md:grid md:grid-cols-[40px_60px_minmax(150px,1fr)_minmax(120px,1fr)_minmax(120px,1fr)_80px_50px] md:gap-4 md:items-center bg-white border-2 border-gray-100 md:border-0 md:border-b md:rounded-none rounded-xl p-4 md:p-3 mb-4 md:mb-0 hover:bg-gray-50 transition-colors" draggable="true">
+                    
+                    {# 1. Drag Handle + Active Checkbox #}
+                    <div class="flex items-center justify-between md:contents mb-3 md:mb-0 border-b border-gray-100 md:border-0 pb-3 md:pb-0">
+                        <div class="flex items-center gap-3 md:contents">
+                            
+                            <div class="cursor-grab text-gray-300 md:col-start-1 md:flex md:justify-center">
+                                <svg class="w-6 h-6 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 8h16M4 16h16" stroke-width="2" stroke-linecap="round"/></svg>
+                                {{ form_widget(row.position, {'attr': {'class': 'fee-position'}}) }}
+                            </div>
+                            
+                            <div class="flex items-center gap-2 md:col-start-2 md:justify-center">
+                                {{ form_widget(row.isSelected, {'attr': {'class': 'h-5 w-5 text-indigo-600 rounded border-gray-300'}}) }}
+                                {{ form_widget(row.id) }}
+                                <span class="text-xs font-bold text-gray-400 uppercase md:hidden">Active</span>
+                            </div>
+                        </div>
+
+                        {# Mobile-only Delete Button #}
+                        <button type="button" class="text-red-500 hover:text-red-700 md:hidden remove-row-btn p-1">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2" stroke-linecap="round"/></svg>
+                        </button>
+                    </div>
+
+                    {# 2. Main Form Inputs #}
+                    <div class="grid grid-cols-1 md:contents gap-3">
+                        <div class="md:col-start-3">
+                            <label class="text-[10px] font-bold text-gray-400 uppercase md:hidden">Fee Name</label>
+                            {{ form_widget(row.name, {'attr': {'class': 'w-full rounded-md border-gray-300 text-sm border p-2 bg-white mt-1 md:mt-0'}}) }}
+                        </div>
+                        
+                        <div class="grid grid-cols-2 md:contents gap-3">
+                            <div class="md:col-start-4">
+                                <label class="text-[10px] font-bold text-gray-400 uppercase md:hidden">Frequency</label>
+                                {{ form_widget(row.frequency, {'attr': {'class': 'w-full rounded-md border-gray-300 text-sm border p-2 bg-white mt-1 md:mt-0'}}) }}
+                            </div>
+                            <div class="md:col-start-5">
+                                <label class="text-[10px] font-bold text-gray-400 uppercase md:hidden">Target</label>
+                                {{ form_widget(row.target, {'attr': {'class': 'w-full rounded-md border-gray-300 text-sm border p-2 bg-white mt-1 md:mt-0'}}) }}
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between bg-gray-50 md:bg-transparent p-2 md:p-0 rounded-lg md:rounded-none md:col-start-6 md:justify-center">
+                            <span class="text-sm text-gray-600 font-medium md:hidden">Optional?</span>
+                            {{ form_widget(row.isOptional, {'attr': {'class': 'h-4 w-4 text-indigo-600 rounded border-gray-300'}}) }}
+                        </div>
+                    </div>
+
+                    {# 3. Desktop-only Delete Button #}
+                    <div class="hidden md:flex justify-center md:col-start-7">
+                        <button type="button" class="text-gray-400 hover:text-red-600 remove-row-btn transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2" stroke-linecap="round"/></svg>
+                        </button>
+                    </div>
+
+                </div>
+            {% endfor %}
+        </div>
+
+        {# ADD BUTTON #}
+        <div class="mt-6 flex justify-center md:justify-start">
             <button type="button" id="add-fee-btn" 
-                    class="flex items-center text-indigo-600 hover:text-indigo-800 font-bold text-sm px-4 py-2 hover:bg-indigo-50 rounded-lg transition-colors">
-                <span class="text-xl mr-2 font-bold">+</span> Add Custom Fee Item
+                    class="w-full md:w-auto flex items-center justify-center bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-bold py-3 px-6 rounded-xl border-2 border-dashed border-indigo-200 transition-colors">
+                <span class="text-xl mr-2">+</span> Add Custom Fee Item
             </button>
         </div>
 
         {# FOOTER ACTIONS #}
-        <div class="flex justify-between items-center pt-6 border-t border-gray-100">
-            <a href="{{ path('app_tenant_onboarding_calendar') }}" class="text-gray-500 font-medium hover:text-gray-700 flex items-center gap-1">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                Back
-            </a>
-            
-            <button type="submit" class="bg-indigo-600 text-white px-8 py-3 rounded-lg font-bold shadow hover:bg-indigo-700 transform hover:-translate-y-0.5 transition-all flex items-center gap-2">
-                Save & Set Prices 
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+        <div class="fixed bottom-0 left-0 right-0 bg-white p-4 border-t border-gray-200 md:static md:bg-transparent md:border-none md:p-0 md:mt-10 flex flex-row justify-between items-center gap-4 z-50">
+            <a href="#" class="text-gray-500 font-bold text-sm px-4 hover:text-gray-700 transition-colors">Back</a>
+            <button type="submit" class="bg-indigo-600 text-white px-6 md:px-10 py-3 rounded-xl font-bold shadow-lg hover:bg-indigo-700 flex items-center gap-2 transition-transform active:scale-95">
+                <span>Save & Continue</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-width="2" stroke-linecap="round"/></svg>
             </button>
         </div>
 
-        {% do form.save.setRendered %}
         {{ form_end(form) }}
     </div>
 </div>
 
 <script>
-    document.getElementById('add-fee-btn').addEventListener('click', function() {
-        const list = document.getElementById('fee-list');
-        const index = list.querySelectorAll('tr').length;
-        
-        // CSS Classes matching your theme
-        const inputClass = "block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3 border";
-        const selectClass = "block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3 border bg-white";
-        const checkboxClass = "h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 cursor-pointer";
-
-        const newRow = document.createElement('tr');
-        newRow.className = "bg-yellow-50 transition-colors border-l-4 border-yellow-400";
-        newRow.innerHTML = `
-            <td class="px-4 py-3 text-center">
-                <input type="checkbox" checked disabled class="h-5 w-5 rounded text-indigo-600 opacity-50 cursor-not-allowed">
-            </td>
-            <td class="px-4 py-3">
-                <input type="text" name="fee_items[items][${index}][name]" required class="${inputClass}" placeholder="Custom Fee Name">
-            </td>
-            <td class="px-4 py-3">
-                <select name="fee_items[items][${index}][frequency]" class="${selectClass}">
-                    <option value="TERM">Every Term</option>
-                    <option value="SESSION">Once per Session</option>
-                    <option value="ONETIME">One-Time (Life of Student)</option>
-                </select>
-            </td>
-            <td class="px-4 py-3">
-                <select name="fee_items[items][${index}][target]" class="${selectClass}">
-                    <option value="ALL">All Students</option>
-                    <option value="NEW">New Intake Only</option>
-                </select>
-            </td>
-            <td class="px-4 py-3 text-center">
-                <input type="checkbox" name="fee_items[items][${index}][isOptional]" value="1" class="${checkboxClass}">
-            </td>
-            <td class="px-4 py-3 text-center">
-                <button type="button" class="text-red-500 hover:text-red-700 transition-colors" onclick="this.closest('tr').remove()">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-                <input type="hidden" name="fee_items[items][${index}][isSelected]" value="1">
-            </td>
-        `;
-        list.appendChild(newRow);
-    });
-
-    document.addEventListener('DOMContentLoaded', () => {
-        const list = document.getElementById('fee-list');
-        let draggedItem = null;
-
-        // 1. Initialize Drag Events
-        function addDragEvents(row) {
-            row.addEventListener('dragstart', function() {
-                draggedItem = this;
-                setTimeout(() => this.classList.add('opacity-50', 'bg-indigo-50'), 0);
-            });
-
-            row.addEventListener('dragend', function() {
-                setTimeout(() => {
-                    this.classList.remove('opacity-50', 'bg-indigo-50');
-                    draggedItem = null;
-                    updatePositions(); // Update numbers after drop
-                }, 0);
-            });
-
-            row.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                const afterElement = getDragAfterElement(list, e.clientY);
-                if (afterElement == null) {
-                    list.appendChild(draggedItem);
-                } else {
-                    list.insertBefore(draggedItem, afterElement);
-                }
-            });
-        }
-
-        // 2. Apply to existing rows
-        document.querySelectorAll('.draggable-row').forEach(addDragEvents);
-
-        // 3. Helper to calculate drop position
-        function getDragAfterElement(container, y) {
-            const draggableElements = [...container.querySelectorAll('.draggable-row:not(.opacity-50)')];
-
-            return draggableElements.reduce((closest, child) => {
-                const box = child.getBoundingClientRect();
-                const offset = y - box.top - box.height / 2;
-                if (offset < 0 && offset > closest.offset) {
-                    return { offset: offset, element: child };
-                } else {
-                    return closest;
-                }
-            }, { offset: Number.NEGATIVE_INFINITY }).element;
-        }
-
-        // 4. Update Hidden Input Numbers (0, 1, 2, 3...)
-        function updatePositions() {
-            document.querySelectorAll('#fee-list tr').forEach((row, index) => {
-                const hiddenInput = row.querySelector('.fee-position');
-                if (hiddenInput) hiddenInput.value = index;
-            });
-        }
-        
-        // Run once on load to set initial order
-        updatePositions();
-
-        // 5. Update "Add Button" to include drag logic
-        document.getElementById('add-fee-btn').addEventListener('click', function() {
-            const index = list.querySelectorAll('tr').length;
-            
-            // Define styling constants
-            const inputClass = "block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3 border";
-            const selectClass = "block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3 border bg-white";
-            const checkboxClass = "h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 cursor-pointer";
-
-            const newRow = document.createElement('tr');
-            newRow.className = "bg-yellow-50 transition-colors border-l-4 border-yellow-400 draggable-row cursor-move";
-            newRow.draggable = true;
-            
-            newRow.innerHTML = `
-                <td class="px-4 py-3 text-center text-gray-400 cursor-grab">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
-                    <input type="hidden" name="fee_items[items][${index}][position]" class="fee-position" value="${index}">
-                </td>
-                <td class="px-4 py-3 text-center">
-                    <input type="checkbox" checked disabled class="h-5 w-5 rounded text-indigo-600 opacity-50 cursor-not-allowed">
-                </td>
-                <td class="px-4 py-3">
-                    <input type="text" name="fee_items[items][${index}][name]" required class="${inputClass}" placeholder="Custom Fee Name">
-                </td>
-                <td class="px-4 py-3">
-                    <select name="fee_items[items][${index}][frequency]" class="${selectClass}">
-                        <option value="TERM">Every Term</option>
-                        <option value="SESSION">Once per Session</option>
-                        <option value="ONETIME">One-Time (Life of Student)</option>
-                    </select>
-                </td>
-                <td class="px-4 py-3">
-                    <select name="fee_items[items][${index}][target]" class="${selectClass}">
-                        <option value="ALL">All Students</option>
-                        <option value="NEW">New Intake Only</option>
-                    </select>
-                </td>
-                <td class="px-4 py-3 text-center">
-                    <input type="checkbox" name="fee_items[items][${index}][isOptional]" value="1" class="${checkboxClass}">
-                </td>
-                <td class="px-4 py-3 text-center">
-                    <button type="button" class="text-red-500 hover:text-red-700 transition-colors" onclick="this.closest('tr').remove()">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
-                    <input type="hidden" name="fee_items[items][${index}][isSelected]" value="1">
-                </td>
-            `;
-            
-            list.appendChild(newRow);
-            addDragEvents(newRow); // Make the new row draggable immediately
+    // Delete Row Logic
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-row-btn')) {
+            const row = e.target.closest('.draggable-row');
+            row.remove();
             updatePositions();
-        });
+        }
     });
 
-</script>
+    // Add New Row Logic (Uses the same responsive structure!)
+    document.getElementById('add-fee-btn').addEventListener('click', function() {
+        const container = document.getElementById('fee-list');
+        const index = container.querySelectorAll('.draggable-row').length;
+        
+        const template = `
+            <div class="draggable-row flex flex-col md:grid md:grid-cols-[40px_60px_minmax(150px,1fr)_minmax(120px,1fr)_minmax(120px,1fr)_80px_50px] md:gap-4 md:items-center bg-yellow-50 border-2 border-yellow-200 md:border-0 md:border-b md:border-gray-200 md:rounded-none rounded-xl p-4 md:p-3 mb-4 md:mb-0 transition-colors" draggable="true">
+                <div class="flex items-center justify-between md:contents mb-3 md:mb-0 border-b border-yellow-200 md:border-0 pb-3 md:pb-0">
+                    <div class="flex items-center gap-3 md:contents">
+                        <div class="cursor-grab text-gray-400 md:col-start-1 md:flex md:justify-center">
+                            <svg class="w-6 h-6 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 8h16M4 16h16" stroke-width="2" stroke-linecap="round"/></svg>
+                            <input type="hidden" name="fee_items[items][${index}][position]" class="fee-position" value="${index}">
+                        </div>
+                        <div class="flex items-center gap-2 md:col-start-2 md:justify-center">
+                            <input type="checkbox" checked disabled class="h-5 w-5 text-indigo-600 rounded border-gray-300 opacity-50 cursor-not-allowed">
+                            <input type="hidden" name="fee_items[items][${index}][isSelected]" value="1">
+                            <span class="text-xs font-bold text-gray-400 uppercase md:hidden">Active</span>
+                        </div>
+                    </div>
+                    <button type="button" class="text-red-500 hover:text-red-700 md:hidden remove-row-btn p-1">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="2" stroke-linecap="round"/></svg>
+                    </button>
+                </div>
 
+                <div class="grid grid-cols-1 md:contents gap-3">
+                    <div class="md:col-start-3">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase md:hidden">Fee Name</label>
+                        <input type="text" name="fee_items[items][${index}][name]" required class="w-full rounded-md border-gray-300 text-sm border p-2 bg-white mt-1 md:mt-0" placeholder="Custom Fee Name">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 md:contents gap-3">
+                        <div class="md:col-start-4">
+                            <label class="text-[10px] font-bold text-gray-400 uppercase md:hidden">Frequency</label>
+                            <select name="fee_items[items][${index}][frequency]" class="w-full rounded-md border-gray-300 text-sm border p-2 bg-white mt-1 md:mt-0">
+                                <option value="TERM">Every Term</option>
+                                <option value="SESSION">Once per Session</option>
+                                <option value="ONETIME">One-Time (Life of Student)</option>
+                            </select>
+                        </div>
+                        <div class="md:col-start-5">
+                            <label class="text-[10px] font-bold text-gray-400 uppercase md:hidden">Target</label>
+                            <select name="fee_items[items][${index}][target]" class="w-full rounded-md border-gray-300 text-sm border p-2 bg-white mt-1 md:mt-0">
+                                <option value="ALL">All Students</option>
+                                <option value="NEW">New Intake Only</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between bg-yellow-100 md:bg-transparent p-2 md:p-0 rounded-lg md:rounded-none md:col-start-6 md:justify-center">
+                        <span class="text-sm text-gray-600 font-medium md:hidden">Optional?</span>
+                        <input type="checkbox" name="fee_items[items][${index}][isOptional]" value="1" class="h-4 w-4 text-indigo-600 rounded border-gray-300">
+                    </div>
+                </div>
+
+                <div class="hidden md:flex justify-center md:col-start-7">
+                    <button type="button" class="text-gray-400 hover:text-red-600 remove-row-btn transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2" stroke-linecap="round"/></svg>
+                    </button>
+                </div>
+            </div>
+        `;
+
+        container.insertAdjacentHTML('beforeend', template);
+        updatePositions();
+    });
+
+    // Hidden Position Input Updater
+    function updatePositions() {
+        document.querySelectorAll('.fee-position').forEach((el, index) => {
+            el.value = index;
+        });
+    }
+
+    // Drag and Drop Logic
+    let draggedItem = null;
+
+    document.addEventListener('dragstart', (e) => {
+        const row = e.target.closest('.draggable-row');
+        if(row) {
+            draggedItem = row;
+            row.classList.add('opacity-50', 'scale-[0.98]');
+        }
+    });
+
+    document.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        if (!draggedItem) return;
+        const container = draggedItem.parentNode;
+        const afterElement = getDragAfterElement(container, e.clientY);
+        if (afterElement == null) {
+            container.appendChild(draggedItem);
+        } else {
+            container.insertBefore(draggedItem, afterElement);
+        }
+    });
+
+    document.addEventListener('dragend', (e) => {
+        if(draggedItem) {
+            draggedItem.classList.remove('opacity-50', 'scale-[0.98]');
+            draggedItem = null;
+            updatePositions();
+        }
+    });
+
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.draggable-row:not(.opacity-50)')];
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+</script>
 </body>
 </html>
-
