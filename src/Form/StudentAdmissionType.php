@@ -15,6 +15,8 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Form\FormEvent;        // 🟢 Added for dynamic fields
+use Symfony\Component\Form\FormEvents;       // 🟢 Added for dynamic fields
 
 class StudentAdmissionType extends AbstractType
 {
@@ -34,7 +36,7 @@ class StudentAdmissionType extends AbstractType
                     'Male' => 'Male',
                     'Female' => 'Female',
                 ],
-                'expanded' => true, // Radio buttons
+                'expanded' => true,
                 'multiple' => false,
             ])
             ->add('dateOfBirth', DateType::class, [
@@ -65,7 +67,8 @@ class StudentAdmissionType extends AbstractType
                 'class' => Country::class,
                 'choice_label' => 'name',
                 'placeholder' => 'Select Country',
-                'label' => 'Nationality'
+                'label' => 'Nationality',
+                'attr' => ['id' => 'select-country'],
             ])
             ->add('stateOfOrigin', EntityType::class, [
                 'class' => State::class,
@@ -118,8 +121,31 @@ class StudentAdmissionType extends AbstractType
             ->add('previousSchool', TextType::class, [
                 'label' => 'Previous School Attended',
                 'required' => false
-            ])
-        ;
+            ]);
+
+        // ======================================================
+        // 🟢 DYNAMIC EVENT LISTENER FOR ADMISSION NUMBER
+        // ======================================================
+        $builder->addEventListener(FormEvents::PRE_SET_DATA, function (FormEvent $event) {
+            $student = $event->getData();
+            $form = $event->getForm();
+
+            // Check if the student exists and already has an admission number
+            $hasAdmissionNumber = $student && $student->getAdmissionNumber() !== null;
+
+            // Dynamically add the field based on whether they have a number or not
+            $form->add('admissionNumber', TextType::class, [
+                'label' => 'Admission Number',
+                'required' => false,
+                'disabled' => $hasAdmissionNumber, // 🔒 Lock it ONLY if it exists
+                'attr' => [
+                    'placeholder' => $hasAdmissionNumber ? '' : 'Auto-generated (or enter legacy Adm No)',
+                    'class' => $hasAdmissionNumber 
+                        ? 'bg-gray-100 cursor-not-allowed text-gray-600 font-mono font-bold border-gray-300 w-full' 
+                        : 'font-mono w-full border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 rounded-lg p-3 shadow-sm'
+                ]
+            ]);
+        });
     }
 
     public function configureOptions(OptionsResolver $resolver): void

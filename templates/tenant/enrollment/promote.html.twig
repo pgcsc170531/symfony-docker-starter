@@ -3,94 +3,116 @@
 {% block title %}Batch Promotion{% endblock %}
 
 {% block body %}
-<div class="container mx-auto mt-10 p-5">
-    <div class="bg-white rounded shadow-lg p-8">
-        <h1 class="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">Student Promotion & Repetition</h1>
+<div class="container mx-auto mt-4 md:mt-10 p-2 sm:p-5">
+    <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8">
+        
+        <div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+            <h1 class="text-xl md:text-2xl font-bold text-gray-800">Student Promotion & Repetition</h1>
+            <a href="{{ path('app_tenant_student_index') }}" class="text-sm font-bold text-indigo-600 hover:underline hidden sm:block">
+                &larr; Directory
+            </a>
+        </div>
 
         <form method="POST" action="{{ path('app_tenant_enrollment_promote') }}">
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                <div class="bg-gray-50 p-4 rounded border">
-                    <h3 class="font-bold text-gray-600 mb-4 uppercase text-sm">Moving From (Old Session)</h3>
-                    <div class="mb-3">
-                        <label class="block text-sm font-bold mb-1">Source Session</label>
-                        <select id="source_session" name="source_session" class="w-full border p-2 rounded" required>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 mb-8">
+                
+                {# --- SOURCE SECTION --- #}
+                <div class="bg-gray-50 p-4 sm:p-5 rounded-lg border border-gray-200">
+                    <h3 class="font-bold text-gray-600 mb-4 uppercase text-xs sm:text-sm tracking-wide">Moving From (Old Session)</h3>
+                    
+                    <div class="mb-4">
+                        <label class="block text-xs sm:text-sm font-bold mb-1.5 text-gray-700">Source Session</label>
+                        <select id="source_session" name="source_session" class="w-full border border-gray-300 p-3 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500" required>
                             <option value="">Select Session...</option>
                             {% for session in sessions %}
                                 <option value="{{ session.id }}">{{ session.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="block text-sm font-bold mb-1">Source Class</label>
-                        <select id="source_class" name="source_class" class="w-full border p-2 rounded" required>
+                    
+                    <div class="mb-4">
+                        <label class="block text-xs sm:text-sm font-bold mb-1.5 text-gray-700">Source Class</label>
+                        <select id="source_class" name="source_class" class="w-full border border-gray-300 p-3 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500" required>
                             <option value="">Select Class...</option>
                             {% for class in classrooms %}
                                 <option value="{{ class.id }}">{{ class.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <button type="button" id="btn-fetch" class="mt-2 bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 w-full">
-                        Load Students
+                    
+                    <button type="button" id="btn-fetch" class="mt-2 bg-blue-600 text-white px-4 py-3 rounded-lg text-sm font-bold hover:bg-blue-700 w-full shadow-sm transition">
+                        Load Students &darr;
                     </button>
                 </div>
 
-                <div class="bg-blue-50 p-4 rounded border border-blue-200">
-                    <h3 class="font-bold text-blue-800 mb-4 uppercase text-sm">Moving To (New Session)</h3>
-                    <div class="mb-3">
-                        <label class="block text-sm font-bold mb-1">Target Session</label>
-                        <select name="target_session" class="w-full border p-2 rounded" required>
+                {# --- TARGET SECTION --- #}
+                <div class="bg-blue-50 p-4 sm:p-5 rounded-lg border border-blue-200">
+                    <h3 class="font-bold text-blue-800 mb-4 uppercase text-xs sm:text-sm tracking-wide">Moving To (New Session)</h3>
+                    
+                    <div class="mb-4">
+                        <label class="block text-xs sm:text-sm font-bold mb-1.5 text-blue-900">Target Session</label>
+                        <select name="target_session" class="w-full border border-blue-200 p-3 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500" required>
+                            <option value="">Select Session...</option>
                             {% for session in sessions %}
                                 <option value="{{ session.id }}">{{ session.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="block text-sm font-bold mb-1">Target Class (Promoted)</label>
-                        <select name="target_class" class="w-full border p-2 rounded" required>
+                    
+                    <div class="mb-4">
+                        <label class="block text-xs sm:text-sm font-bold mb-1.5 text-blue-900">Target Class (Promoted)</label>
+                        <select name="target_class" class="w-full border border-blue-200 p-3 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500" required>
+                            <option value="">Select Class...</option>
                             {% for class in classrooms %}
                                 <option value="{{ class.id }}">{{ class.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <p class="text-xs text-blue-600 mt-2">
+                    
+                    <p class="text-xs sm:text-sm text-blue-700 mt-3 bg-blue-100/50 p-3 rounded">
                         * Students <strong>NOT selected</strong> below will repeat the Source Class.
                     </p>
                 </div>
             </div>
 
-            <div id="student-list-container" class="hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-bold">Select Students to Promote</h3>
-                    <div class="space-x-2">
-                        <button type="button" onclick="toggleAll(true)" class="text-xs text-blue-600 hover:underline">Select All</button>
+            {# --- STUDENT LIST SECTION --- #}
+            <div id="student-list-container" class="hidden border-t border-gray-100 pt-8 mt-4">
+                
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
+                    <h3 class="text-base sm:text-lg font-bold text-gray-800">Select Students to Promote</h3>
+                    
+                    <div class="flex items-center space-x-3 bg-gray-100 p-1 rounded-lg w-max">
+                        <button type="button" onclick="toggleAll(true)" class="px-3 py-1.5 text-xs sm:text-sm font-bold text-blue-600 hover:bg-white rounded shadow-sm transition">Select All</button>
                         <span class="text-gray-300">|</span>
-                        <button type="button" onclick="toggleAll(false)" class="text-xs text-blue-600 hover:underline">Deselect All</button>
+                        <button type="button" onclick="toggleAll(false)" class="px-3 py-1.5 text-xs sm:text-sm font-bold text-blue-600 hover:bg-white rounded shadow-sm transition">Deselect All</button>
                     </div>
                 </div>
 
-                <div class="border rounded overflow-hidden max-h-96 overflow-y-auto">
-                 <div class="overflow-x-auto">
-                    <table class="min-w-full bg-white">
-                        <thead class="bg-gray-100 border-b">
+                {# 🟢 MOBILE-FRIENDLY SCROLLABLE TABLE WRAPPER #}
+                <div class="w-full overflow-x-auto bg-white border border-gray-200 rounded-lg shadow-sm">
+                    {# Notice the min-w-[600px] - This forces the table to scroll on phones! #}
+                    <table class="w-full min-w-[600px] text-left whitespace-nowrap">
+                        <thead class="bg-gray-100 border-b border-gray-200">
                             <tr>
-                                <th class="py-2 px-4 w-10">
-                                    <input type="checkbox" onclick="toggleAll(this.checked)">
+                                <th class="py-3 px-4 w-12 text-center">
+                                    <input type="checkbox" onclick="toggleAll(this.checked)" class="w-5 h-5 rounded text-blue-600 border-gray-300 focus:ring-blue-500 cursor-pointer">
                                 </th>
-                                <th class="text-left py-2 px-4">Name</th>
-                                <th class="text-left py-2 px-4">Admission No</th>
-                                <th class="text-right py-2 px-4">Status</th>
+                                <th class="py-3 px-4 text-xs sm:text-sm font-bold text-gray-600 uppercase tracking-wider">Name</th>
+                                <th class="py-3 px-4 text-xs sm:text-sm font-bold text-gray-600 uppercase tracking-wider">Admission No</th>
+                                <th class="py-3 px-4 text-xs sm:text-sm font-bold text-gray-600 uppercase tracking-wider text-right">Status</th>
                             </tr>
                         </thead>
-                        <tbody id="student-table-body">
-                            </tbody>
+                        <tbody id="student-table-body" class="divide-y divide-gray-100">
+                            {# Rows injected via JS #}
+                        </tbody>
                     </table>
                 </div>
-                </div>
 
-                <div class="mt-6 flex justify-end">
-                    <button type="submit" class="bg-green-600 text-white px-6 py-3 rounded font-bold hover:bg-green-700 shadow">
-                        Process Promotion
+                <div class="mt-8 flex flex-col sm:flex-row justify-end gap-3">
+                    <a href="{{ path('app_tenant_student_index') }}" class="sm:hidden text-center text-gray-600 font-bold py-3 bg-gray-100 rounded-lg">Cancel</a>
+                    <button type="submit" class="bg-green-600 text-white px-6 py-3.5 rounded-lg font-bold hover:bg-green-700 shadow flex justify-center items-center">
+                        Process Promotion &rarr;
                     </button>
                 </div>
             </div>
@@ -105,17 +127,18 @@
         const classId = document.getElementById('source_class').value;
         const container = document.getElementById('student-list-container');
         const tbody = document.getElementById('student-table-body');
-
-        // Debug: Show what we are trying to fetch
-        console.log(`Fetching: /enrollment/api/students/${sessionId}/${classId}`);
+        const btn = document.getElementById('btn-fetch');
 
         if (!sessionId || !classId) {
             alert("Please select Source Session and Class first.");
             return;
         }
 
-        // --- THE FIX IS HERE ---
-        // We use the correct '/enrollment/' path inside the fetch function
+        // Change button text while loading to help mobile users
+        const originalText = btn.innerHTML;
+        btn.innerHTML = 'Loading...';
+        btn.disabled = true;
+
         fetch(`/enrollment/api/students/${sessionId}/${classId}`)
             .then(response => {
                 if (!response.ok) {
@@ -124,36 +147,38 @@
                 return response.json();
             })
             .then(data => {
-                console.log("Data received:", data); // Debug: Show data in console
-
-                tbody.innerHTML = ''; // Clear old list
+                tbody.innerHTML = ''; 
                 
                 if(data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">No students found in this class.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-gray-500 text-sm italic">No students found in this class.</td></tr>';
                 }
 
                 data.forEach(student => {
+                    // Mobile-optimized row (larger padding, larger checkboxes)
                     const row = `
-                        <tr class="border-b hover:bg-gray-50">
-                            <td class="py-2 px-4 text-center">
-                                <input type="checkbox" name="students[]" value="${student.id}" checked class="student-checkbox w-4 h-4 text-blue-600">
+                        <tr class="hover:bg-blue-50 transition-colors">
+                            <td class="py-3 px-4 text-center">
+                                <input type="checkbox" name="students[]" value="${student.id}" checked class="student-checkbox w-5 h-5 text-blue-600 rounded border-gray-300">
                             </td>
-                            <td class="py-2 px-4 font-bold text-gray-700">${student.name}</td>
-                            <td class="py-2 px-4 font-mono text-sm">${student.adm}</td>
-                            <td class="py-2 px-4 text-right">
-                                <span class="text-xs font-bold text-green-600">Promote</span>
+                            <td class="py-3 px-4 font-bold text-gray-800 text-sm sm:text-base">${student.name}</td>
+                            <td class="py-3 px-4 font-mono text-xs sm:text-sm text-gray-500">${student.adm}</td>
+                            <td class="py-3 px-4 text-right">
+                                <span class="text-[10px] sm:text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded">Promote</span>
                             </td>
                         </tr>
                     `;
                     tbody.insertAdjacentHTML('beforeend', row);
                 });
 
-                // Reveal the list
                 container.classList.remove('hidden');
             })
             .catch(error => {
-                console.error('There was a problem with the fetch operation:', error);
-                alert("Error loading students. Check console for details.");
+                console.error('Fetch error:', error);
+                alert("Error loading students. Please check your connection.");
+            })
+            .finally(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
             });
     });
 

@@ -3,33 +3,37 @@
 {% block title %}Complete Top Up{% endblock %}
 
 {% block body %}
-<div class="max-w-xl mx-auto mt-12 px-6">
+<div class="max-w-xl mx-auto mt-6 md:mt-12 px-4 sm:px-6">
     
-    <div class="text-center mb-8">
-        <h1 class="text-3xl font-black text-gray-900">Complete Payment</h1>
-        <p class="text-gray-500">You are about to add funds to your wallet.</p>
+    <div class="text-center mb-6 md:mb-8">
+        <h1 class="text-2xl md:text-3xl font-black text-gray-900">Complete Payment</h1>
+        <p class="text-sm md:text-base text-gray-500 mt-1 md:mt-0">You are about to add funds to your wallet.</p>
     </div>
 
-    <div class="bg-white shadow-xl rounded-3xl overflow-hidden border border-gray-100">
+    <div class="bg-white shadow-xl rounded-2xl md:rounded-3xl overflow-hidden border border-gray-100">
         
         {# HEADER: AMOUNT #}
-        <div class="bg-indigo-900 p-8 text-center text-white">
-            <p class="text-indigo-200 text-xs font-bold uppercase tracking-widest mb-1">Amount to Pay</p>
-            <div class="text-5xl font-black">₦{{ creditRequest.amount|number_format }}</div>
-            <div class="mt-2 text-indigo-300 text-sm font-mono bg-indigo-800 inline-block px-3 py-1 rounded-lg">Ref: {{ creditRequest.reference }}</div>
+        <div class="bg-indigo-900 p-6 md:p-8 text-center text-white">
+            <p class="text-indigo-200 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1">Amount to Pay</p>
+            <div class="text-4xl md:text-5xl font-black">₦{{ creditRequest.amount|number_format }}</div>
+            <div class="mt-3 text-indigo-300 text-xs md:text-sm font-mono bg-indigo-800/50 border border-indigo-700/50 inline-block px-3 py-1.5 rounded-lg tracking-wide">
+                Ref: {{ creditRequest.reference }}
+            </div>
         </div>
 
-        <div class="p-8">
+        <div class="p-5 md:p-8">
             {# BANK DETAILS #}
-            <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-6 mb-8">
-                <h3 class="font-bold text-yellow-800 mb-2 flex items-center gap-2">
+            <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-5 md:p-6 mb-6 md:mb-8">
+                <h3 class="font-bold text-yellow-800 mb-3 flex items-center gap-2 text-sm md:text-base">
                     <span>🏦</span> Bank Transfer Details
                 </h3>
-                <div class="space-y-1 text-sm text-yellow-900">
+                <div class="space-y-1.5 text-sm text-yellow-900">
                     <p>Bank Name: <strong>GTBank</strong></p>
                     <p>Account Name: <strong>Edus SaaS Ltd</strong></p>
-                    <p class="text-lg font-mono font-bold">0123456789</p>
-                    <p class="text-xs text-yellow-600 mt-2">Please use the Reference Code <strong>{{ creditRequest.reference }}</strong> in your transfer narration.</p>
+                    <p class="text-xl md:text-lg font-mono font-black tracking-wider text-yellow-950 my-2">0123456789</p>
+                    <p class="text-xs text-yellow-700 mt-2 p-2 bg-yellow-100/50 rounded-lg border border-yellow-200/50">
+                        Please use the Reference Code <strong class="font-mono text-yellow-900">{{ creditRequest.reference }}</strong> in your transfer narration.
+                    </p>
                 </div>
             </div>
 
@@ -37,37 +41,38 @@
             <form method="POST" enctype="multipart/form-data" class="space-y-6">
                 
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2">Upload Payment Proof (Screenshot/PDF)</label>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Upload Payment Proof <span class="font-normal text-gray-400 text-xs ml-1">(Screenshot/PDF)</span></label>
                     
-                    {# 🟢 ADDED ID 'drop-zone' #}
-                    <div id="drop-zone" class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-xl hover:border-indigo-500 transition-all cursor-pointer bg-gray-50 relative group">
-                        <div class="space-y-1 text-center">
+                    <div id="drop-zone" class="mt-1 flex justify-center px-4 md:px-6 pt-6 pb-8 border-2 border-gray-300 border-dashed rounded-xl hover:border-indigo-500 transition-all cursor-pointer bg-gray-50 relative group">
+                        <div class="space-y-2 text-center">
                             
-                            {# 🟢 DEFAULT ICON (Will be hidden on select) #}
-                            <svg id="upload-icon" class="mx-auto h-12 w-12 text-gray-400 group-hover:text-indigo-500 transition-colors" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                            {# DEFAULT ICON #}
+                            <svg id="upload-icon" class="mx-auto h-10 w-10 md:h-12 md:w-12 text-gray-400 group-hover:text-indigo-500 transition-colors" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                                 <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
 
-                            {# 🟢 SUCCESS ICON (Hidden by default) #}
-                            <svg id="success-icon" class="mx-auto h-12 w-12 text-green-500 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            {# SUCCESS ICON #}
+                            <svg id="success-icon" class="mx-auto h-10 w-10 md:h-12 md:w-12 text-green-500 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
 
                             <div class="flex text-sm text-gray-600 justify-center">
-                                <label for="file-upload" class="relative cursor-pointer bg-transparent rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none">
-                                    <span id="upload-text">Upload a file</span>
-                                    {# 🟢 ADDED ONCHANGE EVENT #}
+                                <label for="file-upload" class="relative cursor-pointer bg-transparent rounded-md font-bold text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 p-1">
+                                    <span id="upload-text">Tap to select a file</span>
                                     <input id="file-upload" name="proof" type="file" class="sr-only" required accept="image/*,.pdf" onchange="updateFileName(this)">
                                 </label>
                             </div>
-                            <p id="file-hint" class="text-xs text-gray-500">PNG, JPG, PDF up to 5MB</p>
+                            <p id="file-hint" class="text-xs text-gray-400">PNG, JPG, PDF up to 5MB</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="flex gap-4">
-                    <a href="{{ path('tenant_wallet_index') }}" class="w-1/3 block text-center py-3 border border-gray-300 rounded-xl font-bold text-gray-600 hover:bg-gray-50">Cancel</a>
-                    <button type="submit" class="w-2/3 flex justify-center py-3 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-indigo-900 hover:bg-black transition-colors">
+                {# 🟢 MOBILE-FIRST STACKED BUTTONS #}
+                <div class="flex flex-col-reverse md:flex-row gap-3 md:gap-4 mt-8">
+                    <a href="{{ path('tenant_wallet_index') }}" class="w-full md:w-1/3 block text-center py-3.5 md:py-3 border border-gray-300 rounded-xl font-bold text-gray-600 hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </a>
+                    <button type="submit" class="w-full md:w-2/3 flex justify-center py-3.5 md:py-3 border border-transparent rounded-xl shadow-md text-sm font-bold text-white bg-indigo-900 hover:bg-indigo-800 transition-colors transform active:scale-[0.98]">
                         Confirm Payment
                     </button>
                 </div>
@@ -77,7 +82,7 @@
     </div>
 </div>
 
-{# 🟢 JAVASCRIPT FOR INSTANT FEEDBACK #}
+{# JAVASCRIPT FOR INSTANT FEEDBACK #}
 <script>
     function updateFileName(input) {
         const dropZone = document.getElementById('drop-zone');
@@ -90,8 +95,8 @@
             const fileName = input.files[0].name;
 
             // 1. Change Border to Green Solid
-            dropZone.classList.remove('border-gray-300', 'border-dashed');
-            dropZone.classList.add('border-green-500', 'border-solid', 'bg-green-50');
+            dropZone.classList.remove('border-gray-300', 'border-dashed', 'bg-gray-50');
+            dropZone.classList.add('border-green-500', 'border-solid', 'bg-green-50/50');
 
             // 2. Swap Icons
             uploadIcon.classList.add('hidden');
@@ -100,10 +105,11 @@
             // 3. Update Text
             uploadText.textContent = fileName;
             uploadText.classList.remove('text-indigo-600');
-            uploadText.classList.add('text-green-700', 'font-bold');
+            uploadText.classList.add('text-green-700', 'font-black');
             
-            fileHint.textContent = "File selected successfully";
-            fileHint.classList.add('text-green-600');
+            fileHint.textContent = "File ready for upload";
+            fileHint.classList.remove('text-gray-400');
+            fileHint.classList.add('text-green-600', 'font-medium');
         }
     }
 </script>

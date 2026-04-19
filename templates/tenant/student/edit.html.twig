@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Student Registration{% endblock %}
+{% block title %}Edit Profile: {{ student.fullName }}{% endblock %}
 
 {% block body %}
 {# px-0 on mobile for edge-to-edge feel #}
@@ -9,14 +9,14 @@
     {# --- HEADER --- #}
     <div class="mb-6 px-4 sm:px-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">🎓 Student Admission</h1>
+            <h1 class="text-2xl font-bold text-gray-800">📝 Edit Student Profile</h1>
             <p class="text-sm text-gray-500">
-                Guardian: <span class="font-bold text-indigo-600">{{ guardian.title }} {{ guardian.fullName }}</span>
+                Student: <span class="font-bold text-indigo-600">{{ student.fullName }}</span>
             </p>
         </div>
-        <div class="inline-flex items-center text-xs font-bold bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-full border border-indigo-200 uppercase tracking-wider">
-            Step 2 of 2
-        </div>
+        <a href="{{ path('app_tenant_student_profile', {'id': student.id}) }}" class="inline-flex items-center text-sm font-bold bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg transition-colors border border-gray-200 shadow-sm">
+            &larr; Back to Profile
+        </a>
     </div>
 
     {{ form_start(form) }}
@@ -30,10 +30,10 @@
                 <span class="bg-indigo-600 text-white w-7 h-7 rounded-full flex items-center justify-center mr-3 text-xs">1</span> 
                 Basic Identity
             </h3>
+            
             <div class="mb-5">
                 {{ form_row(form.admissionNumber, {'attr': {'class': 'rounded-lg p-3 w-full sm:w-1/3'}}) }}
             </div>
-            
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
                 {{ form_row(form.firstName, {'attr': {'class': 'rounded-lg p-3 w-full border-gray-300 shadow-sm'}}) }}
                 {{ form_row(form.middleName, {'attr': {'class': 'rounded-lg p-3 w-full border-gray-300 shadow-sm'}}) }}
@@ -110,8 +110,8 @@
 
         {# === FOOTER ACTION === #}
         <div class="p-6 bg-gray-50 flex flex-col sm:flex-row justify-end gap-4">
-             <button type="submit" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-10 rounded-xl sm:rounded-lg shadow-lg transition active:scale-95 flex items-center justify-center">
-                <span class="mr-2">✅</span> Complete Admission
+             <button type="submit" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-10 rounded-xl sm:rounded-lg shadow-lg transition active:scale-95 flex items-center justify-center">
+                <span class="mr-2">💾</span> Save Changes
             </button>
         </div>
 
@@ -144,8 +144,6 @@
                 fetch(lgaApiUrl + stateId)
                     .then(response => response.json())
                     .then(data => {
-                        console.table(data); // This will show a table of LGAs in your console
-
                         // Clear the dropdown
                         lgaSelect.innerHTML = '';
                         

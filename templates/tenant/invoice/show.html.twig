@@ -238,7 +238,7 @@
                 {% if invoice.status != 'PAID' %}
                     
                     {% if is_granted('ROLE_BURSAR') %}
-                    <a href="{{ path('app_tenant_payment_terminal', {'id': invoice.student.id}) }}" 
+                    <a href="{{ path('app_tenant_payment_terminal', {'id': invoice.student.id, 'invoice_id': invoice.id}) }}" 
                        class="bg-gray-700 text-white px-5 py-2.5 rounded font-bold hover:bg-gray-800 shadow-sm flex items-center gap-2">
                         <span>💵</span> Record Cash
                     </a>

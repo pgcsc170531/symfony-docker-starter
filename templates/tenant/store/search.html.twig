@@ -3,54 +3,87 @@
 {% block title %}POS Student Search{% endblock %}
 
 {% block body %}
-<div class="container mx-auto mt-10 p-5 max-w-3xl">
-    <div class="bg-white p-8 rounded shadow border-t-4 border-teal-600">
-        <h1 class="text-2xl font-bold mb-6 text-gray-800">Point of Sale: Select Student</h1>
+<div class="max-w-3xl mx-auto mt-4 md:mt-10 p-3 md:p-5">
+    
+    {# --- HEADER & WALK-IN ACTION (Mobile Stacked, Desktop Row) --- #}
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 md:mb-8">
+        <div>
+            <h1 class="text-2xl md:text-3xl font-extrabold text-gray-800">Point of Sale</h1>
+            <p class="text-sm text-gray-500 mt-1">Search student or process walk-in.</p>
+        </div>
+        
+        {# 🟢 THE NEW WALK-IN SHORTCUT #}
+        <a href="{{ path('app_tenant_store_cart_sale') }}" class="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white font-black py-3.5 md:py-3 px-6 rounded-lg shadow-md transition-transform transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
+            <span class="text-lg">🚶</span> Walk-In Sale
+        </a>
+    </div>
 
-        {# Search Form #}
-        {{ form_start(form, {'attr': {'class': 'flex mb-8'}}) }}
+    {# --- SEARCH FORM --- #}
+    <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-200 border-t-4 border-t-teal-600 mb-6 md:mb-8">
+        {{ form_start(form, {'attr': {'class': 'flex flex-col md:flex-row gap-3'}}) }}
             <div class="flex-1">
-                {{ form_widget(form.query) }}
+                {{ form_widget(form.query, {
+                    'attr': {
+                        'class': 'w-full border border-gray-300 p-4 rounded-lg focus:ring-teal-600 focus:border-teal-600 text-base outline-none shadow-sm',
+                        'placeholder': 'Enter Student Name or Adm No...'
+                    }
+                }) }}
             </div>
-            <button class="bg-teal-600 text-white px-6 py-3 rounded-r-md font-bold hover:bg-teal-700">
-                Search
+            <button type="submit" class="w-full md:w-auto bg-teal-600 text-white px-8 py-4 rounded-lg hover:bg-teal-700 font-bold text-base transition-colors shadow-sm flex items-center justify-center gap-2">
+                <i class="fas fa-search"></i> Search
             </button>
         {{ form_end(form) }}
-        
-        {# Display Results #}
-        <h2 class="text-xl font-bold mb-4">Results ({{ students|length }} found)</h2>
-        
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student Name</th>
-                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admission No</th>
-                        <th class="py-3 px-6 text-right">Action</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for student in students %}
-                    <tr class="hover:bg-gray-100">
-                        <td class="py-4 px-6 font-medium text-gray-900">{{ student.fullName }}</td>
-                        <td class="py-4 px-6 text-gray-500">{{ student.admissionNumber }}</td>
-                        <td class="py-4 px-6 text-right">
-                            <a href="{{ path('app_tenant_store_cart_sale', {'studentId': student.id}) }}" 
-                            class="bg-green-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-green-700">
-                            Select & Bill
-                            </a>
-                        </td>
-                    </tr>
-                    {% else %}
-                        {% if query is not empty %}
-                            <tr><td colspan="3" class="text-center py-6 text-gray-500">No students matched "{{ query }}".</td></tr>
-                        {% else %}
-                            <tr><td colspan="3" class="text-center py-6 text-gray-500">Search for a student to begin a sale.</td></tr>
-                        {% endif %}
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
     </div>
+
+    {# --- SEARCH RESULTS (Mobile-First Cards instead of Tables) --- #}
+    {% if query is not empty or students|length > 0 %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                <h2 class="font-bold text-gray-700 text-sm md:text-base">Results for "<span class="text-teal-600">{{ query }}</span>"</h2>
+                <span class="text-xs font-bold text-gray-500 bg-gray-200 px-2.5 py-1 rounded-full">{{ students|length }} found</span>
+            </div>
+            
+            {% if students|length > 0 %}
+                <div class="divide-y divide-gray-100">
+                    {% for student in students %}
+                        {# The Card layout: Stacks on mobile, aligns row on desktop #}
+                        <div class="p-4 md:p-5 hover:bg-teal-50/30 transition-colors flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            
+                            <div class="flex items-center gap-3 w-full md:w-auto">
+                                <div class="h-12 w-12 bg-teal-100 text-teal-700 rounded-full flex items-center justify-center text-lg font-bold flex-shrink-0">
+                                    {{ student.firstName|first }}{{ student.lastName|first }}
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-bold text-gray-900 text-base md:text-lg truncate">{{ student.fullName }}</p>
+                                    <p class="text-xs text-gray-500 mt-0.5">
+                                        <span class="font-mono font-bold">{{ student.admissionNumber ?: 'Pending ID' }}</span>
+                                        <span class="mx-1">•</span> 
+                                        {{ student.currentClass ? student.currentClass.name : 'No Class' }}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <a href="{{ path('app_tenant_store_cart_sale', {'studentId': student.id}) }}" class="w-full md:w-auto bg-teal-50 border border-teal-200 text-teal-700 hover:bg-teal-600 hover:text-white px-5 py-3 md:py-2.5 rounded-lg text-sm font-bold shadow-sm transition-colors text-center">
+                                🛒 Select & Bill
+                            </a>
+                            
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                {# EMPTY STATE #}
+                <div class="p-8 md:p-12 text-center flex flex-col items-center justify-center">
+                    <span class="text-4xl md:text-5xl mb-3">🕵️</span>
+                    <p class="text-gray-800 font-bold text-lg">No students found.</p>
+                    <p class="text-sm text-gray-500 mt-1 max-w-sm">We couldn't find anyone matching "{{ query }}". If they are not registered yet, you can process a walk-in sale.</p>
+                    
+                    <a href="{{ path('app_tenant_store_cart_sale') }}" class="mt-6 w-full md:w-auto bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg text-sm transition-colors shadow-sm">
+                        Start Walk-In Sale Instead
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+
 </div>
 {% endblock %}

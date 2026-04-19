@@ -4,6 +4,36 @@
 
 {% block body %}
 <div class="max-w-7xl mx-auto mt-10 px-4">
+    {# --- FLASH MESSAGES BLOCK --- #}
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-4 p-4 rounded shadow-sm text-sm font-bold
+                {% if label == 'success' %}bg-green-100 text-green-800 border-l-4 border-green-500
+                {% elseif label == 'error' %}bg-red-100 text-red-800 border-l-4 border-red-500
+                {% else %}bg-blue-100 text-blue-800 border-l-4 border-blue-500{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+    {# ---------------------------- #}
+
+    {# 👇 --- ADD THIS NEW CSV ERRORS BLOCK --- 👇 #}
+    {% if csv_errors is defined and error_count > 0 %}
+        <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-8 rounded shadow-sm">
+            <h3 class="font-bold text-red-800 text-lg flex items-center">
+                ⚠️ Upload Stopped! We found {{ error_count }} error(s):
+            </h3>
+            <p class="text-sm text-red-700 mt-1 mb-2">Please fix these specific rows in your Excel file and try again:</p>
+            <div class="bg-white p-3 rounded border border-red-200 max-h-48 overflow-y-auto">
+                <ul class="list-disc pl-5 text-sm text-red-600 space-y-1 font-mono">
+                    {% for error in csv_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% endif %}
+    {# 👆 -------------------------------------- 👆 #}
     
     <div class="mb-8">
         <h1 class="text-3xl font-black text-gray-800">🚀 Quick Student Migration</h1>
@@ -17,12 +47,17 @@
         {# OPTION A: CSV UPLOAD #}
         <div class="bg-green-50 p-6 rounded-lg border border-green-200 relative">
             <h3 class="font-bold text-green-800 text-lg mb-2">📂 Option A: Upload CSV</h3>
-            <p class="text-xs text-green-700 mb-4">
-                Best for bulk import. 
-                <button onclick="toggleModal()" type="button" class="underline font-bold text-green-900 ml-1">
-                    See Accepted Class Names
-                </button>
-            </p>
+           <div class="mb-4 text-sm text-green-800 bg-green-100/50 p-3 rounded border border-green-200">
+                <p class="mb-2"><strong>Step 1:</strong> Download the schema, fill in your data, and save as `.csv`.</p>
+                <a href="{{ path('app_tenant_quick_enroll_template') }}" class="inline-block bg-white text-green-700 border border-green-300 px-3 py-1 rounded text-xs font-bold hover:bg-green-50 shadow-sm transition">
+                    ⬇️ Download CSV Template
+                </a>
+                
+                <p class="mt-3 mb-1"><strong>Step 2:</strong> Ensure your Class Names match our system.</p>
+                <button onclick="toggleModal()" type="button" class="underline font-bold text-green-900 text-xs">
+                    View Accepted Class Names
+                </button>
+            </div>
 
             <form action="{{ path('app_tenant_quick_enroll_csv') }}" method="POST" enctype="multipart/form-data" class="flex flex-col gap-3">
                 <div class="grid grid-cols-2 gap-2">

@@ -3,29 +3,34 @@
 {% block title %}School Calendar{% endblock %}
 
 {% block body %}
-<div class="max-w-6xl mx-auto mt-6">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">📅 School Calendar & Events</h1>
-        <div class="flex gap-3">
-            <a href="{{ path('app_tenant_event_import') }}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 font-bold text-sm flex items-center shadow">
-                <span class="mr-2">📂</span> Import Excel
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 pb-12">
+    {# Header Section: Stacked on mobile, row on desktop #}
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h1 class="text-xl sm:text-2xl font-bold text-gray-800 flex items-center">
+            <span class="mr-2">📅</span> School Calendar & Events
+        </h1>
+        
+        <div class="flex w-full sm:w-auto gap-2">
+            <a href="{{ path('app_tenant_event_import') }}" class="flex-1 sm:flex-none justify-center bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded shadow-sm hover:bg-gray-50 font-bold text-xs sm:text-sm flex items-center transition">
+                <span class="mr-1.5 text-lg">📂</span> Import
             </a>
             
-            <a href="{{ path('app_tenant_event_new') }}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-bold text-sm flex items-center shadow">
-                <span class="mr-2">➕</span> New Event
+            <a href="{{ path('app_tenant_event_new') }}" class="flex-1 sm:flex-none justify-center bg-blue-600 text-white px-4 py-2 rounded shadow-sm hover:bg-blue-700 font-bold text-xs sm:text-sm flex items-center transition">
+                <span class="mr-1.5 text-lg">➕</span> New Event
             </a>
         </div>
     </div>
 
-    <div class="bg-white shadow rounded-lg overflow-hidden">
+    {# Desktop View: Hidden on Mobile #}
+    <div class="hidden md:block bg-white shadow rounded-lg overflow-hidden border border-gray-200">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Date</th>
-                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Event</th>
-                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Type</th>
-                    <th class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase">Flash Alert?</th>
-                    <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase">Actions</th>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Event</th>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Type</th>
+                    <th class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Flash</th>
+                    <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -36,92 +41,107 @@
                     </td>
                     <td class="px-6 py-4 text-sm text-gray-700">
                         <div class="font-bold text-indigo-900">{{ event.title }}</div>
-                        <div class="text-gray-500 text-xs">{{ event.description|slice(0, 60) }}...</div>
+                        <div class="text-gray-500 text-xs truncate max-w-xs">{{ event.description|slice(0, 60) }}...</div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                        <span class="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full 
                         {% if event.type == 'Holiday' %}bg-red-100 text-red-800{% elseif event.type == 'Exam' %}bg-yellow-100 text-yellow-800{% else %}bg-green-100 text-green-800{% endif %}">
                             {{ event.type }}
                         </span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
                         {% if event.isFlashNotice %}
-                            <span class="text-red-600 font-bold bg-red-50 px-2 py-1 rounded border border-red-100">YES 🚨</span>
+                            <span class="text-red-600">🚨</span>
                         {% else %}
-                            <span class="text-gray-400">-</span>
+                            <span class="text-gray-300">-</span>
                         {% endif %}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div class="flex justify-end items-center gap-3">
-                            
-                            {# 📢 BROADCAST SMS BUTTON WITH PROTECTION #}
-                            <form method="post" 
-                                  action="{{ path('app_tenant_event_notify', {'id': event.id}) }}" 
-                                  onsubmit="return handleNotifyClick(this, {{ event.id }});" 
-                                  class="inline">
-                                <button type="submit" 
-                                        id="notify-btn-{{ event.id }}"
-                                        class="flex items-center text-xs bg-indigo-600 text-white px-3 py-1.5 rounded shadow-sm hover:bg-indigo-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed">
-                                    <span class="btn-text-{{ event.id }}">📩 Notify Parents</span>
+                            <form method="post" action="{{ path('app_tenant_event_notify', {'id': event.id}) }}" onsubmit="return handleNotifyClick(this, {{ event.id }});">
+                                <button type="submit" id="notify-btn-{{ event.id }}" class="text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded transition border border-indigo-100 text-xs">
+                                    <span class="btn-text-{{ event.id }}">📩 Notify</span>
                                 </button>
                             </form>
-
-                             {# ✏️ NEW: EDIT LINK #}
-                            <a href="{{ path('app_tenant_event_edit', {'id': event.id}) }}" class="text-indigo-600 hover:text-indigo-900 p-1" title="Edit Event">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                                </svg>
-                            </a>
-
-                            {# Delete Action #}
-                            <form method="post" action="{{ path('app_tenant_event_delete', {'id': event.id}) }}" onsubmit="return confirm('Are you sure?');" class="inline">
+                            <a href="{{ path('app_tenant_event_edit', {'id': event.id}) }}" class="text-gray-600 hover:text-indigo-600"><svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg></a>
+                            <form method="post" action="{{ path('app_tenant_event_delete', {'id': event.id}) }}" onsubmit="return confirm('Are you sure?');">
                                 <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ event.id) }}">
-                                <button class="text-red-400 hover:text-red-600 p-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                    </svg>
-                                </button>
+                                <button class="text-red-400 hover:text-red-600"><svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg></button>
                             </form>
                         </div>
-                    </td>
-                </tr>
-            {% else %}
-                <tr>
-                    <td colspan="5" class="px-6 py-12 text-center text-gray-500">
-                        <div class="text-4xl mb-2">📅</div>
-                        <p>No events found for this school term.</p>
                     </td>
                 </tr>
             {% endfor %}
             </tbody>
         </table>
     </div>
+
+    {# Mobile View: Shown only on Small Screens #}
+    <div class="md:hidden space-y-4">
+        {% for event in events %}
+            <div class="bg-white shadow rounded-lg border border-gray-200 p-4 relative overflow-hidden">
+                {# Event Type Indicator Tag #}
+                <div class="absolute top-0 right-0 px-3 py-1 text-[10px] font-bold uppercase rounded-bl-lg 
+                    {% if event.type == 'Holiday' %}bg-red-100 text-red-800{% elseif event.type == 'Exam' %}bg-yellow-100 text-yellow-800{% else %}bg-green-100 text-green-800{% endif %}">
+                    {{ event.type }}
+                </div>
+
+                <div class="mb-2">
+                    <span class="text-xs font-bold text-blue-600 uppercase tracking-tighter">
+                        {{ event.startDate|date('M d, Y • H:i') }}
+                    </span>
+                    <h3 class="text-lg font-bold text-indigo-900 mt-1">{{ event.title }}</h3>
+                    <p class="text-gray-600 text-sm mt-1 leading-relaxed">
+                        {{ event.description|length > 100 ? event.description|slice(0, 100) ~ '...' : event.description }}
+                    </p>
+                </div>
+
+                {% if event.isFlashNotice %}
+                    <div class="inline-flex items-center text-red-700 bg-red-50 px-2 py-0.5 rounded text-xs font-bold border border-red-100 mb-4">
+                        🚨 Flash Alert Active
+                    </div>
+                {% endif %}
+
+                <div class="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-gray-100">
+                    <form method="post" action="{{ path('app_tenant_event_notify', {'id': event.id}) }}" onsubmit="return handleNotifyClick(this, {{ event.id }});" class="col-span-1">
+                        <button type="submit" id="notify-btn-mobile-{{ event.id }}" class="w-full flex justify-center items-center bg-indigo-50 text-indigo-700 font-bold py-2 rounded text-xs transition active:bg-indigo-200">
+                             📩 Notify
+                        </button>
+                    </form>
+
+                    <a href="{{ path('app_tenant_event_edit', {'id': event.id}) }}" class="flex justify-center items-center bg-gray-50 text-gray-700 py-2 rounded text-xs font-bold border border-gray-200">
+                        ✏️ Edit
+                    </a>
+
+                    <form method="post" action="{{ path('app_tenant_event_delete', {'id': event.id}) }}" onsubmit="return confirm('Are you sure?');" class="flex">
+                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ event.id) }}">
+                        <button class="w-full flex justify-center items-center bg-red-50 text-red-600 py-2 rounded text-xs font-bold border border-red-100">
+                            🗑️ Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+        {% else %}
+            <div class="bg-white rounded-lg p-10 text-center border-2 border-dashed border-gray-200">
+                <div class="text-4xl mb-2">📅</div>
+                <p class="text-gray-500 font-medium">No events found for this term.</p>
+            </div>
+        {% endfor %}
+    </div>
 </div>
 
 <script>
-/**
- * Prevents multiple clicks on the SMS Broadcast button.
- */
 function handleNotifyClick(form, eventId) {
-    const btn = document.getElementById('notify-btn-' + eventId);
-    const btnText = document.querySelector('.btn-text-' + eventId);
-
-    // 1. Browser Confirmation Dialog
-    const confirmSend = confirm('⚠️ BROADCAST SMS: This will send an alert to ALL registered guardians. It will cost ₦15.00 per parent. Proceed?');
+    // Check both desktop and mobile buttons
+    const btn = document.getElementById('notify-btn-' + eventId) || document.getElementById('notify-btn-mobile-' + eventId);
+    const confirmSend = confirm('⚠️ BROADCAST SMS: This will send an alert to ALL registered guardians. Proceed?');
     
     if (confirmSend) {
-        // 2. Disable button immediately to prevent double-click
         btn.disabled = true;
-        
-        // 3. Give visual feedback
-        btnText.innerText = '⏳ Processing...';
-        btn.classList.add('opacity-75');
-        
-        // 4. Submit the form
+        btn.innerHTML = '⏳ ...';
+        btn.classList.add('opacity-50');
         return true;
     }
-
-    // If canceled, do nothing
     return false;
 }
 </script>

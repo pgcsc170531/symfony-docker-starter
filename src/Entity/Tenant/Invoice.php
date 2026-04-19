@@ -46,7 +46,7 @@ class Invoice
     private ?string $schoolAddress = null;
 
     #[ORM\Column(name: 'school_logo', length: 255, nullable: true)]
-    private ?string $schoolLogo = null; // Stores filename
+    private ?string $schoolLogo = null; 
 
     #[ORM\Column(name: 'school_email', length: 255, nullable: true)]
     private ?string $schoolEmail = null;
@@ -54,10 +54,17 @@ class Invoice
     #[ORM\Column(name: 'school_phone', length: 50, nullable: true)]
     private ?string $schoolPhone = null;
 
+    // ==========================================
+    // 🟢 NEW: WALK-IN CUSTOMER FIELD
+    // ==========================================
+    #[ORM\Column(name: 'buyer_name', length: 255, nullable: true)]
+    private ?string $buyerName = null;
+
     // === RELATIONSHIPS ===
 
+    // 🟢 UPDATED: nullable is now TRUE so walk-ins can buy without an ID!
     #[ORM\ManyToOne]
-    #[ORM\JoinColumn(name: 'student_id', nullable: false)]
+    #[ORM\JoinColumn(name: 'student_id', nullable: true)]
     private ?Student $student = null;
 
     #[ORM\ManyToOne]
@@ -108,6 +115,10 @@ class Invoice
 
     public function getStudent(): ?Student { return $this->student; }
     public function setStudent(?Student $student): static { $this->student = $student; return $this; }
+
+    // 🟢 NEW: Getter and Setter for Walk-in Name
+    public function getBuyerName(): ?string { return $this->buyerName; }
+    public function setBuyerName(?string $buyerName): static { $this->buyerName = $buyerName; return $this; }
 
     public function getTerm(): ?Term { return $this->term; }
     public function setTerm(?Term $term): static { $this->term = $term; return $this; }

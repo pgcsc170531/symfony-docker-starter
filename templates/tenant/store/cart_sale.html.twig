@@ -1,100 +1,238 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}POS Cart Sale{% endblock %}
+{% block title %}POS Terminal{% endblock %}
 
 {% block body %}
-<div class="container mx-auto mt-10 p-5 max-w-4xl">
-    <div class="bg-white p-8 rounded shadow border-t-4 border-teal-600">
-        <h1 class="text-2xl font-bold mb-2">Point of Sale (POS)</h1>
-        <p class="text-gray-600 mb-6 border-b pb-4">
-            Billing: <strong class="text-teal-700">{{ student.fullName }}</strong> ({{ student.admissionNumber }})
-        </p>
-
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div class="md:col-span-2">
-                <label for="product-select" class="block text-sm font-medium text-gray-700">Select Item</label>
-                <select id="product-select" class="w-full border p-2 rounded">
-                    <option value="">-- Choose Product --</option>
-                    {% for product in products %}
-                        <option value="{{ product.id }}" data-price="{{ product.unitPrice }}" data-stock="{{ product.stockQuantity }}">
-                            {{ product.name }} (₦{{ product.unitPrice|number_format(2) }})
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
+{# pb-28 ensures the last item isn't hidden behind the sticky mobile footer #}
+<div class="max-w-4xl mx-auto mt-4 md:mt-8 p-3 md:p-6 pb-28 md:pb-6">
+    
+    {# --- HEADER: DUAL-MODE POS TOGGLE --- #}
+    <div class="bg-indigo-900 rounded-xl shadow-md p-4 md:p-6 mb-4 md:mb-6 text-white flex flex-col gap-4 transition-all">
+        
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 w-full">
             <div>
-                <label for="quantity-input" class="block text-sm font-medium text-gray-700">Quantity</label>
-                <input type="number" id="quantity-input" value="1" min="1" class="w-full border p-2 rounded">
+                <h1 class="text-xl md:text-2xl font-black text-white">POS Terminal</h1>
+                <p class="text-[11px] md:text-xs text-indigo-300">Point of Sale & Inventory</p>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 invisible">Add</label>
-                <button id="add-to-cart-btn" class="bg-teal-600 text-white w-full py-2 rounded font-bold hover:bg-teal-700">
-                    Add to Cart
-                </button>
+            
+            {# THE TOGGLE SWITCH #}
+            <div class="flex bg-indigo-950 p-1 rounded-lg w-full md:w-auto">
+                <button id="mode-student-btn" class="flex-1 md:flex-none px-4 py-2 md:py-1.5 rounded-md text-sm font-bold transition-all shadow-sm">🎓 Student</button>
+                <button id="mode-walkin-btn" class="flex-1 md:flex-none px-4 py-2 md:py-1.5 rounded-md text-sm font-bold transition-all">🚶 Walk-In</button>
             </div>
         </div>
 
-        <h2 class="text-xl font-bold mb-4 mt-6">Current Sale Cart</h2>
-        <div class="overflow-x-auto border rounded mb-6">
-            <table class="min-w-full">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="py-2 px-4 text-left">Item</th>
-                        <th class="py-2 px-4 text-center">Qty</th>
-                        <th class="py-2 px-4 text-right">Unit Price</th>
-                        <th class="py-2 px-4 text-right">Subtotal</th>
-                        <th class="py-2 px-4 text-center">Action</th>
-                    </tr>
-                </thead>
-                <tbody id="cart-items-body" class="divide-y divide-gray-200">
-                    <tr><td colspan="5" class="text-center py-4 text-gray-500 italic">Cart is empty.</td></tr>
-                </tbody>
-            </table>
+        {# STATE 1: STUDENT INFO PANEL #}
+        <div id="student-info-panel" class="flex items-center gap-3 md:gap-4 w-full bg-indigo-800/50 border border-indigo-700 p-3 md:p-4 rounded-lg">
+            {% if student %}
+                <div class="h-10 w-10 md:h-12 md:w-12 bg-indigo-600 rounded-full flex items-center justify-center text-lg md:text-xl font-bold flex-shrink-0 shadow-inner">
+                    {{ student.firstName|first }}{{ student.lastName|first }}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-[10px] text-indigo-300 font-bold uppercase tracking-wider mb-0.5">Billed To Student Account</p>
+                    <p class="font-bold text-base md:text-lg leading-tight truncate">{{ student.fullName }}</p>
+                    <p class="text-xs text-indigo-200 font-mono mt-0.5 truncate">{{ student.admissionNumber }}</p>
+                </div>
+            {% else %}
+                <div class="flex-1 text-center py-2">
+                    <p class="text-sm italic text-indigo-300">No student selected. Use directory search or switch to Walk-In Mode.</p>
+                </div>
+            {% endif %}
         </div>
 
-        <div class="flex justify-between items-center bg-gray-100 p-4 rounded-lg shadow-inner">
-            <h3 class="text-xl font-bold">Grand Total:</h3>
-            <p id="grand-total" class="text-3xl font-black text-red-600">₦0.00</p>
-            <button id="checkout-btn" class="bg-red-600 text-white px-8 py-3 rounded font-bold hover:bg-red-700 disabled:opacity-50" disabled>
-                Process Sale
-            </button>
+        {# STATE 2: WALK-IN CUSTOMER INPUT PANEL (Hidden by default) #}
+        <div id="walkin-info-panel" class="hidden w-full bg-indigo-800/50 border border-indigo-700 p-3 md:p-4 rounded-lg">
+            <label for="walkin-name" class="block text-[10px] md:text-xs font-bold text-indigo-300 uppercase tracking-wide mb-1.5">
+                Customer Name (For Receipt) <span class="text-red-400">*</span>
+            </label>
+            <input type="text" id="walkin-name" placeholder="e.g. Mr. Ibrahim, Parent, Guest" class="w-full md:w-2/3 border border-indigo-600 bg-indigo-900/50 text-white placeholder-indigo-400 p-3 rounded-lg focus:ring-white focus:border-white text-sm outline-none shadow-sm transition-all font-medium">
         </div>
         
-        <p id="cart-error" class="text-red-500 mt-4 hidden"></p>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        
+        {# --- ADD TO CART SECTION --- #}
+        <div class="bg-gray-50 p-4 md:p-6 border-b border-gray-200">
+            <div class="flex flex-col md:flex-row gap-3 md:gap-4">
+                
+                <div class="flex-1">
+                    <label for="product-select" class="block text-[10px] md:text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Select Item</label>
+                    <select id="product-select" class="w-full border-gray-300 border p-3 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-sm outline-none bg-white shadow-sm appearance-none">
+                        <option value="">-- Search or Choose Product --</option>
+                        {% for product in products %}
+                            <option value="{{ product.id }}" data-price="{{ product.unitPrice }}" data-stock="{{ product.stockQuantity }}">
+                                {{ product.name }} {% if product.classroom %}({{ product.classroom.name }}){% endif %} - ₦{{ product.unitPrice|number_format(2) }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="flex gap-3 md:w-auto">
+                    <div class="w-24 md:w-20">
+                        <label for="quantity-input" class="block text-[10px] md:text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Qty</label>
+                        <input type="number" id="quantity-input" value="1" min="1" class="w-full border-gray-300 border p-3 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-sm outline-none bg-white shadow-sm font-bold text-center">
+                    </div>
+                    
+                    <div class="flex-1 md:w-32">
+                        <label class="block text-[10px] md:text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 invisible">Add</label>
+                        <button id="add-to-cart-btn" class="w-full bg-indigo-600 text-white p-3 rounded-lg font-bold hover:bg-indigo-700 shadow-md transition active:scale-95 flex items-center justify-center gap-2">
+                            <span class="md:hidden">➕ Add</span>
+                            <span class="hidden md:inline">Add to Cart</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+            
+            <p id="stock-indicator" class="text-[11px] font-medium mt-2 hidden"></p>
+            
+            <div id="cart-error" class="hidden mt-3 bg-red-50 border border-red-200 text-red-700 px-4 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2">
+                <span>⚠️</span> <span id="cart-error-text"></span>
+            </div>
+        </div>
+
+        {# --- CART ITEMS LIST --- #}
+        <div class="p-0">
+            <div class="hidden md:grid grid-cols-12 gap-4 px-6 py-3 bg-white border-b border-gray-100 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                <div class="col-span-6">Item Description</div>
+                <div class="col-span-2 text-center">Qty</div>
+                <div class="col-span-2 text-right">Price</div>
+                <div class="col-span-2 text-right">Action</div>
+            </div>
+
+            <div id="cart-items-container" class="divide-y divide-gray-100">
+                <div class="p-8 text-center text-gray-400 italic text-sm">Cart is empty. Select an item above.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# --- STICKY CHECKOUT FOOTER --- #}
+<div class="fixed bottom-0 left-0 w-full bg-white md:bg-transparent border-t border-gray-200 md:border-none p-3 md:p-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] md:shadow-none z-50 md:relative max-w-4xl mx-auto md:mt-6">
+    <div class="bg-gray-900 md:rounded-xl shadow-lg p-3 md:p-5 flex justify-between items-center -mx-3 -mb-3 md:mx-0 md:mb-0">
+        <div>
+            <p class="text-gray-400 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-0.5">Grand Total</p>
+            <p id="grand-total" class="text-xl md:text-3xl font-black text-green-400 leading-none">₦0.00</p>
+        </div>
+        <button id="checkout-btn" class="bg-green-600 text-white px-6 md:px-8 py-3 md:py-4 rounded-lg font-black text-sm md:text-lg hover:bg-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)] disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed transition active:scale-95 flex items-center gap-2" disabled>
+            CHARGE TO STUDENT ➡️
+        </button>
     </div>
 </div>
 
 <script>
-    const cart = [];
-    const productsData = {}; // Cache product data for quick lookup
-    const cartItemsBody = document.getElementById('cart-items-body');
-    const grandTotalElement = document.getElementById('grand-total');
+    // 🟢 DUAL-MODE POS LOGIC
+    const hasStudent = {{ student ? 'true' : 'false' }};
+    let isWalkIn = !hasStudent; // Default to walk-in if no student was passed
+
+    const modeStudentBtn = document.getElementById('mode-student-btn');
+    const modeWalkinBtn = document.getElementById('mode-walkin-btn');
+    const studentInfoPanel = document.getElementById('student-info-panel');
+    const walkinInfoPanel = document.getElementById('walkin-info-panel');
+    const walkinNameInput = document.getElementById('walkin-name');
     const checkoutBtn = document.getElementById('checkout-btn');
+
+    function updateModeUI() {
+        if (isWalkIn) {
+            // Activate Walk-In UI
+            modeWalkinBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-sm');
+            modeWalkinBtn.classList.remove('text-indigo-300');
+            modeStudentBtn.classList.remove('bg-indigo-600', 'text-white', 'shadow-sm');
+            modeStudentBtn.classList.add('text-indigo-300');
+            
+            studentInfoPanel.classList.add('hidden');
+            walkinInfoPanel.classList.remove('hidden');
+            
+            checkoutBtn.innerHTML = '💵 CASH SALE (WALK-IN) ➡️';
+        } else {
+            // Activate Student UI
+            modeStudentBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-sm');
+            modeStudentBtn.classList.remove('text-indigo-300');
+            modeWalkinBtn.classList.remove('bg-indigo-600', 'text-white', 'shadow-sm');
+            modeWalkinBtn.classList.add('text-indigo-300');
+            
+            studentInfoPanel.classList.remove('hidden');
+            walkinInfoPanel.classList.add('hidden');
+            
+            checkoutBtn.innerHTML = 'CHARGE TO STUDENT ➡️';
+        }
+    }
+
+    modeStudentBtn.addEventListener('click', () => {
+        if (!hasStudent) {
+            showError('You must search for a student first to use Student Mode.');
+            return;
+        }
+        isWalkIn = false;
+        updateModeUI();
+    });
+
+    modeWalkinBtn.addEventListener('click', () => {
+        isWalkIn = true;
+        updateModeUI();
+    });
+
+    // Run once on load to set the correct visual state
+    updateModeUI();
+
+
+    // --- STANDARD CART LOGIC ---
+    const cart = [];
+    const productsData = {}; 
+    const cartContainer = document.getElementById('cart-items-container');
+    const grandTotalElement = document.getElementById('grand-total');
     const productSelect = document.getElementById('product-select');
     const quantityInput = document.getElementById('quantity-input');
-    const studentId = '{{ student.id }}';
-    const postUrl = '{{ path('app_tenant_store_cart_sale', {'studentId': student.id}) }}';
+    const stockIndicator = document.getElementById('stock-indicator');
+    const errorBanner = document.getElementById('cart-error');
+    const errorText = document.getElementById('cart-error-text');
+    
+    // Dynamic URL based on student presence
+   // Dynamic URLs based on the new separated backend routes
+    const studentCheckoutUrl = '{{ student ? path('app_tenant_store_checkout_student', {'id': student.id}) : '' }}';
+    const walkInCheckoutUrl = '{{ path('app_tenant_store_checkout_walkin') }}';
 
-    // Initialize product cache from the twig data
     productSelect.querySelectorAll('option').forEach(option => {
         if (option.value) {
             productsData[option.value] = {
                 id: option.value,
-                name: option.text.split('(')[0].trim(),
+                name: option.text.split('- ₦')[0].trim(),
                 price: parseFloat(option.dataset.price),
                 stock: parseInt(option.dataset.stock)
             };
         }
     });
 
-    // --- CART MANIPULATION ---
+    productSelect.addEventListener('change', (e) => {
+        const val = e.target.value;
+        if (val && productsData[val]) {
+            const stock = productsData[val].stock;
+            stockIndicator.textContent = stock > 0 ? `${stock} available in stock` : 'Out of stock';
+            stockIndicator.className = stock > 0 ? 'text-[11px] text-green-600 mt-2 block font-bold' : 'text-[11px] text-red-600 mt-2 block font-bold';
+            stockIndicator.classList.remove('hidden');
+            quantityInput.max = stock;
+        } else {
+            stockIndicator.classList.add('hidden');
+        }
+    });
+
+    function showError(msg) {
+        errorText.textContent = msg;
+        errorBanner.classList.remove('hidden');
+        setTimeout(() => errorBanner.classList.add('hidden'), 5000);
+    }
+
+    function formatMoney(amount) {
+        return '₦' + amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
 
     function updateCartDisplay() {
         let total = 0;
-        cartItemsBody.innerHTML = '';
+        cartContainer.innerHTML = '';
 
         if (cart.length === 0) {
-            cartItemsBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500 italic">Cart is empty.</td></tr>';
+            cartContainer.innerHTML = '<div class="p-8 text-center text-gray-400 italic text-sm">Cart is empty. Select an item above.</div>';
             checkoutBtn.disabled = true;
             grandTotalElement.textContent = '₦0.00';
             return;
@@ -105,58 +243,68 @@
             const subtotal = item.quantity * product.price;
             total += subtotal;
 
-            const row = document.createElement('tr');
-            row.className = 'hover:bg-gray-50';
+            const row = document.createElement('div');
+            row.className = 'p-4 hover:bg-indigo-50/30 transition-colors bg-white flex flex-col md:grid md:grid-cols-12 md:items-center gap-3 md:gap-4';
+            
             row.innerHTML = `
-                <td class="py-2 px-4 font-medium">${product.name}</td>
-                <td class="py-2 px-4 text-center">${item.quantity}</td>
-                <td class="py-2 px-4 text-right">₦${product.price.toFixed(2)}</td>
-                <td class="py-2 px-4 text-right font-bold">₦${subtotal.toFixed(2)}</td>
-                <td class="py-2 px-4 text-center">
-                    <button data-index="${index}" class="remove-btn text-red-500 hover:text-red-700 text-sm">Remove</button>
-                </td>
+                <div class="md:col-span-6 flex justify-between items-start md:block">
+                    <div>
+                        <p class="font-bold text-gray-900 text-sm">${product.name}</p>
+                        <p class="text-[11px] text-gray-500 md:hidden mt-0.5">${formatMoney(product.price)} each</p>
+                    </div>
+                    <button data-index="${index}" class="remove-btn md:hidden text-red-500 bg-red-50 p-1.5 rounded text-xs font-bold">✕</button>
+                </div>
+                
+                <div class="md:col-span-2 flex items-center justify-between md:justify-center border-t border-gray-100 md:border-none pt-2 md:pt-0 mt-1 md:mt-0">
+                    <span class="text-[11px] text-gray-400 md:hidden uppercase font-bold">Quantity</span>
+                    <span class="font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded text-sm">${item.quantity}</span>
+                </div>
+                
+                <div class="md:col-span-2 flex items-center justify-between md:justify-end">
+                    <span class="text-[11px] text-gray-400 md:hidden uppercase font-bold">Subtotal</span>
+                    <div class="text-right">
+                        <p class="font-black text-gray-900">${formatMoney(subtotal)}</p>
+                        <p class="text-[10px] text-gray-400 hidden md:block mt-0.5">${formatMoney(product.price)} each</p>
+                    </div>
+                </div>
+                
+                <div class="hidden md:flex md:col-span-2 justify-end">
+                    <button data-index="${index}" class="remove-btn bg-white border border-red-200 text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-md text-xs font-bold transition">Remove</button>
+                </div>
             `;
-            cartItemsBody.appendChild(row);
+            cartContainer.appendChild(row);
         });
 
-        // Update totals
-        grandTotalElement.textContent = '₦' + total.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        checkoutBtn.disabled = total === 0;
+        grandTotalElement.textContent = formatMoney(total);
+        checkoutBtn.disabled = false;
 
-        // Attach remove listeners
         document.querySelectorAll('.remove-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const index = e.target.dataset.index;
-                cart.splice(index, 1);
+                cart.splice(e.target.dataset.index, 1);
                 updateCartDisplay();
             });
         });
     }
 
-    // --- EVENT LISTENERS ---
-
     document.getElementById('add-to-cart-btn').addEventListener('click', () => {
         const productId = productSelect.value;
         const quantity = parseInt(quantityInput.value);
 
-        if (!productId || quantity <= 0) {
-            document.getElementById('cart-error').textContent = 'Please select a product and quantity.';
-            document.getElementById('cart-error').classList.remove('hidden');
+        if (!productId || isNaN(quantity) || quantity <= 0) {
+            showError('Please select a product and valid quantity.');
             return;
         }
 
         const product = productsData[productId];
+        const existingItemIndex = cart.findIndex(item => item.productId === productId);
+        const currentCartQty = existingItemIndex > -1 ? cart[existingItemIndex].quantity : 0;
 
-        if (quantity > product.stock) {
-            document.getElementById('cart-error').textContent = `Stock Error: Only ${product.stock} of ${product.name} available.`;
-            document.getElementById('cart-error').classList.remove('hidden');
+        if ((currentCartQty + quantity) > product.stock) {
+            showError(`Cannot add. Only ${product.stock} available in stock.`);
             return;
         }
         
-        document.getElementById('cart-error').classList.add('hidden');
-
-        // Check if item already exists in cart, then update quantity
-        const existingItemIndex = cart.findIndex(item => item.productId === productId);
+        errorBanner.classList.add('hidden');
 
         if (existingItemIndex > -1) {
             cart[existingItemIndex].quantity += quantity;
@@ -164,48 +312,57 @@
             cart.push({ productId, quantity });
         }
 
-        // Reset inputs and update display
         productSelect.value = '';
         quantityInput.value = 1;
+        stockIndicator.classList.add('hidden');
         updateCartDisplay();
     });
 
     checkoutBtn.addEventListener('click', async () => {
         if (cart.length === 0) return;
         
+        // 🟢 NEW: WALK-IN VALIDATION
+        const buyerName = walkinNameInput.value.trim();
+        if (isWalkIn && !buyerName) {
+            showError('Please enter the Walk-In Customer Name to print on the receipt.');
+            walkinNameInput.focus();
+            return;
+        }
+        
         checkoutBtn.disabled = true;
-        checkoutBtn.textContent = 'Processing...';
+        const originalText = checkoutBtn.innerHTML;
+        checkoutBtn.innerHTML = '⚙️ PROCESSING...';
 
         try {
-            const response = await fetch(postUrl, {
+            // 🟢 NEW: SENDING THE WALK-IN STATE TO CONTROLLER
+            const payload = {
+                items: cart,
+                
+                buyerName: isWalkIn ? buyerName : null
+            };
+            const targetUrl = isWalkIn ? walkInCheckoutUrl : studentCheckoutUrl;
+            const response = await fetch(targetUrl, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ items: cart })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
 
             const result = await response.json();
             
             if (response.ok && result.redirect) {
-                window.location.href = result.redirect; // Redirect to the new Invoice
+                window.location.href = result.redirect; 
             } else {
-                // Handle server-side errors (like stock issues)
-                document.getElementById('cart-error').textContent = result.error || 'A server error occurred during checkout.';
-                document.getElementById('cart-error').classList.remove('hidden');
+                showError(result.error || 'A server error occurred.');
+                checkoutBtn.disabled = false;
+                checkoutBtn.innerHTML = originalText;
             }
-
         } catch (error) {
-            console.error('Checkout failed:', error);
-            document.getElementById('cart-error').textContent = 'Network error. Please try again.';
-            document.getElementById('cart-error').classList.remove('hidden');
-        } finally {
+            showError('Network error. Check connection.');
             checkoutBtn.disabled = false;
-            checkoutBtn.textContent = 'Process Sale';
+            checkoutBtn.innerHTML = originalText;
         }
     });
 
-    // Initial load check
     updateCartDisplay();
 </script>
 {% endblock %}

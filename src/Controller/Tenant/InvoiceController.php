@@ -9,6 +9,7 @@ use App\Entity\Tenant\InvoiceItem;
 use App\Entity\Tenant\Student;
 use App\Entity\Tenant\Term;
 use App\Entity\Tenant\School; // <--- 1. IMPORT ADDED
+use Symfony\Component\HttpFoundation\Request; // 🟢 ADD THIS LINE!
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use App\Entity\Tenant\StudentDiscount;
@@ -18,13 +19,94 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/finance/invoice')]
 class InvoiceController extends AbstractController
 {
-    #[Route('/', name: 'app_tenant_invoice_index', methods: ['GET'])]
-    public function index(EntityManagerInterface $em): Response
+    // ======================================================
+    // 1. DEDICATED ACADEMIC LEDGER (SCHOOL FEES)
+    // ======================================================
+    #[Route('/academic', name: 'app_tenant_invoice_index', methods: ['GET'])]
+    public function academicLedger(Request $request, EntityManagerInterface $em): Response
     {
-        $invoices = $em->getRepository(Invoice::class)->findBy([], ['createdAt' => 'DESC']);
+        $status = $request->query->get('status', '');
+        $searchQuery = $request->query->get('q', '');
+
+        // Strictly fetch ACADEMIC invoices only
+        $qb = $em->getRepository(Invoice::class)->createQueryBuilder('i')
+            ->leftJoin('i.student', 's')
+            ->where('i.type = :type')
+            ->setParameter('type', 'ACADEMIC')
+            ->orderBy('i.createdAt', 'DESC');
+
+        if ($status) {
+            $qb->andWhere('i.status = :status')->setParameter('status', $status);
+        }
+        
+        if ($searchQuery) {
+            $qb->andWhere('s.firstName LIKE :q OR s.lastName LIKE :q OR s.admissionNumber LIKE :q OR i.invoiceNumber LIKE :q')
+               ->setParameter('q', '%' . $searchQuery . '%');
+        }
+
+        $invoices = $qb->getQuery()->getResult();
+
+        // Calculate Totals
+        $sumTotal = 0.0; $sumPaid = 0.0; $sumBalance = 0.0;
+        foreach ($invoices as $invoice) {
+            $total = (float) $invoice->getTotalAmount();
+            $paid = (float) $invoice->getPaidAmount();
+            $sumTotal += $total; $sumPaid += $paid; $sumBalance += ($total - $paid);
+        }
 
         return $this->render('tenant/invoice/index.html.twig', [
+            'page_title' => 'Academic Fees Ledger',
+            'ledger_type' => 'academic',
             'invoices' => $invoices,
+            'sum_total' => $sumTotal,
+            'sum_paid' => $sumPaid,
+            'sum_balance' => $sumBalance,
+        ]);
+    }
+
+    // ======================================================
+    // 2. DEDICATED STORE LEDGER (POS SALES & WALK-INS)
+    // ======================================================
+    #[Route('/store', name: 'app_tenant_invoice_store', methods: ['GET'])]
+    public function storeLedger(Request $request, EntityManagerInterface $em): Response
+    {
+        $status = $request->query->get('status', '');
+        $searchQuery = $request->query->get('q', '');
+
+        // Strictly fetch STORE invoices only
+        $qb = $em->getRepository(Invoice::class)->createQueryBuilder('i')
+            ->leftJoin('i.student', 's')
+            ->where('i.type = :type')
+            ->setParameter('type', 'STORE')
+            ->orderBy('i.createdAt', 'DESC');
+
+        if ($status) {
+            $qb->andWhere('i.status = :status')->setParameter('status', $status);
+        }
+        
+        if ($searchQuery) {
+            // 🟢 CRITICAL FIX: Include 'buyerName' so you can search for Walk-In customers!
+            $qb->andWhere('s.firstName LIKE :q OR s.lastName LIKE :q OR i.buyerName LIKE :q OR i.invoiceNumber LIKE :q')
+               ->setParameter('q', '%' . $searchQuery . '%');
+        }
+
+        $invoices = $qb->getQuery()->getResult();
+
+        // Calculate Totals
+        $sumTotal = 0.0; $sumPaid = 0.0; $sumBalance = 0.0;
+        foreach ($invoices as $invoice) {
+            $total = (float) $invoice->getTotalAmount();
+            $paid = (float) $invoice->getPaidAmount();
+            $sumTotal += $total; $sumPaid += $paid; $sumBalance += ($total - $paid);
+        }
+
+        return $this->render('tenant/invoice/index.html.twig', [
+            'page_title' => 'Store Sales Ledger',
+            'ledger_type' => 'store',
+            'invoices' => $invoices,
+            'sum_total' => $sumTotal,
+            'sum_paid' => $sumPaid,
+            'sum_balance' => $sumBalance,
         ]);
     }
 

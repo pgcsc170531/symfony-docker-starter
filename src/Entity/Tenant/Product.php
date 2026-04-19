@@ -5,6 +5,8 @@ namespace App\Entity\Tenant;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
+
+
 #[ORM\Entity]
 #[ORM\Table(name: 'product')]
 class Product

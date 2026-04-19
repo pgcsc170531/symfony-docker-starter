@@ -286,7 +286,7 @@
                         </a>
                     {% endif %}
                     
-                    {# === 3. FINANCE OPERATIONS === #}
+                   {# === 3. FINANCE OPERATIONS === #}
                     {% if is_granted('ROLE_BURSAR') or is_granted('ROLE_ADMIN') %}
                         <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-4 tracking-wider">Finance</div>
                         
@@ -295,11 +295,33 @@
                             <span class="text-xl mr-3 opacity-80">📋</span>
                             <span class="font-medium">Fee Schedule</span>
                         </a>
+
+                        {# 🟢 1. DEDICATED ACADEMIC LEDGER #}
                         <a href="{{ path('app_tenant_invoice_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'invoice' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">🧾</span>
-                            <span class="font-medium">Invoices & Bills</span>
+                            {% if route == 'app_tenant_invoice_index' or 'academic_invoice' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">🎓</span>
+                            <span class="font-medium">Academic Fees</span>
                         </a>
+
+                        {# 🟢 2. DEDICATED STORE LEDGER #}
+                        <a href="{{ path('app_tenant_invoice_store') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if route == 'app_tenant_invoice_store' or 'store_invoice' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">🏪</span>
+                            <span class="font-medium">Store Sales</span>
+                        </a>
+
+                        <a href="{{ path('app_tenant_product_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'product' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">📦</span>
+                            <span class="font-medium">Store Inventory</span>
+                        </a>
+
+                        <a href="{{ path('app_tenant_store_search') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'store_search' in route or 'cart_sale' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">🛒</span>
+                            <span class="font-medium">Store POS</span>
+                        </a>
+                        
                         <a href="{{ path('app_tenant_payment_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
                             {% if 'payment' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
                             <span class="text-xl mr-3 opacity-80">🏦</span>
@@ -307,7 +329,8 @@
                         </a>
 
                         <a href="{{ path('app_tenant_discount_assign') }}" 
-                        class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors mb-1">
+                        class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors mb-1
+                            {% if 'discount' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
                             <span class="text-xl mr-3">🎖️</span> {# Medal Icon for Scholarship #}
                             <div>
                                 <span class="block font-bold text-sm">Scholarships</span>
@@ -315,8 +338,7 @@
                             </div>
                         </a>
 
-
-                        {# === NEW: EXPENSES & REPORTS === #}
+                        {# === EXPENSES & REPORTS === #}
                         <a href="{{ path('app_tenant_expense_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
                             {% if 'expense' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
                             <span class="text-xl mr-3 opacity-80">💸</span>

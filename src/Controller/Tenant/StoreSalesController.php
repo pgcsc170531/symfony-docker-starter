@@ -4,7 +4,8 @@ namespace App\Controller\Tenant;
 
 use App\Entity\Tenant\Invoice;
 use App\Entity\Tenant\InvoiceItem;
-use App\Entity\Tenant\Product; // <--- Added this required import
+use App\Entity\Tenant\Payment;
+use App\Entity\Tenant\Product; 
 use App\Entity\Tenant\Student;
 use App\Entity\Tenant\Term;
 use App\Form\StudentSearchType;
@@ -18,7 +19,9 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/store/sales')]
 class StoreSalesController extends AbstractController
 {
-    // 1. SEARCH: The entry point for the cashier
+    // ==========================================
+    // 1. SEARCH PAGE
+    // ==========================================
     #[Route('/search', name: 'app_tenant_store_search', methods: ['GET', 'POST'])]
     public function search(Request $request, EntityManagerInterface $em): Response
     {
@@ -50,94 +53,50 @@ class StoreSalesController extends AbstractController
         ]);
     }
 
-    // 2. CART SALE: The main POS Logic (Replaces the old newSale)
-    #[Route('/cart/{studentId}', name: 'app_tenant_store_cart_sale', methods: ['GET', 'POST'])]
-    public function cartSale(int $studentId, Request $request, EntityManagerInterface $em): Response
+    // ==========================================
+    // 2. RENDER POS TERMINAL (GET ONLY)
+    // ==========================================
+    #[Route('/cart/{studentId?}', name: 'app_tenant_store_cart_sale', methods: ['GET'])]
+    public function cartSale(?int $studentId, EntityManagerInterface $em): Response
     {
-        $student = $em->getRepository(Student::class)->find($studentId);
         $activeTerm = $em->getRepository(Term::class)->findOneBy(['isActive' => true]);
         
-        if (!$student) {
-             throw $this->createNotFoundException('Student not found');
-        }
         if (!$activeTerm) {
             $this->addFlash('error', 'No active term found.');
-            return $this->redirectToRoute('app_tenant_student_index');
+            return $this->redirectToRoute('app_tenant_store_search');
         }
-        
-        // Handle the final POST submission from the JavaScript Cart
-        if ($request->isMethod('POST')) {
-            $data = json_decode($request->getContent(), true);
-            $cartItems = $data['items'] ?? [];
 
-            if (empty($cartItems)) {
-                return $this->json(['error' => 'No items in cart to process.'], 400);
-            }
-            
-            // --- TRANSACTION START ---
-            
-            $invoice = new Invoice();
-            $invoice->setStudent($student);
-            $invoice->setTerm($activeTerm);
-            $invoice->setSession($activeTerm->getSession());
-            $invoice->setType('STORE'); 
-            $invoice->setStatus('UNPAID');
+        $student = null;
+        $products = [];
 
-            // NEW: Find Student's Class for this Session
+        if ($studentId) {
+            $student = $em->getRepository(Student::class)->find($studentId);
+            if (!$student) throw $this->createNotFoundException('Student not found');
+            
             $enrollment = $em->getRepository(Enrollment::class)->findOneBy([
                 'student' => $student,
                 'session' => $activeTerm->getSession()
             ]);
-            
-            if ($enrollment) {
-                $invoice->setClassroom($enrollment->getClassroom()); // <--- ADD THIS LINE
+
+            if ($enrollment && $enrollment->getClassroom()) {
+                $singularClassName = $enrollment->getClassroom()->getName();
+                $baseLevel = trim(preg_replace('/[a-zA-Z]$/', '', $singularClassName));
+
+                $products = $em->getRepository(Product::class)->createQueryBuilder('p')
+                    ->leftJoin('p.classroom', 'c')
+                    ->where('p.classroom IS NULL') 
+                    ->orWhere('c.name LIKE :baseLevel') 
+                    ->setParameter('baseLevel', $baseLevel . '%')
+                    ->orderBy('p.category', 'ASC')
+                    ->addOrderBy('p.name', 'ASC')
+                    ->getQuery()
+                    ->getResult();
             }
-
-            $totalInvoiceAmount = 0;
-
-            foreach ($cartItems as $cartItem) {
-                $product = $em->getRepository(Product::class)->find($cartItem['productId']);
-                $quantity = (int)$cartItem['quantity'];
-
-                // Validation
-                if (!$product) {
-                    return $this->json(['error' => "Product ID {$cartItem['productId']} not found."], 400);
-                }
-                if ($product->getStockQuantity() < $quantity || $quantity <= 0) {
-                     return $this->json(['error' => "Stock issue for {$product->getName()}. Only {$product->getStockQuantity()} remaining."], 400);
-                }
-
-                // A. DEDUCT STOCK
-                $product->setStockQuantity($product->getStockQuantity() - $quantity);
-                $em->persist($product);
-
-                // B. CREATE INVOICE ITEM
-                $unitPrice = (float)$product->getUnitPrice();
-                $totalPrice = $unitPrice * $quantity;
-                $totalInvoiceAmount += $totalPrice;
-
-                $item = new InvoiceItem();
-                $item->setInvoice($invoice);
-                $item->setProduct($product);
-                $item->setQuantity($quantity);
-                $item->setAmount((string)$totalPrice);
-                $em->persist($item);
-            }
-            
-            // C. FINALIZE INVOICE
-            $invoice->setTotalAmount((string)$totalInvoiceAmount);
-            $em->persist($invoice);
-            
-            $em->flush();
-            // --- TRANSACTION END ---
-
-            $this->addFlash('success', 'Store Invoice Generated successfully!');
-            // Return JSON redirect for the frontend JS
-            return $this->json(['redirect' => $this->generateUrl('app_tenant_invoice_show', ['id' => $invoice->getId()])], 200);
+        } 
+        
+        if (empty($products)) {
+            $products = $em->getRepository(Product::class)->findBy([], ['category' => 'ASC', 'name' => 'ASC']);
         }
-
-        // GET Request: Render the POS View
-        $products = $em->getRepository(Product::class)->findBy([], ['name' => 'ASC']);
 
         return $this->render('tenant/store/cart_sale.html.twig', [
             'student' => $student,
@@ -145,7 +104,138 @@ class StoreSalesController extends AbstractController
         ]);
     }
 
-    // 3. API: Helper for JavaScript to get price/stock
+    // ==========================================
+    // 3. CHECKOUT: STUDENT (POST ONLY)
+    // ==========================================
+    #[Route('/checkout/student/{id}', name: 'app_tenant_store_checkout_student', methods: ['POST'])]
+    public function checkoutStudent(Student $student, Request $request, EntityManagerInterface $em): Response
+    {
+        $activeTerm = $em->getRepository(Term::class)->findOneBy(['isActive' => true]);
+        $data = json_decode($request->getContent(), true);
+        $cartItems = $data['items'] ?? [];
+
+        if (empty($cartItems)) return $this->json(['error' => 'Cart is empty.'], 400);
+
+        $invoice = new Invoice();
+        $invoice->setTerm($activeTerm);
+        $invoice->setSession($activeTerm->getSession());
+        $invoice->setType('STORE');
+        $invoice->setStudent($student);
+        $invoice->setStatus('UNPAID');
+        
+        $enrollment = $em->getRepository(Enrollment::class)->findOneBy([
+            'student' => $student,
+            'session' => $activeTerm->getSession()
+        ]);
+        
+        if ($enrollment) {
+            $invoice->setClassroom($enrollment->getClassroom()); 
+        }
+
+        try {
+            $totalAmount = $this->processCartAndDeductStock($cartItems, $invoice, $em);
+            $invoice->setTotalAmount((string)$totalAmount);
+            
+            $em->persist($invoice);
+            $em->flush();
+
+            $this->addFlash('success', 'Store Invoice Generated successfully!');
+            return $this->json(['redirect' => $this->generateUrl('app_tenant_invoice_show', ['id' => $invoice->getId()])], 200);
+
+        } catch (\Exception $e) {
+            return $this->json(['error' => $e->getMessage()], 400);
+        }
+    }
+
+    // ==========================================
+    // 4. CHECKOUT: WALK-IN (POST ONLY)
+    // ==========================================
+    #[Route('/checkout/walkin', name: 'app_tenant_store_checkout_walkin', methods: ['POST'])]
+    public function checkoutWalkIn(Request $request, EntityManagerInterface $em): Response
+    {
+        $activeTerm = $em->getRepository(Term::class)->findOneBy(['isActive' => true]);
+        $data = json_decode($request->getContent(), true);
+        $cartItems = $data['items'] ?? [];
+        $buyerName = $data['buyerName'] ?? null;
+
+        if (empty($cartItems)) return $this->json(['error' => 'Cart is empty.'], 400);
+        if (empty($buyerName)) return $this->json(['error' => 'Walk-in customer name is required.'], 400);
+
+        $invoice = new Invoice();
+        $invoice->setTerm($activeTerm);
+        $invoice->setSession($activeTerm->getSession());
+        $invoice->setType('STORE');
+        $invoice->setBuyerName($buyerName);
+        $invoice->setStatus('PAID');
+
+        try {
+            $totalAmount = $this->processCartAndDeductStock($cartItems, $invoice, $em);
+            $invoice->setTotalAmount((string)$totalAmount);
+            $invoice->setPaidAmount((string)$totalAmount);
+            
+            $em->persist($invoice); 
+
+            $payment = new Payment();
+            $payment->setInvoice($invoice);
+            $payment->setAmount((string)$totalAmount);
+            $payment->setMethod('CASH');
+            $payment->setReferenceCode(date('ym') . rand(1000, 9999));
+            $payment->setStatus('CONFIRMED');
+            $payment->setConfirmedAt(new \DateTimeImmutable());
+            $payment->setConfirmedBy($this->getUser()->getUserIdentifier());
+            
+            $em->persist($payment);
+            $em->flush();
+
+            $this->addFlash('success', 'Walk-in Cash Sale completed successfully!');
+            return $this->json(['redirect' => $this->generateUrl('app_tenant_payment_receipt_walkin', ['id' => $payment->getId()])], 200);
+
+        } catch (\Exception $e) {
+            return $this->json(['error' => $e->getMessage()], 400);
+        }
+    }
+
+    // ==========================================
+    // 5. SHARED HELPER: CART MATH & INVENTORY
+    // ==========================================
+    private function processCartAndDeductStock(array $cartItems, Invoice $invoice, EntityManagerInterface $em): float
+    {
+        $totalInvoiceAmount = 0;
+
+        foreach ($cartItems as $cartItem) {
+            $product = $em->getRepository(Product::class)->find($cartItem['productId']);
+            $quantity = (int)$cartItem['quantity'];
+
+            if (!$product) {
+                throw new \Exception("Product ID {$cartItem['productId']} not found.");
+            }
+            if ($product->getStockQuantity() < $quantity || $quantity <= 0) {
+                 throw new \Exception("Stock issue for {$product->getName()}. Only {$product->getStockQuantity()} remaining.");
+            }
+
+            // Deduct Stock
+            $product->setStockQuantity($product->getStockQuantity() - $quantity);
+            $em->persist($product);
+
+            // Create Invoice Item
+            $unitPrice = (float)$product->getUnitPrice();
+            $totalPrice = $unitPrice * $quantity;
+            $totalInvoiceAmount += $totalPrice;
+
+            $item = new InvoiceItem();
+            $item->setInvoice($invoice);
+            $item->setProduct($product);
+            $item->setQuantity($quantity);
+            $item->setAmount((string)$totalPrice);
+            $em->persist($item);
+        }
+
+        return $totalInvoiceAmount;
+    }
+
+    // ==========================================
+    // 6. API: PRODUCT DETAILS
+    // ==========================================
     #[Route('/api/product/{id}', name: 'app_tenant_api_product_details', methods: ['GET'])]
     public function getProductDetails(int $id, EntityManagerInterface $em): Response
     {

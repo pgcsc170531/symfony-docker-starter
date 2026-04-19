@@ -6,13 +6,13 @@ use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 
-// ✅ FIXED 1: Added missing imports so PHP knows what these classes are
 use App\Entity\Tenant\Country;
 use App\Entity\Tenant\State;
 use App\Entity\Tenant\LGA;
 use App\Entity\Tenant\Classroom;
 use App\Entity\Tenant\Guardian;
 use App\Entity\Tenant\Enrollment;
+use App\Entity\Tenant\Invoice; // 🟢 ADDED: Invoice import
 
 #[ORM\Entity]
 #[ORM\Table(name: 'student')]
@@ -67,6 +67,7 @@ class Student
 
     #[ORM\Column(name: 'profile_picture_filename', length: 255, nullable: true)]
     private ?string $profilePictureFilename = null;
+
     // --- MEDICAL ---
     #[ORM\Column(name: 'blood_group', length: 10, nullable: true)]
     private ?string $bloodGroup = null; 
@@ -97,13 +98,15 @@ class Student
     #[ORM\OneToMany(mappedBy: 'student', targetEntity: Enrollment::class)]
     private Collection $enrollments;
 
+    // 🟢 ADDED: Invoices collection so the student knows what they owe
+    #[ORM\OneToMany(mappedBy: 'student', targetEntity: Invoice::class)]
+    private Collection $invoices;
+
     public function __construct()
     {
         $this->enrollments = new ArrayCollection();
+        $this->invoices = new ArrayCollection(); // 🟢 ADDED: Initialize the collection
         $this->createdAt = new \DateTimeImmutable();
-        // ✅ FIXED 3: Removed default 'Nigerian' string. 
-        // We cannot assign a string to an Object property. 
-        // We will handle the default value in the Form later.
     }
 
     // --- GETTERS AND SETTERS ---
@@ -118,8 +121,6 @@ class Student
 
     public function getLastName(): ?string { return $this->lastName; }
     public function setLastName(string $lastName): static { $this->lastName = $lastName; return $this; }
-
-    
 
     public function getFullName(): string {
         return $this->firstName . ' ' . ($this->middleName ? $this->middleName . ' ' : '') . $this->lastName;
@@ -138,7 +139,6 @@ class Student
     public function getReligion(): ?string { return $this->religion; }
     public function setReligion(?string $religion): static { $this->religion = $religion; return $this; }
 
-    // ✅ FIXED 2: Updated Getters/Setters to accept Objects (Entities), not Strings
     public function getNationality(): ?Country { return $this->nationality; }
     public function setNationality(?Country $nationality): static { $this->nationality = $nationality; return $this; }
 
@@ -181,25 +181,21 @@ class Student
     public function setCreatedAt(\DateTimeImmutable $createdAt): static
     {
         $this->createdAt = $createdAt;
-
         return $this;
     }
 
     public function getProfilePictureFilename(): ?string
-{
-    // 💡 CRITICAL FIX: The method must explicitly return the property.
-    return $this->profilePictureFilename;
-}
+    {
+        return $this->profilePictureFilename;
+    }
 
-// Ensure the setter is also correct:
-public function setProfilePictureFilename(?string $profilePictureFilename): static
-{
-    $this->profilePictureFilename = $profilePictureFilename;
-    return $this;
-}
+    public function setProfilePictureFilename(?string $profilePictureFilename): static
+    {
+        $this->profilePictureFilename = $profilePictureFilename;
+        return $this;
+    }
 
-
-public function getCurrentClassroom(): ?Classroom
+    public function getCurrentClassroom(): ?Classroom
     {
         return $this->currentClassroom;
     }
@@ -208,5 +204,42 @@ public function getCurrentClassroom(): ?Classroom
     {
         $this->currentClassroom = $currentClassroom;
         return $this;
+    }
+
+    // ======================================================
+    // 🟢 ADDED: FINANCE QUICK CHECK HELPER METHODS
+    // ======================================================
+
+    /**
+     * Get all invoices belonging to this student
+     */
+    public function getInvoices(): Collection 
+    { 
+        return $this->invoices; 
+    }
+
+    /**
+     * Calculates the total unpaid amount across all invoices for this student.
+     */
+    public function getOutstandingBalance(): float
+    {
+        $totalDebt = 0.0;
+
+        if ($this->invoices->isEmpty()) {
+            return 0.0;
+        }
+
+        foreach ($this->invoices as $invoice) {
+            $status = trim(strtoupper($invoice->getStatus()));
+            
+            if ($status !== 'PAID') {
+                $total = (float) $invoice->getTotalAmount();
+                $paid = (float) $invoice->getPaidAmount();
+                
+                $totalDebt += ($total - $paid);
+            }
+        }
+
+        return $totalDebt;
     }
 }

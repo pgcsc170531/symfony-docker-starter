@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admission Letter - {{ student.fullName }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 1. Tell the printer paper to have NO margins */
+        @page {
+            size: A4 portrait;
+            margin: 0; 
+        }
+        
+        /* 2. Style the on-screen preview to look like A4 paper */
+        .a4-preview {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 2rem auto;
+            background: white;
+            padding: 20mm;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            position: relative;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 3. Lock it down perfectly for actual printing */
+        @media print {
+            .no-print { display: none !important; }
+            body { 
+                background-color: white; 
+                margin: 0; 
+                padding: 0; 
+            }
+            .a4-preview {
+                width: 210mm !important;
+                height: 297mm !important; /* Exact A4 height, no larger */
+                min-height: 297mm !important;
+                margin: 0 !important;
+                padding: 20mm !important; /* Margins are now padding inside the box */
+                box-shadow: none !important;
+                border: none !important;
+                overflow: hidden; /* ABSOLUTE GUARANTEE it won't trigger page 2 */
+                page-break-after: avoid;
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-200 text-gray-800 font-serif leading-snug">
+
+    <div class="a4-preview">
+        
+        <div class="no-print absolute top-4 right-4 flex gap-2 z-50">
+            <button onclick="window.close()" class="bg-gray-200 text-gray-800 px-3 py-1.5 rounded shadow hover:bg-gray-300 text-xs font-bold transition">
+                Close
+            </button>
+            <button onclick="window.print()" class="bg-indigo-600 text-white px-3 py-1.5 rounded shadow hover:bg-indigo-700 text-xs font-bold flex items-center gap-2 transition">
+                🖨️ Print A4
+            </button>
+        </div>
+
+        <div class="flex flex-row items-center border-b-2 border-indigo-600 pb-4 mb-6 mt-6 md:mt-0">
+            
+            <div class="w-16 h-16 md:w-20 md:h-20 flex-shrink-0">
+                {% if tenant.logoFilename %}
+                    <img src="{{ asset('uploads/logos/' ~ tenant.logoFilename) }}" alt="{{ tenant.name }} Logo" class="w-full h-full object-contain">
+                {% else %}
+                    <div class="w-full h-full bg-gray-50 flex items-center justify-center border border-dashed border-gray-300 rounded">
+                        <span class="text-gray-400 text-[10px] uppercase font-sans text-center px-1">No Logo</span>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="flex-1 text-center px-4">
+                <h1 class="text-xl md:text-2xl font-bold uppercase text-indigo-900 leading-tight">{{ tenant.name }}</h1>
+                
+                {% if tenant.address %}
+                    <p class="text-gray-800 mt-1 text-xs md:text-sm font-medium">{{ tenant.address }}</p>
+                {% endif %}
+                
+                <p class="text-gray-500 mt-0.5 text-xs italic font-semibold tracking-wide">
+                    "{{ tenant.motto ?? 'Excellence in Education' }}"
+                </p>
+            </div>
+
+            <div class="w-16 h-16 md:w-20 md:h-20 flex-shrink-0 hidden sm:block"></div>
+            
+        </div>
+        <div class="flex justify-between mb-6 text-sm">
+            <p><strong>Ref No:</strong> <span class="font-mono text-gray-700">{{ student.admissionNumber ?? 'PENDING' }}</span></p>
+            <p><strong>Date:</strong> {{ student.createdAt|date('F j, Y') }}</p>
+        </div>
+
+        <div class="mb-6 text-sm">
+            <p>To the Parents/Guardian of,</p>
+            <p class="font-bold text-base uppercase mt-0.5">{{ student.fullName }}</p>
+            {% if student.guardian %}
+                <p class="text-gray-700">{{ student.guardian.phoneNumber }}</p>
+            {% endif %}
+        </div>
+
+        <div class="mb-6 text-sm leading-relaxed text-justify flex-grow">
+            <h2 class="text-base font-bold mb-5 text-center underline decoration-2 underline-offset-4 tracking-wide uppercase">Provisional Admission Letter</h2>
+            
+            <p class="mb-3">Dear {{ student.guardian ? student.guardian.fullName : 'Parent/Guardian' }},</p>
+            
+            <p class="mb-3">
+                We are pleased to inform you that your child/ward, <strong class="uppercase">{{ student.fullName }}</strong>, has been offered provisional admission into 
+                <strong>{{ student.currentClass ? student.currentClass.name : 'our institution' }}</strong> for the current academic session.
+            </p>
+
+            <p class="mb-3">
+                This admission is subject to the payment of all prescribed school fees and the submission of all required medical and previous academic documents to the administrative office within two weeks of receiving this letter. 
+            </p>
+
+            <p class="mb-3">
+                Failure to complete the registration process and document submission within the stipulated time may lead to the forfeiture of this admission offer.
+            </p>
+
+            <p>Congratulations and welcome to <strong>{{ tenant.name }}</strong>. We look forward to a successful academic journey with your child.</p>
+            
+            <p class="mt-6">Yours faithfully,</p>
+        </div>
+
+        <div class="mt-auto pt-6 flex justify-between items-end relative pb-4">
+            
+            <div class="relative z-10 bg-white/80 pr-4 pb-2">
+                <div class="w-40 border-b-2 border-gray-800 mb-1"></div>
+                <p class="font-bold text-sm uppercase">Principal / Administrator</p>
+                <p class="text-xs text-gray-600">{{ tenant.name }}</p>
+            </div>
+            
+            <div class="absolute right-4 bottom-2 pointer-events-none">
+                
+                <svg viewBox="0 0 200 200" 
+                     class="w-36 h-36 opacity-85 mix-blend-multiply" 
+                     style="transform: rotate(-10deg); color: {{ tenant.primaryColor ?? '#1e40af' }}; fill: currentColor; stroke: currentColor;">
+                    
+                    <circle cx="100" cy="100" r="96" fill="none" stroke-width="3"></circle>
+                    <circle cx="100" cy="100" r="90" fill="none" stroke-width="1"></circle>
+                    <circle cx="100" cy="100" r="58" fill="none" stroke-width="1.5"></circle>
+                    <circle cx="100" cy="100" r="54" fill="none" stroke-width="0.5" stroke-dasharray="2 2"></circle>
+
+                    <defs>
+                        <path id="topArc" d="M 26,100 A 74,74 0 0,1 174,100" />
+                        <path id="bottomArc" d="M 26,100 A 74,74 0 0,0 174,100" />
+                    </defs>
+
+                    <text font-size="13" font-weight="bold" font-family="sans-serif" letter-spacing="1">
+                        <textPath href="#topArc" startOffset="50%" text-anchor="middle" dominant-baseline="baseline">
+                            {{ tenant.name|slice(0, 26)|upper }}
+                        </textPath>
+                    </text>
+
+                    <text font-size="11" font-weight="bold" font-family="sans-serif" letter-spacing="3">
+                        <textPath href="#bottomArc" startOffset="50%" text-anchor="middle" dominant-baseline="hanging">
+                            ★ OFFICIAL SEAL ★
+                        </textPath>
+                    </text>
+
+                    <text x="100" y="86" font-size="18" font-weight="900" font-family="sans-serif" text-anchor="middle" letter-spacing="2">
+                        ADMITTED
+                    </text>
+                    
+                    <rect x="58" y="98" width="84" height="22" fill="none" stroke-width="1"></rect>
+                    <text x="100" y="113" font-size="10" font-weight="bold" font-family="monospace" text-anchor="middle" letter-spacing="1">
+                        {{ 'now'|date('d M Y')|upper }}
+                    </text>
+
+                    <text x="100" y="136" font-size="8" font-weight="bold" font-family="monospace" text-anchor="middle" opacity="0.8">
+                         {{ student.admissionNumber|default('PENDING') }}
+                    </text>
+                </svg>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

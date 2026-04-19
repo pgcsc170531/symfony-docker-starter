@@ -3,47 +3,48 @@
 {% block title %}Expense Categories{% endblock %}
 
 {% block body %}
-<div class="max-w-7xl mx-auto mt-8 px-6">
+{# 1. RESPONSIVE CONTAINER PADDING #}
+<div class="max-w-7xl mx-auto mt-4 md:mt-8 px-4 sm:px-6">
 
     {# HEADER #}
-    <div class="flex justify-between items-end mb-10">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 md:mb-10 gap-4">
         <div>
-            <h1 class="text-3xl font-black text-gray-900 tracking-tight">Expense Categories</h1>
-            <p class="text-gray-500 mt-1">Organize your spending (e.g., "Fuel", "Salaries", "Maintenance").</p>
+            <h1 class="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">Expense Categories</h1>
+            <p class="text-sm md:text-base text-gray-500 mt-1">Organize your spending (e.g., "Fuel", "Salaries", "Maintenance").</p>
         </div>
-        <a href="{{ path('app_tenant_expense_index') }}" class="group flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors">
+        <a href="{{ path('app_tenant_expense_index') }}" class="group flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors bg-gray-100 md:bg-transparent px-4 py-2 md:p-0 rounded-lg md:rounded-none w-full md:w-auto justify-center md:justify-start">
             <span class="bg-gray-200 text-gray-600 rounded-full w-8 h-8 flex items-center justify-center group-hover:bg-gray-300 transition-colors">&larr;</span>
             Back to Expenses
         </a>
     </div>
 
     {# 2/5 SPLIT GRID #}
-    <div class="grid grid-cols-1 lg:grid-cols-5 gap-10">
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 md:gap-10">
         
         {# LEFT: FORM (2 Columns - 40%) #}
         <div class="lg:col-span-2">
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden sticky top-6">
-                <div class="bg-gray-900 p-6 text-white">
-                    <h2 class="font-bold text-xl">➕ New Category</h2>
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden lg:sticky lg:top-6">
+                <div class="bg-gray-900 p-5 md:p-6 text-white">
+                    <h2 class="font-bold text-lg md:text-xl">➕ New Category</h2>
                     <p class="text-gray-400 text-xs mt-1">Create a new grouping for expenses.</p>
                 </div>
-                <div class="p-8">
+                <div class="p-5 md:p-8">
                     {{ form_start(form) }}
                         
-                        <div class="space-y-6">
+                        <div class="space-y-5 md:space-y-6">
                             <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Category Name</label>
-                                {{ form_widget(form.name, {'attr': {'class': 'w-full p-4 rounded-xl border-gray-300 focus:border-black focus:ring-black placeholder-gray-300 font-bold text-gray-800', 'placeholder': 'e.g. Generator Fuel'}}) }}
+                                <label class="block text-[10px] md:text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Category Name</label>
+                                {{ form_widget(form.name, {'attr': {'class': 'w-full p-3.5 md:p-4 rounded-xl border-gray-300 focus:border-black focus:ring-black placeholder-gray-300 font-bold text-gray-800 text-sm md:text-base', 'placeholder': 'e.g. Generator Fuel'}}) }}
                                 {{ form_errors(form.name) }}
                             </div>
 
                             <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Description (Optional)</label>
-                                {{ form_widget(form.description, {'attr': {'class': 'w-full p-4 rounded-xl border-gray-300 focus:border-black focus:ring-black text-sm', 'rows': 4, 'placeholder': 'Describe what kind of expenses fall into this category...'}}) }}
+                                <label class="block text-[10px] md:text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Description (Optional)</label>
+                                {{ form_widget(form.description, {'attr': {'class': 'w-full p-3.5 md:p-4 rounded-xl border-gray-300 focus:border-black focus:ring-black text-sm', 'rows': 4, 'placeholder': 'Describe what kind of expenses fall into this category...'}}) }}
                             </div>
                         </div>
 
-                        <button type="submit" class="w-full mt-8 bg-gray-900 text-white font-bold py-4 rounded-xl hover:bg-gray-800 shadow-lg transition-transform transform active:scale-95">
+                        <button type="submit" class="w-full mt-6 md:mt-8 bg-gray-900 text-white font-bold py-3.5 md:py-4 rounded-xl hover:bg-gray-800 shadow-lg transition-transform transform active:scale-95">
                             Save Category
                         </button>
                     {{ form_end(form) }}
@@ -51,46 +52,50 @@
             </div>
         </div>
 
-        {# RIGHT: TABLE (3 Columns - 60%) #}
+        {# RIGHT: HISTORY LIST (Rebuilt for Mobile) #}
         <div class="lg:col-span-3">
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden h-full">
-                <div class="px-8 py-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-                    <h3 class="font-bold text-gray-800">Existing Categories</h3>
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden h-full flex flex-col">
+                <div class="p-5 md:px-8 md:py-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                    <h3 class="font-bold text-gray-800 text-base md:text-lg">Existing Categories</h3>
                     <span class="bg-gray-200 text-gray-600 text-xs font-bold px-3 py-1 rounded-full">{{ categories|length }} Found</span>
                 </div>
                 
-                <table class="w-full text-left">
-                    <thead class="bg-white border-b border-gray-100">
-                        <tr>
-                            <th class="px-8 py-4 text-xs font-bold text-gray-400 uppercase w-1/3">Name</th>
-                            <th class="px-8 py-4 text-xs font-bold text-gray-400 uppercase">Description</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-50">
-                        {% for cat in categories %}
-                        <tr class="hover:bg-gray-50 group transition-colors">
-                            <td class="px-8 py-5 align-top">
-                                <div class="font-bold text-gray-900 text-lg">{{ cat.name }}</div>
-                            </td>
-                            <td class="px-8 py-5 text-sm text-gray-500 align-top">
+                {# 🟢 MOBILE-FIRST FLEX CARDS (Replaces the Table) #}
+                <div class="divide-y divide-gray-100">
+                    
+                    {# Desktop-only table headers #}
+                    <div class="hidden md:flex px-8 py-3 bg-white text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100">
+                        <div class="w-1/3">Name</div>
+                        <div class="flex-1">Description</div>
+                    </div>
+
+                    {% for cat in categories %}
+                        <div class="p-4 md:px-8 md:py-5 hover:bg-gray-50 transition-colors flex flex-col md:flex-row md:items-start gap-1 md:gap-6">
+                            
+                            {# Name Column #}
+                            <div class="w-full md:w-1/3">
+                                <div class="font-bold text-gray-900 text-base md:text-lg">{{ cat.name }}</div>
+                            </div>
+
+                            {# Description Column #}
+                            <div class="flex-1 text-sm text-gray-500 mt-1 md:mt-0">
                                 {% if cat.description %}
                                     {{ cat.description }}
                                 {% else %}
                                     <span class="text-gray-300 italic">No description provided</span>
                                 {% endif %}
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="2" class="p-16 text-center">
-                                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4 text-3xl shadow-inner">📂</div>
-                                <h3 class="text-gray-900 font-bold text-lg">No Categories Yet</h3>
-                                <p class="text-gray-400 text-sm mt-1">Create your first category on the left to get started.</p>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                            </div>
+                            
+                        </div>
+                    {% else %}
+                        <div class="p-12 md:p-16 text-center">
+                            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4 text-3xl shadow-inner">📂</div>
+                            <h3 class="text-gray-900 font-bold text-base md:text-lg">No Categories Yet</h3>
+                            <p class="text-gray-400 text-sm mt-1">Create your first category on the left to get started.</p>
+                        </div>
+                    {% endfor %}
+
+                </div>
             </div>
         </div>
 

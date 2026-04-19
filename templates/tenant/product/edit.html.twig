@@ -1,0 +1,43 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit Product{% endblock %}
+
+{% block body %}
+<div class="max-w-xl mx-auto mt-10 p-6">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">Edit Product: {{ product.name }}</h1>
+        <a href="{{ path('app_tenant_product_index') }}" class="text-indigo-600 font-bold text-sm hover:underline">&larr; Back</a>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        {{ form_start(form, {'attr': {'class': 'space-y-4'}}) }}
+            <div>
+                {{ form_label(form.name, null, {'label_attr': {'class': 'block text-xs font-bold text-gray-700 uppercase mb-1'}}) }}
+                {{ form_widget(form.name, {'attr': {'class': 'w-full border-gray-300 border p-2.5 rounded-md text-sm outline-none'}}) }}
+            </div>
+            <div>
+                {{ form_label(form.category, null, {'label_attr': {'class': 'block text-xs font-bold text-gray-700 uppercase mb-1'}}) }}
+                {{ form_widget(form.category, {'attr': {'class': 'w-full border-gray-300 border p-2.5 rounded-md text-sm outline-none'}}) }}
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    {{ form_label(form.stockQuantity, 'Stock', {'label_attr': {'class': 'block text-xs font-bold text-gray-700 uppercase mb-1'}}) }}
+                    {{ form_widget(form.stockQuantity, {'attr': {'class': 'w-full border-gray-300 border p-2.5 rounded-md text-sm outline-none'}}) }}
+                </div>
+                <div>
+                    {{ form_label(form.unitPrice, 'Price (₦)', {'label_attr': {'class': 'block text-xs font-bold text-gray-700 uppercase mb-1'}}) }}
+                    {{ form_widget(form.unitPrice, {'attr': {'class': 'w-full border-gray-300 border p-2.5 rounded-md text-sm outline-none'}}) }}
+                </div>
+            </div>
+            <div>
+                {{ form_label(form.classroom, 'Class (Optional)', {'label_attr': {'class': 'block text-xs font-bold text-gray-700 uppercase mb-1'}}) }}
+                {{ form_widget(form.classroom, {'attr': {'class': 'w-full border-gray-300 border p-2.5 rounded-md text-sm outline-none'}}) }}
+            </div>
+            
+            <button type="submit" class="mt-6 w-full bg-indigo-600 text-white py-3 rounded-md font-bold hover:bg-indigo-700 shadow-md">
+                Save Changes
+            </button>
+        {{ form_end(form) }}
+    </div>
+</div>
+{% endblock %}

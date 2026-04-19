@@ -1,123 +1,127 @@
-{% extends 'base.html.twig' %}
-
-{% block title %}School Identity{% endblock %}
-
-{% block body %}
-<div class="-m-6 md:m-0 bg-gray-50 min-h-screen">
-    <div class="max-w-4xl mx-auto md:pt-12 pb-24 md:pb-12">
-        
-        {# MAIN CARD #}
-        <div class="bg-white shadow-2xl md:rounded-3xl overflow-hidden min-h-screen md:min-h-0 flex flex-col">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Identity</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="-m-6 md:m-0 bg-gray-50 min-h-screen">
+        <div class="max-w-4xl mx-auto md:pt-12 pb-24 md:pb-12">
             
-            {# 1. BLUE HEADER #}
-            <div class="bg-blue-600 p-6 md:p-12 text-white relative">
-                <div class="absolute top-0 right-0 opacity-10 transform translate-x-10 -translate-y-10 hidden md:block">
-                    <i class="fas fa-university fa-9x"></i>
+            {# MAIN CARD #}
+            <div class="bg-white shadow-2xl md:rounded-3xl overflow-hidden min-h-screen md:min-h-0 flex flex-col">
+                
+                {# 1. BLUE HEADER #}
+                <div class="bg-blue-600 p-6 md:p-12 text-white relative">
+                    <div class="absolute top-0 right-0 opacity-10 transform translate-x-10 -translate-y-10 hidden md:block">
+                        <i class="fas fa-university fa-9x"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <h1 class="text-xl md:text-4xl font-black tracking-tight">👋 School Identity</h1>
+                        <p class="text-blue-100 text-sm md:text-base mt-1 font-medium opacity-90">Step 1: Build your brand for Gobarau Academy.</p>
+                    </div>
                 </div>
-                <div class="relative z-10">
-                    <h1 class="text-xl md:text-4xl font-black tracking-tight">👋 School Identity</h1>
-                    <p class="text-blue-100 text-sm md:text-base mt-1 font-medium opacity-90">Step 1: Build your brand for Gobarau Academy.</p>
+
+                {# 2. FORM BODY #}
+                <div class="p-5 md:p-12 flex-1">
+                    {{ form_start(form, {'attr': {'class': 'space-y-6 md:space-y-8', 'id': 'onboarding-form'}}) }}
+                        
+                        {# A. Name #}
+                        <div class="space-y-2">
+                            <label class="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest px-1">School / College Name</label>
+                            {{ form_widget(form.name, {'attr': {'class': 'w-full px-4 py-4 md:px-6 md:py-5 rounded-xl border-2 border-gray-100 focus:border-blue-600 focus:ring-0 text-lg md:text-xl font-bold transition-all'}}) }}
+                        </div>
+
+                        {# B. Motto #}
+                        <div class="space-y-2">
+                            <label class="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest px-1">Motto</label>
+                            {{ form_widget(form.motto, {'attr': {'class': 'w-full px-4 py-4 md:px-6 md:py-5 rounded-xl border-2 border-gray-100 focus:border-blue-600 focus:ring-0 text-lg font-medium transition-all'}}) }}
+                        </div>
+
+                        {# C. Institution Type #}
+                        <div class="space-y-2">
+                            <label class="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest px-1">Institution Type</label>
+                            <div class="flex flex-row gap-3 md:gap-4 w-full justify-center items-stretch">
+                                {% for child in form.institutionType %}
+                                    <label class="flex-1 max-w-[280px] cursor-pointer group">
+                                        {{ form_widget(child, {'attr': {'class': 'sr-only peer'}}) }}
+                                        <div class="h-full flex flex-col items-center justify-center p-4 md:p-8 border-4 border-gray-100 rounded-2xl bg-white peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all shadow-md active:scale-95">
+                                            <span class="text-4xl md:text-6xl mb-2">{% if 'College' in child.vars.label %}🎓{% else %}🏫{% endif %}</span>
+                                            <span class="font-black text-[10px] md:text-sm text-gray-700 peer-checked:text-blue-600 uppercase text-center leading-tight">{{ child.vars.label }}</span>
+                                        </div>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        {# D. Brand Color (MATCHED TO 'primaryColor') #}
+                        <div class="space-y-2">
+                            <label class="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest px-1">Brand Color</label>
+                            <div class="flex items-center gap-4">
+                                {{ form_widget(form.primaryColor, {'attr': {'class': 'h-14 w-14 rounded-xl border-2 border-gray-100 cursor-pointer p-1'}}) }}
+                                <span class="text-gray-500 text-xs">This color will be used for your buttons and portal theme.</span>
+                            </div>
+                        </div>
+
+                        {# E. Contact Details (MATCHED TO 'phoneNumber') #}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-2">
+                                <label class="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest px-1">Official Email</label>
+                                {{ form_widget(form.email, {'attr': {'class': 'w-full px-4 py-4 rounded-xl border-2 border-gray-100 focus:border-blue-600 focus:ring-0 font-bold'}}) }}
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest px-1">Phone Number</label>
+                                {{ form_widget(form.phoneNumber, {'attr': {'class': 'w-full px-4 py-4 rounded-xl border-2 border-gray-100 focus:border-blue-600 focus:ring-0 font-bold'}}) }}
+                            </div>
+                        </div>
+
+                        {# F. Address #}
+                        <div class="space-y-2">
+                            <label class="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest px-1">Physical Address</label>
+                            {{ form_widget(form.address, {'attr': {'class': 'w-full px-4 py-4 rounded-xl border-2 border-gray-100 focus:border-blue-600 focus:ring-0 font-medium', 'rows': '2'}}) }}
+                        </div>
+
+                        {# G. Logo Upload #}
+                        <div class="space-y-2 pb-24 md:pb-0">
+                            <label class="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest px-1">School Logo</label>
+                            <div class="relative border-2 border-dashed border-gray-200 rounded-2xl p-6 md:p-10 bg-gray-50 hover:bg-blue-50 transition-all cursor-pointer text-center"
+                                 onclick="document.getElementById('{{ form.logoFile.vars.id }}').click()">
+                                
+                                <div id="preview-wrapper" class="hidden mb-4 animate-in fade-in zoom-in">
+                                    <img id="image-preview" src="#" class="h-24 w-24 object-contain rounded-xl mx-auto shadow-lg border-4 border-white">
+                                </div>
+
+                                <div id="upload-instruction">
+                                    <i class="fas fa-camera text-blue-600 text-xl mb-2"></i>
+                                    <p class="font-bold text-sm text-gray-700">Tap to Upload Logo</p>
+                                </div>
+
+                                <div class="hidden">
+                                    {{ form_widget(form.logoFile, {'attr': {'onchange': 'previewImage(this)'}}) }}
+                                </div>
+                            </div>
+                        </div>
+
+                        {# 3. STICKY NEXT BUTTON #}
+                        <div class="fixed bottom-0 left-0 w-full p-4 bg-white/95 backdrop-blur-md border-t border-gray-100 
+                                    md:relative md:p-0 md:bg-transparent md:border-none md:mt-12 z-[100] flex justify-end">
+                            <button type="submit" class="w-full md:w-auto bg-blue-600 text-white px-12 py-5 rounded-2xl shadow-xl font-black text-lg active:scale-95 transition-all flex justify-center items-center gap-3">
+                                Next Step
+                                <i class="fas fa-chevron-right text-sm"></i>
+                            </button>
+                        </div>
+
+                    {{ form_end(form) }}
                 </div>
-            </div>
-
-            {# 2. FORM BODY #}
-            <div class="p-5 md:p-12 flex-1">
-                {{ form_start(form, {'attr': {'class': 'space-y-6 md:space-y-8', 'id': 'onboarding-form'}}) }}
-                    
-                    {# A. Name #}
-                    <div class="space-y-2">
-                        <label class="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest px-1">School / College Name</label>
-                        {{ form_widget(form.name, {'attr': {'class': 'w-full px-4 py-4 md:px-6 md:py-5 rounded-xl border-2 border-gray-100 focus:border-blue-600 focus:ring-0 text-lg md:text-xl font-bold transition-all'}}) }}
-                    </div>
-
-                    {# B. Motto #}
-                    <div class="space-y-2">
-                        <label class="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest px-1">Motto</label>
-                        {{ form_widget(form.motto, {'attr': {'class': 'w-full px-4 py-4 md:px-6 md:py-5 rounded-xl border-2 border-gray-100 focus:border-blue-600 focus:ring-0 text-lg font-medium transition-all'}}) }}
-                    </div>
-
-                    {# C. Institution Type #}
-                    <div class="space-y-2">
-                        <label class="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest px-1">Institution Type</label>
-                        <div class="flex flex-row gap-3 md:gap-4 w-full justify-center items-stretch">
-                            {% for child in form.institutionType %}
-                                <label class="flex-1 max-w-[280px] cursor-pointer group">
-                                    {{ form_widget(child, {'attr': {'class': 'sr-only peer'}}) }}
-                                    <div class="h-full flex flex-col items-center justify-center p-4 md:p-8 border-4 border-gray-100 rounded-2xl bg-white peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all shadow-md active:scale-95">
-                                        <span class="text-4xl md:text-6xl mb-2">{% if 'College' in child.vars.label %}🎓{% else %}🏫{% endif %}</span>
-                                        <span class="font-black text-[10px] md:text-sm text-gray-700 peer-checked:text-blue-600 uppercase text-center leading-tight">{{ child.vars.label }}</span>
-                                    </div>
-                                </label>
-                            {% endfor %}
-                        </div>
-                    </div>
-
-                    {# D. Brand Color (MATCHED TO 'primaryColor') #}
-                    <div class="space-y-2">
-                        <label class="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest px-1">Brand Color</label>
-                        <div class="flex items-center gap-4">
-                            {{ form_widget(form.primaryColor, {'attr': {'class': 'h-14 w-14 rounded-xl border-2 border-gray-100 cursor-pointer p-1'}}) }}
-                            <span class="text-gray-500 text-xs">This color will be used for your buttons and portal theme.</span>
-                        </div>
-                    </div>
-
-                    {# E. Contact Details (MATCHED TO 'phoneNumber') #}
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="space-y-2">
-                            <label class="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest px-1">Official Email</label>
-                            {{ form_widget(form.email, {'attr': {'class': 'w-full px-4 py-4 rounded-xl border-2 border-gray-100 focus:border-blue-600 focus:ring-0 font-bold'}}) }}
-                        </div>
-                        <div class="space-y-2">
-                            <label class="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest px-1">Phone Number</label>
-                            {{ form_widget(form.phoneNumber, {'attr': {'class': 'w-full px-4 py-4 rounded-xl border-2 border-gray-100 focus:border-blue-600 focus:ring-0 font-bold'}}) }}
-                        </div>
-                    </div>
-
-                    {# F. Address #}
-                    <div class="space-y-2">
-                        <label class="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest px-1">Physical Address</label>
-                        {{ form_widget(form.address, {'attr': {'class': 'w-full px-4 py-4 rounded-xl border-2 border-gray-100 focus:border-blue-600 focus:ring-0 font-medium', 'rows': '2'}}) }}
-                    </div>
-
-                    {# G. Logo Upload #}
-                    <div class="space-y-2 pb-24 md:pb-0">
-                        <label class="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest px-1">School Logo</label>
-                        <div class="relative border-2 border-dashed border-gray-200 rounded-2xl p-6 md:p-10 bg-gray-50 hover:bg-blue-50 transition-all cursor-pointer text-center"
-                             onclick="document.getElementById('{{ form.logoFile.vars.id }}').click()">
-                            
-                            <div id="preview-wrapper" class="hidden mb-4 animate-in fade-in zoom-in">
-                                <img id="image-preview" src="#" class="h-24 w-24 object-contain rounded-xl mx-auto shadow-lg border-4 border-white">
-                            </div>
-
-                            <div id="upload-instruction">
-                                <i class="fas fa-camera text-blue-600 text-xl mb-2"></i>
-                                <p class="font-bold text-sm text-gray-700">Tap to Upload Logo</p>
-                            </div>
-
-                            <div class="hidden">
-                                {{ form_widget(form.logoFile, {'attr': {'onchange': 'previewImage(this)'}}) }}
-                            </div>
-                        </div>
-                    </div>
-
-                    {# 3. STICKY NEXT BUTTON #}
-                    <div class="fixed bottom-0 left-0 w-full p-4 bg-white/95 backdrop-blur-md border-t border-gray-100 
-                                md:relative md:p-0 md:bg-transparent md:border-none md:mt-12 z-[100] flex justify-end">
-                        <button type="submit" class="w-full md:w-auto bg-blue-600 text-white px-12 py-5 rounded-2xl shadow-xl font-black text-lg active:scale-95 transition-all flex justify-center items-center gap-3">
-                            Next Step
-                            <i class="fas fa-chevron-right text-sm"></i>
-                        </button>
-                    </div>
-
-                {{ form_end(form) }}
             </div>
         </div>
     </div>
-</div>
-{% endblock %}
 
-{% block javascripts %}
-    {{ parent() }}
     <script>
     function previewImage(input) {
         const wrapper = document.getElementById('preview-wrapper');
@@ -135,4 +139,5 @@
         }
     }
     </script>
-{% endblock %}
+</body>
+</html>

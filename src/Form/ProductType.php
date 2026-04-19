@@ -32,7 +32,7 @@ class ProductType extends AbstractType
                 'attr' => ['min' => 0]
             ])
             ->add('unitPrice', MoneyType::class, [
-                'currency' => 'NGN',
+                'currency' => '',
                 'label' => 'Selling Price'
             ])
             ->add('classroom', EntityType::class, [

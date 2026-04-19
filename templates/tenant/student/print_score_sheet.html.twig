@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Score Sheet - {{ classroom.name }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @page { size: A4 portrait; margin: 15mm; }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; margin: 0; padding: 0; }
+            .print-container { box-shadow: none !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
+            /* Force borders to print strongly */
+            th, td { border: 1px solid #000 !important; }
+        }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #e5e7eb; padding: 6px 8px; text-align: left; }
+        th { background-color: #f9fafb; font-weight: bold; font-size: 11px; text-transform: uppercase; }
+        td { font-size: 12px; }
+    </style>
+</head>
+<body class="bg-gray-200 font-sans text-gray-900">
+
+    <div class="print-container bg-white max-w-4xl mx-auto my-8 p-8 shadow-lg">
+        
+        <div class="no-print mb-6 flex justify-end gap-3">
+            <button onclick="window.close()" class="bg-gray-200 px-4 py-2 rounded text-sm font-bold hover:bg-gray-300">Close</button>
+            <button onclick="window.print()" class="bg-indigo-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-indigo-700 flex items-center gap-2">
+                🖨️ Print Sheet
+            </button>
+        </div>
+
+        <div class="text-center mb-6">
+            <h1 class="text-2xl font-bold uppercase">{{ tenant.name }}</h1>
+            <h2 class="text-lg font-semibold mt-1 uppercase decoration-2 underline underline-offset-4">Blank Score Sheet</h2>
+            
+            <div class="flex justify-between items-end mt-6 text-sm font-bold">
+                <p>Class: <span class="text-indigo-700">{{ classroom.name }}</span></p>
+                <p>Subject: ___________________________</p>
+                <p>Term/Session: ______________________</p>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th class="w-8 text-center">S/N</th>
+                    <th class="w-24">Adm No.</th>
+                    <th class="w-64">Student Name</th>
+                    <th class="w-12 text-center">1st CA<br><span class="text-[9px] font-normal">(10)</span></th>
+                    <th class="w-12 text-center">2nd CA<br><span class="text-[9px] font-normal">(10)</span></th>
+                    <th class="w-12 text-center">3rd CA<br><span class="text-[9px] font-normal">(10)</span></th>
+                    <th class="w-12 text-center">Exam<br><span class="text-[9px] font-normal">(70)</span></th>
+                    <th class="w-12 text-center">Total<br><span class="text-[9px] font-normal">(100)</span></th>
+                    <th class="w-12 text-center">Grade</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr>
+                    <td class="text-center text-gray-500">{{ loop.index }}</td>
+                    <td class="font-mono text-xs">{{ student.admissionNumber ?: '---' }}</td>
+                    <td class="font-bold uppercase text-[11px]">{{ student.fullName }}</td>
+                    <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="text-center py-8 text-gray-400 italic">No active students found in this class.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="mt-12 flex justify-between text-sm">
+            <div>
+                <p>Teacher's Name: ___________________________</p>
+                <p class="mt-4">Signature / Date: _________________________</p>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

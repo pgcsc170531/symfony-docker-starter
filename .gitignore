@@ -21,3 +21,7 @@
 edus_bundle.tar
 /vendor/
 /var/
+
+
+# === CUSTOM IGNORES ===
+compose.yaml

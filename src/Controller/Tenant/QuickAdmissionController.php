@@ -18,6 +18,8 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
 #[Route('/quick-enroll')]
 class QuickAdmissionController extends AbstractController
 {
@@ -79,9 +81,10 @@ class QuickAdmissionController extends AbstractController
     // ==========================================
     // 2. THE CSV UPLOADER (Smart Match)
     // ==========================================
-    #[Route('/upload-csv', name: 'app_tenant_quick_enroll_csv', methods: ['POST'])]
+   #[Route('/upload-csv', name: 'app_tenant_quick_enroll_csv', methods: ['POST'])]
     public function uploadCsv(Request $request, EntityManagerInterface $em, UserPasswordHasherInterface $hasher): Response
-    {
+    {   
+        ini_set('auto_detect_line_endings', true);
         $file = $request->files->get('csv_file');
         $termId = $request->request->get('term_id');
         $term = $em->getRepository(Term::class)->find($termId);
@@ -92,153 +95,218 @@ class QuickAdmissionController extends AbstractController
             return $this->redirectToRoute('app_tenant_quick_enroll');
         }
 
-        // 1. BUILD MAP (Smart Lookup)
-        $allClasses = $em->getRepository(Classroom::class)->findAll();
         $classMap = [];
-        foreach ($allClasses as $class) {
-            $classMap[$this->normalizeString($class->getName())] = $class;
+        foreach ($em->getRepository(Classroom::class)->findAll() as $c) {
+            $classMap[$this->normalizeString($c->getName())] = $c;
         }
 
-        // 2. SCREENING PHASE (Validate in Memory)
         $rowsToSave = [];
         $errors = [];
 
         if (($handle = fopen($file->getPathname(), "r")) !== FALSE) {
-            $header = fgetcsv($handle); // Read Header
+            $header = fgetcsv($handle); 
             
-            // Basic Header Validation (Optional safety check)
-            if (count($header) < 6) {
-                $this->addFlash('error', "Invalid CSV Format. File must have at least 6 columns.");
+            if (count($header) < 12) {
+                $this->addFlash('error', "Format Error: Template requires 12 columns.");
                 return $this->redirectToRoute('app_tenant_quick_enroll');
             }
 
-            $rowNumber = 1; // Start at 1 (because header was 0)
-
+            $rowNumber = 1; 
             while (($row = fgetcsv($handle)) !== FALSE) {
                 $rowNumber++;
+                if (!array_filter($row)) continue; 
+                if (trim($row[0]) === 'John' && trim($row[2]) === 'Doe') continue; 
+
+                $csvClassName = trim($row[10]); 
+                $cleanClass = $this->normalizeString($csvClassName);
                 
-                // Skip completely empty rows
-                if (!array_filter($row)) continue;
-
-                // A. Check Required Fields
-                // [0]Name, [1]Last, [2]Gender, [3]Class, [4]Parent, [5]Phone
-                if (empty($row[0]) || empty($row[5])) {
-                    $errors[] = "Row $rowNumber: Missing Student Name or Parent Phone.";
+                if (!isset($classMap[$cleanClass])) {
+                    $errors[] = "Row $rowNumber: Class '$csvClassName' not found.";
                     continue;
                 }
 
-                // B. Validate Class Name
-                $csvClassName = trim($row[3]);
-                $cleanName = $this->normalizeString($csvClassName);
-                
-                if (empty($csvClassName)) {
-                    $errors[] = "Row $rowNumber: Class Name is empty.";
-                    continue;
-                }
-
-                if (!isset($classMap[$cleanName])) {
-                    $errors[] = "Row $rowNumber: Class '$csvClassName' not found in system.";
-                    continue;
-                }
-
-                // Data is valid! Queue it for processing.
-                $rowsToSave[] = [
-                    'data' => [
-                        'student_name' => $row[0],
-                        'last_name'    => $row[1],
-                        'gender'       => strtoupper(trim($row[2])),
-                        'parent_name'  => $row[4],
-                        'parent_phone' => $row[5]
-                    ],
-                    'classroom' => $classMap[$cleanName]
+               $rowsToSave[] = [
+                'data' => [
+                    'first_name'       => trim($row[0]),
+                    'middle_name'      => trim($row[1]),
+                    'last_name'        => trim($row[2]),
+                    'gender'           => strtoupper(trim($row[3])),
+                    'dob'              => trim($row[4]),
+                    'religion'         => trim($row[5]),
+                    'blood_group'      => trim($row[6]),
+                    'genotype'         => trim($row[7]),
+                    'home_town'        => trim($row[8]),
+                    'admission_number' => trim($row[9]),  // 👈 NEW: Index 9
+                    'parent_name'      => trim($row[11]), // 👈 SHIFTED: Index 11
+                    'parent_phone'     => trim($row[12]), // 👈 SHIFTED: Index 12
+                ],
+                    'classroom' => $classMap[$cleanClass]
                 ];
             }
             fclose($handle);
         }
 
-        // 3. DECISION TIME
         if (count($errors) > 0) {
-            // 🛑 STOP! Do not save anything.
-            // Render the page again with the Error Report
-            $terms = $em->getRepository(Term::class)->findBy([], ['startDate' => 'DESC']);
-            $classes = $em->getRepository(Classroom::class)->findAll();
-            
             return $this->render('tenant/quick_enroll/index.html.twig', [
-                'terms' => $terms,
-                'classes' => $classes,
-                'csv_errors' => $errors, // Pass errors to view
+                'terms' => $em->getRepository(Term::class)->findBy([], ['startDate' => 'DESC']),
+                'classes' => $em->getRepository(Classroom::class)->findAll(),
+                'csv_errors' => $errors, 
                 'error_count' => count($errors)
             ]);
         }
 
-        // 4. EXECUTION PHASE (Save all or nothing)
-        $savedCount = 0;
-        foreach ($rowsToSave as $item) {
-            $this->processStudentRow($em, $hasher, $item['data'], $item['classroom'], $term, $generateInvoices);
-            $savedCount++;
+       try {
+            foreach ($rowsToSave as $item) {
+                $this->processStudentRow($em, $hasher, $item['data'], $item['classroom'], $term, $generateInvoices);
+            }
+
+            // The flush happens once at the end. 
+            // If any row fails a "Unique" constraint, the whole batch stops here.
+            $em->flush();
+            
+            $this->addFlash('success', "Import Complete! " . count($rowsToSave) . " students are now linked to their parents.");
+            
+        } catch (\Doctrine\DBAL\Exception\UniqueConstraintViolationException $e) {
+            // Handle the Duplicate Admission Number error gracefully
+            $this->addFlash('error', "Upload Stopped! One or more Admission Numbers in your file already exist in the database. Please check for duplicates and try again.");
+            
+            return $this->redirectToRoute('app_tenant_quick_enroll');
+
+        } catch (\Exception $e) {
+            // Handle any other unexpected errors (database connection, etc.)
+            $this->addFlash('error', "An unexpected error occurred during the upload: " . $e->getMessage());
+            
+            return $this->redirectToRoute('app_tenant_quick_enroll');
         }
 
-        $em->flush();
-        $this->addFlash('success', "Screening Passed! Successfully imported $savedCount students.");
-        
         return $this->redirectToRoute('app_tenant_student_index');
     }
 
     // ==========================================
     // 3. SHARED HELPER FUNCTIONS
     // ==========================================
-
     private function processStudentRow($em, $hasher, $data, $classroom, $term, $generateInvoice)
+{
+    // 1. GUARDIAN LOGIC (Find or Create Parent)
+    $phone = trim(str_replace([' ', '-', '+'], '', $data['parent_phone'])); 
+    $guardian = $em->getRepository(Guardian::class)->findOneBy(['phoneNumber' => $phone]);
+
+    if (!$guardian) {
+        $guardian = new Guardian();
+        $guardian->setFullName($data['parent_name'] ?: 'Parent');
+        $guardian->setPhoneNumber($phone);
+        $guardian->setEmail($phone . '@edus.ng'); 
+        
+        $user = new User();
+        $user->setEmail($guardian->getEmail());
+        $user->setFullName($guardian->getFullName());
+        $user->setRoles(['ROLE_PARENT']);
+        
+        // Default Password: 12345678
+        $user->setPassword($hasher->hashPassword($user, '12345678'));
+        
+        $em->persist($user);
+        $guardian->setUser($user);
+        $em->persist($guardian);
+    }
+
+    // 2. STUDENT LOGIC
+    $student = new Student();
+    $student->setFirstName($data['first_name']);
+    $student->setMiddleName($data['middle_name']);
+    $student->setLastName($data['last_name']);
+    $student->setGender($data['gender'] ?: 'M');
+    $student->setReligion($data['religion']);
+    $student->setBloodGroup($data['blood_group']);
+    $student->setGenotype($data['genotype']);
+    $student->setHomeTown($data['home_town']);
+    $student->setGuardian($guardian); 
+    
+    // Handle Date of Birth (Using \DateTime for DateType compatibility)
+    if (!empty($data['dob'])) {
+        try { 
+            $student->setDateOfBirth(new \DateTime($data['dob'])); 
+        } catch (\Exception $e) {
+            // Leave null if format is invalid
+        }
+    }
+
+    // 👇 NEW: MANUAL VS AUTO ADMISSION NUMBER LOGIC
+    if (!empty($data['admission_number'])) {
+        // Use manual number from CSV if provided
+        $student->setAdmissionNumber(trim($data['admission_number']));
+    } else {
+        // Fallback to auto-generation
+        $uniqueId = strtoupper(substr(uniqid(), -5));
+        $student->setAdmissionNumber(date('y') . '/' . $uniqueId);
+    }
+
+    $student->setCurrentClassroom($classroom);
+    $student->setCurrentClass($classroom); 
+    $em->persist($student);
+
+    // 3. ENROLLMENT HISTORY
+    $enrollment = new Enrollment();
+    $enrollment->setStudent($student);
+    $enrollment->setSession($term->getSession());
+    $enrollment->setClassroom($classroom);
+    $em->persist($enrollment);
+
+    // 4. OPTIONAL INVOICE
+    if ($generateInvoice) { 
+        $this->createTuitionInvoice($em, $student, $classroom, $term); 
+    }
+}
+    
+
+    // ==========================================
+    // 4. DOWNLOAD CSV TEMPLATE
+    // ==========================================
+    #[Route('/download-template', name: 'app_tenant_quick_enroll_template', methods: ['GET'])]
+    public function downloadTemplate(): StreamedResponse
     {
-        // 1. Parent Logic (Check duplicates by Phone)
-        $phone = trim(str_replace([' ', '-', '+'], '', $data['parent_phone'])); // Ultra clean phone
-        
-        $guardian = $em->getRepository(Guardian::class)->findOneBy(['phoneNumber' => $phone]);
+        $response = new StreamedResponse(function () {
+            $handle = fopen('php://output', 'w+');
+            // 1. THE HEADER ROW (13 Columns total now)
+            fputcsv($handle, [
+                'First Name', 
+                'Middle Name', 
+                'Last Name', 
+                'Gender (M/F)', 
+                'DOB (YYYY-MM-DD)', 
+                'Religion', 
+                'Blood Group', 
+                'Genotype', 
+                'Home Town', 
+                'Admission Number (Leave blank to auto-generate)', // 👈 NEW COLUMN
+                'Class Name', 
+                'Parent Name', 
+                'Parent Phone'
+            ]);
+            
+            // 2. THE SAMPLE ROW (Matches the headers exactly)
+            fputcsv($handle, [
+                'John',          // First Name
+                'Fitzgerald',    // Middle Name
+                'Doe',           // Last Name
+                'M',             // Gender
+                '2015-01-01',    // DOB
+                'Islam',         // Religion
+                'O+',            // Blood Group
+                'AA',            // Genotype
+                'Katsina',       // Home Town
+                '24/001',        // 👈 Sample Admission Number
+                'JSS 1',         // Class Name
+                'Mr. Richard Doe', 
+                '08012345678'
+            ]);
+            
+            fclose($handle);
+        });
 
-        if (!$guardian) {
-            $guardian = new Guardian();
-            $guardian->setFullName($data['parent_name'] ?? 'Parent');
-            $guardian->setPhoneNumber($phone);
-            // Generate dummy email if needed
-            $guardian->setEmail($phone . '@placeholder.com'); 
-
-            // Create Login
-            $user = new User();
-            $user->setEmail($guardian->getEmail());
-            $user->setFullName($guardian->getFullName());
-            $user->setRoles(['ROLE_PARENT']);
-            $user->setPassword($hasher->hashPassword($user, $phone)); // Pass = Phone
-
-            $em->persist($user);
-            $guardian->setUser($user);
-            $em->persist($guardian);
-        }
-
-        // 2. Student Logic
-        $student = new Student();
-        $student->setFirstName($data['student_name']);
-        $student->setLastName($data['last_name']);
-        $student->setGender($data['gender'] ?? 'M');
-        $student->setGuardian($guardian);
-        $student->setAdmissionNumber(date('y') . '/' . rand(10000, 99999));
-        
-        // Link Class
-        $student->setCurrentClassroom($classroom);
-        $student->setCurrentClass($classroom); // Legacy field
-
-        $em->persist($student);
-
-        // 3. Enrollment History
-        $enrollment = new Enrollment();
-        $enrollment->setStudent($student);
-        $enrollment->setSession($term->getSession());
-        $enrollment->setClassroom($classroom);
-        $em->persist($enrollment);
-
-        // 4. Optional Invoice Generation
-        if ($generateInvoice) {
-            $this->createTuitionInvoice($em, $student, $classroom, $term);
-        }
+        $response->headers->set('Content-Type', 'text/csv; charset=utf-8');
+        $response->headers->set('Content-Disposition', 'attachment; filename="comprehensive_student_import.csv"');
+        return $response;
     }
 
     private function createTuitionInvoice($em, $student, $classroom, $term)
