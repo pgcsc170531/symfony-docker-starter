@@ -74,12 +74,9 @@ class OnboardingController extends AbstractController
     public function step2(Request $request, EntityManagerInterface $em): Response
     {
         $existingClassesCount = $em->getRepository(Classroom::class)->count([]);
+        // 🟢 1. Check for students (The Ultimate Safety Net)
+        $studentCount = $em->getRepository(\App\Entity\Tenant\Student::class)->count([]); 
         
-        // Smart Skip: If classes exist and we aren't submitting, show skip option
-        if ($existingClassesCount > 0 && !$request->isMethod('POST')) {
-             // Let user decide in view
-        }
-
         $school = $em->getRepository(School::class)->find(1);
         if (!$school) return $this->redirectToRoute('app_tenant_onboarding_identity');
 
@@ -98,6 +95,31 @@ class OnboardingController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            // 🟢 2. Check WHICH button the user clicked
+            $action = $request->request->get('action');
+
+            // CASE A: User clicked "Keep Existing" -> Skip generation entirely
+            if ($action === 'keep') {
+                $this->addFlash('info', 'Kept existing classroom structure.');
+                return $this->redirectToRoute('app_tenant_onboarding_calendar');
+            }
+
+            // CASE B: User clicked "Wipe & Regenerate"
+            if ($action === 'regenerate') {
+                if ($studentCount > 0) {
+                    $this->addFlash('error', 'Cannot regenerate classes because students are already enrolled.');
+                    return $this->redirectToRoute('app_tenant_onboarding_structure');
+                }
+
+                // It is safe to wipe. Delete all existing classes.
+                $oldClasses = $em->getRepository(Classroom::class)->findAll();
+                foreach ($oldClasses as $oldClass) {
+                    $em->remove($oldClass);
+                }
+                $em->flush(); // Commit the deletion
+            }
+
+            // CASE C: Proceed with Generation (First time, or after wipe)
             $data = $form->getData();
             $classes = $data['selectedClasses'];
             $arms = $data['arms'] ? array_map('trim', explode(',', $data['arms'])) : [];
@@ -117,14 +139,22 @@ class OnboardingController extends AbstractController
             }
 
             $em->flush();
-            $this->addFlash('success', "Success! $count classrooms generated.");
+            
+            // Flash message depends on what they did
+            if ($action === 'regenerate') {
+                $this->addFlash('success', "Fresh start! $count new classrooms generated.");
+            } else {
+                $this->addFlash('success', "Success! $count classrooms generated.");
+            }
+            
             return $this->redirectToRoute('app_tenant_onboarding_calendar');
         }
 
         return $this->render('tenant/onboarding/step2_structure.html.twig', [
             'form' => $form->createView(),
             'schoolType' => $type,
-            'existingClassesCount' => $existingClassesCount
+            'existingClassesCount' => $existingClassesCount,
+            'studentCount' => $studentCount // Pass to view for the warning UI
         ]);
     }
 

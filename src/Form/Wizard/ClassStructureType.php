@@ -32,9 +32,6 @@ class ClassStructureType extends AbstractType
                 'help' => 'Leave blank if you have no divisions. Examples: "A, B, C" or "Gold, Silver, Bronze"',
                 'required' => false
             ])
-            ->add('save', SubmitType::class, [
-                'label' => 'Generate Classes & Next ➡️',
-                'attr' => ['class' => 'bg-blue-600 text-white px-6 py-3 rounded-lg font-bold shadow hover:bg-blue-700 w-full md:w-auto']
-            ]);
+          ;
     }
 }

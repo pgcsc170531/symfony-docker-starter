@@ -138,7 +138,7 @@ class DashboardController extends AbstractController
             
             'school_name' => $schoolName,
             'user_name'   => $userName,
-            'show_onboarding_modal' => ($classCount === 0),
+            'show_onboarding_modal' => ($studentCount === 0),
             'currentSession' => $currentSession,
             'currentTerm' => $currentTerm,
         ]);

@@ -4,7 +4,7 @@
 
 {% block body %}
 {# --- 0. NAVIGATION BAR --- #}
-<div class="relative bg-white">
+<div class="relative bg-white border-b border-gray-100">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center py-6 md:justify-start md:space-x-10">
             <div class="flex justify-start lg:w-0 lg:flex-1">
@@ -18,8 +18,9 @@
                 <a href="{{ path('app_login') }}" class="text-base font-medium text-blue-600 hover:text-blue-500">Log in</a>
             </div>
             <div class="hidden md:flex items-center justify-end md:flex-1 lg:w-0">
-                <a href="{{ path('app_login') }}" class="ml-8 whitespace-nowrap inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700">
-                    Get Started
+                {# 🟢 MODIFIED: Top Nav WhatsApp Link #}
+                <a href="https://wa.me/2348032714999?text=Hi!%20I'm%20interested%20in%20using%20Edus%20for%20my%20school." target="_blank" class="ml-8 whitespace-nowrap inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+                    <span class="mr-2 text-green-300">💬</span> Get Started
                 </a>
             </div>
         </div>
@@ -376,9 +377,28 @@
         <p class="mt-4 text-lg leading-6 text-blue-200">
             Join schools across Nigeria who trust Edus to manage their finances and operations.
         </p>
-        <a href="{{ path('app_login') }}" class="mt-8 w-full inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-blue-600 bg-white hover:bg-blue-50 sm:w-auto">
-            Get Started
+        {# 🟢 MODIFIED: Bottom CTA WhatsApp Link #}
+        <a href="https://wa.me/2348032714999?text=Hi!%20I'm%20interested%20in%20using%20Edus%20for%20my%20school." target="_blank" class="mt-8 w-full inline-flex items-center justify-center px-5 py-4 border border-transparent text-base font-bold rounded-lg text-blue-700 bg-white hover:bg-blue-50 sm:w-auto shadow-xl transition-transform transform hover:scale-105">
+            <span class="mr-2 text-green-500 text-2xl">💬</span> Get Started on WhatsApp
         </a>
     </div>
 </div>
+
+{# 4. FOOTER LINKS (Added to keep consistency with other pages) --- #}
+<footer class="bg-white border-t border-gray-200">
+    <div class="max-w-7xl mx-auto py-12 px-4 overflow-hidden sm:px-6 lg:px-8">
+        <div class="flex justify-center space-x-6 mb-4 text-gray-400">
+            <a href="{{ path('app_home') }}" class="hover:text-gray-500">Home</a>
+            <span>•</span>
+            <a href="{{ path('app_features') }}" class="hover:text-gray-500">Features</a>
+            <span>•</span>
+            <a href="{{ path('app_partners') }}" class="hover:text-gray-500">Partners</a>
+            <span>•</span>
+            <a href="{{ path('app_login') }}" class="hover:text-gray-500">Login</a>
+        </div>
+        <p class="mt-8 text-center text-base text-gray-400">
+            &copy; {{ "now"|date("Y") }} Edus. Built for Nigerian Schools.
+        </p>
+    </div>
+</footer>
 {% endblock %}

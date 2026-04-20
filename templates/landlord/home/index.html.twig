@@ -45,9 +45,12 @@
                 </p>
                 <div class="mt-8 sm:max-w-lg sm:mx-auto sm:text-center lg:text-left lg:mx-0">
                     <div class="flex flex-col sm:flex-row gap-4">
-                        <a href="{{ path('app_login') }}" class="flex items-center justify-center px-8 py-3 border border-transparent text-base font-bold rounded-lg text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1">
+                        
+                        {# 🟢 MODIFIED: Now triggers the Demo Modal instead of a direct link #}
+                        <button onclick="openDemoModal()" class="flex items-center justify-center px-8 py-3 border border-transparent text-base font-bold rounded-lg text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1">
                             Start School Pilot
-                        </a>
+                        </button>
+                        
                         <a href="{{ path('app_partners') }}" class="flex items-center justify-center px-8 py-3 border border-gray-200 text-base font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 md:py-4 md:text-lg">
                             I'm a Developer
                         </a>
@@ -259,9 +262,10 @@
         <p class="text-xl text-gray-500 mb-10">
             Join the platform that is changing how Nigerian schools operate. No setup fees. No credit card required.
         </p>
-        <a href="{{ path('app_login') }}" class="inline-flex items-center justify-center px-10 py-4 border border-transparent text-lg font-bold rounded-full text-white bg-blue-600 hover:bg-blue-700 shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
+        {# 🟢 MODIFIED: Added onclick to trigger modal here too #}
+        <button onclick="openDemoModal()" class="inline-flex items-center justify-center px-10 py-4 border border-transparent text-lg font-bold rounded-full text-white bg-blue-600 hover:bg-blue-700 shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
             Get Started for Free
-        </a>
+        </button>
     </div>
 </div>
 
@@ -283,4 +287,85 @@
         🚀 System Update: Live Version 1.0.1 - {{ "now"|date("d/m/Y H:i") }}
     </div>
 </footer>
+
+{# ======================================================== #}
+{# 🟢 DEMO ACCESS MODAL                                     #}
+{# ======================================================== #}
+<div id="demoModal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-gray-900/80 backdrop-blur-sm p-4 transition-opacity">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 md:p-8 transform transition-all scale-100">
+        
+        <div class="text-center mb-6">
+            <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">🔑</div>
+            <h3 class="text-2xl font-black text-gray-900">Demo Access</h3>
+            <p class="text-gray-500 text-sm mt-2 leading-relaxed">Copy the credentials below to log into our live sandbox environment.</p>
+        </div>
+
+        <div class="bg-gray-50 border border-gray-200 rounded-2xl p-5 mb-6 relative group">
+            <div class="mb-4">
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Email</span>
+                <div class="text-gray-900 font-mono font-bold text-sm" id="demoEmail">demo@edus.ng</div>
+            </div>
+            <div>
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Password</span>
+                <div class="text-gray-900 font-mono font-bold text-sm" id="demoPassword">demo123</div>
+            </div>
+            
+            <button onclick="copyDemoDetails(this)" class="absolute top-4 right-4 text-xs bg-white border border-gray-200 shadow-sm hover:border-blue-300 hover:text-blue-600 px-3 py-1.5 rounded-lg font-bold text-gray-600 transition-colors active:scale-95">
+                Copy Details
+            </button>
+        </div>
+
+        <div class="flex flex-col gap-3">
+            <a href="https://demo.edus.ng" target="_blank" class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2">
+                Log into Demo App &rarr;
+            </a>
+            <button onclick="closeDemoModal()" class="w-full text-gray-400 hover:text-gray-700 font-bold py-3 rounded-xl transition-colors text-sm">
+                Cancel
+            </button>
+        </div>
+        
+    </div>
+</div>
+
+{# 🟢 DEMO MODAL SCRIPT #}
+<script>
+    function openDemoModal() {
+        const modal = document.getElementById('demoModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function closeDemoModal() {
+        const modal = document.getElementById('demoModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    function copyDemoDetails(btn) {
+        // The text string that gets copied to the user's clipboard
+        const textToCopy = "Email: demo@edus.ng\nPassword: demo123";
+        
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            // Visual feedback
+            const originalText = btn.innerText;
+            btn.innerText = "Copied! ✓";
+            btn.classList.add('text-green-600', 'border-green-300', 'bg-green-50');
+            btn.classList.remove('text-gray-600', 'border-gray-200');
+            
+            // Reset button after 2 seconds
+            setTimeout(() => {
+                btn.innerText = "Copy Details";
+                btn.classList.remove('text-green-600', 'border-green-300', 'bg-green-50');
+                btn.classList.add('text-gray-600', 'border-gray-200');
+            }, 2000);
+        });
+    }
+
+    // Optional: Close modal if they click outside the white box
+    document.getElementById('demoModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeDemoModal();
+        }
+    });
+</script>
 {% endblock %}
