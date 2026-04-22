@@ -17,9 +17,32 @@
         line-height: 1.6; 
         color: var(--text-main); 
         margin: 0; 
-        display: flex; 
+        display: block; /* Changed from flex to block for better mobile control */
         background-color: var(--bg-light);
     }
+    
+    /* --- Hamburger Button --- */
+    .menu-toggle {
+        display: none;
+        position: fixed;
+        top: 15px;
+        left: 15px;
+        z-index: 1000;
+        background: var(--primary);
+        color: #fff;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        transition: background 0.3s;
+    }
+    .menu-toggle:hover {
+        background: #3730a3;
+    }
+
+    /* --- Sidebar --- */
     .sidebar { 
         width: 300px; 
         background: var(--sidebar-bg); 
@@ -27,8 +50,12 @@
         padding: 30px 20px; 
         height: 100vh; 
         position: fixed; 
+        top: 0;
+        left: 0;
         overflow-y: auto; 
         box-sizing: border-box;
+        z-index: 999;
+        transition: transform 0.3s ease-in-out; /* Smooth sliding animation */
     }
     .sidebar h2 { 
         font-size: 1.4rem; 
@@ -36,6 +63,7 @@
         color: #fff; 
         border-bottom: 2px solid #333; 
         padding-bottom: 15px; 
+        margin-top: 20px; /* Space for the close button on mobile */
     }
     .sidebar ul {
         list-style: none;
@@ -55,6 +83,22 @@
     .sidebar a:hover { 
         color: var(--primary); 
     }
+
+    /* --- Dark Overlay for Mobile --- */
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0; 
+        left: 0; 
+        right: 0; 
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 998;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    /* --- Main Content --- */
     .content { 
         margin-left: 300px; 
         padding: 50px 80px; 
@@ -63,6 +107,7 @@
         min-height: 100vh;
         box-sizing: border-box;
         box-shadow: -5px 0 15px rgba(0,0,0,0.05);
+        transition: margin-left 0.3s ease;
     }
     
     .manual-screenshot {
@@ -99,11 +144,55 @@
         border-radius: 0 8px 8px 0;
     }
     .note strong { color: #b45309; }
+
+    /* --- MOBILE RESPONSIVENESS --- */
+    @media (max-width: 900px) {
+        .content {
+            padding: 40px 40px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        /* Show the hamburger menu */
+        .menu-toggle {
+            display: block;
+        }
+        
+        /* Hide sidebar completely off-screen by default */
+        .sidebar {
+            transform: translateX(-100%);
+        }
+        
+        /* Class added by JavaScript to slide sidebar in */
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        /* Class added by JavaScript to show overlay */
+        .sidebar-overlay.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* Remove left margin on content so it takes full width */
+        .content {
+            margin-left: 0;
+            padding: 70px 20px 40px 20px; /* Added extra top padding to avoid hiding content under the hamburger button */
+        }
+
+        h1 { font-size: 2rem; }
+    }
 </style>
 </head>
 <body>
 
-<div class="sidebar">
+<button class="menu-toggle" id="menuToggle" aria-label="Toggle Menu">
+    ☰ Menu
+</button>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<div class="sidebar" id="sidebar">
     <h2>EDUS User Manual</h2>
     <ul>
         <li><a href="#section-1">1. Getting Started</a></li>
@@ -120,7 +209,6 @@
 <div class="content">
     <h1>EDUS User Manual 1.0</h1>
     
-    <!-- SECTION 1 -->
     <h2 id="section-1">1. Getting Started</h2>
     
     <h3>1.1 Welcome to EDUS</h3>
@@ -202,7 +290,6 @@
         <li><strong>SYSTEM:</strong> This section manages your software account and administrative preferences (My Subscription, My Wallet, Settings).</li>
     </ul>
 
-    <!-- SECTION 2 -->
     <h2 id="section-2">2. Student Management: Migrating Your Records</h2>
     <p>Now that your School Identity, Classes, and Fees are configured, it is time to populate EDUS with your student body. After clicking the "Confirm Fees & Import Students" button at the end of the Setup Wizard, you will arrive at the Quick Student Migration page.</p>
     
@@ -248,7 +335,6 @@
         <li>Click [Upload & Process].</li>
     </ol>
 
-    <!-- SECTION 3 -->
     <h2 id="section-3">3. Admissions & Initial Billing</h2>
     <p>Unlike the Bulk Import tool, the New Admission module is used for everyday enrollments. EDUS utilizes a "Parent-First" architecture. This means the system links students to a central Guardian profile, allowing parents with multiple children in the school to manage all their wards from a single account.</p>
 
@@ -342,7 +428,6 @@
         <li><strong>Generate Payment Slip:</strong> If the parent intends to go to a physical bank branch to make a deposit, they can click this button to generate a slip containing the school's bank details and their specific Invoice Reference Number to use as the payment description.</li>
     </ul>
 
-    <!-- SECTION 4 -->
     <h2 id="section-4">4. The School Store & POS System</h2>
     <p>EDUS features a built-in Point of Sale (POS) and inventory management system. This allows your school to seamlessly handle the sale of physical items like textbooks, uniforms, and stationery without needing separate accounting software.</p>
 
@@ -400,7 +485,6 @@
         <li>The Bursar and Sales Personnel can use this screen to monitor total shop revenue, manage unpaid store bills, and track overall retail performance.</li>
     </ul>
 
-    <!-- SECTION 5 -->
     <h2 id="section-5">5. Payment History & Bank Verification</h2>
     <p>The Payment History module is your central hub for tracking all financial transactions related to students. Most importantly, it is where the Bursar officially confirms and clears the pending bank transfers uploaded by parents via their portal.</p>
 
@@ -427,7 +511,6 @@
     </ol>
     <p><em>Note: The moment you click this button, the student's balance is automatically updated, and the parent's portal will switch from "Verifying..." to a finalized "Paid" status, allowing them to download their official receipt.</em></p>
 
-    <!-- SECTION 6 -->
     <h2 id="section-6">6. Student Directory & Management</h2>
     <p>The Students module is the central digital filing cabinet for every enrolled pupil. It allows administrators to quickly look up records, print official documents, and monitor individual financial health.</p>
 
@@ -486,7 +569,6 @@
         <li>Process the promotion to instantly update the profiles and financial records for the entire cohort!</li>
     </ol>
 
-    <!-- SECTION 7 -->
     <h2 id="section-7">7. Expenses & Financial Health</h2>
     <p>While the Academic and Store ledgers track your school's income, EDUS also provides robust tools to track your daily operational expenditures. Combining these two elements gives the school proprietor a real-time view of the institution's true financial health.</p>
 
@@ -523,7 +605,6 @@
         <li><strong>Cash Flow Visualization:</strong> A clear, color-coded bar chart provides a visual percentage breakdown of how much of your revenue was retained as profit versus how much was consumed by operational expenses.</li>
     </ul>
 
-    <!-- SECTION 8 -->
     <h2 id="section-8">8. System Administration</h2>
     <p>The System section on your left-hand navigation menu is restricted to the Proprietor or top-level Administrator. Here, you manage your EDUS software license, fund your communication wallet, and customize your school's core identity.</p>
 
@@ -572,5 +653,35 @@
     </ol>
 </div>
 
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        const sidebarLinks = sidebar.querySelectorAll('a');
+
+        // Function to toggle the menu open/closed
+        function toggleMenu() {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        }
+
+        // Open/Close menu when the hamburger button is clicked
+        menuToggle.addEventListener('click', toggleMenu);
+
+        // Close menu when the dark overlay is clicked
+        overlay.addEventListener('click', toggleMenu);
+
+        // Close menu when a link inside the sidebar is clicked
+        sidebarLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                // Only close it automatically if we are on a mobile screen
+                if (window.innerWidth <= 768) {
+                    toggleMenu();
+                }
+            });
+        });
+    });
+</script>
 </body>
 </html>
