@@ -15,319 +15,252 @@
             <div class="hidden md:flex space-x-8">
                 <a href="{{ path('app_features') }}" class="text-sm font-medium text-gray-700 hover:text-blue-600">Features</a>
                 <a href="{{ path('app_partners') }}" class="text-sm font-medium text-gray-700 hover:text-blue-600">Partners</a>
-                <a href="{{ path('app_login') }}" class="text-sm font-medium text-blue-600 hover:text-blue-500">Log in</a>
+                <a href="{{ path('app_manual') }}" class="text-blue-600 hover:text-blue-800 font-semibold">User Manual</a>
+                <a href="{{ path('app_login') }}" class="text-sm font-medium text-blue-600 hover:text-blue-800 ml-4">Sign In</a>
             </div>
-            <div class="hidden md:flex items-center justify-end md:flex-1 lg:w-0">
-                <a href="{{ path('app_login') }}" class="ml-8 inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-all">
-                    Get Started
+        </div>
+    </div>
+</div>
+
+{# --- 1. HERO SECTION --- #}
+<div class="relative bg-white overflow-hidden">
+    <div class="max-w-7xl mx-auto">
+        <div class="relative z-10 pb-8 bg-white sm:pb-16 md:pb-20 lg:max-w-2xl lg:w-full lg:pb-28 xl:pb-32 pt-20">
+            <main class="mt-10 mx-auto max-w-7xl px-4 sm:mt-12 sm:px-6 md:mt-16 lg:mt-20 lg:px-8 xl:mt-28">
+                <div class="sm:text-center lg:text-left">
+                    <h1 class="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
+                        <span class="block xl:inline">Don't just track fees.</span>
+                        <span class="block text-blue-600">Run your entire school.</span>
+                    </h1>
+                    <p class="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
+                        The all-in-one platform for modern Nigerian schools. Automate fee collection, manage the school store, and engage parents—without losing a single Naira to payment gateways.
+                    </p>
+                    <div class="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
+                        <div class="rounded-md shadow">
+                            {# 🟢 WHATSAPP LINK ADDED HERE #}
+                            <a href="https://wa.me/2348032714999?text=Hello!%20I%20am%20a%20school%20proprietor%20interested%20in%20setting%20up%20a%20Free%20Trial%20for%20EDUS." target="_blank" rel="noopener noreferrer" class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg">
+                                Start Free Trial
+                            </a>
+                        </div>
+                        <div class="mt-3 sm:mt-0 sm:ml-3">
+                            <button onclick="openDemoModal()" class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 md:py-4 md:text-lg">
+                                View Live Demo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    <div class="lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2 bg-gray-50 flex items-center justify-center p-6">
+        {# 🟢 HERO IMAGE REPLACED #}
+        <img src="{{ asset('images/manual/screencapture-gobarau-localhost-8082-students-2026-04-21-21_22_33.png') }}" alt="Edus Dashboard Overview" class="rounded-xl shadow-2xl border border-gray-200 transform scale-100 lg:scale-105">
+    </div>
+</div>
+
+{# --- 2. STATS / TRUST SECTION --- #}
+<div class="bg-blue-800">
+    <div class="max-w-7xl mx-auto py-12 px-4 sm:py-16 sm:px-6 lg:px-8 lg:py-20">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-3xl font-extrabold text-white sm:text-4xl">
+                Trusted by Forward-Thinking Institutions
+            </h2>
+            <p class="mt-3 text-xl text-blue-200 sm:mt-4">
+                Join the growing network of schools securing their finances with Edus.
+            </p>
+        </div>
+        <dl class="mt-10 text-center sm:max-w-3xl sm:mx-auto sm:grid sm:grid-cols-3 sm:gap-8">
+            <div class="flex flex-col">
+                <dt class="order-2 mt-2 text-lg leading-6 font-medium text-blue-200">Active Schools</dt>
+                <dd class="order-1 text-5xl font-extrabold text-white">100+</dd>
+            </div>
+            <div class="flex flex-col mt-10 sm:mt-0">
+                <dt class="order-2 mt-2 text-lg leading-6 font-medium text-blue-200">Processed Securely</dt>
+                <dd class="order-1 text-5xl font-extrabold text-white">₦500M+</dd>
+            </div>
+            <div class="flex flex-col mt-10 sm:mt-0">
+                <dt class="order-2 mt-2 text-lg leading-6 font-medium text-blue-200">Parents Connected</dt>
+                <dd class="order-1 text-5xl font-extrabold text-white">10k+</dd>
+            </div>
+        </dl>
+    </div>
+</div>
+
+{# --- 3. PAIN POINTS SECTION (The Hook) --- #}
+<div class="bg-gray-50 py-16 sm:py-24 border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h2 class="text-3xl font-extrabold text-gray-900 sm:text-4xl">Are you still running your school the hard way?</h2>
+        <p class="mt-4 text-xl text-gray-600">School administration is stressful enough without fighting your accounting system.</p>
+        
+        <div class="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-3">
+            <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
+                <div class="text-red-500 text-5xl mb-4">📝</div>
+                <h3 class="text-xl font-bold text-gray-900">Recording fees manually?</h3>
+                <p class="mt-3 text-gray-600">Still using paper ledgers that get lost, damaged, or contain human errors?</p>
+            </div>
+            <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
+                <div class="text-red-500 text-5xl mb-4">💸</div>
+                <h3 class="text-xl font-bold text-gray-900">Losing track of payments?</h3>
+                <p class="mt-3 text-gray-600">Spending hours trying to reconcile bank alerts with specific student names?</p>
+            </div>
+            <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
+                <div class="text-red-500 text-5xl mb-4">😠</div>
+                <h3 class="text-xl font-bold text-gray-900">Arguing over receipts?</h3>
+                <p class="mt-3 text-gray-600">Dealing with frustrated parents over unverified transfers and lost paper receipts?</p>
+            </div>
+        </div>
+        
+        <div class="mt-12">
+            <p class="text-2xl font-bold text-blue-600">EDUS solves all of this instantly. 👇</p>
+        </div>
+    </div>
+</div>
+
+{# --- 4. FEATURES SECTION (Money-First Priority) --- #}
+<div class="py-16 bg-white overflow-hidden lg:py-24">
+    <div class="relative max-w-xl mx-auto px-4 sm:px-6 lg:px-8 lg:max-w-7xl">
+        <div class="relative">
+            <h2 class="text-center text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+                Everything you need to secure your revenue.
+            </h2>
+            <p class="mt-4 max-w-3xl mx-auto text-center text-xl text-gray-500">
+                Stop managing chaos. Start managing a highly profitable, organized institution.
+            </p>
+        </div>
+
+        <div class="relative mt-12 lg:mt-24 lg:grid lg:grid-cols-2 lg:gap-8 lg:items-center">
+            <div class="relative">
+                <h3 class="text-2xl font-extrabold text-gray-900 tracking-tight sm:text-3xl">
+                    1. Fee & Payment Management
+                </h3>
+                <p class="mt-3 text-lg text-gray-500">
+                    Protect 100% of your revenue. Use our offline bank verification to bypass third-party payment gateway fees. Parents upload their slips, you verify with one click, and the system instantly updates their balance.
+                </p>
+            </div>
+            <div class="mt-10 -mx-4 relative lg:mt-0" aria-hidden="true">
+                {# 🟢 PAYMENT VERIFICATION IMAGE #}
+                <img src="{{ asset('images/manual/screencapture-gobarau-localhost-8082-finance-payment-verify-2026-04-21-17_56_45.png') }}" alt="Payment Verification Screen" class="rounded-xl shadow-lg border border-gray-200">
+            </div>
+        </div>
+
+        <div class="relative mt-12 lg:mt-24 lg:grid lg:grid-cols-2 lg:gap-8 lg:items-center">
+            <div class="mt-10 -mx-4 relative lg:mt-0 lg:order-1" aria-hidden="true">
+                {# 🟢 PROFIT & LOSS IMAGE #}
+                <img src="{{ asset('images/manual/screencapture-gobarau-localhost-8082-finance-report-profit-loss-2026-04-21-21_29_53.png') }}" alt="Profit and Loss Dashboard" class="rounded-xl shadow-lg border border-gray-200">
+            </div>
+            <div class="relative lg:order-2">
+                <h3 class="text-2xl font-extrabold text-gray-900 tracking-tight sm:text-3xl">
+                    2. Instant Reports & Expenses
+                </h3>
+                <p class="mt-3 text-lg text-gray-500">
+                    Know your school's exact financial health at a glance. Log daily expenses (like diesel and salaries) and automatically generate beautiful end-of-term Profit & Loss reports without touching a spreadsheet.
+                </p>
+            </div>
+        </div>
+
+        <div class="relative mt-12 lg:mt-24 lg:grid lg:grid-cols-2 lg:gap-8 lg:items-center">
+            <div class="relative">
+                <h3 class="text-2xl font-extrabold text-gray-900 tracking-tight sm:text-3xl">
+                    3. Built-In School Store (POS)
+                </h3>
+                <p class="mt-3 text-lg text-gray-500">
+                    Stop mixing tuition money with textbook sales. Edus includes a dedicated Point of Sale (POS) system for walk-in customers and enrolled students to manage uniforms, books, and tuck shop inventory separately.
+                </p>
+            </div>
+            <div class="mt-10 -mx-4 relative lg:mt-0" aria-hidden="true">
+                {# 🟢 STORE POS IMAGE #}
+                <img src="{{ asset('images/manual/screencapture-gobarau-localhost-8082-store-sales-cart-2026-04-21-16_23_31.png') }}" alt="School Store Point of Sale" class="rounded-xl shadow-lg border border-gray-200">
+            </div>
+        </div>
+        
+        <div class="relative mt-12 lg:mt-24 lg:grid lg:grid-cols-2 lg:gap-8 lg:items-center">
+            <div class="mt-10 -mx-4 relative lg:mt-0 lg:order-1" aria-hidden="true">
+                {# 🟢 PARENT PORTAL IMAGE #}
+                <img src="{{ asset('images/manual/screencapture-gobarau-localhost-8082-parent-dashboard-2026-04-21-15_53_27.png') }}" alt="Parent Portal Dashboard" class="rounded-xl shadow-lg border border-gray-200">
+            </div>
+            <div class="relative lg:order-2">
+                <h3 class="text-2xl font-extrabold text-gray-900 tracking-tight sm:text-3xl">
+                    4. The Premium Parent Portal
+                </h3>
+                <p class="mt-3 text-lg text-gray-500">
+                    End the phone calls to the Bursar's office. Parents get their own secure dashboard to view itemized invoices, track their children's financial standing, and receive automated SMS payment receipts.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# --- 5. AGGRESSIVE CTA SECTION --- #}
+<div class="bg-blue-700">
+    <div class="max-w-2xl mx-auto text-center py-16 px-4 sm:py-20 sm:px-6 lg:px-8">
+        <h2 class="text-3xl font-extrabold text-white sm:text-4xl">
+            <span class="block">Stop losing track of school fees today.</span>
+        </h2>
+        <p class="mt-4 text-lg leading-6 text-blue-100">
+            Start using EDUS and take full control of your school's finances. Your complete database setup takes less than 10 minutes.
+        </p>
+        <div class="mt-8 flex justify-center space-x-4">
+            {# 🟢 WHATSAPP LINK ADDED HERE #}
+            <a href="https://wa.me/2348032714999?text=Hello!%20I%20am%20a%20school%20proprietor%20interested%20in%20setting%20up%20a%20Free%20Trial%20for%20EDUS." target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50">
+                Start Free Trial
+            </a>
+            <button onclick="openDemoModal()" class="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-800 hover:bg-blue-900">
+                View Demo
+            </button>
+        </div>
+    </div>
+</div>
+
+{# --- 6. FOOTER --- #}
+<footer class="bg-white">
+    <div class="max-w-7xl mx-auto py-12 px-4 overflow-hidden sm:px-6 lg:px-8 border-t border-gray-200">
+        <nav class="-mx-5 -my-2 flex flex-wrap justify-center" aria-label="Footer">
+            <div class="px-5 py-2"><a href="{{ path('app_features') }}" class="text-base text-gray-500 hover:text-gray-900">Features</a></div>
+            <div class="px-5 py-2"><a href="{{ path('app_partners') }}" class="text-base text-gray-500 hover:text-gray-900">Partners</a></div>
+            <div class="px-5 py-2"><a href="{{ path('app_manual') }}" class="text-base text-gray-500 hover:text-gray-900">User Manual</a></div>
+            <div class="px-5 py-2"><a href="#" class="text-base text-gray-500 hover:text-gray-900">Privacy Policy</a></div>
+        </nav>
+        <p class="mt-8 text-center text-base text-gray-400">
+            &copy; 2026 Mu'ammil Web Development Services. All rights reserved.
+        </p>
+    </div>
+</footer>
+
+{# 🟢 DEMO MODAL SCRIPT #}
+<div id="demoModal" class="hidden fixed inset-0 z-[100] bg-gray-900/50 backdrop-blur-sm items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-5">
+                <h3 class="text-xl font-bold text-gray-900">Access Live Demo</h3>
+                <button onclick="closeDemoModal()" class="text-gray-400 hover:text-gray-600 transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-6">
+                <p class="text-sm text-blue-800 mb-2 font-medium">Use these credentials to log in:</p>
+                <div class="space-y-2 font-mono text-sm">
+                    <div class="flex justify-between bg-white p-2 rounded border border-blue-100">
+                        <span class="text-gray-500">Email:</span>
+                        <span class="font-bold text-gray-900">demo@edus.ng</span>
+                    </div>
+                    <div class="flex justify-between bg-white p-2 rounded border border-blue-100">
+                        <span class="text-gray-500">Password:</span>
+                        <span class="font-bold text-gray-900">demo123</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex space-x-3">
+                <button onclick="copyDemoDetails(this)" class="flex-1 py-2 px-4 border border-gray-200 text-gray-600 font-medium rounded-lg hover:bg-gray-50 transition">
+                    Copy Details
+                </button>
+                <a href="https://demo.edus.ng/login" target="_blank" class="flex-1 py-2 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 text-center transition">
+                    Go to Login →
                 </a>
             </div>
         </div>
     </div>
 </div>
 
-{# --- 1. HERO SECTION: The "Product Stack" --- #}
-<div class="relative bg-white overflow-hidden pt-12 pb-16 lg:pt-20 lg:pb-28">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <div class="lg:grid lg:grid-cols-12 lg:gap-8">
-            
-            {# Left: Copy #}
-            <div class="sm:text-center md:max-w-2xl md:mx-auto lg:col-span-6 lg:text-left">
-                <div class="inline-flex items-center px-3 py-1 rounded-full border border-blue-100 bg-blue-50 text-blue-700 text-xs font-bold uppercase tracking-wide mb-6">
-                    🚀 New: WhatsApp Receipts & ID Cards
-                </div>
-                <h1 class="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
-                    <span class="block">Don't just track fees.</span>
-                    <span class="block text-blue-600">Run your entire school.</span>
-                </h1>
-                <p class="mt-4 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                    Replace Excel sheets and manual receipts with <strong>Edus</strong>. We automate Invoicing, Inventory, Results, and ID Cards in one secure platform.
-                </p>
-                <div class="mt-8 sm:max-w-lg sm:mx-auto sm:text-center lg:text-left lg:mx-0">
-                    <div class="flex flex-col sm:flex-row gap-4">
-                        
-                        {# 🟢 MODIFIED: Now triggers the Demo Modal instead of a direct link #}
-                        <button onclick="openDemoModal()" class="flex items-center justify-center px-8 py-3 border border-transparent text-base font-bold rounded-lg text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1">
-                            Start School Pilot
-                        </button>
-                        
-                        <a href="{{ path('app_partners') }}" class="flex items-center justify-center px-8 py-3 border border-gray-200 text-base font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 md:py-4 md:text-lg">
-                            I'm a Developer
-                        </a>
-                    </div>
-                    <p class="mt-3 text-sm text-gray-400">Trusted by 100+ Schools • Instant Setup</p>
-                </div>
-            </div>
-
-            {# Right: Visual Stack (Using your Real UI HTML) #}
-            <div class="mt-12 relative sm:max-w-lg sm:mx-auto lg:mt-0 lg:max-w-none lg:mx-0 lg:col-span-6 lg:flex lg:items-center">
-                <div class="relative mx-auto w-full rounded-lg shadow-lg lg:max-w-md transform lg:scale-110 origin-top-left">
-                    
-                    <div class="relative block w-full bg-white rounded-lg overflow-hidden border border-gray-200 shadow-2xl z-10">
-                        <div class="bg-gray-800 p-4 flex justify-between items-center text-white">
-                            <div class="flex items-center space-x-2">
-                                <div class="h-8 w-8 bg-gray-700 rounded flex items-center justify-center text-xs">🏫</div>
-                                <div>
-                                    <div class="text-xs font-bold uppercase">Springfield</div>
-                                    <div class="text-[0.6rem] text-gray-400">Lagos, NG</div>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-sm font-mono font-bold">#INV-001</div>
-                                <span class="bg-yellow-500 text-black text-[0.6rem] px-1 rounded font-bold">PARTIAL</span>
-                            </div>
-                        </div>
-                        <div class="p-4 space-y-2">
-                            <div class="flex justify-between text-xs text-gray-600 border-b pb-2">
-                                <span>Tuition Fee</span><span>₦150,000</span>
-                            </div>
-                            <div class="flex justify-between text-xs text-gray-600 border-b pb-2">
-                                <span>Uniform</span><span>₦25,000</span>
-                            </div>
-                            <div class="mt-1 text-right text-red-600 font-bold text-xs">Balance: ₦85,000</div>
-                        </div>
-                    </div>
-
-                    <div class="absolute -bottom-12 -right-6 w-40 bg-white border border-gray-200 rounded shadow-2xl overflow-hidden transform -rotate-6 z-20 hover:rotate-0 transition duration-500">
-                        <div class="bg-blue-800 h-6 flex items-center justify-center">
-                            <span class="text-white text-[0.4rem] font-bold uppercase">Springfield Academy</span>
-                        </div>
-                        <div class="p-2 text-center">
-                             <div class="h-10 w-10 bg-gray-200 rounded mx-auto mb-1 border border-gray-300"></div>
-                             <div class="text-[0.5rem] font-bold">Emmanuel O.</div>
-                             <div class="text-[0.4rem] text-gray-500">SS 2 Science</div>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-{# --- 2. SOCIAL PROOF --- #}
-<div class="bg-blue-900 py-10 border-t border-blue-800">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="grid grid-cols-2 gap-8 md:grid-cols-4 text-center">
-            <div>
-                <p class="text-3xl font-extrabold text-white">100+</p>
-                <p class="text-xs font-medium text-blue-200 uppercase mt-1">Schools Active</p>
-            </div>
-            <div>
-                <p class="text-3xl font-extrabold text-white">50k+</p>
-                <p class="text-xs font-medium text-blue-200 uppercase mt-1">Invoices Generated</p>
-            </div>
-            <div>
-                <p class="text-3xl font-extrabold text-white">₦500M+</p>
-                <p class="text-xs font-medium text-blue-200 uppercase mt-1">Fees Processed</p>
-            </div>
-            <div>
-                <p class="text-3xl font-extrabold text-white">99.9%</p>
-                <p class="text-xs font-medium text-blue-200 uppercase mt-1">Uptime</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-{# --- 3. BENTO GRID FEATURES (The "Why Edus" Section) --- #}
-<div class="py-20 bg-gray-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-16">
-            <h2 class="text-base text-blue-600 font-semibold tracking-wide uppercase">All-in-One Platform</h2>
-            <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
-                Everything you need to run a modern school.
-            </p>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            {# CARD 1: PARENT PORTAL (Wide) #}
-            <div class="md:col-span-2 bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-md transition relative overflow-hidden group">
-                <div class="relative z-10">
-                    <h3 class="text-2xl font-bold text-gray-900">Parent Portal</h3>
-                    <p class="text-gray-500 mt-2 max-w-md">Parents can view all their children, check debts, and pay fees from their phone. No more calling the bursar.</p>
-                </div>
-                <div class="mt-8 bg-gray-50 rounded-xl p-4 border border-gray-200 w-full md:w-3/4 shadow-inner">
-                    <div class="bg-white p-3 rounded-lg shadow-sm flex justify-between items-center mb-2">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs">EO</div>
-                            <div><p class="text-xs font-bold">Emeka I.</p><p class="text-[10px] text-gray-500">JSS 2</p></div>
-                        </div>
-                        <p class="text-red-600 font-bold text-xs">Owning: ₦45,000</p>
-                    </div>
-                    <div class="bg-white p-3 rounded-lg shadow-sm flex justify-between items-center opacity-75">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 font-bold text-xs">AO</div>
-                            <div><p class="text-xs font-bold">Amaka I.</p><p class="text-[10px] text-gray-500">Primary 4</p></div>
-                        </div>
-                        <p class="text-green-600 font-bold text-xs">✓ Cleared</p>
-                    </div>
-                </div>
-            </div>
-
-            {# CARD 2: POS (Tall) #}
-            <div class="bg-gray-900 rounded-2xl p-8 shadow-lg text-white flex flex-col justify-between relative overflow-hidden group">
-                <div class="relative z-10">
-                    <div class="h-10 w-10 bg-gray-800 rounded flex items-center justify-center mb-4 text-xl">🛒</div>
-                    <h3 class="text-xl font-bold">School Store</h3>
-                    <p class="text-gray-400 mt-2 text-sm">Sell uniforms & books. Auto-deduct stock and add the bill to the student's profile.</p>
-                </div>
-                <div class="absolute -bottom-10 -right-10 w-48 bg-gray-800 rounded-xl p-4 transform rotate-12 opacity-50 group-hover:opacity-80 transition">
-                    <div class="h-2 w-20 bg-gray-600 rounded mb-2"></div>
-                    <div class="h-2 w-12 bg-gray-600 rounded"></div>
-                </div>
-            </div>
-
-            {# CARD 3: ID CARDS #}
-            <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-md transition">
-                <div class="h-10 w-10 bg-blue-50 rounded flex items-center justify-center mb-4 text-xl">🆔</div>
-                <h3 class="text-xl font-bold text-gray-900">Instant ID Cards</h3>
-                <p class="text-gray-500 mt-2 text-sm">Generate standard CR80 ID cards with QR codes for your entire school in one click.</p>
-            </div>
-
-            {# CARD 4: RESULTS #}
-            <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-md transition">
-                <div class="h-10 w-10 bg-green-50 rounded flex items-center justify-center mb-4 text-xl">📊</div>
-                <h3 class="text-xl font-bold text-gray-900">Results & Broadsheets</h3>
-                <p class="text-gray-500 mt-2 text-sm">Auto-calculate averages, positions, and generate PDF report cards in bulk.</p>
-            </div>
-
-            {# CARD 5: FINANCE (Wide) #}
-            <div class="md:col-span-1 bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-md transition">
-                <div class="h-10 w-10 bg-orange-50 rounded flex items-center justify-center mb-4 text-xl">💰</div>
-                <h3 class="text-xl font-bold text-gray-900">Smart Finance</h3>
-                <p class="text-gray-500 mt-2 text-sm">Snapshot invoicing ensures historical accuracy. Track partial payments and daily income reports.</p>
-            </div>
-        </div>
-
-        <div class="mt-12 text-center">
-            <a href="{{ path('app_features') }}" class="inline-flex items-center text-blue-600 font-bold hover:text-blue-800">
-                Explore all system capabilities <span class="ml-2">&rarr;</span>
-            </a>
-        </div>
-    </div>
-</div>
-
-{# --- 4. PARTNER STRIP (The "Second Door") --- #}
-<div class="bg-gray-900 py-16 border-t border-gray-800 relative overflow-hidden">
-    <div class="absolute inset-0 opacity-10">
-        <svg class="h-full w-full" fill="none" viewBox="0 0 800 800">
-            <path stroke="currentColor" stroke-width="2" d="M0 0 L800 800 M800 0 L0 800" class="text-white"/>
-        </svg>
-    </div>
-    
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div class="lg:flex lg:items-center lg:justify-between">
-            <div class="lg:w-1/2">
-                <h2 class="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-                    <span class="block">Are you a Developer?</span>
-                    <span class="block text-indigo-400">Build your own EdTech Agency.</span>
-                </h2>
-                <p class="mt-3 text-lg text-gray-400">
-                    Use our <strong>Agent Engine</strong> to deploy schools in seconds. Manage 50+ clients from one dashboard and earn recurring commissions.
-                </p>
-                <div class="mt-8 flex gap-4">
-                    <a href="{{ path('app_partners') }}" class="px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg">
-                        View Agent Dashboard
-                    </a>
-                </div>
-            </div>
-            <div class="mt-8 lg:mt-0 lg:w-1/2 flex justify-center lg:justify-end">
-                <div class="bg-gray-800 rounded-lg p-6 border border-gray-700 w-full max-w-sm shadow-2xl transform rotate-2">
-                    <div class="flex justify-between items-center mb-4">
-                        <span class="text-xs font-bold text-gray-500 uppercase">Your Wallet</span>
-                        <span class="text-green-400 text-xs flex items-center gap-1"><span class="w-2 h-2 bg-green-500 rounded-full"></span> Live</span>
-                    </div>
-                    <div class="text-3xl font-mono text-white mb-6">₦450,000.00</div>
-                    <div class="space-y-3">
-                        <div class="flex justify-between text-sm border-b border-gray-700 pb-2">
-                            <span class="text-gray-400">Divine Wisdom Int'l</span>
-                            <span class="text-green-400">+₦25,000</span>
-                        </div>
-                        <div class="flex justify-between text-sm border-b border-gray-700 pb-2">
-                            <span class="text-gray-400">Springfield College</span>
-                            <span class="text-green-400">+₦15,000</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-{# --- 5. FINAL CTA --- #}
-<div class="bg-white py-24">
-    <div class="max-w-4xl mx-auto px-4 text-center">
-        <h2 class="text-4xl font-extrabold text-gray-900 mb-6">Ready to transform your school?</h2>
-        <p class="text-xl text-gray-500 mb-10">
-            Join the platform that is changing how Nigerian schools operate. No setup fees. No credit card required.
-        </p>
-        {# 🟢 MODIFIED: Added onclick to trigger modal here too #}
-        <button onclick="openDemoModal()" class="inline-flex items-center justify-center px-10 py-4 border border-transparent text-lg font-bold rounded-full text-white bg-blue-600 hover:bg-blue-700 shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
-            Get Started for Free
-        </button>
-    </div>
-</div>
-
-{# --- 6. FOOTER --- #}
-<footer class="bg-gray-50 border-t border-gray-200">
-    <div class="max-w-7xl mx-auto py-12 px-4 overflow-hidden sm:px-6 lg:px-8">
-        <div class="flex justify-center space-x-8 mb-8 text-gray-400">
-            <a href="{{ path('app_home') }}" class="hover:text-gray-900 transition">Home</a>
-            <a href="{{ path('app_features') }}" class="hover:text-gray-900 transition">Features</a>
-            <a href="{{ path('app_partners') }}" class="hover:text-gray-900 transition">Partners</a>
-            <a href="{{ path('app_login') }}" class="hover:text-gray-900 transition">Login</a>
-        </div>
-        <p class="mt-8 text-center text-base text-gray-400">
-            &copy; {{ "now"|date("Y") }} Edus. Built for Nigerian Schools.
-        </p>
-    </div>
-
-    <div class="alert alert-info">
-        🚀 System Update: Live Version 1.0.1 - {{ "now"|date("d/m/Y H:i") }}
-    </div>
-</footer>
-
-{# ======================================================== #}
-{# 🟢 DEMO ACCESS MODAL                                     #}
-{# ======================================================== #}
-<div id="demoModal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-gray-900/80 backdrop-blur-sm p-4 transition-opacity">
-    <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 md:p-8 transform transition-all scale-100">
-        
-        <div class="text-center mb-6">
-            <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">🔑</div>
-            <h3 class="text-2xl font-black text-gray-900">Demo Access</h3>
-            <p class="text-gray-500 text-sm mt-2 leading-relaxed">Copy the credentials below to log into our live sandbox environment.</p>
-        </div>
-
-        <div class="bg-gray-50 border border-gray-200 rounded-2xl p-5 mb-6 relative group">
-            <div class="mb-4">
-                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Email</span>
-                <div class="text-gray-900 font-mono font-bold text-sm" id="demoEmail">demo@edus.ng</div>
-            </div>
-            <div>
-                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Password</span>
-                <div class="text-gray-900 font-mono font-bold text-sm" id="demoPassword">demo123</div>
-            </div>
-            
-            <button onclick="copyDemoDetails(this)" class="absolute top-4 right-4 text-xs bg-white border border-gray-200 shadow-sm hover:border-blue-300 hover:text-blue-600 px-3 py-1.5 rounded-lg font-bold text-gray-600 transition-colors active:scale-95">
-                Copy Details
-            </button>
-        </div>
-
-        <div class="flex flex-col gap-3">
-            <a href="https://demo.edus.ng" target="_blank" class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2">
-                Log into Demo App &rarr;
-            </a>
-            <button onclick="closeDemoModal()" class="w-full text-gray-400 hover:text-gray-700 font-bold py-3 rounded-xl transition-colors text-sm">
-                Cancel
-            </button>
-        </div>
-        
-    </div>
-</div>
-
-{# 🟢 DEMO MODAL SCRIPT #}
 <script>
     function openDemoModal() {
         const modal = document.getElementById('demoModal');
@@ -342,17 +275,11 @@
     }
 
     function copyDemoDetails(btn) {
-        // The text string that gets copied to the user's clipboard
         const textToCopy = "Email: demo@edus.ng\nPassword: demo123";
-        
         navigator.clipboard.writeText(textToCopy).then(() => {
-            // Visual feedback
-            const originalText = btn.innerText;
             btn.innerText = "Copied! ✓";
             btn.classList.add('text-green-600', 'border-green-300', 'bg-green-50');
             btn.classList.remove('text-gray-600', 'border-gray-200');
-            
-            // Reset button after 2 seconds
             setTimeout(() => {
                 btn.innerText = "Copy Details";
                 btn.classList.remove('text-green-600', 'border-green-300', 'bg-green-50');
@@ -361,11 +288,8 @@
         });
     }
 
-    // Optional: Close modal if they click outside the white box
     document.getElementById('demoModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeDemoModal();
-        }
+        if (e.target === this) closeDemoModal();
     });
 </script>
 {% endblock %}

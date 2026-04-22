@@ -96,6 +96,7 @@ security:
         - { path: ^/$, roles: PUBLIC_ACCESS }
         - { path: ^/features, roles: PUBLIC_ACCESS } # Features Page
         - { path: ^/partners, roles: PUBLIC_ACCESS } # Partners Page
+        - { path: ^/manual, roles: PUBLIC_ACCESS } # User Manual
 
         # 2. Public Access for Logins
         - { path: ^/admin/login, roles: PUBLIC_ACCESS }

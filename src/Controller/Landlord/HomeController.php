@@ -32,4 +32,11 @@ class HomeController extends AbstractController
     {
         return $this->render('landlord/home/partners.html.twig');
     }
+
+    // 🟢 NEW: Add the route for the User Manual
+    #[Route('/manual', name: 'app_manual', methods: ['GET'], host: '%app.base_domain%')]
+    public function manual(): Response
+    {
+        return $this->render('landlord/home/manual.html.twig');
+    }
 }
