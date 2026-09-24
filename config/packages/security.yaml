@@ -92,19 +92,30 @@ security:
         ROLE_SUPER_ADMIN:   [ROLE_ADMIN, ROLE_ALLOWED_TO_SWITCH, ROLE_AGENT]
 
     access_control:
-        # 🟢 Tenant public homepage
+        # 🟢 1. Landlord (main site) marketing / landing pages — public
         - { path: ^/$, roles: PUBLIC_ACCESS }
-        - { path: ^/about, roles: PUBLIC_ACCESS }
-        - { path: ^/admissions, roles: PUBLIC_ACCESS }
-        - { path: ^/contact, roles: PUBLIC_ACCESS }
-
-        # 🟢 Landlord (main site) marketing / landing pages — public
         - { path: ^/features, roles: PUBLIC_ACCESS }
         - { path: ^/partners, roles: PUBLIC_ACCESS }
         - { path: ^/manual, roles: PUBLIC_ACCESS }
 
-        # Tenant login remains public
+        # 🟢 2. Tenant public website pages
+        - { path: ^/about, roles: PUBLIC_ACCESS }
+        - { path: ^/admissions, roles: PUBLIC_ACCESS }
+        - { path: ^/contact, roles: PUBLIC_ACCESS }
+
+        # ⚠️ 3. LOGIN PAGES MUST STAY PUBLIC.
+        # If these are not public, the firewall denies the login form itself and
+        # redirects it back to itself → browser shows ERR_TOO_MANY_REDIRECTS
+        # ("This page isn't working") on /admin, /agent and /login.
+        - { path: ^/admin/login, roles: PUBLIC_ACCESS }
+        - { path: ^/agent/login, roles: PUBLIC_ACCESS }
         - { path: ^/login, roles: PUBLIC_ACCESS }
+
+        # 🔒 4. Landlord (Super Admin) area
+        - { path: ^/admin, roles: ROLE_SUPER_ADMIN }
+
+        # 🔒 5. Partner / Agent portal
+        - { path: ^/agent, roles: ROLE_AGENT }
 
         # Everything else requires login
         - { path: ^/, roles: ROLE_USER }
