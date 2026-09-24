@@ -1,5 +1,20 @@
 {% extends 'base.html.twig' %}
 
+{# Reusable screenshot frame (full-page captures are clipped to the top) #}
+{% macro browser(src, alt, height) %}
+    <div class="rounded-2xl bg-white shadow-xl ring-1 ring-gray-200 overflow-hidden">
+        <div class="flex items-center gap-1.5 px-4 py-2.5 bg-gray-50 border-b border-gray-200">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-400"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-yellow-400"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-green-400"></span>
+            <span class="ml-3 text-[11px] font-mono text-gray-400 truncate">app.edus.ng</span>
+        </div>
+        <div class="overflow-hidden {{ height }} bg-white">
+            <img src="{{ asset('images/manual/' ~ src) }}" alt="{{ alt }}" loading="lazy" class="w-full h-full object-cover object-top">
+        </div>
+    </div>
+{% endmacro %}
+
 {% block title %}System Features - Edus{% endblock %}
 
 {% block body %}
@@ -37,6 +52,9 @@
         <p class="max-w-xl mt-5 mx-auto text-xl text-gray-500">
             Real tools for real school problems. From setup to daily operations.
         </p>
+        <a href="{{ path('app_home') }}#upgrade" class="mt-8 inline-flex items-center gap-2 rounded-full bg-blue-50 text-blue-700 ring-1 ring-blue-200 px-4 py-2 text-sm font-semibold hover:bg-blue-100 transition">
+            🆕 See what's new in the Edus 2.0 upgrade
+        </a>
     </div>
 </div>
 
@@ -361,6 +379,208 @@
                         <p class="text-[8px] font-bold text-gray-500 uppercase">Expires: <span class="text-blue-800">JUL 25</span></p>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        {# FEATURE 7: RESULTS & APPROVALS #}
+        <div class="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-start">
+            <div class="lg:sticky lg:top-10">
+                <h3 class="text-2xl font-extrabold text-gray-900 tracking-tight sm:text-3xl">
+                    7. Results, Reports &amp; Four-Stage Approvals
+                </h3>
+                <p class="mt-3 text-lg text-gray-500">
+                    Teachers capture CA1–CA3, theory and practical marks in a fast entry terminal — with Excel
+                    template download and bulk score import. Results then pass through a sign-off chain that
+                    mirrors real school governance.
+                </p>
+                <div class="mt-8 rounded-2xl bg-gray-900 p-6 text-white">
+                    <p class="text-[11px] font-bold uppercase tracking-widest text-gray-400">Approval chain</p>
+                    <div class="mt-4 flex items-center gap-2 flex-wrap text-xs font-semibold">
+                        <span class="rounded-lg bg-blue-500/20 text-blue-200 px-3 py-1.5 ring-1 ring-blue-400/30">Teacher</span>
+                        <span class="text-gray-500">→</span>
+                        <span class="rounded-lg bg-indigo-500/20 text-indigo-200 px-3 py-1.5 ring-1 ring-indigo-400/30">Form Teacher</span>
+                        <span class="text-gray-500">→</span>
+                        <span class="rounded-lg bg-purple-500/20 text-purple-200 px-3 py-1.5 ring-1 ring-purple-400/30">HOD</span>
+                        <span class="text-gray-500">→</span>
+                        <span class="rounded-lg bg-green-500/20 text-green-200 px-3 py-1.5 ring-1 ring-green-400/30">Year Group Master</span>
+                    </div>
+                    <p class="mt-4 text-xs text-gray-400">Rejections unlock the result for rework automatically · HODs and admins can unlock at any time.</p>
+                </div>
+                <dl class="mt-10 space-y-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <div class="flex items-center justify-center h-12 w-12 rounded-md bg-purple-600 text-white">✓</div>
+                        </div>
+                        <div class="ml-4">
+                            <dt class="text-lg leading-6 font-medium text-gray-900">Every report a school needs</dt>
+                            <dd class="mt-2 text-base text-gray-500">Teacher mark sheets, form-teacher broadsheets with averages and positions, HOD subject masters, year-group approval status boards, school-wide A1–F9 distribution, and individual student/parent result sheets.</dd>
+                        </div>
+                    </div>
+                </dl>
+            </div>
+
+            <div class="mt-10 lg:mt-0">
+                <div class="rounded-2xl bg-gray-50 ring-1 ring-gray-200 p-6">
+                    <div class="flex items-center justify-between">
+                        <h4 class="font-bold text-gray-900">Form Teacher Broadsheet</h4>
+                        <span class="text-[10px] font-bold uppercase text-gray-400">JSS 1A · Term 2</span>
+                    </div>
+                    <div class="mt-4 overflow-hidden rounded-xl ring-1 ring-gray-200 bg-white">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-100 text-gray-500 text-[11px] uppercase tracking-wide">
+                                <tr>
+                                    <th class="text-left px-3 py-2 font-bold">Student</th>
+                                    <th class="px-2 py-2 font-bold">Total</th>
+                                    <th class="px-2 py-2 font-bold">Avg</th>
+                                    <th class="px-3 py-2 font-bold">Pos.</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 text-gray-700">
+                                <tr><td class="px-3 py-2">Arraghibun Bello</td><td class="px-2 py-2 text-center font-semibold">842</td><td class="px-2 py-2 text-center">84.2</td><td class="px-3 py-2 text-center font-bold text-blue-600">1st</td></tr>
+                                <tr class="bg-gray-50"><td class="px-3 py-2">Fatima Yusuf</td><td class="px-2 py-2 text-center font-semibold">798</td><td class="px-2 py-2 text-center">79.8</td><td class="px-3 py-2 text-center font-bold">2nd</td></tr>
+                                <tr><td class="px-3 py-2">Emeka Okafor</td><td class="px-2 py-2 text-center font-semibold">761</td><td class="px-2 py-2 text-center">76.1</td><td class="px-3 py-2 text-center font-bold">3rd</td></tr>
+                                <tr class="bg-gray-50"><td class="px-3 py-2">Zainab Musa</td><td class="px-2 py-2 text-center font-semibold">744</td><td class="px-2 py-2 text-center">74.4</td><td class="px-3 py-2 text-center font-bold">4th</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-4 flex items-center gap-2 text-xs font-semibold text-green-700 bg-green-50 ring-1 ring-green-200 rounded-lg px-3 py-2">
+                        <span>✓</span> Approved by HOD — awaiting Year Group Master
+                    </div>
+                </div>
+                <dl class="mt-8 space-y-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <div class="flex items-center justify-center h-12 w-12 rounded-md bg-gray-800 text-white">✓</div>
+                        </div>
+                        <div class="ml-4">
+                            <dt class="text-lg leading-6 font-medium text-gray-900">Results lock until unlocked</dt>
+                            <dd class="mt-2 text-base text-gray-500">Once submitted, marks are frozen — no silent edits after approval.</dd>
+                        </div>
+                    </div>
+                </dl>
+            </div>
+        </div>
+
+        {# FEATURE 8: FINANCE SUITE #}
+        <div>
+            <div class="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-end mb-12">
+                <div>
+                    <h3 class="text-2xl font-extrabold text-gray-900 tracking-tight sm:text-3xl">
+                        8. The Complete Finance Suite
+                    </h3>
+                </div>
+                <p class="mt-3 lg:mt-0 text-lg text-gray-500">
+                    From the fee schedule that prices every class, through discounts and invoices, to expenses,
+                    daily cash and a true Profit &amp; Loss statement — plus a prepaid SMS wallet so parent
+                    notifications never stop.
+                </p>
+            </div>
+
+            <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {{ _self.browser('screencapture-gobarau-localhost-8082-finance-payment-terminal-10-2026-04-21-15_29_26.png', 'Payment terminal', 'h-48') }}
+                {{ _self.browser('screencapture-gobarau-localhost-8082-finance-payment-verify-2026-04-21-17_53_54.png', 'Bank transfer verification', 'h-48') }}
+                {{ _self.browser('screencapture-gobarau-localhost-8082-finance-report-profit-loss-2026-04-21-21_29_53.png', 'Profit and loss report', 'h-48') }}
+            </div>
+
+            <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {% set finance = [
+                    { 'icon': '💳', 'title': 'Payments & Receipts', 'text': 'Cash payments or bank-transfer slips, reference-code verification, automatic parent SMS and printable receipts.' },
+                    { 'icon': '🧾', 'title': 'Two Ledgers', 'text': 'Academic fees and store sales tracked separately, with status and search filters.' },
+                    { 'icon': '💰', 'title': 'Fee Schedule', 'text': 'A per-class, per-term pricing matrix showing recurring vs. one-time totals.' },
+                    { 'icon': '📋', 'title': 'Fee Items & Structures', 'text': 'Tuition, books, uniform — assigned with amounts to classes and terms.' },
+                    { 'icon': '🎖️', 'title': 'Scholarships & Discounts', 'text': 'Rules like "Staff Child" applied automatically at billing, with duplicate protection.' },
+                    { 'icon': '💸', 'title': 'Expenses', 'text': 'Daily costs by category with instant total-spent visibility.' },
+                    { 'icon': '📈', 'title': 'Profit & Loss', 'text': 'Any date range: academic vs. store income, minus expenses, for your true net position.' },
+                    { 'icon': '📲', 'title': 'SMS Wallet', 'text': 'Top up credits, review transactions and submit payment proof for approval.' }
+                ] %}
+                {% for f in finance %}
+                    <div class="rounded-xl bg-gray-50 p-5 ring-1 ring-gray-200 hover:bg-white hover:shadow-md transition">
+                        <div class="text-2xl">{{ f.icon }}</div>
+                        <h4 class="mt-3 font-bold text-gray-900">{{ f.title }}</h4>
+                        <p class="mt-1.5 text-sm text-gray-600">{{ f.text }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        {# FEATURE 9: STORE & POS SCREENSHOTS #}
+        <div class="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center">
+            <div>
+                <h3 class="text-2xl font-extrabold text-gray-900 tracking-tight sm:text-3xl">
+                    9. The Store, End to End
+                </h3>
+                <p class="mt-3 text-lg text-gray-500">
+                    Inventory, POS and ledgers — the full retail loop for uniforms, textbooks and the tuck shop,
+                    completely separate from tuition money.
+                </p>
+                <ul class="mt-8 space-y-3 text-gray-700">
+                    <li class="flex gap-3"><span class="text-teal-600 font-bold">✓</span> <span>Products with stock levels and optional class-level targeting.</span></li>
+                    <li class="flex gap-3"><span class="text-teal-600 font-bold">✓</span> <span>CSV bulk import with duplicate prevention.</span></li>
+                    <li class="flex gap-3"><span class="text-teal-600 font-bold">✓</span> <span>Charge to a student's store ledger <em>or</em> take walk-in cash with an instant receipt.</span></li>
+                    <li class="flex gap-3"><span class="text-teal-600 font-bold">✓</span> <span>Automatic stock deduction and low-stock alerts on the dashboard.</span></li>
+                </ul>
+            </div>
+            <div class="mt-10 lg:mt-0 space-y-5">
+                {{ _self.browser('screencapture-gobarau-localhost-8082-store-sales-cart-2026-04-21-16_23_31.png', 'POS cart checkout', 'h-56') }}
+                {{ _self.browser('screencapture-gobarau-localhost-8082-store-products-2026-04-21-16_29_10.png', 'Store inventory with CSV bulk upload', 'h-56') }}
+            </div>
+        </div>
+
+        {# FEATURE 10: ACADEMIC ADMINISTRATION #}
+        <div>
+            <div class="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-end mb-12">
+                <div>
+                    <h3 class="text-2xl font-extrabold text-gray-900 tracking-tight sm:text-3xl">
+                        10. Academic Structure &amp; Administration
+                    </h3>
+                </div>
+                <p class="mt-3 lg:mt-0 text-lg text-gray-500">
+                    Set the structure once and the whole system follows — billing, results, analytics and staff
+                    permissions all hang off it.
+                </p>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {% set academic = [
+                    { 'icon': '🗓️', 'title': 'Sessions & Terms', 'text': 'Single-active enforcement — starting a new session deactivates the previous one.' },
+                    { 'icon': '📚', 'title': 'Smart Class Creator', 'text': 'Enter "JSS 1" plus the number of arms and the system generates JSS 1A, 1B, 1C…' },
+                    { 'icon': '📂', 'title': 'Year Groups', 'text': 'Group the arms of a level for form-teacher and year-group workflows.' },
+                    { 'icon': '🏛️', 'title': 'Departments', 'text': "Sciences, Arts, Business, Islamic Studies… and the span of control of each HOD." },
+                    { 'icon': '📖', 'title': 'Subjects', 'text': 'A subject catalogue with codes and department assignment.' },
+                    { 'icon': '🗂️', 'title': 'Class Subjects', 'text': 'Which subjects each class offers per session, tagged core or elective.' },
+                    { 'icon': '🏅', 'title': 'Grading Scale', 'text': 'A1–F9, WAEC, NECO or custom ranges, points and remarks.' },
+                    { 'icon': '👥', 'title': 'Staff Accounts', 'text': 'Principal, Bursar, Store Keeper and Teacher logins with role-based access.' },
+                    { 'icon': '🧑‍🏫', 'title': 'Staff Assignments', 'text': 'Form Teacher, HOD, Year Group Master and Subject Teacher with duplicate protection.' }
+                ] %}
+                {% for a in academic %}
+                    <div class="rounded-xl bg-white p-5 ring-1 ring-gray-200 hover:ring-blue-300 hover:shadow-md transition">
+                        <div class="text-2xl">{{ a.icon }}</div>
+                        <h4 class="mt-3 font-bold text-gray-900">{{ a.title }}</h4>
+                        <p class="mt-1.5 text-sm text-gray-600">{{ a.text }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        {# FEATURE 11: COMMUNICATION & WEBSITE #}
+        <div class="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center">
+            <div>
+                <h3 class="text-2xl font-extrabold text-gray-900 tracking-tight sm:text-3xl">
+                    11. Communication, Calendar &amp; Your Public Website
+                </h3>
+                <p class="mt-3 text-lg text-gray-500">
+                    Keep parents informed without printing a thing: publish the academic calendar and events, flag
+                    flash notices, then push an announcement to every parent in one click.
+                </p>
+                <ul class="mt-8 space-y-3 text-gray-700">
+                    <li class="flex gap-3"><span class="text-blue-600 font-bold">✓</span> <span>Calendar &amp; events with Excel import and flash-notice flags.</span></li>
+                    <li class="flex gap-3"><span class="text-blue-600 font-bold">✓</span> <span>One-click <strong>notify</strong> to send announcements to parents by SMS.</span></li>
+                    <li class="flex gap-3"><span class="text-blue-600 font-bold">✓</span> <span>Parents see the same calendar month by month in the parent portal.</span></li>
+                    <li class="flex gap-3"><span class="text-blue-600 font-bold">✓</span> <span>A public school website on your own subdomain — home, about, admissions and contact, rendered from your branding and content.</span></li>
+                </ul>
+            </div>
+            <div class="mt-10 lg:mt-0">
+                {{ _self.browser('screencapture-demo-edus-ng-onboarding-calendar-2026-04-21-13_48_31.png', 'Academic calendar and events', 'h-64 lg:h-80') }}
             </div>
         </div>
 

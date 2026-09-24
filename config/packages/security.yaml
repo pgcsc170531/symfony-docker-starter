@@ -98,6 +98,11 @@ security:
         - { path: ^/admissions, roles: PUBLIC_ACCESS }
         - { path: ^/contact, roles: PUBLIC_ACCESS }
 
+        # 🟢 Landlord (main site) marketing / landing pages — public
+        - { path: ^/features, roles: PUBLIC_ACCESS }
+        - { path: ^/partners, roles: PUBLIC_ACCESS }
+        - { path: ^/manual, roles: PUBLIC_ACCESS }
+
         # Tenant login remains public
         - { path: ^/login, roles: PUBLIC_ACCESS }
 
