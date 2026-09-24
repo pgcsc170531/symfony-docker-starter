@@ -6,19 +6,24 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    # Changed from ubuntu-latest to clear the migration warning
+    runs-on: ubuntu-24.04 
+    
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        # Bumped to v5 to clear Node.js 20 deprecation warning
+        uses: actions/checkout@v5 
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v3
+        # Bumped to v4 to clear Node.js 20 deprecation warning
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and Push Docker Image
-        uses: docker/build-push-action@v5
+        # Bumped to v6 to clear Node.js 20 deprecation warning
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
@@ -38,10 +43,12 @@ jobs:
             TERMII_API_KEY=$TERMII_API_KEY docker compose pull
             TERMII_API_KEY=$TERMII_API_KEY docker compose up -d --force-recreate
             
+            # ⏱️ Give MySQL 15 seconds to boot before running schema updates
+            sleep 15
+            
             # Run your Landlord and Tenant updates
             docker compose exec -e APP_ENV=prod -T php bin/console app:landlord:update-schema
             docker compose exec -e APP_ENV=prod -T php bin/console app:tenant:update-schema
             
             # Final cache wipe
             docker compose exec -e APP_ENV=prod -T php bin/console cache:clear
-           
