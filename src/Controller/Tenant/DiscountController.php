@@ -12,8 +12,10 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/finance/discounts')]
+#[IsGranted('ROLE_BURSAR')]
 class DiscountController extends AbstractController
 {
     // 1. Manage Rules (e.g. Create "Staff Child")

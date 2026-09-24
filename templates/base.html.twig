@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Welcome!{% endblock %} - Edus School SaaS</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
     {# 🛡️ LOGO LOGIC #}
     {% if app.user 
@@ -19,6 +20,7 @@
     {% endif %}
     
     <style>
+        [x-cloak] { display: none !important; }
         body { background-color: #f3f4f6; }
         #sidebar { transition: transform 0.3s ease-in-out; }
         /* Scrollbar for sidebar */
@@ -226,6 +228,12 @@
                         <span class="text-xl mr-3 opacity-80">🏠</span>
                         <span class="font-medium">My Dashboard</span>
                     </a>
+
+                    <a href="{{ path('app_tenant_report_student') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                        {% if 'report_student' in route %}bg-blue-900 text-white shadow-sm ring-1 ring-blue-700{% endif %}">
+                        <span class="text-xl mr-3 opacity-80">🎓</span>
+                        <span class="font-medium">My Results</span>
+                    </a>
                     
                 {# ========================================== #}
                 {# 🏫 PART D: TENANT MENU (School Staff)      #}
@@ -239,24 +247,9 @@
                         <span class="font-medium">Dashboard</span>
                     </a>
 
-                    {# === 2. ACADEMIC OPERATIONS === #}
+                    {# === 2. ADMISSIONS & STUDENTS (Bursar + Admin) === #}
                     {% if is_granted('ROLE_BURSAR') or is_granted('ROLE_ADMIN') %}
-                        <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-4 tracking-wider">Academic</div>
-
-                        
-
-                        <a href="{{ path('app_tenant_academic_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'academic' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">🗓️</span>
-                            <span class="font-medium">Sessions & Terms</span>
-                        </a>
-
-                        {# 📅 NEW: SCHOOL CALENDAR LINK #}
-                        <a href="{{ path('app_tenant_event_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'event' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">📅</span>
-                            <span class="font-medium">School Calendar</span>
-                        </a>
+                        <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-4 tracking-wider">Admissions</div>
 
                         <a href="{{ path('app_tenant_admission_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
                             {% if 'admission' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
@@ -279,10 +272,108 @@
                             <span class="text-xl mr-3 opacity-80">📈</span>
                             <span class="font-medium">Promote Students</span>
                         </a>
+                    {% endif %}
+
+                    {# === 2b. ADMINISTRATION (Academic Setup, Staff & Assignments) === #}
+                    {% if is_granted('ROLE_ADMIN') %}
+                        <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-4 tracking-wider">Administration</div>
+
+                        {# Academic setup (Principal only) #}
+                        <a href="{{ path('app_tenant_academic_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'academic' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">🗓️</span>
+                            <span class="font-medium">Sessions & Terms</span>
+                        </a>
+
+                        {# 📅 SCHOOL CALENDAR #}
+                        <a href="{{ path('app_tenant_event_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'event' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">📅</span>
+                            <span class="font-medium">School Calendar</span>
+                        </a>
+
                         <a href="{{ path('app_tenant_classroom_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
                             {% if 'classroom' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
                             <span class="text-xl mr-3 opacity-80">📚</span>
                             <span class="font-medium">Classes</span>
+                        </a>
+
+                        <a href="{{ path('app_tenant_staff_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'staff' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">👥</span>
+                            <span class="font-medium">Staff</span>
+                        </a>
+                        <a href="{{ path('app_tenant_parent_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if route == 'app_tenant_parent_index' %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">👨‍👩‍👧</span>
+                            <span class="font-medium">Parents</span>
+                        </a>
+                        <a href="{{ path('app_tenant_department_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'department' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">🏛️</span>
+                            <span class="font-medium">Departments</span>
+                        </a>
+                        <a href="{{ path('app_tenant_subject_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if route in ['app_tenant_subject_index', 'app_tenant_subject_delete'] %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">📚</span>
+                            <span class="font-medium">Subjects</span>
+                        </a>
+                        <a href="{{ path('app_tenant_grading_scale_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'grading_scale' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">🏅</span>
+                            <span class="font-medium">Grading Scale</span>
+                        </a>
+                        <a href="{{ path('app_tenant_class_subject_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'class_subject' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">🗂️</span>
+                            <span class="font-medium">Class Subjects</span>
+                        </a>
+                        <a href="{{ path('app_tenant_subject_teacher') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'subject_teacher' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">📖</span>
+                            <span class="font-medium">Subject Teachers</span>
+                        </a>
+                        <a href="{{ path('app_tenant_year_group_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'year_group' in route and 'master' not in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">📂</span>
+                            <span class="font-medium">Year Groups</span>
+                        </a>
+                        <a href="{{ path('app_tenant_form_teacher') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'form_teacher' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">🧑‍🏫</span>
+                            <span class="font-medium">Form Teacher</span>
+                        </a>
+                        <a href="{{ path('app_tenant_hod') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if route in ['app_tenant_hod', 'app_tenant_hod_remove'] %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">🧑‍💼</span>
+                            <span class="font-medium">HOD (Dept Head)</span>
+                        </a>
+                        <a href="{{ path('app_tenant_year_group_master') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'year_group_master' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">🎓</span>
+                            <span class="font-medium">Year Group Master</span>
+                        </a>
+                    {% endif %}
+
+                    {# === 2c. TEACHER ACADEMIC (Result Entry) === #}
+                    {% if is_granted('ROLE_TEACHER') %}
+                        <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-4 tracking-wider">Teaching</div>
+                        <a href="{{ path('tenant_result_entry_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'result_entry' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">📝</span>
+                            <span class="font-medium">Result Entry</span>
+                        </a>
+                        {% if is_granted('ROLE_ADMIN') or has_approval_assignment() %}
+                        <a href="{{ path('tenant_approval_hub') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'approval' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">✅</span>
+                            <span class="font-medium">Result Approvals</span>
+                        </a>
+                        {% endif %}
+                        <a href="{{ path('app_tenant_reports_hub') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'report' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">📊</span>
+                            <span class="font-medium">Reports</span>
                         </a>
                     {% endif %}
                     
@@ -301,25 +392,6 @@
                             {% if route == 'app_tenant_invoice_index' or 'academic_invoice' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
                             <span class="text-xl mr-3 opacity-80">🎓</span>
                             <span class="font-medium">Academic Fees</span>
-                        </a>
-
-                        {# 🟢 2. DEDICATED STORE LEDGER #}
-                        <a href="{{ path('app_tenant_invoice_store') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if route == 'app_tenant_invoice_store' or 'store_invoice' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">🏪</span>
-                            <span class="font-medium">Store Sales</span>
-                        </a>
-
-                        <a href="{{ path('app_tenant_product_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'product' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">📦</span>
-                            <span class="font-medium">Store Inventory</span>
-                        </a>
-
-                        <a href="{{ path('app_tenant_store_search') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'store_search' in route or 'cart_sale' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">🛒</span>
-                            <span class="font-medium">Store POS</span>
                         </a>
                         
                         <a href="{{ path('app_tenant_payment_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
@@ -352,16 +424,34 @@
                         </a>
                     {% endif %}
 
+                    {# === 3b. STORE OPERATIONS (Store Keeper) === #}
+                    {% if is_granted('ROLE_STORE') %}
+                        <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-4 tracking-wider">Store</div>
+
+                        <a href="{{ path('app_tenant_product_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'product' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">📦</span>
+                            <span class="font-medium">Store Inventory</span>
+                        </a>
+
+                        <a href="{{ path('app_tenant_store_search') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if 'store_search' in route or 'cart_sale' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">🛒</span>
+                            <span class="font-medium">Store POS</span>
+                        </a>
+
+                        <a href="{{ path('app_tenant_invoice_store') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
+                            {% if route == 'app_tenant_invoice_store' or 'store_invoice' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
+                            <span class="text-xl mr-3 opacity-80">🏪</span>
+                            <span class="font-medium">Store Sales</span>
+                        </a>
+                    {% endif %}
+
                     {# === 4. CONFIGURATION === #}
                     {% if is_granted('ROLE_ADMIN') %}
 
                      <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-4 tracking-wider">System</div>
-                        <a href="{{ path('tenant_subscription_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'subscription' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">💎</span>
-                            <span class="font-medium">My Subscription</span>
-                         </a>
-
+                        
                          <a href="{{ path('tenant_wallet_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
                             {% if 'wallet' in app.request.get('_route') %}bg-gray-800 text-white shadow-sm ring-1 ring-gray-700{% endif %}">
                             <span class="text-xl mr-3 opacity-80">💳</span>
@@ -440,6 +530,25 @@
     {# 🛡️ SCRIPTS BLOCK #}
     {% if app.user %}
     <script>
+        function staffPicker(staff) {
+            return {
+                staff: staff || [],
+                query: '',
+                selected: null,
+                open: false,
+                get filtered() {
+                    const q = this.query.trim().toLowerCase();
+                    if (!q) return this.staff;
+                    return this.staff.filter(s => (s.name || '').toLowerCase().includes(q));
+                },
+                choose(s) {
+                    this.selected = s.id;
+                    this.query = s.name;
+                    this.open = false;
+                }
+            };
+        }
+
         // Sidebar Toggle Logic
         const sidebar = document.getElementById('sidebar');
         const sidebarToggle = document.getElementById('sidebar-toggle');

@@ -12,6 +12,10 @@ use App\Entity\Tenant\School;
 #[ORM\Table(name: 'user')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
+    public const ROLE_ADMIN = 'ROLE_ADMIN';
+    public const ROLE_TEACHER = 'ROLE_TEACHER';
+    public const ROLE_HOD = 'ROLE_HOD';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -38,6 +42,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\JoinColumn(nullable: true)]
     private ?Student $student = null;
 
+    // 🆕 Phase 2 — Staff profile (one-to-one inverse, owned by Staff)
+    #[ORM\OneToOne(mappedBy: 'user', targetEntity: Staff::class)]
+    private ?Staff $staff = null;
+
     public function getId(): ?int { return $this->id; }
 
     public function getEmail(): ?string { return $this->email; }
@@ -63,6 +71,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getStudent(): ?Student { return $this->student; }
     public function setStudent(?Student $student): static { $this->student = $student; return $this; }
+
+    public function getStaff(): ?Staff { return $this->staff; }
+    public function setStaff(?Staff $staff): static { $this->staff = $staff; return $this; }
 
    // 💡 2. ADD GETTER AND SETTER FOR SCHOOL
     public function getSchool(): ?School

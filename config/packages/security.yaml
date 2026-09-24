@@ -92,33 +92,14 @@ security:
         ROLE_SUPER_ADMIN:   [ROLE_ADMIN, ROLE_ALLOWED_TO_SWITCH, ROLE_AGENT]
 
     access_control:
-        # 🟢 1. ALLOW HOMEPAGE (This fixes the redirect!)
+        # 🟢 Tenant public homepage
         - { path: ^/$, roles: PUBLIC_ACCESS }
-        - { path: ^/features, roles: PUBLIC_ACCESS } # Features Page
-        - { path: ^/partners, roles: PUBLIC_ACCESS } # Partners Page
-        - { path: ^/manual, roles: PUBLIC_ACCESS } # User Manual
+        - { path: ^/about, roles: PUBLIC_ACCESS }
+        - { path: ^/admissions, roles: PUBLIC_ACCESS }
+        - { path: ^/contact, roles: PUBLIC_ACCESS }
 
-        # 2. Public Access for Logins
-        - { path: ^/admin/login, roles: PUBLIC_ACCESS }
-        - { path: ^/agent/login, roles: PUBLIC_ACCESS }
+        # Tenant login remains public
         - { path: ^/login, roles: PUBLIC_ACCESS }
 
-        # 3. LANDLORD PROTECTION
-        - { path: ^/admin, roles: ROLE_SUPER_ADMIN }
-
-        # 4. AGENT PROTECTION
-        - { path: ^/agent, roles: ROLE_AGENT }
-
-        # 5. TENANT PROTECTION
-        - { path: ^/finance/invoice, roles: [ROLE_PARENT, ROLE_BURSAR, ROLE_ADMIN] }
-        - { path: ^/finance/payment/receipt, roles: [ROLE_PARENT, ROLE_BURSAR, ROLE_ADMIN] }
-        - { path: ^/finance/payment/initiate, roles: [ROLE_PARENT, ROLE_BURSAR, ROLE_ADMIN] }
-        - { path: ^/finance/payment/slip, roles: [ROLE_PARENT, ROLE_BURSAR, ROLE_ADMIN] }
-
-        - { path: ^/store, roles: [ROLE_STORE, ROLE_ADMIN, ROLE_BURSAR] }
-        - { path: ^/finance, roles: [ROLE_BURSAR, ROLE_ADMIN] } 
-        - { path: ^/students, roles: [ROLE_BURSAR, ROLE_ADMIN] }
-        - { path: ^/classrooms, roles: [ROLE_BURSAR, ROLE_ADMIN] }
-
-        # 6. Global Catch-all (This stays at the bottom!)
+        # Everything else requires login
         - { path: ^/, roles: ROLE_USER }

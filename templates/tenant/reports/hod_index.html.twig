@@ -1,0 +1,27 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}HOD Subject Master{% endblock %}
+
+{% block body %}
+<div class="p-6 max-w-4xl mx-auto">
+    <h1 class="text-2xl font-bold mb-6">🏛️ HOD Subject Master</h1>
+
+    {% if departments is empty %}
+        <div class="bg-white rounded-lg shadow p-6 text-gray-500">You are not assigned as a HOD.</div>
+    {% else %}
+        {% for group in departments %}
+            <div class="bg-white rounded-lg shadow p-4 mb-4">
+                <h2 class="font-semibold mb-3">{{ group.assignment.department.name }}</h2>
+                <div class="grid gap-2">
+                    {% for s in group.subjects %}
+                        <a href="{{ path('app_tenant_report_hod_show', {id: s.id}) }}"
+                           class="block px-3 py-2 rounded hover:bg-blue-50">{{ s.name }}</a>
+                    {% else %}
+                        <div class="text-sm text-gray-500">No subjects in this department.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+</div>
+{% endblock %}

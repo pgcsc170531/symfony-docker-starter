@@ -15,8 +15,10 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/store/sales')]
+#[IsGranted('ROLE_STORE')]
 class StoreSalesController extends AbstractController
 {
     // ==========================================

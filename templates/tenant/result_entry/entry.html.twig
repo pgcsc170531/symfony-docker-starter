@@ -1,0 +1,264 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ assignment.subject.name }} — Result Entry{% endblock %}
+
+{% block body %} {# ⚠️ confirm block name #}
+<div x-data="resultEntry()" x-init="init()"
+     data-save-url="{{ path('tenant_result_entry_save', {id: assignment.id}) }}"
+     data-import-url="{{ path('tenant_result_entry_import', {id: assignment.id}) }}"
+     data-submit-url="{{ path('tenant_result_entry_submit', {id: assignment.id}) }}"
+     class="p-6">
+    <h1 class="text-2xl font-bold mb-1">{{ assignment.subject.name }}</h1>
+    <p class="text-gray-600 mb-4">{{ assignment.classroom.name }} • {{ assignment.term.label ?? assignment.term.name }}</p>
+
+    {# CSV toolbar #}
+    <div class="flex flex-wrap items-center gap-3 mb-4">
+        <a href="{{ path('tenant_result_entry_template', {id: assignment.id}) }}"
+           class="bg-gray-100 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200">
+            ⬇️ Download CSV Template
+        </a>
+        <label class="bg-gray-100 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200 cursor-pointer">
+            ⬆️ Upload CSV
+            <input type="file" accept=".csv,text/csv" class="hidden" @change="importCsv($event)">
+        </label>
+        <span x-show="importing" class="text-sm text-gray-500">Importing…</span>
+        <span x-text="importMessage" class="text-sm text-red-600"></span>
+    </div>
+
+    {# Locked banner #}
+    <div x-show="locked" x-cloak class="bg-yellow-50 border border-yellow-300 text-yellow-800 rounded-lg p-3 mb-4 text-sm">
+        🔒 These results are submitted and locked. An HOD or Admin must unlock them before editing.
+    </div>
+
+    {# Scheme display #}
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-sm">
+        <span class="font-semibold">Scheme:</span>
+        CA count = <span x-text="scheme.ca_count"></span>,
+        Exam mode = <span x-text="scheme.exam_mode"></span>
+        <template x-if="scheme.exam_mode === 'dual'">
+            <span>(Practical enabled)</span>
+        </template>
+    </div>
+
+    {# Grid mode #}
+    <div class="overflow-x-auto bg-white rounded-lg shadow">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-100 text-left">
+                <tr>
+                    <th class="p-3">Student</th>
+                    <template x-for="n in scheme.ca_count" :key="'ca'+n">
+                        <th class="p-3" x-text="'CA' + n"></th>
+                    </template>
+                    <th class="p-3">Theory</th>
+                    <template x-if="scheme.exam_mode === 'dual'">
+                        <th class="p-3">Practical</th>
+                    </template>
+                    <th class="p-3">Total</th>
+                    <th class="p-3">Grade</th>
+                </tr>
+            </thead>
+            <tbody>
+                <template x-for="(s, idx) in students" :key="s.id">
+                    <tr class="border-t hover:bg-gray-50 cursor-pointer" @click="!locked && openModal(idx)">
+                        <td class="p-3" x-text="s.name"></td>
+                        <template x-for="n in scheme.ca_count" :key="'ca'+n">
+                            <td class="p-3">
+                                <input type="number" class="w-16 border rounded p-1 text-center"
+                                       x-model.number="s['ca'+n]"
+                                       :disabled="locked"
+                                       @change="calcTotal(s)">
+                            </td>
+                        </template>
+                        <td class="p-3">
+                            <input type="number" class="w-16 border rounded p-1 text-center"
+                                   x-model.number="s.theory"
+                                   :disabled="locked"
+                                   @change="calcTotal(s)">
+                        </td>
+                        <template x-if="scheme.exam_mode === 'dual'">
+                            <td class="p-3">
+                                <input type="number" class="w-16 border rounded p-1 text-center"
+                                       x-model.number="s.practical"
+                                       :disabled="locked"
+                                       @change="calcTotal(s)">
+                            </td>
+                        </template>
+                        <td class="p-3 font-semibold" x-text="s.total"></td>
+                        <td class="p-3" x-text="grade(s.total)"></td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="flex items-center gap-3 mt-4">
+        <button @click="saveAll()" :disabled="locked" class="bg-green-600 text-white px-6 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">
+            Save All Scores
+        </button>
+        <button @click="submit()" :disabled="locked" class="bg-indigo-600 text-white px-6 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">
+            Submit for Approval
+        </button>
+    </div>
+
+    {# Focus modal — Save & Next #}
+    <div x-show="modalOpen" x-cloak class="fixed inset-0 bg-black/50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <h2 class="text-lg font-semibold mb-4" x-text="currentStudent?.name"></h2>
+            <template x-for="n in scheme.ca_count" :key="'ca'+n">
+                <div class="mb-3">
+                    <label class="block text-sm font-medium mb-1" x-text="'CA' + n"></label>
+                    <input type="number" class="w-full border rounded p-2"
+                           x-model.number="currentStudent['ca'+n]"
+                           :disabled="locked"
+                           @keydown.enter="saveCurrentAndNext()">
+                </div>
+            </template>
+            <div class="mb-3">
+                <label class="block text-sm font-medium mb-1">Theory</label>
+                <input type="number" class="w-full border rounded p-2"
+                       x-model.number="currentStudent.theory"
+                       :disabled="locked"
+                       @keydown.enter="saveCurrentAndNext()">
+            </div>
+            <template x-if="scheme.exam_mode === 'dual'">
+                <div class="mb-3">
+                    <label class="block text-sm font-medium mb-1">Practical</label>
+                    <input type="number" class="w-full border rounded p-2"
+                           x-model.number="currentStudent.practical"
+                           :disabled="locked"
+                           @keydown.enter="saveCurrentAndNext()">
+                </div>
+            </template>
+            <div class="flex justify-between mt-6">
+                <button @click="modalOpen = false" class="bg-gray-200 px-4 py-2 rounded-lg">Close</button>
+                <button @click="saveCurrentAndNext()" :disabled="locked" class="bg-blue-600 text-white px-4 py-2 rounded-lg disabled:opacity-50">
+                    Save & Next
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function resultEntry() {
+    return {
+        scheme: {{ scheme|json_encode|raw }},
+        students: {{ students_json|json_encode|raw }},
+        scores: {{ scores|json_encode|raw }},
+        grading: {{ gradingScale|json_encode|raw }},
+        currentIndex: 0,
+        modalOpen: false,
+        locked: {{ locked|default(false) ? 'true' : 'false' }},
+        importing: false,
+        importMessage: '',
+
+        init() {
+            this.students.forEach(s => {
+                this.scheme.ca_count && ['ca1','ca2','ca3'].slice(0, this.scheme.ca_count).forEach(c => {
+                    s[c] = this.scores[s.id]?.[c] ?? 0;
+                });
+                s.theory = this.scores[s.id]?.theory ?? 0;
+                s.practical = this.scores[s.id]?.practical ?? 0;
+                this.calcTotal(s);
+            });
+        },
+
+        calcTotal(s) {
+            let total = 0;
+            for (let i = 1; i <= this.scheme.ca_count; i++) {
+                total += parseFloat(s['ca'+i] || 0);
+            }
+            total += parseFloat(s.theory || 0);
+            if (this.scheme.exam_mode === 'dual') {
+                total += parseFloat(s.practical || 0);
+            }
+            s.total = total;
+        },
+
+        grade(total) {
+            for (const g of this.grading) {
+                if (total >= g.min && total <= g.max) return g.grade;
+            }
+            return total >= 75 ? 'A1' : total >= 70 ? 'B2' : total >= 60 ? 'B3'
+                : total >= 50 ? 'C4' : total >= 45 ? 'C5' : total >= 40 ? 'C6'
+                : total >= 35 ? 'D7' : total >= 30 ? 'E8' : 'F9';
+        },
+
+        openModal(idx) {
+            this.currentIndex = idx;
+            this.modalOpen = true;
+        },
+
+        get currentStudent() {
+            return this.students[this.currentIndex];
+        },
+
+        async saveAll() {
+            await this.persist();
+            alert('Scores saved.');
+        },
+
+        async submit() {
+            await this.persist();
+            const res = await fetch(this.$el.dataset.submitUrl, { method: 'POST' });
+            const result = await res.json();
+            if (result.success) {
+                window.location.reload();
+            } else {
+                alert(result.error || 'Submit failed.');
+            }
+        },
+
+        async saveCurrentAndNext() {
+            await this.persist();
+            if (this.currentIndex < this.students.length - 1) {
+                this.currentIndex++;
+            } else {
+                this.modalOpen = false;
+            }
+        },
+
+        async persist() {
+            const payload = this.students.map(s => ({
+                student_id: s.id,
+                ...Object.fromEntries(['ca1','ca2','ca3','theory','practical']
+                    .map(c => [c, s[c] ?? 0]))
+            }));
+            await fetch(this.$el.dataset.saveUrl, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({scores: payload})
+            });
+        },
+
+        async importCsv(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            this.importing = true;
+            this.importMessage = '';
+            try {
+                const res = await fetch(this.$el.dataset.importUrl, {
+                    method: 'POST',
+                    body: formData,
+                });
+                const result = await res.json();
+                if (result.success) {
+                    window.location.reload();
+                } else {
+                    this.importMessage = result.error || 'Import failed.';
+                }
+            } catch (e) {
+                this.importMessage = 'Import failed.';
+            } finally {
+                this.importing = false;
+            }
+        }
+    };
+}
+</script>
+<style>[x-cloak]{display:none;}</style>
+{% endblock %}

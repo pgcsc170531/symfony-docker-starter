@@ -15,6 +15,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use App\Entity\Tenant\StudentDiscount;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/finance/invoice')]
 class InvoiceController extends AbstractController
@@ -23,6 +24,7 @@ class InvoiceController extends AbstractController
     // 1. DEDICATED ACADEMIC LEDGER (SCHOOL FEES)
     // ======================================================
     #[Route('/academic', name: 'app_tenant_invoice_index', methods: ['GET'])]
+    #[IsGranted('ROLE_BURSAR')]
     public function academicLedger(Request $request, EntityManagerInterface $em): Response
     {
         $status = $request->query->get('status', '');
@@ -68,6 +70,7 @@ class InvoiceController extends AbstractController
     // 2. DEDICATED STORE LEDGER (POS SALES & WALK-INS)
     // ======================================================
     #[Route('/store', name: 'app_tenant_invoice_store', methods: ['GET'])]
+    #[IsGranted('ROLE_STORE')]
     public function storeLedger(Request $request, EntityManagerInterface $em): Response
     {
         $status = $request->query->get('status', '');
@@ -112,6 +115,7 @@ class InvoiceController extends AbstractController
 
     // 1. The "Generate" Button Action
     #[Route('/generate/{id}', name: 'app_tenant_invoice_generate', methods: ['GET', 'POST'])]
+    #[IsGranted('ROLE_BURSAR')]
     public function generate(Student $student, EntityManagerInterface $em): Response
     {
         // A. Find the Active Term

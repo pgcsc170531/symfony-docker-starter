@@ -1,0 +1,68 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Year Groups{% endblock %}
+
+{% block body %}
+<div class="p-6 max-w-5xl mx-auto">
+    <h1 class="text-2xl font-bold mb-6">📂 Year Groups</h1>
+
+    {# Create form #}
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 class="font-semibold mb-4">Create a Year Group</h2>
+        <form method="post" class="flex items-end gap-3">
+            <div class="flex-1">
+                <label class="block text-sm font-medium mb-1">Year Group Name</label>
+                <input type="text" name="name" required placeholder="e.g. JSS 1, SS 1, Primary 5"
+                       class="w-full border rounded p-2 text-sm">
+            </div>
+            <button class="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm">Create</button>
+        </form>
+    </div>
+
+    {# List #}
+    <div class="grid gap-4">
+        {% for yg in yearGroups %}
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="px-4 py-3 bg-gray-50 border-b flex justify-between items-center">
+                    <h3 class="font-bold text-gray-800">{{ yg.name }}</h3>
+                    <form method="post" action="{{ path('app_tenant_year_group_delete', {id: yg.id}) }}"
+                          onsubmit="return confirm('Delete this year group?');">
+                        <input type="hidden" name="_token" value="{{ csrf_token('yg' ~ yg.id) }}">
+                        <button class="text-red-600 text-sm">Delete</button>
+                    </form>
+                </div>
+                <div class="p-4">
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        {% for c in yg.classrooms %}
+                            <span class="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-sm">
+                                {{ c.name }}
+                                <form method="post" action="{{ path('app_tenant_year_group_unassign_classroom', {classroom: c.id}) }}" class="inline">
+                                    <button class="text-indigo-400 hover:text-red-600" title="Remove from group">✕</button>
+                                </form>
+                            </span>
+                        {% else %}
+                            <span class="text-gray-500 text-sm">No classes linked yet.</span>
+                        {% endfor %}
+                    </div>
+                    <form method="post" action="{{ path('app_tenant_year_group_assign_classroom', {id: yg.id}) }}" class="flex items-end gap-3">
+                        <div class="flex-1">
+                            <label class="block text-sm font-medium mb-1">Add a class</label>
+                            <select name="classroom" required class="w-full border rounded p-2 text-sm">
+                                <option value="">— Select Class —</option>
+                                {% for c in classrooms %}
+                                    <option value="{{ c.id }}">{{ c.name }}{{ c.yearGroup ? ' (' ~ c.yearGroup.name ~ ')' : '' }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button class="bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm">Add</button>
+                    </form>
+                </div>
+            </div>
+        {% else %}
+            <div class="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+                No year groups yet. Create one above (e.g. "JSS 1").
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

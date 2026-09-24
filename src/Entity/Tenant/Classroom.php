@@ -16,6 +16,13 @@ class Classroom
     #[ORM\Column(length: 255)]
     private ?string $name = null; // e.g. "JSS 1", "Primary 5"
 
+    #[ORM\ManyToOne(inversedBy: 'classrooms')]
+    #[ORM\JoinColumn(name: 'year_group_id', nullable: true)]
+    private ?YearGroup $yearGroup = null;
+
+    #[ORM\Column(length: 10, nullable: true)]
+    private ?string $arm = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -32,4 +39,10 @@ class Classroom
 
         return $this;
     }
+
+    public function getYearGroup(): ?YearGroup { return $this->yearGroup; }
+    public function setYearGroup(?YearGroup $yearGroup): static { $this->yearGroup = $yearGroup; return $this; }
+
+    public function getArm(): ?string { return $this->arm; }
+    public function setArm(?string $arm): static { $this->arm = $arm; return $this; }
 }

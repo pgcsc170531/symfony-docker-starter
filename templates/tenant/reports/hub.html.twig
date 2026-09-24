@@ -1,0 +1,54 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Reports{% endblock %}
+
+{% block body %}
+<div class="p-6 max-w-4xl mx-auto">
+    <h1 class="text-2xl font-bold mb-6">📊 Reports</h1>
+
+    <div class="grid gap-4 md:grid-cols-2">
+        <a href="{{ path('app_tenant_report_teacher_index') }}"
+           class="bg-white rounded-lg shadow p-5 hover:bg-blue-50 transition">
+            <div class="text-2xl mb-2">🧑‍🏫</div>
+            <div class="font-semibold">Teacher Report</div>
+            <div class="text-sm text-gray-500">Your class subject results.</div>
+        </a>
+
+        {% if hasFormTeacher %}
+            <a href="{{ path('app_tenant_report_form_teacher_index') }}"
+               class="bg-white rounded-lg shadow p-5 hover:bg-blue-50 transition">
+                <div class="text-2xl mb-2">📋</div>
+                <div class="font-semibold">Form Teacher Broadsheet</div>
+                <div class="text-sm text-gray-500">Whole-class results across all subjects.</div>
+            </a>
+        {% endif %}
+
+        {% if hasHod %}
+            <a href="{{ path('app_tenant_report_hod_index') }}"
+               class="bg-white rounded-lg shadow p-5 hover:bg-blue-50 transition">
+                <div class="text-2xl mb-2">🏛️</div>
+                <div class="font-semibold">HOD Subject Master</div>
+                <div class="text-sm text-gray-500">A subject across all arms.</div>
+            </a>
+        {% endif %}
+
+        {% if hasYgm %}
+            <a href="{{ path('app_tenant_report_year_group_index') }}"
+               class="bg-white rounded-lg shadow p-5 hover:bg-blue-50 transition">
+                <div class="text-2xl mb-2">🎓</div>
+                <div class="font-semibold">Year Group Status</div>
+                <div class="text-sm text-gray-500">Approval statuses for your year group.</div>
+            </a>
+        {% endif %}
+
+        {% if isAdmin %}
+            <a href="{{ path('app_tenant_report_admin_index') }}"
+               class="bg-white rounded-lg shadow p-5 hover:bg-blue-50 transition">
+                <div class="text-2xl mb-2">📈</div>
+                <div class="font-semibold">Admin Dashboard</div>
+                <div class="text-sm text-gray-500">School-wide grade distribution.</div>
+            </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

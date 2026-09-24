@@ -1,0 +1,82 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Grading Scale{% endblock %}
+
+{% block body %}
+<div class="p-6 max-w-4xl mx-auto">
+    <h1 class="text-2xl font-bold mb-6">🏅 Grading Scale</h1>
+
+    {# Create form #}
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 class="font-semibold mb-4">Add a Grade</h2>
+        <form method="post" class="grid gap-4 md:grid-cols-5 items-end">
+            <div>
+                <label class="block text-sm font-medium mb-1">Grade</label>
+                <input type="text" name="grade" required placeholder="e.g. A1"
+                       class="w-full border rounded p-2 text-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Min Score</label>
+                <input type="number" name="min_score" required step="0.01" placeholder="70"
+                       class="w-full border rounded p-2 text-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Max Score</label>
+                <input type="number" name="max_score" required step="0.01" placeholder="100"
+                       class="w-full border rounded p-2 text-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Points</label>
+                <input type="number" name="points" step="0.01" placeholder="Optional"
+                       class="w-full border rounded p-2 text-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Remark</label>
+                <input type="text" name="remark" placeholder="e.g. Excellent"
+                       class="w-full border rounded p-2 text-sm">
+            </div>
+            <button class="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm md:col-span-5 justify-self-start">Add Grade</button>
+        </form>
+    </div>
+
+    {# List #}
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-100 text-left text-gray-500">
+                <tr>
+                    <th class="p-3">Grade</th>
+                    <th class="p-3">Min</th>
+                    <th class="p-3">Max</th>
+                    <th class="p-3">Points</th>
+                    <th class="p-3">Remark</th>
+                    <th class="p-3 text-right">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in scales %}
+                    <tr class="border-t">
+                        <td class="p-3 font-semibold">{{ s.grade }}</td>
+                        <td class="p-3">{{ s.minScore }}</td>
+                        <td class="p-3">{{ s.maxScore }}</td>
+                        <td class="p-3">{{ s.points|default('—') }}</td>
+                        <td class="p-3">{{ s.remark|default('—') }}</td>
+                        <td class="p-3 text-right">
+                            <form method="post" action="{{ path('app_tenant_grading_scale_delete', {id: s.id}) }}"
+                                  onsubmit="return confirm('Delete this grade?');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('gs' ~ s.id) }}">
+                                <button class="text-red-600 text-sm">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr class="border-t">
+                        <td class="p-3 text-gray-500" colspan="6">
+                            No grading scale configured. Reports will use the default A1–F9 scale.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Departments{% endblock %}
+
+{% block body %}
+<div class="p-6 max-w-4xl mx-auto">
+    <h1 class="text-2xl font-bold mb-6">🏛️ Departments</h1>
+
+    {# Create form #}
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 class="font-semibold mb-4">Create a Department</h2>
+        <form method="post" class="grid gap-4">
+            <div>
+                <label class="block text-sm font-medium mb-1">Name</label>
+                <input type="text" name="name" required placeholder="e.g. Sciences, Mathematics, Arts"
+                       class="w-full border rounded p-2 text-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Description</label>
+                <input type="text" name="description" placeholder="Optional"
+                       class="w-full border rounded p-2 text-sm">
+            </div>
+            <button class="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm justify-self-start">Create</button>
+        </form>
+    </div>
+
+    {# List #}
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-100 text-left text-gray-500">
+                <tr>
+                    <th class="p-3">Name</th>
+                    <th class="p-3">Description</th>
+                    <th class="p-3">Subjects</th>
+                    <th class="p-3 text-right">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in departments %}
+                    <tr class="border-t">
+                        <td class="p-3 font-medium">{{ d.name }}</td>
+                        <td class="p-3">{{ d.description|default('—') }}</td>
+                        <td class="p-3">{{ d.subjects|length }}</td>
+                        <td class="p-3 text-right">
+                            <form method="post" action="{{ path('app_tenant_department_delete', {id: d.id}) }}"
+                                  onsubmit="return confirm('Delete this department?');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('dept' ~ d.id) }}">
+                                <button class="text-red-600 text-sm">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr class="border-t">
+                        <td class="p-3 text-gray-500" colspan="4">No departments yet.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

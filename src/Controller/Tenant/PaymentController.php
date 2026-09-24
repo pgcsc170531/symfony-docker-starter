@@ -447,6 +447,65 @@ class PaymentController extends AbstractController
             ]
         ]);
     }
+
+    // ==========================================
+    // 🟢 NEW: PARENT UPLOADS PROOF OF PAYMENT
+    // (Used when the slip code does not appear in the
+    //  school's bank credit description.)
+    // ==========================================
+    #[Route('/{id}/upload-proof', name: 'app_tenant_payment_upload_proof', methods: ['POST'])]
+    public function uploadProof(int $id, Request $request, EntityManagerInterface $em): Response
+    {
+        $payment = $em->getRepository(Payment::class)->find($id);
+        if (!$payment) throw $this->createNotFoundException('Payment not found.');
+
+        // Only the owner parent (or a bursar/admin) may upload for this payment
+        $this->checkAccess($payment->getInvoice()->getStudent());
+
+        if ($payment->getStatus() !== 'PENDING') {
+            $this->addFlash('error', 'This payment is no longer pending, so proof cannot be uploaded.');
+            return $this->redirectToRoute('app_tenant_payment_slip', ['id' => $id]);
+        }
+
+        if (!$this->isCsrfTokenValid('payment_proof_' . $id, $request->request->get('_token'))) {
+            $this->addFlash('error', 'Invalid security token. Please try again.');
+            return $this->redirectToRoute('app_tenant_payment_slip', ['id' => $id]);
+        }
+
+        $file = $request->files->get('proof');
+        if (!$file) {
+            $this->addFlash('error', 'Please choose a proof file to upload.');
+            return $this->redirectToRoute('app_tenant_payment_slip', ['id' => $id]);
+        }
+
+        $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'pdf'];
+        $ext = strtolower($file->guessExtension() ?? $file->getClientOriginalExtension());
+        if (!in_array($ext, $allowed, true)) {
+            $this->addFlash('error', 'Invalid file type. Please upload a JPG, PNG, WEBP or PDF.');
+            return $this->redirectToRoute('app_tenant_payment_slip', ['id' => $id]);
+        }
+
+        $newFilename = 'payment-' . $id . '-' . uniqid() . '.' . $ext;
+        try {
+            $file->move($this->getParameter('proofs_directory'), $newFilename);
+        } catch (\Exception $e) {
+            $this->addFlash('error', 'Could not save the proof. Please try again.');
+            return $this->redirectToRoute('app_tenant_payment_slip', ['id' => $id]);
+        }
+
+        // Remove any previously uploaded proof when re-uploading
+        if ($payment->getProofFilename()) {
+            $oldPath = $this->getParameter('proofs_directory') . '/' . $payment->getProofFilename();
+            if (is_file($oldPath)) { @unlink($oldPath); }
+        }
+
+        $payment->setProofFilename($newFilename);
+        $payment->setProofUploadedAt(new \DateTimeImmutable());
+        $em->flush();
+
+        $this->addFlash('success', 'Proof of payment uploaded! The bursar will verify it against the bank.');
+        return $this->redirectToRoute('app_tenant_payment_slip', ['id' => $id]);
+    }
     
     private function checkAccess(Student $student): void
     {
@@ -467,7 +526,7 @@ class PaymentController extends AbstractController
     // 🟢 NEW: DEDICATED WALK-IN RECEIPT
     // ==========================================
     #[Route('/receipt/walk-in/{id}', name: 'app_tenant_payment_receipt_walkin')]
-    #[IsGranted('ROLE_BURSAR')] // Only Bursars/Admins view this, since walk-ins don't have accounts
+    #[IsGranted(new Expression("is_granted('ROLE_BURSAR') or is_granted('ROLE_STORE')"))] // Bursar, Store Keeper or Admin
     public function walkInReceipt(int $id, EntityManagerInterface $em): Response
     {
         $payment = $em->getRepository(Payment::class)->find($id);

@@ -17,12 +17,14 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\String\Slugger\SluggerInterface; 
 use Symfony\Component\HttpFoundation\File\UploadedFile; 
 use Symfony\Component\HttpFoundation\File\Exception\FileException; 
 use Doctrine\ORM\Tools\Pagination\Paginator;
 
 #[Route('/students')]
+#[IsGranted('ROLE_BURSAR')]
 class StudentController extends AbstractController
 {
     #[Route('/', name: 'app_tenant_student_index', methods: ['GET', 'POST'])]

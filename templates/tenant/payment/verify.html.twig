@@ -52,6 +52,19 @@
                     </div>
                 </div>
 
+                {# PARENT'S UPLOADED PROOF #}
+                {% if payment.proofFilename %}
+                <div class="mb-6">
+                    <span class="block text-xs text-gray-500 mb-2 font-bold uppercase">Parent's Uploaded Proof</span>
+                    <a href="{{ asset('uploads/proofs/' ~ payment.proofFilename) }}" target="_blank" class="inline-block border rounded shadow-sm overflow-hidden">
+                        <img src="{{ asset('uploads/proofs/' ~ payment.proofFilename) }}" alt="Payment proof" class="max-h-56">
+                    </a>
+                    {% if payment.proofUploadedAt %}
+                        <p class="text-xs text-gray-400 mt-1">Uploaded {{ payment.proofUploadedAt|date('d M Y, h:i A') }}</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+
                 {# CONFIRM ACTION #}
                 {% if payment.status != 'CONFIRMED' %}
                     <form action="{{ path('app_tenant_payment_confirm', {id: payment.id}) }}" method="post" onsubmit="return confirm('Are you sure the money is in the bank?');">

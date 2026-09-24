@@ -3,6 +3,7 @@
 namespace App\Controller\Tenant;
 
 use App\Entity\Tenant\Classroom;
+use App\Entity\Tenant\YearGroup;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,6 +26,7 @@ class ClassroomController extends AbstractController
             if ($name) {
                 $suffixes = range('A', 'Z'); // A, B, C...
                 $count = 0;
+                $yearGroup = $this->getOrCreateYearGroup($em, $name);
 
                 // If user selected arms (1-10), generate JSS 1A, JSS 1B...
                 if ($arms > 0) {
@@ -33,12 +35,12 @@ class ClassroomController extends AbstractController
                         $suffix = $suffixes[$i] ?? $i;
                         $fullName = $name . ' ' . $suffix;
                         
-                        $this->createClassroomIfNotExists($em, $fullName);
+                        $this->createClassroomIfNotExists($em, $fullName, $yearGroup);
                         $count++;
                     }
                 } else {
                     // No arms selected (e.g. "Creche"), just save the name as is
-                    $this->createClassroomIfNotExists($em, $name);
+                    $this->createClassroomIfNotExists($em, $name, $yearGroup);
                     $count++;
                 }
 
@@ -95,13 +97,29 @@ class ClassroomController extends AbstractController
     }
 
     // Helper to prevent duplicates
-    private function createClassroomIfNotExists(EntityManagerInterface $em, string $name): void
+    private function createClassroomIfNotExists(EntityManagerInterface $em, string $name, ?YearGroup $yearGroup = null): void
     {
-        $exists = $em->getRepository(Classroom::class)->findOneBy(['name' => $name]);
-        if (!$exists) {
-            $c = new Classroom();
-            $c->setName($name);
-            $em->persist($c);
+        $classroom = $em->getRepository(Classroom::class)->findOneBy(['name' => $name]);
+        if (!$classroom) {
+            $classroom = new Classroom();
+            $classroom->setName($name);
+            $em->persist($classroom);
         }
+
+        if ($yearGroup && !$classroom->getYearGroup()) {
+            $classroom->setYearGroup($yearGroup);
+        }
+    }
+
+    private function getOrCreateYearGroup(EntityManagerInterface $em, string $name): YearGroup
+    {
+        $yearGroup = $em->getRepository(YearGroup::class)->findOneBy(['name' => $name]);
+        if (!$yearGroup) {
+            $yearGroup = new YearGroup();
+            $yearGroup->setName($name);
+            $em->persist($yearGroup);
+        }
+
+        return $yearGroup;
     }
 }

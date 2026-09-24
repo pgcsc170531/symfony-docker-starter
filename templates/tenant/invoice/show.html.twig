@@ -196,6 +196,7 @@
                                 
                                 {% else %}
                                     <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">Pending</span>
+                                    <a href="{{ path('app_tenant_payment_slip', {id: payment.id}) }}" class="block text-[10px] text-blue-600 font-bold mt-1">📄 Slip / Upload Proof</a>
                                 {% endif %}
                             </td>
                             

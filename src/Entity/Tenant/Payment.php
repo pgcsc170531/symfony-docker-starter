@@ -39,6 +39,12 @@ class Payment
     #[ORM\Column(name: 'confirmed_by', length: 180, nullable: true)]
     private ?string $confirmedBy = null;
 
+    #[ORM\Column(name: 'proof_filename', length: 255, nullable: true)]
+    private ?string $proofFilename = null;
+
+    #[ORM\Column(name: 'proof_uploaded_at', nullable: true)]
+    private ?\DateTimeImmutable $proofUploadedAt = null;
+
     
 
     // RELATIONSHIP
@@ -90,6 +96,12 @@ class Payment
 
     public function getConfirmedBy(): ?string { return $this->confirmedBy; }
     public function setConfirmedBy(?string $confirmedBy): static { $this->confirmedBy = $confirmedBy; return $this; }
+
+    public function getProofFilename(): ?string { return $this->proofFilename; }
+    public function setProofFilename(?string $proofFilename): static { $this->proofFilename = $proofFilename; return $this; }
+
+    public function getProofUploadedAt(): ?\DateTimeImmutable { return $this->proofUploadedAt; }
+    public function setProofUploadedAt(?\DateTimeImmutable $proofUploadedAt): static { $this->proofUploadedAt = $proofUploadedAt; return $this; }
 
     public function getInvoice(): ?Invoice { return $this->invoice; }
     public function setInvoice(?Invoice $invoice): static { $this->invoice = $invoice; return $this; }

@@ -16,11 +16,13 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 #[Route('/quick-enroll')]
+#[IsGranted('ROLE_BURSAR')]
 class QuickAdmissionController extends AbstractController
 {
     // ==========================================
@@ -29,6 +31,8 @@ class QuickAdmissionController extends AbstractController
     #[Route('/', name: 'app_tenant_quick_enroll', methods: ['GET', 'POST'])]
     public function index(Request $request, EntityManagerInterface $em, UserPasswordHasherInterface $hasher): Response
     {
+        set_time_limit(0);
+
         // HANDLE MANUAL GRID SUBMISSION
         if ($request->isMethod('POST')) {
             $data = $request->request->all('students'); // Array from the Grid
@@ -84,7 +88,13 @@ class QuickAdmissionController extends AbstractController
    #[Route('/upload-csv', name: 'app_tenant_quick_enroll_csv', methods: ['POST'])]
     public function uploadCsv(Request $request, EntityManagerInterface $em, UserPasswordHasherInterface $hasher): Response
     {   
+        // 360 students = 360 parent logins. Hashing each default password with
+        // bcrypt/argon2 blows past PHP's 30s limit, so lift the limit and hash the
+        // shared default parent password ONCE (reused for every new parent).
+        set_time_limit(0);
         ini_set('auto_detect_line_endings', true);
+        $defaultParentHash = $hasher->hashPassword(new User(), '12345678');
+
         $file = $request->files->get('csv_file');
         $termId = $request->request->get('term_id');
         $term = $em->getRepository(Term::class)->find($termId);
@@ -157,7 +167,7 @@ class QuickAdmissionController extends AbstractController
 
        try {
             foreach ($rowsToSave as $item) {
-                $this->processStudentRow($em, $hasher, $item['data'], $item['classroom'], $term, $generateInvoices);
+                $this->processStudentRow($em, $hasher, $item['data'], $item['classroom'], $term, $generateInvoices, $defaultParentHash);
             }
 
             // The flush happens once at the end. 
@@ -185,7 +195,7 @@ class QuickAdmissionController extends AbstractController
     // ==========================================
     // 3. SHARED HELPER FUNCTIONS
     // ==========================================
-    private function processStudentRow($em, $hasher, $data, $classroom, $term, $generateInvoice)
+    private function processStudentRow($em, $hasher, $data, $classroom, $term, $generateInvoice, ?string $defaultParentHash = null)
 {
     // 1. GUARDIAN LOGIC (Find or Create Parent)
     $phone = trim(str_replace([' ', '-', '+'], '', $data['parent_phone'])); 
@@ -202,8 +212,8 @@ class QuickAdmissionController extends AbstractController
         $user->setFullName($guardian->getFullName());
         $user->setRoles(['ROLE_PARENT']);
         
-        // Default Password: 12345678
-        $user->setPassword($hasher->hashPassword($user, '12345678'));
+        // Default Password: 12345678 (pre-hashed once for bulk imports for speed)
+        $user->setPassword($defaultParentHash ?? $hasher->hashPassword($user, '12345678'));
         
         $em->persist($user);
         $guardian->setUser($user);

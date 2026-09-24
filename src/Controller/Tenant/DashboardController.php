@@ -21,7 +21,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 class DashboardController extends AbstractController
 {
-    #[Route('/', name: 'app_tenant_dashboard', methods: ['GET'])]
+    #[Route('/dashboard', name: 'app_tenant_dashboard', methods: ['GET'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function index(EntityManagerInterface $em, ManagerRegistry $doctrine): Response // 🟢 2. INJECT DOCTRINE
     {

@@ -1,0 +1,40 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Subject Master — {{ subject.name }}{% endblock %}
+
+{% block body %}
+<div class="p-6 max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold mb-1">{{ subject.name }} — Subject Master</h1>
+    <p class="text-gray-600 mb-6">{{ session ? session.name : 'No session' }}</p>
+
+    {% for group in groups %}
+        <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
+            <div class="px-4 py-3 bg-gray-50 border-b flex justify-between items-center">
+                <h2 class="font-semibold">{{ group.classSubject.classroom.name }}</h2>
+                <span class="text-sm text-gray-500">Average: {{ group.average ?? '—' }}</span>
+            </div>
+            <table class="w-full text-sm">
+                <thead class="bg-gray-100 text-left">
+                    <tr><th class="p-3">#</th><th class="p-3">Student</th><th class="p-3">Total</th><th class="p-3">Grade</th></tr>
+                </thead>
+                <tbody>
+                    {% set pos = 0 %}
+                    {% for sid, row in group.matrix %}
+                        {% set pos = pos + 1 %}
+                        <tr class="border-t">
+                            <td class="p-3">{{ pos }}</td>
+                            <td class="p-3">{{ row.student.fullName }}</td>
+                            <td class="p-3 font-semibold">{{ row.total }}</td>
+                            <td class="p-3">{{ row.grade }}</td>
+                        </tr>
+                    {% else %}
+                        <tr class="border-t"><td class="p-3 text-gray-500" colspan="4">No scores recorded.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="bg-white rounded-lg shadow p-6 text-gray-500">This subject is not registered for any class in the selected session.</div>
+    {% endfor %}
+</div>
+{% endblock %}

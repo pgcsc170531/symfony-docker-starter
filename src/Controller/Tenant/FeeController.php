@@ -15,7 +15,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/finance/fees')]
-#[IsGranted('ROLE_ADMIN')]
+#[IsGranted('ROLE_BURSAR')]
 class FeeController extends AbstractController
 {
    #[Route('/schedule', name: 'app_tenant_fee_schedule')]

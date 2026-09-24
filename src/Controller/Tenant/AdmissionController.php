@@ -23,10 +23,12 @@ use App\Service\NotificationService;
 use App\Service\Finance\DiscountCalculator; // 🟢 ADDED FOR AUTOMATED BILLING
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Doctrine\Persistence\ManagerRegistry;
 
 #[Route('/admission')]
+#[IsGranted('ROLE_BURSAR')]
 class AdmissionController extends AbstractController
 {
     #[Route('/', name: 'app_tenant_admission_index', methods: ['GET', 'POST'])]

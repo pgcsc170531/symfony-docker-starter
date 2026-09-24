@@ -1,0 +1,43 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ assignment.subject.name }} — Report{% endblock %}
+
+{% block body %}
+<div class="p-6 max-w-5xl mx-auto">
+    <h1 class="text-2xl font-bold mb-1">{{ assignment.subject.name }}</h1>
+    <p class="text-gray-600 mb-6">{{ assignment.classroom.name }} • {{ assignment.term.name }} ({{ assignment.term.session.name }})</p>
+
+    <div class="overflow-x-auto bg-white rounded-lg shadow">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-100 text-left">
+                <tr>
+                    <th class="p-3">#</th>
+                    <th class="p-3">Student</th>
+                    {% for c in components %}
+                        <th class="p-3 uppercase">{{ c }}</th>
+                    {% endfor %}
+                    <th class="p-3">Total</th>
+                    <th class="p-3">Grade</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set pos = 0 %}
+                {% for sid, row in matrix %}
+                    {% set pos = pos + 1 %}
+                    <tr class="border-t">
+                        <td class="p-3">{{ pos }}</td>
+                        <td class="p-3">{{ row.student.fullName }}</td>
+                        {% for c in components %}
+                            <td class="p-3">{{ row.components[c]|default('—') }}</td>
+                        {% endfor %}
+                        <td class="p-3 font-semibold">{{ row.total }}</td>
+                        <td class="p-3">{{ row.grade }}</td>
+                    </tr>
+                {% else %}
+                    <tr class="border-t"><td class="p-3 text-gray-500" colspan="{{ components|length + 4 }}">No scores recorded.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Parent Directory{% endblock %}
+
+{% block body %}
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Parent Directory</h1>
+            <p class="text-gray-500">{{ guardians|length }} parent{{ guardians|length == 1 ? '' : 's' }} linked to enrolled students.</p>
+        </div>
+        <a href="{{ path('app_tenant_admission_index') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow flex items-center">
+            <span class="mr-2">+</span> New Admission
+        </a>
+    </div>
+
+    <div class="bg-white shadow rounded-lg overflow-hidden border border-gray-200">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-gray-50 border-b">
+                <tr>
+                    <th class="p-4 font-bold text-gray-600">Parent / Guardian</th>
+                    <th class="p-4 font-bold text-gray-600">Phone</th>
+                    <th class="p-4 font-bold text-gray-600">Email / Login</th>
+                    <th class="p-4 font-bold text-gray-600">Children</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for guardian in guardians %}
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="p-4 font-bold text-gray-800">
+                        {{ guardian.fullName }}
+                        {% if guardian.relationshipToStudent %}
+                            <span class="block text-xs text-gray-400 font-normal">{{ guardian.relationshipToStudent }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="p-4 text-gray-600">{{ guardian.phoneNumber }}</td>
+                    <td class="p-4 text-gray-600">
+                        {{ guardian.email }}
+                        {% if guardian.user %}
+                            <span class="block text-xs text-gray-400 font-mono">Login: {{ guardian.user.email }}</span>
+                        {% else %}
+                            <span class="block text-xs text-amber-600">No login account</span>
+                        {% endif %}
+                    </td>
+                    <td class="p-4 text-gray-600">
+                        {% for student in guardian.students %}
+                            <span class="inline-block bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs font-bold mb-1 mr-1">
+                                {{ student.fullName }}
+                            </span>
+                        {% else %}
+                            <span class="text-gray-400">—</span>
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="p-8 text-center text-gray-500">No parents found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

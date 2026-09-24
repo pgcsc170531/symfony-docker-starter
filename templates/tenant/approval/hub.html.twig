@@ -1,0 +1,154 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Result Approvals{% endblock %}
+
+{% block body %}
+<div class="p-6 max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold mb-6">📋 Result Approvals</h1>
+
+    {% set status_badge = {
+        pending: 'bg-yellow-100 text-yellow-800',
+        approved: 'bg-green-100 text-green-800',
+        rejected: 'bg-red-100 text-red-800',
+    } %}
+
+    {# ==================== FORM TEACHER ==================== #}
+    {% if formTeacherGroups is not empty %}
+        <h2 class="text-lg font-semibold mb-2">🧑‍🏫 Form Teacher — Confirm Classes</h2>
+        <div class="grid gap-4 mb-8">
+            {% for group in formTeacherGroups %}
+                <div class="bg-white rounded-lg shadow p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="font-semibold">
+                            {{ group.assignment.classroom.name }}
+                            <span class="text-gray-500 font-normal">• {{ group.assignment.term.name }}</span>
+                        </div>
+                        <form method="post" action="{{ path('tenant_approval_form_teacher_confirm', {id: group.assignment.id}) }}">
+                            <button class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">Confirm Class</button>
+                        </form>
+                    </div>
+                    <table class="w-full text-sm">
+                        <thead class="text-left text-gray-500">
+                            <tr><th class="py-1">Subject</th><th>Teacher</th><th>Status</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for item in group.items %}
+                                <tr class="border-t">
+                                    <td class="py-1">{{ item.classSubject.subject.name }}</td>
+                                    <td>{{ item.teacher ? item.teacher.user.fullName|default(item.teacher.user.email) : '—' }}</td>
+                                    <td>
+                                        {% set st = (item.approval and item.approval.id) ? item.approval.formTeacherStatus : 'pending' %}
+                                        <span class="px-2 py-0.5 rounded-full text-xs {{ status_badge[st]|default(status_badge.pending) }}">{{ st }}</span>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {# ==================== HOD ==================== #}
+    {% if hodGroups is not empty %}
+        <h2 class="text-lg font-semibold mb-2">🏛️ HOD — Approve Department Subjects</h2>
+        <div class="grid gap-4 mb-8">
+            {% for group in hodGroups %}
+                <div class="bg-white rounded-lg shadow p-4">
+                    <div class="font-semibold mb-3">
+                        {{ group.assignment.department.name }}
+                        <span class="text-gray-500 font-normal">• {{ group.term ? group.term.name : 'No active term' }}</span>
+                    </div>
+                    {% for subjectGroup in group.subjects %}
+                        <div class="mb-4">
+                            <div class="text-sm font-semibold text-gray-700 mb-1">{{ subjectGroup.subject.name }}</div>
+                            <table class="w-full text-sm">
+                                <thead class="text-left text-gray-500">
+                                    <tr><th class="py-1">Class</th><th>Teacher</th><th>Status</th><th class="text-right">Actions</th></tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in subjectGroup.items %}
+                                        <tr class="border-t">
+                                            <td class="py-1">{{ item.classSubject.classroom.name }}</td>
+                                            <td>{{ item.teacher ? item.teacher.user.fullName|default(item.teacher.user.email) : '—' }}</td>
+                                            <td>
+                                                {% set st = (item.approval and item.approval.id) ? item.approval.hodStatus : 'pending' %}
+                                                <span class="px-2 py-0.5 rounded-full text-xs {{ status_badge[st]|default(status_badge.pending) }}">{{ st }}</span>
+                                            </td>
+                                            <td class="text-right">
+                                                {% if item.approval and item.approval.id %}
+                                                    <form method="post" action="{{ path('tenant_approval_hod_approve', {id: item.approval.id}) }}" class="inline">
+                                                        <button class="text-green-600 text-sm px-2">Approve</button>
+                                                    </form>
+                                                    <form method="post" action="{{ path('tenant_approval_hod_reject', {id: item.approval.id}) }}" class="inline">
+                                                        <button class="text-red-600 text-sm px-2">Reject</button>
+                                                    </form>
+                                                    <form method="post" action="{{ path('tenant_approval_unlock', {id: item.approval.id}) }}" class="inline">
+                                                        <button class="text-gray-600 text-sm px-2">Unlock</button>
+                                                    </form>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {# ==================== YEAR GROUP MASTER ==================== #}
+    {% if yearGroupGroups is not empty %}
+        <h2 class="text-lg font-semibold mb-2">🎓 Year Group Master — Final Approval</h2>
+        <div class="grid gap-4 mb-8">
+            {% for group in yearGroupGroups %}
+                <div class="bg-white rounded-lg shadow p-4">
+                    <div class="font-semibold mb-3">
+                        {{ group.assignment.yearGroup.name }}
+                        <span class="text-gray-500 font-normal">• {{ group.term ? group.term.name : 'No active term' }}</span>
+                    </div>
+                    <table class="w-full text-sm">
+                        <thead class="text-left text-gray-500">
+                            <tr><th class="py-1">Class</th><th>Subject</th><th>HOD</th><th>Status</th><th class="text-right">Action</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for item in group.items %}
+                                <tr class="border-t">
+                                    <td class="py-1">{{ item.classSubject.classroom.name }}</td>
+                                    <td>{{ item.classSubject.subject.name }}</td>
+                                    <td>{{ item.approval ? item.approval.hodStatus : 'pending' }}</td>
+                                    <td>
+                                        {% set st = (item.approval and item.approval.id) ? item.approval.yearGroupStatus : 'pending' %}
+                                        <span class="px-2 py-0.5 rounded-full text-xs {{ status_badge[st]|default(status_badge.pending) }}">{{ st }}</span>
+                                    </td>
+                                    <td class="text-right">
+                                        {% if item.approval and item.approval.id %}
+                                            <form method="post" action="{{ path('tenant_approval_year_group_approve', {id: item.approval.id}) }}" class="inline">
+                                                <button class="text-green-600 text-sm px-2">Final Approve</button>
+                                            </form>
+                                            {% if isAdmin %}
+                                                <form method="post" action="{{ path('tenant_approval_unlock', {id: item.approval.id}) }}" class="inline">
+                                                    <button class="text-gray-600 text-sm px-2">Unlock</button>
+                                                </form>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if formTeacherGroups is empty and hodGroups is empty and yearGroupGroups is empty %}
+        <div class="bg-white rounded-lg shadow p-6 text-gray-500">
+            You have no approval assignments yet. Ask your admin to assign you as a
+            Form Teacher, HOD, or Year Group Master.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

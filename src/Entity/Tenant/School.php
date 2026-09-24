@@ -59,6 +59,30 @@ class School
     #[ORM\Column(name: 'landlord_school_id', type: 'integer', nullable: true)]
     private ?int $landlordSchoolId = null;
 
+    #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
+    private ?string $heroTagline = null;
+
+    #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
+    private ?string $heroImageFilename = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $aboutContent = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $admissionsIntro = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $mapEmbedUrl = null;
+
+    #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
+    private ?string $facebookUrl = null;
+
+    #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
+    private ?string $twitterUrl = null;
+
+    #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
+    private ?string $instagramUrl = null;
+
     public function getId(): ?int { return $this->id; }
 
     public function getName(): ?string { return $this->name; }
@@ -122,7 +146,6 @@ class School
         return $this; 
     }
 
-
     public function getLandlordSchoolId(): ?int 
     { 
         return $this->landlordSchoolId; 
@@ -154,5 +177,30 @@ class School
     public function isSmsOnCalendarEvent(): ?bool { return $this->smsOnCalendarEvent; }
     public function setSmsOnCalendarEvent(bool $val): self { $this->smsOnCalendarEvent = $val; return $this; }
 
+    // ============================================================
+    // 🆕 WEBSITE PERSONALISATION FIELDS
+    // ============================================================
+    public function getHeroTagline(): ?string { return $this->heroTagline; }
+    public function setHeroTagline(?string $heroTagline): static { $this->heroTagline = $heroTagline; return $this; }
 
+    public function getHeroImageFilename(): ?string { return $this->heroImageFilename; }
+    public function setHeroImageFilename(?string $heroImageFilename): static { $this->heroImageFilename = $heroImageFilename; return $this; }
+
+    public function getAboutContent(): ?string { return $this->aboutContent; }
+    public function setAboutContent(?string $aboutContent): static { $this->aboutContent = $aboutContent; return $this; }
+
+    public function getAdmissionsIntro(): ?string { return $this->admissionsIntro; }
+    public function setAdmissionsIntro(?string $admissionsIntro): static { $this->admissionsIntro = $admissionsIntro; return $this; }
+
+    public function getMapEmbedUrl(): ?string { return $this->mapEmbedUrl; }
+    public function setMapEmbedUrl(?string $mapEmbedUrl): static { $this->mapEmbedUrl = $mapEmbedUrl; return $this; }
+
+    public function getFacebookUrl(): ?string { return $this->facebookUrl; }
+    public function setFacebookUrl(?string $facebookUrl): static { $this->facebookUrl = $facebookUrl; return $this; }
+
+    public function getTwitterUrl(): ?string { return $this->twitterUrl; }
+    public function setTwitterUrl(?string $twitterUrl): static { $this->twitterUrl = $twitterUrl; return $this; }
+
+    public function getInstagramUrl(): ?string { return $this->instagramUrl; }
+    public function setInstagramUrl(?string $instagramUrl): static { $this->instagramUrl = $instagramUrl; return $this; }
 }

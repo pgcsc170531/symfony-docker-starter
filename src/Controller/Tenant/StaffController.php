@@ -2,6 +2,7 @@
 
 namespace App\Controller\Tenant;
 
+use App\Entity\Tenant\Staff;
 use App\Entity\Tenant\User;
 use App\Form\StaffType;
 use Doctrine\ORM\EntityManagerInterface;
@@ -19,12 +20,27 @@ class StaffController extends AbstractController
     #[Route('/', name: 'app_tenant_staff_index', methods: ['GET'])]
     public function index(EntityManagerInterface $entityManager): Response
     {
-        // List all users
-        $users = $entityManager->getRepository(User::class)->findAll();
+        // List only staff accounts (exclude parents and any non-staff users)
+        $allUsers = $entityManager->getRepository(User::class)->findAll();
+        $users = array_values(array_filter(
+            $allUsers,
+            fn(User $user) => $this->isStaffAccount($user)
+        ));
 
         return $this->render('tenant/staff/index.html.twig', [
             'users' => $users,
         ]);
+    }
+
+    private function isStaffAccount(User $user): bool
+    {
+        foreach (['ROLE_ADMIN', 'ROLE_BURSAR', 'ROLE_STORE', 'ROLE_TEACHER', 'ROLE_HOD'] as $role) {
+            if (in_array($role, $user->getRoles(), true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     #[Route('/new', name: 'app_tenant_staff_new', methods: ['GET', 'POST'])]
@@ -46,6 +62,12 @@ class StaffController extends AbstractController
             $user->setPassword($hashedPassword);
 
             $entityManager->persist($user);
+
+            // Link a Staff profile so the user appears in academic assignments.
+            $staff = new Staff();
+            $staff->setUser($user);
+            $entityManager->persist($staff);
+
             $entityManager->flush();
 
             $this->addFlash('success', 'New staff member created successfully!');

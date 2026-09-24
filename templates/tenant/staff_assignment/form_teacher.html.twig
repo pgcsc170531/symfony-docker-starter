@@ -1,0 +1,85 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Form Teacher{% endblock %}
+
+{% block body %}
+<div class="p-6 max-w-4xl mx-auto">
+    <h1 class="text-2xl font-bold mb-6">🧑‍🏫 Form Teacher Assignments</h1>
+
+    {# Assignment form #}
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 class="font-semibold mb-4">Assign a Form Teacher</h2>
+        <form method="post" class="grid gap-4 md:grid-cols-4 items-end">
+            <div x-data="staffPicker({{ staffOptions|json_encode|e('html_attr') }})" class="relative">
+                <label class="block text-sm font-medium mb-1">Staff</label>
+                <input type="text" x-model="query" @focus="open = true" @input="open = true"
+                       placeholder="Search teacher name…" class="w-full border rounded p-2 text-sm">
+                <input type="hidden" name="staff" :value="selected">
+                <div x-show="open" x-cloak @click.outside="open = false"
+                     class="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded shadow-lg max-h-60 overflow-y-auto">
+                    <template x-for="s in filtered" :key="s.id">
+                        <button type="button" @click="choose(s)"
+                                class="block w-full text-left px-3 py-2 text-sm hover:bg-indigo-50"
+                                x-text="s.name"></button>
+                    </template>
+                    <div x-show="filtered.length === 0" class="px-3 py-2 text-sm text-gray-500">No teacher found</div>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Classroom</label>
+                <select name="classroom" required class="w-full border rounded p-2 text-sm">
+                    <option value="">— Select Classroom —</option>
+                    {% for c in classrooms %}
+                        <option value="{{ c.id }}">{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Term</label>
+                <select name="term" required class="w-full border rounded p-2 text-sm">
+                    <option value="">— Select Term —</option>
+                    {% for t in terms %}
+                        <option value="{{ t.id }}">{{ t.name }} ({{ t.session.name }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <button class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">Assign</button>
+            </div>
+        </form>
+    </div>
+
+    {# Existing assignments #}
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-100 text-left text-gray-500">
+                <tr>
+                    <th class="p-3">Staff</th>
+                    <th class="p-3">Classroom</th>
+                    <th class="p-3">Term</th>
+                    <th class="p-3 text-right">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in assignments %}
+                    <tr class="border-t">
+                        <td class="p-3">{{ a.staff.user.fullName|default(a.staff.user.email) }}</td>
+                        <td class="p-3">{{ a.classroom.name }}</td>
+                        <td class="p-3">{{ a.term.name }} ({{ a.term.session.name }})</td>
+                        <td class="p-3 text-right">
+                            <form method="post" action="{{ path('app_tenant_form_teacher_remove', {id: a.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('ft' ~ a.id) }}">
+                                <button class="text-red-600 text-sm">Remove</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr class="border-t">
+                        <td class="p-3 text-gray-500" colspan="4">No Form Teachers assigned yet.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -9,8 +9,10 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/finance/structure')]
+#[IsGranted('ROLE_BURSAR')]
 class FeeStructureController extends AbstractController
 {
     #[Route('/', name: 'app_tenant_fee_structure_index', methods: ['GET', 'POST'])]

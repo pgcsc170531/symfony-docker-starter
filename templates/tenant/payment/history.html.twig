@@ -53,6 +53,9 @@
                         {% if payment.reference %}
                             <br><span class="text-[10px] text-gray-400">Bank: {{ payment.reference }}</span>
                         {% endif %}
+                        {% if payment.proofFilename %}
+                            <br><a href="{{ asset('uploads/proofs/' ~ payment.proofFilename) }}" target="_blank" class="text-indigo-600 font-bold">📎 View Proof</a>
+                        {% endif %}
                     </td>
 
                     {# 4. Method #}

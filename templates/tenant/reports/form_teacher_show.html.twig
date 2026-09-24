@@ -1,0 +1,48 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Broadsheet — {{ assignment.classroom.name }}{% endblock %}
+
+{% block body %}
+<div class="p-6 max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold mb-1">Broadsheet — {{ assignment.classroom.name }}</h1>
+    <p class="text-gray-600 mb-6">{{ assignment.term.name }} ({{ assignment.term.session.name }})</p>
+
+    <div class="overflow-x-auto bg-white rounded-lg shadow">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-100 text-left">
+                <tr>
+                    <th class="p-3">#</th>
+                    <th class="p-3">Student</th>
+                    {% for cs in classSubjects %}
+                        <th class="p-3">{{ cs.subject.name }}</th>
+                    {% endfor %}
+                    <th class="p-3">Average</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set pos = 0 %}
+                {% for row in rows %}
+                    {% set pos = pos + 1 %}
+                    <tr class="border-t">
+                        <td class="p-3">{{ pos }}</td>
+                        <td class="p-3">{{ row.student.fullName }}</td>
+                        {% for cs in classSubjects %}
+                            <td class="p-3">
+                                {% set cell = row.subjects[cs.id]|default(null) %}
+                                {% if cell %}
+                                    {{ cell.total }} <span class="text-gray-400">({{ cell.grade }})</span>
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                        {% endfor %}
+                        <td class="p-3 font-semibold">{{ row.average ?? '—' }}</td>
+                    </tr>
+                {% else %}
+                    <tr class="border-t"><td class="p-3 text-gray-500" colspan="{{ classSubjects|length + 3 }}">No students in this class.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

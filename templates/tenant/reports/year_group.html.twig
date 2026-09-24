@@ -1,0 +1,47 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Year Group Status{% endblock %}
+
+{% block body %}
+<div class="p-6 max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold mb-6">🎓 Year Group Status</h1>
+
+    {% if groups is empty %}
+        <div class="bg-white rounded-lg shadow p-6 text-gray-500">You are not assigned as a Year Group Master.</div>
+    {% else %}
+        {% for group in groups %}
+            <div class="bg-white rounded-lg shadow p-4 mb-6">
+                <h2 class="font-semibold mb-3">{{ group.assignment.yearGroup.name }}
+                    <span class="text-gray-500 font-normal">• {{ group.term ? group.term.name : 'No active term' }}</span>
+                </h2>
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-100 text-left text-gray-500">
+                        <tr>
+                            <th class="p-3">Class</th>
+                            <th class="p-3">Subject</th>
+                            <th class="p-3">Form Teacher</th>
+                            <th class="p-3">HOD</th>
+                            <th class="p-3">Year Group</th>
+                            <th class="p-3">Average</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in group.items %}
+                            <tr class="border-t">
+                                <td class="p-3">{{ item.classSubject.classroom.name }}</td>
+                                <td class="p-3">{{ item.classSubject.subject.name }}</td>
+                                <td class="p-3">{{ item.approval ? item.approval.formTeacherStatus : 'pending' }}</td>
+                                <td class="p-3">{{ item.approval ? item.approval.hodStatus : 'pending' }}</td>
+                                <td class="p-3">{{ item.approval ? item.approval.yearGroupStatus : 'pending' }}</td>
+                                <td class="p-3">{{ item.average ?? '—' }}</td>
+                            </tr>
+                        {% else %}
+                            <tr class="border-t"><td class="p-3 text-gray-500" colspan="6">No class subjects in this year group.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endfor %}
+    {% endif %}
+</div>
+{% endblock %}

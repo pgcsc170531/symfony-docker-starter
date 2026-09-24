@@ -1,0 +1,361 @@
+First Name,Middle Name,Last Name,Gender (M/F),DOB (YYYY-MM-DD),Religion,Blood Group,Genotype,Home Town,Admission Number (Leave blank to auto-generate),Class Name,Parent Name,Parent Phone
+Arraghibun,,Bello,F,2012-05-14,Islam,O+,AA,Kano,,JSS 1A,Mrs. Hauwa Bello,7058813998
+Blessing,,Garba,F,2012-04-01,Islam,O+,SS,Katsina,,JSS 1A,Alhaja Olusegun Umar,9007536455
+Ladi,,Tanko,F,2011-09-18,Christianity,B+,AC,Ibadan,,JSS 1A,Mr. Emeka Obi,9140557616
+Folake,,Abdullahi,F,2013-05-28,Christianity,O-,AC,Calabar,,JSS 1A,Alhaja Yakubu Eze,9109320819
+Titilayo,,Yakubu,F,2013-12-15,Christianity,A-,SS,Bauchi,,JSS 1A,Mrs. Binta Suleiman,9048876634
+Amina,,Ibrahim,F,2012-06-07,Christianity,A-,AC,Abeokuta,,JSS 1A,Alhaja Usman Yakubu,9176804571
+Kaltum,,Ayodele,F,2011-07-27,Christianity,O+,SS,Owerri,,JSS 1A,Alh. Femi Danjuma,8113627010
+Safiya,,Umar,F,2011-04-04,Islam,O-,SS,Benin City,,JSS 1A,Mr. Fatima Olayinka,8005997283
+Safiya,,Yakubu,F,2012-11-06,Islam,O-,SS,Calabar,,JSS 1A,Alh. Ali Lawal,9062836016
+Musa,,Oyelaran,M,2011-09-16,Christianity,A-,SS,Abeokuta,,JSS 1A,Alh. Rasheed Ogunleye,8117799229
+Segun,,Lawal,M,2011-11-23,Islam,O-,AC,Lagos,,JSS 1A,Alhaja Fatima Adeyemi,8020807370
+Nnamdi,,Tanko,M,2013-03-13,Christianity,AB+,AC,Abuja,,JSS 1A,Mrs. Adaeze Mohammed,9042524776
+Yetunde,,Abubakar,F,2011-09-26,Christianity,O+,AS,Kaduna,,JSS 1A,Alhaja Femi Adeyemi,7017568205
+Chinedu,,Umar,M,2013-12-09,Islam,O-,SS,Gombe,,JSS 1A,Mrs. Binta Adeleke,8182141621
+Tajudeen,,Ogunleye,M,2013-06-09,Islam,B+,SS,Enugu,,JSS 1A,Mrs. Binta Ekwueme,8141064600
+Kabir,,Bello,M,2013-09-19,Christianity,B+,AC,Minna,,JSS 1A,Mr. Binta Okafor,9106593976
+Olumide,,Ogunleye,M,2012-06-02,Christianity,O+,SS,Jos,,JSS 1A,Alh. Yakubu Aliyu,8114659085
+Jibril,,Ibrahim,M,2013-02-04,Islam,A+,SS,Minna,,JSS 1A,Mr. Adaeze Ekwueme,8106925666
+Tajudeen,,Eze,M,2011-09-01,Christianity,B+,AS,Kaduna,,JSS 1A,Mrs. Chukwudi Adeleke,7004876452
+Zubairu,,Abubakar,M,2012-06-21,Christianity,O+,AA,Kaduna,,JSS 1A,Mr. Usman Umar,9003826538
+Ngozi,,Aliyu,F,2012-11-15,Christianity,A-,SS,Port Harcourt,,JSS 1A,Alh. Funmilayo Mohammed,8062705860
+Yusuf,,Okafor,M,2013-12-04,Islam,O-,AS,Gombe,,JSS 1A,Alh. Chukwudi Ogunleye,8190668828
+Yusuf,,Yakubu,M,2013-05-10,Islam,A-,AS,Enugu,,JSS 1A,Alhaja Emeka Ekwueme,8148452630
+Chiamaka,,Ogunleye,F,2011-03-11,Islam,A+,AA,Katsina,,JSS 1A,Mrs. Usman Danjuma,9105154382
+Sani,,Abdullahi,M,2013-02-13,Christianity,O-,SS,Katsina,,JSS 1A,Alhaja Binta Adeyemi,8177188357
+Hauwa,,Musa,F,2012-05-25,Islam,A+,SS,Ilorin,,JSS 1A,Mr. Ngozi Fashola,9185576523
+Khadija,,Aliyu,F,2012-10-13,Islam,A+,AC,Gombe,,JSS 1A,Alh. Funmilayo Ayodele,8064515474
+Jibril,,Obi,M,2011-09-25,Islam,B+,SS,Gombe,,JSS 1A,Mrs. Emeka Okonkwo,9066085651
+Ruqayya,,Adeleke,F,2012-11-11,Islam,AB+,AS,Kano,,JSS 1A,Mrs. Amina Aliyu,8184259967
+Ngozi,,Bello,F,2013-05-11,Islam,A+,AC,Calabar,,JSS 1A,Mrs. Binta Ibrahim,8195183801
+Emeka,,Sani,M,2013-03-23,Christianity,O+,AC,Calabar,,JSS 1A,Mrs. Fatima Balogun,9182104602
+Babatunde,,Suleiman,M,2012-06-20,Christianity,B+,AC,Jos,,JSS 1A,Alh. Emeka Adeleke,8107207547
+Chinedu,,Okonkwo,M,2011-10-02,Christianity,O+,SS,Owerri,,JSS 1A,Alhaja Sadiya Tanko,9118895755
+Halima,,Musa,F,2013-09-28,Christianity,A-,AA,Minna,,JSS 1A,Mrs. Tanko Umar,8007336882
+Wale,,Aliyu,M,2013-11-27,Christianity,B+,AC,Bauchi,,JSS 1A,Alhaja Chukwudi Okonkwo,9183298222
+Wale,,Adeleke,M,2012-03-05,Christianity,O-,SS,Ibadan,,JSS 1A,Mr. Tanko Aliyu,9022022697
+Tunde,,Sani,M,2011-08-22,Christianity,A+,SS,Ibadan,,JSS 1A,Alh. Hauwa Tanko,9107001594
+Olamide,,Bello,F,2012-11-14,Islam,A+,AS,Kaduna,,JSS 1A,Mrs. Ali Abubakar,9035286675
+Tunde,,Obi,M,2013-08-03,Islam,A-,AS,Katsina,,JSS 1A,Alhaja Hauwa Ekwueme,7059212363
+Amina,,Umar,F,2013-06-13,Islam,AB+,AC,Sokoto,,JSS 1A,Alh. Sadiya Yakubu,8172128357
+Salamatu,,Obi,F,2012-05-22,Islam,AB+,AC,Benin City,,JSS 1B,Mr. Hauwa Garba,9188144019
+Yusuf,,Tanko,M,2011-07-26,Christianity,O-,AC,Bauchi,,JSS 1B,Alhaja Olusegun Olayinka,7025201612
+Amina,,Ibrahim,F,2013-02-24,Christianity,A-,AS,Maiduguri,,JSS 1B,Mr. Fatima Ekwueme,9035736385
+Fatima,,Suleiman,F,2011-02-19,Christianity,O-,AC,Owerri,,JSS 1B,Mrs. Femi Sani,9107360872
+Khadija,,Aliyu,F,2012-12-19,Islam,B+,AS,Calabar,,JSS 1B,Alh. Tanko Tanko,7095391827
+Blessing,,Abdullahi,F,2012-01-08,Islam,O+,SS,Enugu,,JSS 1B,Mr. Amina Danjuma,9145142038
+Ado,,Balogun,M,2013-08-27,Islam,A+,AC,Lagos,,JSS 1B,Mr. Funmilayo Umar,8112143049
+Bala,,Olayinka,M,2011-09-21,Islam,AB+,AA,Bauchi,,JSS 1B,Mr. Hauwa Okonkwo,8138671300
+Adaeze,,Umar,F,2011-03-08,Islam,O-,AS,Calabar,,JSS 1B,Alhaja Fatima Musa,8164271051
+Kunle,,Aliyu,M,2013-03-22,Christianity,A+,AC,Bauchi,,JSS 1B,Mrs. Ngozi Tanko,7020617695
+Hauwa,,Ekwueme,F,2011-02-13,Islam,B+,AS,Maiduguri,,JSS 1B,Mr. Tanko Adeleke,9100527913
+Olamide,,Abubakar,F,2011-03-01,Christianity,A+,AC,Sokoto,,JSS 1B,Alhaja Binta Lawal,7079426079
+Abdullahi,,Sani,M,2011-07-09,Christianity,AB+,SS,Sokoto,,JSS 1B,Alh. Femi Oyelaran,9096745219
+Bashir,,Mohammed,M,2011-12-22,Christianity,A+,AA,Kaduna,,JSS 1B,Alh. Yakubu Ayodele,9029586398
+Ruqayya,,Umar,F,2012-08-08,Islam,O-,SS,Lagos,,JSS 1B,Alhaja Tanko Umar,9134269276
+Jamila,,Ibrahim,F,2013-09-11,Christianity,AB+,AS,Bauchi,,JSS 1B,Alh. Kemi Lawal,9149855683
+Segun,,Tanko,M,2012-04-18,Christianity,B+,AA,Katsina,,JSS 1B,Alhaja Fatima Eze,8032796726
+Chinedu,,Bello,M,2011-04-13,Islam,AB+,SS,Calabar,,JSS 1B,Mr. Binta Umar,7063540115
+Ahmed,,Obi,M,2011-09-28,Christianity,B+,AS,Katsina,,JSS 1B,Mr. Binta Eze,7053277186
+Yusuf,,Bello,M,2011-08-16,Islam,AB+,AC,Benin City,,JSS 1B,Alhaja Amina Adeleke,7006261488
+Segun,,Abdullahi,M,2011-10-20,Christianity,B+,AC,Katsina,,JSS 1B,Mrs. Rasheed Ogunleye,8051619945
+Folake,,Lawal,F,2013-10-17,Islam,O-,AC,Sokoto,,JSS 1B,Alh. Grace Aliyu,7089487464
+Peter,,Olayinka,M,2012-09-10,Christianity,B+,AA,Minna,,JSS 1B,Alhaja Adaeze Fashola,8003995515
+Hadiza,,Eze,F,2012-11-04,Christianity,AB+,AC,Gombe,,JSS 1B,Alhaja Fatima Lawal,8196505654
+Amina,,Ogunleye,F,2013-01-28,Christianity,O-,AA,Katsina,,JSS 1B,Alhaja Kemi Eze,8164644033
+Yusuf,,Sani,M,2013-09-15,Islam,A-,AA,Maiduguri,,JSS 1B,Mr. Funmilayo Abubakar,8016311119
+Fatima,,Yakubu,F,2012-06-18,Christianity,A+,AA,Ilorin,,JSS 1B,Mr. Sadiya Balogun,8124829601
+Safiya,,Eze,F,2013-11-05,Islam,B+,AA,Ibadan,,JSS 1B,Alhaja Femi Oyelaran,9034789235
+Tajudeen,,Danjuma,M,2011-04-15,Christianity,O+,SS,Zaria,,JSS 1B,Alh. Rasheed Ayodele,7005914833
+Maryam,,Musa,F,2011-12-08,Christianity,O-,SS,Ibadan,,JSS 1B,Mr. Hauwa Okafor,8023841649
+Chioma,,Mohammed,F,2012-02-21,Islam,O-,SS,Bauchi,,JSS 1B,Mrs. Funmilayo Mohammed,7085347042
+Yetunde,,Nwachukwu,F,2012-02-09,Christianity,O+,AC,Jos,,JSS 1B,Mr. Solomon Bashir,8142014613
+Babatunde,,Umar,M,2011-01-21,Christianity,O+,SS,Owerri,,JSS 1B,Mr. Emeka Bello,9165893059
+Ruqayya,,Adeleke,F,2013-11-11,Christianity,A+,SS,Bauchi,,JSS 1B,Alhaja Kemi Suleiman,9156810670
+Bala,,Yakubu,M,2011-12-21,Christianity,O+,SS,Katsina,,JSS 1B,Alhaja Yakubu Aliyu,8063343701
+Sadiq,,Tanko,M,2012-11-05,Islam,A-,SS,Enugu,,JSS 1B,Alh. Adaeze Suleiman,8164668631
+Adaeze,,Aliyu,F,2013-12-20,Christianity,B+,SS,Kaduna,,JSS 1B,Mrs. Fatima Ogunleye,8181342172
+Sadiq,,Fashola,M,2012-08-27,Christianity,O+,SS,Maiduguri,,JSS 1B,Alh. Fatima Sani,7004751688
+Ladi,,Adeyemi,F,2013-11-09,Islam,A-,AA,Calabar,,JSS 1B,Mr. Binta Eze,8035953494
+Olumide,,Okafor,M,2012-08-09,Christianity,O-,AA,Bauchi,,JSS 1B,Mrs. Olusegun Olayinka,8044602619
+Adaeze,,Fashola,F,2011-02-02,Islam,A-,AA,Jos,,JSS 1C,Mr. Hauwa Umar,8000700917
+Bashir,,Fashola,M,2011-04-02,Christianity,AB+,AA,Port Harcourt,,JSS 1C,Mrs. Ngozi Danjuma,7048877816
+Folake,,Musa,F,2012-04-12,Islam,O+,AA,Enugu,,JSS 1C,Mr. Sadiya Bashir,7038300403
+Ibrahim,,Okafor,M,2012-02-14,Christianity,O+,SS,Benin City,,JSS 1C,Alhaja Solomon Abubakar,8093012670
+Wale,,Yakubu,M,2011-06-26,Christianity,O-,AS,Gombe,,JSS 1C,Alhaja Ngozi Fashola,9123981337
+Zubairu,,Yakubu,M,2012-02-12,Islam,A+,AA,Maiduguri,,JSS 1C,Mr. Usman Suleiman,9006755485
+Segun,,Nwachukwu,M,2012-08-14,Islam,B+,AC,Port Harcourt,,JSS 1C,Alh. Binta Sani,8181241726
+Khadija,,Oyelaran,F,2011-09-26,Islam,O-,AA,Minna,,JSS 1C,Alhaja Yakubu Ekwueme,8008242204
+Obinna,,Abubakar,M,2013-01-26,Christianity,O+,AC,Lagos,,JSS 1C,Mrs. Femi Tanko,7088987041
+Aisha,,Balogun,F,2011-04-24,Islam,B+,AS,Zaria,,JSS 1C,Mr. Binta Olayinka,9156378276
+Nnamdi,,Tanko,M,2012-11-04,Islam,O+,AS,Calabar,,JSS 1C,Mr. Olusegun Yakubu,8160700223
+Olamide,,Ayodele,F,2012-04-09,Islam,A+,AC,Maiduguri,,JSS 1C,Alhaja Fatima Garba,9055013510
+Segun,,Mohammed,M,2013-12-25,Christianity,O+,AA,Enugu,,JSS 1C,Alhaja Ali Bashir,8133516585
+Lukman,,Aliyu,M,2011-02-11,Christianity,A+,AA,Zaria,,JSS 1C,Alhaja Hauwa Umar,7003022502
+Chinedu,,Oyelaran,M,2013-02-03,Christianity,O-,AS,Minna,,JSS 1C,Mr. Funmilayo Abubakar,8118341908
+Wale,,Mohammed,M,2011-06-26,Islam,A-,AA,Ibadan,,JSS 1C,Alhaja Ali Tanko,8023863787
+Adaeze,,Ibrahim,F,2012-03-10,Christianity,O-,SS,Maiduguri,,JSS 1C,Mr. Funmilayo Okafor,8042764129
+Bilkisu,,Okonkwo,F,2012-01-09,Christianity,O+,AS,Minna,,JSS 1C,Alhaja Yakubu Ekwueme,8060550496
+Yetunde,,Bello,F,2012-07-09,Islam,A+,AS,Calabar,,JSS 1C,Alhaja Kemi Garba,9092687710
+Bilkisu,,Okonkwo,F,2012-01-08,Christianity,A+,AA,Jos,,JSS 1C,Alhaja Fatima Okafor,9083266075
+Funke,,Garba,F,2012-12-10,Islam,AB+,AS,Lagos,,JSS 1C,Alh. Ali Nwachukwu,8096220987
+Safiya,,Adeyemi,F,2011-01-01,Christianity,AB+,AA,Kano,,JSS 1C,Alhaja Ali Sani,8082207016
+Lukman,,Tanko,M,2012-09-05,Islam,A-,AC,Ibadan,,JSS 1C,Alh. Adaeze Okonkwo,8143177466
+Mariam,,Abubakar,F,2012-12-16,Christianity,AB+,AS,Abuja,,JSS 1C,Mrs. Binta Obi,8115344796
+Zainab,,Obi,F,2013-10-19,Islam,A+,AS,Enugu,,JSS 1C,Mrs. Ali Ogunleye,7026686922
+Chika,,Musa,F,2011-10-09,Christianity,O+,SS,Kano,,JSS 1C,Mrs. Binta Sani,8095292074
+Emeka,,Nwachukwu,M,2013-04-16,Islam,AB+,AC,Port Harcourt,,JSS 1C,Alhaja Olusegun Adeyemi,8152606450
+Yusuf,,Okafor,M,2011-10-14,Christianity,A-,SS,Jos,,JSS 1C,Alh. Amina Ogunleye,7007485148
+Ibrahim,,Abdullahi,M,2012-07-02,Christianity,A-,AA,Bauchi,,JSS 1C,Mrs. Ali Mohammed,8078195961
+Yusuf,,Ibrahim,M,2012-05-13,Islam,B+,AA,Benin City,,JSS 1C,Alh. Sadiya Abdullahi,9053921025
+Safiya,,Aliyu,F,2011-11-27,Islam,O-,AA,Maiduguri,,JSS 1C,Mr. Fatima Ekwueme,9195314237
+Bashir,,Obi,M,2012-02-14,Christianity,B+,AS,Sokoto,,JSS 1C,Alhaja Olusegun Nwachukwu,9044805949
+Sadiq,,Nwachukwu,M,2012-07-24,Islam,B+,AS,Bauchi,,JSS 1C,Alh. Usman Ogunleye,8156186340
+Adaeze,,Musa,F,2012-01-14,Christianity,A+,AC,Zaria,,JSS 1C,Alh. Ngozi Mohammed,9181433179
+Babatunde,,Okonkwo,M,2012-08-15,Christianity,AB+,AS,Bauchi,,JSS 1C,Mr. Ngozi Sani,9169180441
+Chika,,Musa,F,2011-07-20,Christianity,AB+,AS,Katsina,,JSS 1C,Mrs. Tanko Olayinka,8139546180
+Ruqayya,,Fashola,F,2013-02-16,Islam,A-,SS,Zaria,,JSS 1C,Alhaja Femi Ogunleye,9041220284
+Zainab,,Adeleke,F,2013-06-21,Christianity,O-,AC,Bauchi,,JSS 1C,Mr. Adaeze Adeyemi,7076887849
+Olamide,,Adeleke,F,2012-09-28,Christianity,B+,AC,Jos,,JSS 1C,Alhaja Fatima Abdullahi,9060554836
+Fatima,,Umar,F,2012-04-03,Christianity,A+,SS,Maiduguri,,JSS 1C,Alhaja Usman Umar,9171774836
+Fatima,,Oyelaran,F,2010-10-03,Christianity,A+,AS,Minna,,JSS 2A,Mrs. Rasheed Mohammed,7035750580
+Chika,,Suleiman,F,2011-08-19,Islam,O+,AA,Zaria,,JSS 2A,Alh. Sadiya Balogun,9192938327
+Bala,,Aliyu,M,2010-12-09,Islam,B+,AA,Katsina,,JSS 2A,Alh. Emeka Olayinka,8193787366
+Olamide,,Danjuma,F,2010-05-15,Islam,A+,AS,Abuja,,JSS 2A,Alh. Ngozi Danjuma,8045287713
+Sadiq,,Balogun,M,2011-04-27,Islam,O-,AC,Sokoto,,JSS 2A,Alh. Rasheed Okonkwo,8082431433
+Safiya,,Musa,F,2010-11-10,Christianity,AB+,SS,Maiduguri,,JSS 2A,Mrs. Usman Bashir,7058662712
+Kaltum,,Yakubu,F,2011-06-03,Islam,A-,AC,Enugu,,JSS 2A,Alh. Chukwudi Bello,9095835902
+Blessing,,Musa,F,2012-07-12,Christianity,AB+,AA,Jos,,JSS 2A,Alh. Chukwudi Ibrahim,8118300071
+Chika,,Nwachukwu,F,2011-03-23,Islam,A+,SS,Calabar,,JSS 2A,Alh. Emeka Adeyemi,9183022654
+Femi,,Garba,M,2010-09-26,Christianity,A+,AA,Jos,,JSS 2A,Mrs. Grace Tanko,9106192275
+Khadija,,Aliyu,F,2010-05-10,Christianity,B+,SS,Benin City,,JSS 2A,Alh. Hauwa Adeyemi,7099559392
+Ahmed,,Ibrahim,M,2010-11-07,Christianity,A+,AA,Kaduna,,JSS 2A,Mrs. Amina Fashola,9052680578
+Fatima,,Adeyemi,F,2010-12-28,Christianity,AB+,AA,Ibadan,,JSS 2A,Mr. Hauwa Ekwueme,8139825753
+Fatima,,Ekwueme,F,2010-09-01,Islam,O-,AC,Enugu,,JSS 2A,Alhaja Solomon Ekwueme,9073264452
+Bilkisu,,Sani,F,2010-02-02,Christianity,A-,AA,Owerri,,JSS 2A,Mr. Tanko Eze,8061422515
+Ado,,Musa,M,2011-08-24,Christianity,A-,AS,Ilorin,,JSS 2A,Alh. Ngozi Nwachukwu,7058188589
+Femi,,Sani,M,2012-12-01,Christianity,AB+,AA,Minna,,JSS 2A,Mrs. Olusegun Oyelaran,7031757060
+Obinna,,Lawal,M,2011-05-15,Christianity,O-,AS,Owerri,,JSS 2A,Alhaja Yakubu Nwachukwu,9089177603
+Ese,,Yakubu,F,2012-10-14,Christianity,O+,AS,Ilorin,,JSS 2A,Alhaja Emeka Mohammed,9137547415
+Titilayo,,Suleiman,F,2012-04-15,Christianity,A-,AS,Ilorin,,JSS 2A,Mrs. Solomon Adeleke,9030446181
+Zubairu,,Tanko,M,2010-08-18,Islam,O+,SS,Maiduguri,,JSS 2A,Mrs. Solomon Oyelaran,7049153216
+Amina,,Balogun,F,2012-11-07,Islam,AB+,AS,Ilorin,,JSS 2A,Alh. Tanko Tanko,9051272555
+Ngozi,,Abdullahi,F,2010-12-14,Islam,O+,AA,Ibadan,,JSS 2A,Alh. Ngozi Balogun,7026627973
+Yetunde,,Adeleke,F,2012-08-03,Christianity,O-,AC,Port Harcourt,,JSS 2A,Alhaja Amina Eze,7064891984
+Lukman,,Oyelaran,M,2012-12-27,Christianity,B+,AC,Enugu,,JSS 2A,Mrs. Ngozi Lawal,8045900471
+Hadiza,,Aliyu,F,2012-03-14,Christianity,B+,AA,Maiduguri,,JSS 2A,Mr. Ngozi Ekwueme,8097440252
+Kunle,,Eze,M,2010-09-14,Christianity,A+,SS,Katsina,,JSS 2A,Alhaja Amina Ibrahim,9104708761
+Bala,,Adeyemi,M,2012-10-16,Islam,AB+,AS,Ibadan,,JSS 2A,Alh. Fatima Ibrahim,9024921707
+Bilkisu,,Adeyemi,F,2012-03-18,Christianity,A-,SS,Ibadan,,JSS 2A,Alh. Olusegun Ekwueme,8025043519
+Chiamaka,,Oyelaran,F,2011-04-18,Islam,AB+,AS,Abuja,,JSS 2A,Alh. Solomon Ibrahim,9083995681
+Halima,,Musa,F,2012-02-02,Islam,B+,AS,Maiduguri,,JSS 2A,Mr. Tanko Olayinka,9087530050
+Ikenna,,Ayodele,M,2011-08-10,Christianity,O-,AA,Lagos,,JSS 2A,Alhaja Femi Lawal,7008102320
+Musa,,Eze,M,2011-02-05,Islam,AB+,AC,Enugu,,JSS 2A,Alh. Ngozi Ogunleye,9172045331
+Aisha,,Tanko,F,2011-04-07,Christianity,AB+,AA,Lagos,,JSS 2A,Mr. Tanko Umar,7021206661
+Zubairu,,Bello,M,2012-11-25,Islam,A-,AS,Bauchi,,JSS 2A,Alh. Emeka Obi,8050701465
+Chiamaka,,Musa,F,2012-03-09,Islam,A+,AA,Katsina,,JSS 2A,Alhaja Funmilayo Yakubu,8162032588
+Nnamdi,,Yakubu,M,2012-04-07,Islam,O-,SS,Katsina,,JSS 2A,Mr. Yakubu Suleiman,7002949244
+Abdullahi,,Bashir,M,2010-06-16,Christianity,A+,AA,Kano,,JSS 2A,Mrs. Binta Okonkwo,9135799961
+Mariam,,Ibrahim,F,2010-02-21,Islam,O+,AA,Ilorin,,JSS 2A,Alh. Funmilayo Lawal,9172854015
+Yetunde,,Abubakar,F,2010-03-22,Islam,A-,AA,Zaria,,JSS 2A,Alhaja Binta Abdullahi,9144558419
+Titilayo,,Ibrahim,F,2010-10-18,Islam,A-,SS,Kaduna,,JSS 2B,Mrs. Tanko Tanko,9149119070
+Zubairu,,Okonkwo,M,2012-11-05,Islam,B+,AA,Maiduguri,,JSS 2B,Alh. Olusegun Suleiman,9118053501
+Zubairu,,Garba,M,2010-01-02,Islam,A-,SS,Zaria,,JSS 2B,Alhaja Emeka Danjuma,9142034076
+Aisha,,Ogunleye,F,2011-08-01,Christianity,A+,AS,Zaria,,JSS 2B,Alh. Olusegun Yakubu,8162001108
+Ngozi,,Sani,F,2012-01-23,Islam,B+,AS,Owerri,,JSS 2B,Alhaja Rasheed Ibrahim,9110172717
+Sani,,Okafor,M,2012-05-19,Islam,B+,SS,Ibadan,,JSS 2B,Alh. Olusegun Ekwueme,9131313900
+Segun,,Okonkwo,M,2012-09-04,Christianity,O-,SS,Port Harcourt,,JSS 2B,Alh. Kemi Ekwueme,9006613249
+Hadiza,,Ogunleye,F,2012-10-12,Islam,AB+,SS,Ilorin,,JSS 2B,Alhaja Ngozi Bashir,8132107725
+Ngozi,,Danjuma,F,2010-01-27,Islam,O+,AS,Maiduguri,,JSS 2B,Mr. Fatima Ogunleye,8149352975
+Bala,,Balogun,M,2011-05-26,Islam,B+,AA,Maiduguri,,JSS 2B,Mrs. Olusegun Balogun,8081596410
+Sadiq,,Okonkwo,M,2011-02-06,Islam,O-,AA,Calabar,,JSS 2B,Mr. Ngozi Ekwueme,8169036345
+Chiamaka,,Oyelaran,F,2011-12-22,Christianity,A+,AA,Port Harcourt,,JSS 2B,Alhaja Usman Yakubu,7051616765
+Emeka,,Ayodele,M,2010-12-15,Islam,A+,AS,Ilorin,,JSS 2B,Alhaja Emeka Yakubu,9196538648
+Bashir,,Suleiman,M,2012-04-10,Islam,AB+,SS,Benin City,,JSS 2B,Alh. Hauwa Eze,9003496023
+Ese,,Yakubu,F,2010-02-16,Christianity,A-,AC,Abuja,,JSS 2B,Alhaja Ali Ekwueme,7042491884
+Funke,,Ogunleye,F,2012-06-07,Christianity,O-,AS,Enugu,,JSS 2B,Mrs. Chukwudi Adeyemi,8069310951
+Ahmed,,Garba,M,2011-06-28,Islam,O+,AC,Enugu,,JSS 2B,Mrs. Femi Bello,7044613439
+Kaltum,,Garba,F,2012-07-05,Islam,B+,SS,Sokoto,,JSS 2B,Alh. Tanko Nwachukwu,9195864223
+Aisha,,Eze,F,2012-10-13,Christianity,B+,SS,Kano,,JSS 2B,Mrs. Emeka Adeleke,9013534936
+Khadija,,Nwachukwu,F,2010-01-14,Christianity,O+,AC,Kaduna,,JSS 2B,Alhaja Hauwa Ekwueme,8196485268
+Olumide,,Tanko,M,2010-07-22,Christianity,O+,AC,Abuja,,JSS 2B,Mr. Chukwudi Umar,7000524900
+Ngozi,,Fashola,F,2012-04-01,Islam,B+,AA,Kano,,JSS 2B,Alh. Chukwudi Abdullahi,9104057444
+Amina,,Suleiman,F,2011-05-13,Christianity,O-,AS,Katsina,,JSS 2B,Mr. Olusegun Bashir,9145314530
+Emeka,,Okafor,M,2010-02-16,Christianity,O+,SS,Jos,,JSS 2B,Mr. Adaeze Okafor,8158920420
+Chiamaka,,Umar,F,2012-02-05,Christianity,O+,SS,Owerri,,JSS 2B,Mr. Ali Suleiman,9197948640
+Wale,,Nwachukwu,M,2012-07-18,Christianity,O+,AC,Calabar,,JSS 2B,Mr. Hauwa Suleiman,8196903074
+Lukman,,Suleiman,M,2010-01-24,Christianity,B+,AC,Jos,,JSS 2B,Alh. Ali Garba,9186584619
+Titilayo,,Mohammed,F,2010-04-05,Christianity,O-,SS,Port Harcourt,,JSS 2B,Alh. Usman Danjuma,9112963476
+Amina,,Okonkwo,F,2012-07-24,Islam,A-,AS,Sokoto,,JSS 2B,Mr. Tanko Ibrahim,7057438903
+Zubairu,,Bashir,M,2012-09-08,Christianity,O+,AA,Kaduna,,JSS 2B,Mr. Amina Suleiman,8071927243
+Babatunde,,Lawal,M,2011-08-02,Islam,A-,AC,Sokoto,,JSS 2B,Alhaja Usman Oyelaran,8070575540
+Babatunde,,Lawal,M,2011-04-20,Islam,O-,AS,Kaduna,,JSS 2B,Alh. Rasheed Ayodele,9111317090
+Titilayo,,Aliyu,F,2012-07-22,Christianity,O-,AS,Katsina,,JSS 2B,Alhaja Binta Okonkwo,8198509342
+Ibrahim,,Okafor,M,2010-09-15,Islam,B+,AS,Bauchi,,JSS 2B,Alh. Sadiya Bello,8163121277
+Segun,,Abubakar,M,2010-08-16,Christianity,B+,AC,Benin City,,JSS 2B,Mr. Ali Suleiman,7022925790
+Ahmed,,Sani,M,2010-09-09,Islam,B+,SS,Sokoto,,JSS 2B,Alhaja Adaeze Oyelaran,9160802223
+Babatunde,,Ayodele,M,2011-01-11,Christianity,A+,SS,Maiduguri,,JSS 2B,Alh. Amina Okonkwo,8053120141
+Kunle,,Okonkwo,M,2011-05-11,Christianity,B+,AS,Port Harcourt,,JSS 2B,Mrs. Ali Mohammed,9123283774
+Fatima,,Oyelaran,F,2012-03-05,Islam,O-,SS,Gombe,,JSS 2B,Mrs. Adaeze Musa,9107304652
+Kunle,,Ibrahim,M,2012-01-25,Christianity,B+,SS,Abeokuta,,JSS 2B,Mrs. Emeka Fashola,9108454338
+Lukman,,Garba,M,2011-02-14,Christianity,B+,AA,Port Harcourt,,JSS 2C,Mr. Usman Danjuma,8007653646
+Tunde,,Tanko,M,2011-09-09,Islam,B+,AA,Minna,,JSS 2C,Alhaja Ali Tanko,8160654268
+Peter,,Suleiman,M,2010-07-25,Islam,AB+,SS,Gombe,,JSS 2C,Alh. Grace Mohammed,7015060213
+Abdullahi,,Musa,M,2011-10-27,Christianity,B+,AC,Katsina,,JSS 2C,Alh. Funmilayo Abdullahi,9116473308
+Salamatu,,Bashir,F,2012-12-17,Christianity,B+,SS,Zaria,,JSS 2C,Mrs. Adaeze Okonkwo,8137050062
+Abdullahi,,Mohammed,M,2010-03-27,Islam,A+,SS,Lagos,,JSS 2C,Mr. Sadiya Garba,7078326336
+Ruqayya,,Obi,F,2010-08-26,Christianity,A-,AA,Kaduna,,JSS 2C,Alh. Hauwa Nwachukwu,8120779416
+Ngozi,,Suleiman,F,2011-07-22,Christianity,A-,AC,Abeokuta,,JSS 2C,Alh. Tanko Yakubu,9034488102
+Kunle,,Danjuma,M,2012-09-21,Christianity,A+,SS,Maiduguri,,JSS 2C,Alh. Ali Sani,8164433294
+Sadiq,,Bello,M,2012-05-28,Islam,AB+,AS,Benin City,,JSS 2C,Mr. Tanko Sani,9020710136
+Bala,,Bello,M,2012-05-13,Islam,A-,AC,Ilorin,,JSS 2C,Mrs. Kemi Aliyu,9141553635
+Safiya,,Abubakar,F,2012-09-13,Islam,O+,SS,Maiduguri,,JSS 2C,Alh. Kemi Eze,9071274622
+Musa,,Abubakar,M,2012-06-26,Christianity,O+,AA,Calabar,,JSS 2C,Mrs. Fatima Bashir,9128325948
+Olumide,,Olayinka,M,2012-02-10,Christianity,A-,SS,Ibadan,,JSS 2C,Alh. Sadiya Oyelaran,8183243631
+Olamide,,Ayodele,F,2011-03-09,Islam,B+,AA,Bauchi,,JSS 2C,Alhaja Hauwa Suleiman,7090637711
+Zainab,,Lawal,F,2011-07-27,Christianity,O-,AS,Port Harcourt,,JSS 2C,Alh. Chukwudi Ayodele,8145562073
+Ahmed,,Okonkwo,M,2010-03-20,Islam,A+,SS,Bauchi,,JSS 2C,Mrs. Amina Adeyemi,8085153482
+Maryam,,Adeleke,F,2012-09-19,Christianity,A+,AC,Kaduna,,JSS 2C,Alh. Adaeze Nwachukwu,8083662022
+Sadiq,,Ibrahim,M,2012-08-18,Islam,B+,SS,Owerri,,JSS 2C,Mrs. Fatima Ibrahim,9150421037
+Funke,,Ogunleye,F,2012-12-05,Christianity,O+,AA,Lagos,,JSS 2C,Alhaja Grace Garba,7071584683
+Jamila,,Bashir,F,2010-11-14,Islam,O-,AC,Ibadan,,JSS 2C,Mr. Sadiya Aliyu,8124068630
+Bala,,Okafor,M,2010-09-03,Islam,B+,AA,Port Harcourt,,JSS 2C,Alh. Emeka Ekwueme,8117031362
+Salamatu,,Aliyu,F,2012-07-25,Islam,A+,AA,Bauchi,,JSS 2C,Mrs. Ngozi Sani,8176337557
+Amina,,Yakubu,F,2011-12-03,Islam,A+,SS,Calabar,,JSS 2C,Alh. Chukwudi Umar,8040783424
+Chinedu,,Fashola,M,2010-08-17,Islam,B+,SS,Maiduguri,,JSS 2C,Alhaja Usman Okonkwo,7053737400
+Tunde,,Ibrahim,M,2010-12-21,Christianity,B+,AA,Abuja,,JSS 2C,Alh. Sadiya Aliyu,8097415050
+Bala,,Obi,M,2012-08-14,Christianity,A-,AA,Abuja,,JSS 2C,Alh. Binta Musa,8149425526
+Aisha,,Eze,F,2010-12-18,Islam,O-,AC,Maiduguri,,JSS 2C,Mrs. Femi Umar,9182857299
+Ruqayya,,Tanko,F,2010-07-11,Christianity,A+,AS,Sokoto,,JSS 2C,Alhaja Kemi Okafor,8115576049
+Maryam,,Aliyu,F,2011-12-12,Islam,B+,AA,Gombe,,JSS 2C,Mrs. Ngozi Olayinka,9047277859
+Sani,,Yakubu,M,2011-02-22,Islam,B+,AA,Calabar,,JSS 2C,Alhaja Fatima Oyelaran,8172387335
+Ese,,Sani,F,2010-12-26,Christianity,B+,AA,Enugu,,JSS 2C,Mrs. Binta Okafor,8029777976
+Adaeze,,Aliyu,F,2011-08-23,Islam,A+,SS,Ilorin,,JSS 2C,Alh. Funmilayo Bashir,9021878701
+Zubairu,,Ogunleye,M,2012-10-07,Islam,B+,AA,Abeokuta,,JSS 2C,Mr. Chukwudi Danjuma,9068745650
+Yusuf,,Tanko,M,2011-07-20,Islam,A-,AA,Gombe,,JSS 2C,Mrs. Olusegun Ogunleye,7012799315
+Abdullahi,,Fashola,M,2011-08-04,Christianity,O-,AC,Benin City,,JSS 2C,Mrs. Kemi Abdullahi,9010066233
+Ngozi,,Adeyemi,F,2010-01-07,Islam,A+,AS,Ibadan,,JSS 2C,Mrs. Femi Musa,8170874074
+Ahmed,,Umar,M,2012-03-28,Christianity,AB+,AS,Port Harcourt,,JSS 2C,Alhaja Adaeze Ayodele,9173312196
+Yusuf,,Mohammed,M,2011-08-13,Christianity,AB+,SS,Sokoto,,JSS 2C,Mr. Sadiya Okonkwo,9006778057
+Ladi,,Danjuma,F,2010-01-07,Christianity,O-,AC,Ilorin,,JSS 2C,Mr. Hauwa Okonkwo,8056915175
+Peter,,Balogun,M,2009-07-26,Islam,B+,AS,Ilorin,,JSS 3A,Alhaja Adaeze Adeyemi,9074537086
+Halima,,Umar,F,2010-03-17,Islam,AB+,AC,Ilorin,,JSS 3A,Mr. Sadiya Yakubu,7039972463
+Chika,,Eze,F,2011-09-21,Christianity,A+,AA,Sokoto,,JSS 3A,Mrs. Femi Suleiman,8077209226
+Aisha,,Aliyu,F,2009-08-22,Islam,B+,AS,Benin City,,JSS 3A,Mrs. Emeka Bello,8168382080
+Nnamdi,,Oyelaran,M,2009-01-14,Christianity,A+,AA,Bauchi,,JSS 3A,Mrs. Funmilayo Musa,8080886421
+Chinedu,,Yakubu,M,2009-12-08,Islam,O-,AA,Zaria,,JSS 3A,Mrs. Emeka Nwachukwu,9184073742
+Obinna,,Abdullahi,M,2010-11-12,Islam,A-,SS,Gombe,,JSS 3A,Alhaja Amina Balogun,7061764115
+Titilayo,,Oyelaran,F,2009-06-12,Islam,A+,AC,Ibadan,,JSS 3A,Mrs. Binta Nwachukwu,9146533879
+Zainab,,Yakubu,F,2010-08-24,Christianity,A+,SS,Ibadan,,JSS 3A,Mr. Ngozi Garba,7062053454
+Aisha,,Adeleke,F,2009-06-24,Christianity,A+,AC,Kano,,JSS 3A,Mr. Ali Musa,9035421208
+Peter,,Aliyu,M,2009-03-08,Islam,O-,AC,Owerri,,JSS 3A,Mrs. Solomon Umar,7074401878
+Safiya,,Suleiman,F,2011-05-02,Islam,A-,SS,Gombe,,JSS 3A,Mrs. Fatima Bello,8038998767
+Khadija,,Okafor,F,2009-07-09,Christianity,A-,AS,Calabar,,JSS 3A,Alhaja Rasheed Ibrahim,9090059256
+Yetunde,,Bello,F,2011-06-27,Christianity,A-,AA,Jos,,JSS 3A,Alh. Chukwudi Tanko,8074183710
+Kabir,,Ekwueme,M,2009-08-04,Islam,AB+,AC,Sokoto,,JSS 3A,Mrs. Adaeze Lawal,8172660394
+Obinna,,Bello,M,2011-11-03,Islam,A+,SS,Calabar,,JSS 3A,Mr. Tanko Umar,8075814783
+Zainab,,Fashola,F,2010-07-19,Christianity,O-,AS,Jos,,JSS 3A,Alhaja Femi Ogunleye,7035161089
+Jamila,,Tanko,F,2010-09-12,Christianity,O+,SS,Enugu,,JSS 3A,Mr. Binta Suleiman,8052704026
+Maryam,,Lawal,F,2009-05-23,Christianity,O+,SS,Sokoto,,JSS 3A,Alh. Sadiya Olayinka,9130330328
+Umar,,Eze,M,2010-06-15,Christianity,A-,AS,Abeokuta,,JSS 3A,Alhaja Fatima Ekwueme,9111235217
+Zubairu,,Bashir,M,2010-11-09,Christianity,A-,SS,Gombe,,JSS 3A,Alhaja Funmilayo Oyelaran,7058691589
+Bala,,Aliyu,M,2011-03-23,Islam,B+,AC,Sokoto,,JSS 3A,Alhaja Femi Adeyemi,7071801120
+Wale,,Abdullahi,M,2010-11-26,Islam,A+,AC,Katsina,,JSS 3A,Alh. Kemi Abdullahi,9044715323
+Ahmed,,Garba,M,2010-06-16,Christianity,A-,AA,Gombe,,JSS 3A,Alhaja Tanko Okafor,8162972184
+Nnamdi,,Bashir,M,2010-01-25,Christianity,O+,AC,Ibadan,,JSS 3A,Alhaja Ali Tanko,7049654079
+Abdullahi,,Danjuma,M,2011-06-19,Islam,A-,AS,Bauchi,,JSS 3A,Mr. Adaeze Danjuma,9100125834
+Hauwa,,Adeleke,F,2010-07-06,Christianity,A-,AC,Kano,,JSS 3A,Mr. Usman Adeleke,8011974963
+Chioma,,Ogunleye,F,2010-07-10,Islam,A+,SS,Jos,,JSS 3A,Alh. Hauwa Nwachukwu,8186925245
+Khadija,,Abubakar,F,2010-12-12,Islam,O+,AS,Lagos,,JSS 3A,Alh. Ngozi Abdullahi,9199986121
+Ado,,Mohammed,M,2009-06-19,Christianity,A-,AA,Port Harcourt,,JSS 3A,Mr. Amina Obi,9169413401
+Hadiza,,Okafor,F,2009-02-14,Christianity,O-,AS,Jos,,JSS 3A,Alh. Kemi Bello,8109502592
+Adaeze,,Oyelaran,F,2009-11-11,Christianity,B+,AC,Ilorin,,JSS 3A,Alh. Tanko Danjuma,8035588351
+Chinedu,,Adeyemi,M,2009-12-08,Islam,A+,SS,Zaria,,JSS 3A,Alhaja Tanko Adeyemi,9010421905
+Bala,,Abdullahi,M,2011-05-17,Christianity,O+,SS,Benin City,,JSS 3A,Alh. Solomon Balogun,9076097302
+Segun,,Ogunleye,M,2010-01-12,Islam,O-,AA,Lagos,,JSS 3A,Alhaja Usman Yakubu,8043714413
+Ladi,,Adeyemi,F,2011-05-07,Islam,O-,AS,Sokoto,,JSS 3A,Mr. Femi Okonkwo,9199278951
+Sadiq,,Yakubu,M,2010-11-21,Christianity,A-,AA,Benin City,,JSS 3A,Mr. Kemi Abubakar,9036570034
+Ruqayya,,Adeleke,F,2009-06-27,Islam,O+,AA,Abuja,,JSS 3A,Mr. Ngozi Abdullahi,7063197321
+Tajudeen,,Garba,M,2011-04-16,Christianity,B+,AA,Zaria,,JSS 3A,Alh. Adaeze Okafor,7071861700
+Salamatu,,Obi,F,2010-10-28,Christianity,O+,AC,Abuja,,JSS 3A,Alhaja Sadiya Danjuma,7081818722
+Obinna,,Ogunleye,M,2011-02-24,Islam,A-,AS,Ilorin,,JSS 3B,Mrs. Tanko Okafor,8156943658
+Suleiman,,Sani,M,2011-04-01,Christianity,A+,AC,Enugu,,JSS 3B,Alhaja Binta Okafor,9070091729
+Hauwa,,Suleiman,F,2010-10-24,Christianity,A-,AC,Lagos,,JSS 3B,Mr. Femi Umar,9004481499
+Babatunde,,Umar,M,2009-06-06,Christianity,B+,AS,Ilorin,,JSS 3B,Alh. Adaeze Sani,9154017109
+Kaltum,,Abubakar,F,2009-12-09,Islam,B+,AA,Lagos,,JSS 3B,Alh. Fatima Garba,8197980433
+Yetunde,,Okonkwo,F,2011-09-25,Islam,B+,AC,Enugu,,JSS 3B,Mrs. Adaeze Ayodele,8003627407
+Zubairu,,Tanko,M,2009-05-24,Christianity,A+,SS,Kano,,JSS 3B,Alhaja Yakubu Ayodele,7088671900
+Segun,,Balogun,M,2011-06-27,Islam,A+,AA,Kaduna,,JSS 3B,Mrs. Ali Danjuma,9076511858
+Tajudeen,,Oyelaran,M,2009-05-18,Christianity,O+,AA,Maiduguri,,JSS 3B,Alh. Tanko Umar,8144802008
+Zainab,,Aliyu,F,2009-05-25,Islam,B+,AS,Ilorin,,JSS 3B,Mr. Chukwudi Fashola,9130102575
+Ladi,,Oyelaran,F,2009-08-15,Islam,O+,AA,Kano,,JSS 3B,Alhaja Ngozi Abubakar,8139093019
+Wale,,Olayinka,M,2010-11-08,Islam,AB+,AA,Abuja,,JSS 3B,Alh. Rasheed Ibrahim,8092539597
+Mariam,,Sani,F,2009-08-17,Christianity,AB+,AC,Benin City,,JSS 3B,Alhaja Yakubu Adeleke,7048652126
+Fatima,,Bashir,F,2009-09-24,Christianity,B+,AS,Owerri,,JSS 3B,Mr. Amina Aliyu,8114958212
+Salamatu,,Yakubu,F,2010-02-18,Christianity,O+,AS,Kaduna,,JSS 3B,Alhaja Solomon Tanko,9133225032
+Fatima,,Umar,F,2010-02-08,Christianity,O-,AS,Calabar,,JSS 3B,Alhaja Solomon Danjuma,9117346252
+Babatunde,,Obi,M,2010-01-03,Christianity,O-,AA,Kaduna,,JSS 3B,Mr. Solomon Obi,7008324957
+Chioma,,Nwachukwu,F,2011-08-09,Islam,AB+,AC,Lagos,,JSS 3B,Alh. Fatima Eze,8100879336
+Khadija,,Abdullahi,F,2011-08-09,Islam,A+,AA,Calabar,,JSS 3B,Alhaja Tanko Ibrahim,8138522519
+Sadiq,,Tanko,M,2009-04-10,Christianity,O+,AS,Ibadan,,JSS 3B,Alhaja Binta Yakubu,9107074620
+Chika,,Umar,F,2009-05-14,Islam,A-,SS,Port Harcourt,,JSS 3B,Alhaja Tanko Sani,9002167309
+Safiya,,Tanko,F,2010-05-20,Islam,AB+,AA,Owerri,,JSS 3B,Alhaja Funmilayo Adeyemi,9155320539
+Olumide,,Musa,M,2010-06-12,Christianity,O+,AC,Minna,,JSS 3B,Alh. Emeka Ibrahim,8141820127
+Khadija,,Ogunleye,F,2009-07-13,Islam,A-,AA,Minna,,JSS 3B,Alh. Sadiya Oyelaran,9112511723
+Hauwa,,Nwachukwu,F,2011-07-24,Islam,A+,AC,Jos,,JSS 3B,Alhaja Olusegun Suleiman,7061320764
+Ahmed,,Olayinka,M,2010-05-26,Christianity,A+,AS,Abeokuta,,JSS 3B,Mrs. Ali Mohammed,8167651942
+Bala,,Mohammed,M,2011-09-28,Islam,O-,AC,Gombe,,JSS 3B,Mr. Funmilayo Bashir,9066364690
+Fatima,,Okafor,F,2009-09-08,Christianity,O+,AA,Gombe,,JSS 3B,Alhaja Sadiya Umar,9002627274
+Chika,,Aliyu,F,2010-06-28,Christianity,O+,AC,Sokoto,,JSS 3B,Alh. Usman Ibrahim,8199038525
+Blessing,,Garba,F,2009-02-25,Christianity,A+,AS,Ilorin,,JSS 3B,Alh. Adaeze Adeyemi,9132051975
+Halima,,Ayodele,F,2010-12-12,Islam,A-,AC,Ibadan,,JSS 3B,Mrs. Rasheed Abubakar,7083041277
+Ibrahim,,Balogun,M,2010-02-25,Christianity,AB+,AC,Enugu,,JSS 3B,Alh. Femi Mohammed,8186330220
+Hadiza,,Okonkwo,F,2009-10-25,Christianity,O-,AS,Katsina,,JSS 3B,Alhaja Kemi Aliyu,9196079417
+Chiamaka,,Yakubu,F,2010-12-12,Islam,A-,AA,Port Harcourt,,JSS 3B,Alh. Rasheed Adeleke,8128826189
+Nnamdi,,Eze,M,2009-06-14,Islam,O-,AS,Jos,,JSS 3B,Mrs. Ngozi Okonkwo,8025017657
+Ikenna,,Obi,M,2010-08-05,Christianity,B+,AS,Sokoto,,JSS 3B,Mrs. Binta Olayinka,7089599558
+Bilkisu,,Lawal,F,2009-10-28,Christianity,A-,SS,Enugu,,JSS 3B,Mrs. Ali Abubakar,8125585379
+Blessing,,Ibrahim,F,2011-01-22,Islam,AB+,AS,Lagos,,JSS 3B,Mr. Usman Balogun,8153485384
+Chika,,Bashir,F,2011-04-17,Christianity,A+,AC,Benin City,,JSS 3B,Mrs. Sadiya Bashir,7035108645
+Mariam,,Oyelaran,F,2010-05-27,Islam,O+,AC,Kaduna,,JSS 3B,Mrs. Usman Olayinka,9115510747
+Salamatu,,Fashola,F,2010-01-12,Christianity,A-,SS,Benin City,,JSS 3C,Mrs. Olusegun Olayinka,9164605331
+Ese,,Okonkwo,F,2011-02-24,Islam,A+,AS,Abeokuta,,JSS 3C,Mr. Hauwa Musa,8089499381
+Folake,,Obi,F,2010-02-21,Christianity,O-,AS,Abeokuta,,JSS 3C,Mr. Usman Abdullahi,9166385133
+Ruqayya,,Olayinka,F,2010-08-22,Christianity,O+,AC,Calabar,,JSS 3C,Mrs. Ngozi Ogunleye,8022139339
+Umar,,Adeleke,M,2011-01-26,Christianity,O+,AC,Port Harcourt,,JSS 3C,Mr. Chukwudi Abubakar,9122638797
+Sani,,Bashir,M,2009-04-05,Islam,B+,AS,Calabar,,JSS 3C,Mr. Fatima Adeyemi,8031591724
+Sadiq,,Okafor,M,2009-08-27,Islam,AB+,AC,Ilorin,,JSS 3C,Mrs. Solomon Garba,7040569678
+Ese,,Mohammed,F,2009-09-03,Islam,O-,AC,Gombe,,JSS 3C,Mr. Amina Ekwueme,9115109986
+Titilayo,,Tanko,F,2009-09-25,Christianity,O+,AC,Kaduna,,JSS 3C,Alh. Kemi Lawal,9027995506
+Ibrahim,,Olayinka,M,2010-11-09,Islam,A+,AC,Benin City,,JSS 3C,Alh. Ali Okonkwo,9199558845
+Ngozi,,Suleiman,F,2011-04-28,Christianity,A-,AC,Minna,,JSS 3C,Mrs. Femi Obi,8042749511
+Safiya,,Nwachukwu,F,2009-05-14,Islam,AB+,AA,Enugu,,JSS 3C,Alh. Adaeze Musa,8143952127
+Aisha,,Mohammed,F,2009-07-22,Christianity,O-,AA,Jos,,JSS 3C,Alh. Kemi Nwachukwu,8005467768
+Olamide,,Bello,F,2010-09-03,Islam,A+,AS,Benin City,,JSS 3C,Mr. Funmilayo Mohammed,9043267763
+Ikenna,,Danjuma,M,2009-02-03,Islam,O-,AA,Ilorin,,JSS 3C,Mrs. Ali Adeleke,7079119354
+Rahma,,Olayinka,F,2010-04-26,Christianity,A+,AC,Calabar,,JSS 3C,Mr. Grace Umar,8182991497
+Hauwa,,Yakubu,F,2011-03-07,Islam,O+,SS,Port Harcourt,,JSS 3C,Alh. Ngozi Abdullahi,8046225256
+Femi,,Adeyemi,M,2009-08-24,Islam,AB+,SS,Port Harcourt,,JSS 3C,Alhaja Femi Mohammed,8146114711
+Segun,,Bashir,M,2009-08-06,Christianity,A-,AA,Sokoto,,JSS 3C,Mrs. Ali Bashir,7058114962
+Emeka,,Lawal,M,2011-01-11,Christianity,O+,AS,Katsina,,JSS 3C,Alhaja Olusegun Ayodele,9127936176
+Peter,,Ibrahim,M,2011-09-27,Christianity,A-,SS,Kano,,JSS 3C,Mr. Chukwudi Oyelaran,8045134763
+Adaeze,,Umar,F,2009-04-03,Christianity,A-,SS,Zaria,,JSS 3C,Mr. Adaeze Sani,8111045312
+Salamatu,,Balogun,F,2011-07-18,Islam,O+,AA,Ilorin,,JSS 3C,Alhaja Fatima Tanko,9001806139
+Zubairu,,Nwachukwu,M,2010-07-01,Christianity,O+,SS,Katsina,,JSS 3C,Alh. Usman Bashir,7032499306
+Ngozi,,Suleiman,F,2011-02-22,Christianity,AB+,AC,Enugu,,JSS 3C,Mr. Binta Ayodele,9032142250
+Jamila,,Sani,F,2009-08-11,Islam,B+,AA,Port Harcourt,,JSS 3C,Alhaja Grace Danjuma,9161232965
+Bashir,,Garba,M,2011-06-07,Islam,O-,SS,Port Harcourt,,JSS 3C,Alh. Funmilayo Umar,9157280620
+Bashir,,Abubakar,M,2009-06-02,Islam,B+,AA,Bauchi,,JSS 3C,Alhaja Hauwa Bashir,8005951747
+Ladi,,Sani,F,2010-07-10,Christianity,A-,AA,Abeokuta,,JSS 3C,Alhaja Ngozi Danjuma,7028940285
+Sadiq,,Abubakar,M,2009-10-02,Islam,A+,AC,Sokoto,,JSS 3C,Alh. Solomon Okonkwo,8011845897
+Hauwa,,Danjuma,F,2010-06-02,Christianity,AB+,AC,Minna,,JSS 3C,Alh. Tanko Ibrahim,9078158454
+Folake,,Garba,F,2009-05-15,Christianity,O-,AS,Kano,,JSS 3C,Mrs. Yakubu Ogunleye,9042803140
+Bala,,Abdullahi,M,2010-02-10,Christianity,O-,AA,Maiduguri,,JSS 3C,Alh. Chukwudi Musa,8052156207
+Ngozi,,Sani,F,2010-06-21,Christianity,A+,SS,Lagos,,JSS 3C,Alhaja Adaeze Adeyemi,7091306162
+Zainab,,Ayodele,F,2010-06-26,Islam,O-,AC,Minna,,JSS 3C,Mrs. Sadiya Musa,8157321635
+Folake,,Okafor,F,2009-06-11,Islam,O-,AC,Ibadan,,JSS 3C,Mrs. Tanko Sani,9060231872
+Peter,,Nwachukwu,M,2011-05-08,Islam,B+,AS,Abeokuta,,JSS 3C,Mrs. Hauwa Ekwueme,8052061289
+Salamatu,,Aliyu,F,2011-12-18,Islam,A-,AA,Ilorin,,JSS 3C,Alhaja Femi Ekwueme,9169135975
+Yusuf,,Balogun,M,2009-01-06,Islam,O-,AS,Kano,,JSS 3C,Alh. Femi Bello,9017490029
+Nnamdi,,Ibrahim,M,2010-06-05,Islam,A-,AS,Katsina,,JSS 3C,Mr. Adaeze Eze,9068483123

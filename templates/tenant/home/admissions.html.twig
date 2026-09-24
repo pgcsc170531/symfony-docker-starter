@@ -1,0 +1,82 @@
+{% extends 'tenant/home/layout.html.twig' %}
+
+{% block title %}Admissions - {{ school_name }}{% endblock %}
+
+{% block tenant_public_content %}
+
+{# ---------- PAGE HEADER ---------- #}
+<section class="relative overflow-hidden text-white" style="background: linear-gradient(135deg, {{ brand }}, {{ brand }}d9);">
+    <div class="absolute -top-16 -right-16 h-64 w-64 rounded-full bg-white/10 blur-2xl"></div>
+    <div class="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-24 text-center">
+        <p class="text-sm font-semibold uppercase tracking-[0.3em] text-white/80">Join Our Family</p>
+        <h1 class="mt-3 text-4xl sm:text-5xl font-extrabold tracking-tight">Admissions</h1>
+        {% if admissions_intro %}
+            <p class="mx-auto mt-5 max-w-2xl text-lg text-white/85">{{ admissions_intro }}</p>
+        {% else %}
+            <p class="mx-auto mt-5 max-w-2xl text-lg text-white/85">Begin your child's journey at {{ school_name }}.</p>
+        {% endif %}
+    </div>
+</section>
+
+{# ---------- HOW TO APPLY ---------- #}
+<section class="py-20 bg-white">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center max-w-3xl mx-auto">
+            <p class="text-sm font-bold uppercase tracking-widest" style="color: {{ brand }};">Applications</p>
+            <h2 class="mt-3 text-3xl sm:text-4xl font-extrabold text-gray-900">How to Apply</h2>
+            <p class="mt-4 text-lg text-gray-600">Our admission process is simple, transparent and welcoming.</p>
+        </div>
+
+        <ol class="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {% set steps = [
+                {'title': 'Visit the School', 'desc': 'Come and see our campus, meet our staff and ask questions.'},
+                {'title': 'Obtain a Form', 'desc': 'Collect the admission form from the school or enquiries office.'},
+                {'title': 'Submit Documents', 'desc': 'Return the completed form with the required documents.'},
+                {'title': 'Assessment & Offer', 'desc': 'Attend the assessment and receive your admission offer.'}
+            ] %}
+            {% for step in steps %}
+            <li class="bg-gray-50 rounded-2xl border border-gray-100 p-7 shadow-sm">
+                <span class="flex h-11 w-11 items-center justify-center rounded-full text-white font-bold text-lg" style="background-color: {{ brand }};">{{ loop.index }}</span>
+                <h3 class="mt-5 text-lg font-bold text-gray-900">{{ step.title }}</h3>
+                <p class="mt-2 text-sm text-gray-600 leading-relaxed">{{ step.desc }}</p>
+            </li>
+            {% endfor %}
+        </ol>
+    </div>
+</section>
+
+{# ---------- REQUIREMENTS ---------- #}
+<section class="py-20 bg-gray-50">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid gap-12 lg:grid-cols-2 items-start">
+        <div class="bg-white rounded-3xl border border-gray-100 p-9 shadow-sm">
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-gray-900">Required Documents</h2>
+            <ul class="mt-6 space-y-4">
+                {% for doc in ['Completed admission form', 'Birth certificate or proof of age', 'Recent passport photograph', 'Transfer letter (for higher classes)', 'Previous academic records'] %}
+                <li class="flex items-start gap-3">
+                    <svg class="h-6 w-6 flex-shrink-0" style="color: {{ brand }};" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span class="text-gray-700">{{ doc }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="bg-white rounded-3xl border border-gray-100 p-9 shadow-sm">
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-gray-900">Admissions Office</h2>
+            <p class="mt-4 text-gray-600">Our admissions team is happy to help you at every step.</p>
+            <ul class="mt-6 space-y-5">
+                {% if school_phone %}
+                    <li class="text-gray-800"><span class="font-semibold text-gray-400">Phone:</span> {{ school_phone }}</li>
+                {% endif %}
+                {% if school_email %}
+                    <li><a href="mailto:{{ school_email }}" class="text-blue-600 hover:underline">{{ school_email }}</a></li>
+                {% endif %}
+                <li class="text-gray-800"><span class="font-semibold text-gray-400">Visit:</span> {% if school_address %}{{ school_address }}{% else %}the school campus{% endif %}</li>
+            </ul>
+            <a href="{{ path('app_tenant_contact', {'subdomain': subdomain}) }}" class="mt-8 inline-flex items-center justify-center w-full px-6 py-3.5 rounded-full text-white font-bold shadow-lg hover:opacity-90 transition" style="background-color: {{ brand }};">
+                Contact Admissions
+            </a>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

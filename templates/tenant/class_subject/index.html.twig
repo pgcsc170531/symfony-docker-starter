@@ -1,0 +1,97 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Class Subjects{% endblock %}
+
+{% block body %}
+<div class="p-6 max-w-5xl mx-auto">
+    <h1 class="text-2xl font-bold mb-6">🗂️ Class Subjects</h1>
+
+    {# Create form #}
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 class="font-semibold mb-4">Register a Subject for a Class</h2>
+        <form method="post" class="grid gap-4 md:grid-cols-4 items-end">
+            <div>
+                <label class="block text-sm font-medium mb-1">Subject</label>
+                <select name="subject" required class="w-full border rounded p-2 text-sm">
+                    <option value="">— Select Subject —</option>
+                    {% for deptName, deptSubjects in subjectGroups %}
+                        <optgroup label="{{ deptName }}">
+                            {% for s in deptSubjects %}
+                                <option value="{{ s.id }}">{{ s.name }}</option>
+                            {% endfor %}
+                        </optgroup>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Classroom</label>
+                <select name="classroom" required class="w-full border rounded p-2 text-sm">
+                    <option value="">— Select Class —</option>
+                    {% for c in classrooms %}
+                        <option value="{{ c.id }}">{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Session</label>
+                <select name="session" required class="w-full border rounded p-2 text-sm">
+                    <option value="">— Select Session —</option>
+                    {% for sess in sessions %}
+                        <option value="{{ sess.id }}">{{ sess.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Category</label>
+                <select name="category" class="w-full border rounded p-2 text-sm">
+                    <option value="core">Core</option>
+                    <option value="elective">Elective</option>
+                </select>
+            </div>
+            <button class="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm md:col-span-4 justify-self-start">Register</button>
+        </form>
+    </div>
+
+    {# List #}
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-100 text-left text-gray-500">
+                <tr>
+                    <th class="p-3">Session</th>
+                    <th class="p-3">Class</th>
+                    <th class="p-3">Subject</th>
+                    <th class="p-3">Department</th>
+                    <th class="p-3">Category</th>
+                    <th class="p-3 text-right">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cs in classSubjects %}
+                    <tr class="border-t">
+                        <td class="p-3">{{ cs.session.name }}</td>
+                        <td class="p-3">{{ cs.classroom.name }}</td>
+                        <td class="p-3 font-medium">{{ cs.subject.name }}</td>
+                        <td class="p-3">{{ cs.subject.department ? cs.subject.department.name : '—' }}</td>
+                        <td class="p-3">
+                            <span class="px-2 py-0.5 rounded-full text-xs {{ cs.isCore ? 'bg-indigo-100 text-indigo-700' : 'bg-purple-100 text-purple-700' }}">
+                                {{ cs.category }}
+                            </span>
+                        </td>
+                        <td class="p-3 text-right">
+                            <form method="post" action="{{ path('app_tenant_class_subject_delete', {id: cs.id}) }}"
+                                  onsubmit="return confirm('Remove this class subject?');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('cs' ~ cs.id) }}">
+                                <button class="text-red-600 text-sm">Remove</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr class="border-t">
+                        <td class="p-3 text-gray-500" colspan="6">No class subjects registered yet.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

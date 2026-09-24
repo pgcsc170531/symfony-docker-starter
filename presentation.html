@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Edus — School Management Platform · Board Presentation</title>
+<style>
+  :root{
+    --indigo:#4f46e5;
+    --indigo-dark:#3730a3;
+    --indigo-soft:#eef2ff;
+    --amber:#f59e0b;
+    --amber-soft:#fef3c7;
+    --green:#10b981;
+    --green-soft:#d1fae5;
+    --red:#ef4444;
+    --red-soft:#fee2e2;
+    --ink:#1e293b;
+    --muted:#64748b;
+    --line:#e2e8f0;
+    --bg:#f8fafc;
+    --card:#ffffff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    color:var(--ink);
+    background:#0f172a;
+    overflow:hidden;
+  }
+
+  /* ============ STAGE ============ */
+  .stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:44px 48px 84px}
+
+  .slide{
+    position:absolute;inset:44px 48px 84px;
+    display:none;
+    flex-direction:column;
+    background:var(--bg);
+    border-radius:20px;
+    box-shadow:0 30px 60px rgba(0,0,0,.35);
+    overflow:hidden;
+  }
+  .slide.active{display:flex;animation:pop .35s ease}
+  @keyframes pop{from{opacity:0;transform:translateY(14px) scale(.99)}to{opacity:1;transform:none}}
+
+  .slide-body{flex:1;padding:44px 56px;overflow:auto;display:flex;flex-direction:column}
+  .slide-body h2{font-size:2rem;line-height:1.15;color:var(--ink);margin-bottom:6px}
+  .slide-body h3{font-size:1.15rem;color:var(--indigo);margin:18px 0 6px}
+  .slide-body .sub{color:var(--muted);font-size:1.05rem;margin-bottom:16px}
+  .kicker{display:inline-flex;align-items:center;gap:8px;font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--indigo);background:var(--indigo-soft);padding:5px 12px;border-radius:999px;margin-bottom:14px;width:fit-content}
+
+  .columns{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:8px}
+  @media(max-width:860px){.columns{grid-template-columns:1fr}}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+  .card h4{font-size:1rem;margin-bottom:8px;color:var(--ink)}
+  .card p,.card li{color:var(--muted);font-size:.95rem;line-height:1.5}
+
+  ul.tight{list-style:none;margin-top:6px}
+  ul.tight li{position:relative;padding-left:22px;margin:8px 0;color:var(--ink);font-size:.98rem;line-height:1.45}
+  ul.tight li::before{content:"✓";position:absolute;left:0;top:1px;color:var(--green);font-weight:800}
+
+  .num{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;padding:0 7px;border-radius:8px;background:var(--indigo-soft);color:var(--indigo);font-weight:800;font-size:.85rem;margin-right:8px}
+
+  .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.72rem;font-weight:700;letter-spacing:.03em}
+  .pill.amber{background:var(--amber-soft);color:#92400e}
+  .pill.green{background:var(--green-soft);color:#065f46}
+  .pill.red{background:var(--red-soft);color:#991b1b}
+  .pill.indigo{background:var(--indigo-soft);color:var(--indigo)}
+
+  .golden{display:inline-flex;align-items:center;gap:8px;background:var(--amber-soft);border:1px solid #fcd34d;color:#92400e;font-weight:700;padding:6px 14px;border-radius:999px;font-size:.85rem;margin-bottom:16px}
+  .golden b{color:#b45309}
+
+  /* flow chains */
+  .chain{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin:16px 0}
+  .chain .node{background:var(--card);border:1.5px solid var(--indigo);color:var(--indigo);font-weight:700;padding:12px 14px;border-radius:12px;font-size:.9rem;text-align:center;min-width:96px}
+  .chain .node.hot{background:var(--amber-soft);border-color:var(--amber);color:#92400e}
+  .chain .arrow{display:flex;align-items:center;color:var(--muted);font-size:1.3rem;font-weight:800}
+  .chain .node small{display:block;font-weight:500;color:var(--muted);margin-top:3px;font-size:.72rem}
+
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:8px}
+  @media(max-width:860px){.grid3{grid-template-columns:1fr}}
+
+  .big{font-size:1.9rem;font-weight:800;color:var(--indigo)}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;text-align:center}
+  .stat .v{font-size:1.6rem;font-weight:800;color:var(--ink)}
+  .stat .l{color:var(--muted);font-size:.8rem;margin-top:4px}
+
+  table{width:100%;border-collapse:collapse;margin-top:12px;font-size:.92rem}
+  th,td{border:1px solid var(--line);padding:9px 12px;text-align:left}
+  th{background:var(--indigo-soft);color:var(--indigo);font-weight:700}
+  tr:nth-child(even) td{background:#fbfcfe}
+  .muted{color:var(--muted)}
+
+  /* ============ DIVIDERS & COVER ============ */
+  .slide.dark{background:linear-gradient(135deg,#1e1b4b 0%,#312e81 45%,#4f46e5 100%);color:#fff}
+  .slide.dark .slide-body{justify-content:center;text-align:center;align-items:center}
+  .slide.dark h2{color:#fff}
+  .slide.dark .sub{color:#c7d2fe}
+  .slide.dark .kicker{background:rgba(255,255,255,.14);color:#fff}
+  .part{font-size:1rem;letter-spacing:.22em;text-transform:uppercase;color:#a5b4fc;font-weight:700;margin-bottom:18px}
+  .brand{font-weight:800;font-size:3.4rem;letter-spacing:-.02em;line-height:1.05;margin:8px 0}
+  .brand .dot{color:var(--amber)}
+  .tagline{color:#c7d2fe;font-size:1.25rem;max-width:720px;line-height:1.6}
+
+  /* ============ HUD ============ */
+  .progress{position:fixed;top:0;left:0;height:4px;background:var(--indigo);transition:width .3s;z-index:50}
+  .hud{position:fixed;bottom:18px;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:0 48px;z-index:50}
+  .hud .btn{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:9px 18px;font-size:.9rem;cursor:pointer;font-weight:600;backdrop-filter:blur(6px)}
+  .hud .btn:hover{background:rgba(255,255,255,.25)}
+  .hud .btn.primary{background:var(--indigo);border-color:var(--indigo)}
+  .hud .counter{color:#cbd5e1;font-size:.85rem;font-weight:600}
+  .hint{position:fixed;top:14px;right:48px;color:#94a3b8;font-size:.75rem;z-index:50}
+
+  /* notes drawer */
+  .notes-drawer{position:fixed;left:0;right:0;bottom:0;transform:translateY(100%);transition:transform .3s ease;background:#0f172a;color:#e2e8f0;border-top:2px solid var(--indigo);z-index:60;max-height:46vh;overflow:auto}
+  .notes-drawer.open{transform:translateY(0)}
+  .notes-drawer .inner{padding:20px 56px 22px}
+  .notes-drawer h4{color:var(--amber);font-size:.8rem;letter-spacing:.15em;text-transform:uppercase;margin-bottom:8px}
+  .notes-drawer p{line-height:1.6;font-size:.98rem;color:#cbd5e1;max-width:960px}
+
+  .agenda-list{list-style:none;margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:860px){.agenda-list{grid-template-columns:1fr}}
+  .agenda-list li a{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 16px;text-decoration:none;color:var(--ink);font-weight:600;transition:.15s}
+  .agenda-list li a:hover{border-color:var(--indigo);transform:translateY(-2px);box-shadow:0 8px 18px rgba(79,70,229,.12)}
+  .agenda-list .n{background:var(--indigo);color:#fff;border-radius:8px;min-width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem}
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<div class="hint">← → to navigate &nbsp;·&nbsp; <b>N</b> speaker notes &nbsp;·&nbsp; <b>F</b> fullscreen</div>
+
+<main class="stage" id="stage"></main>
+
+<div class="hud">
+  <button class="btn" id="prevBtn" title="Previous">← Back</button>
+  <span class="counter" id="counter">1 / 1</span>
+  <button class="btn primary" id="nextBtn" title="Next">Next →</button>
+</div>
+
+<div class="notes-drawer" id="notesDrawer">
+  <div class="inner" id="notesContent"></div>
+</div>
+
+<script>
+const SLIDES = [
+/* 0 COVER */
+{ type:'cover', title:'Edus', sub:'School Management Platform', body:`
+  <div class="part">Board Presentation</div>
+  <div class="brand">Edus<span class="dot">.</span></div>
+  <p class="tagline">One portal for the whole school — admissions, academics, fees, store, results and parents.</p>
+  <p style="margin-top:22px;color:#a5b4fc;font-size:1rem">A guided walkthrough, told through the journey of one student:
+     <b style="color:#fcd34d">Arraghibun</b> (JSS 1A)</p>`,
+  notes:`Open with a warm welcome to the board of directors and the principal.
+Frame the goal: "Today I will walk you through our school management portal the way the school actually uses it every day."
+Introduce the idea of following ONE student — Arraghibun, JSS 1A — from admission all the way to the parent seeing her receipt.
+This keeps the whole demonstration connected and easy to follow.` },
+
+/* 1 AGENDA */
+{ type:'body', kicker:'Roadmap', title:'What we will cover today', body:`
+  <p class="sub">Nine connected steps — each one builds on the one before it. We follow the money and the student end-to-end.</p>
+  <ul class="agenda-list">
+    <li><a data-go="3"><span class="n">1</span> Login &amp; the big picture</a></li>
+    <li><a data-go="5"><span class="n">2</span> Onboarding wizard — setting up the school</a></li>
+    <li><a data-go="9"><span class="n">3</span> Academic structure &amp; staff</a></li>
+    <li><a data-go="13"><span class="n">4</span> Admissions &amp; students (Arraghibun joins)</a></li>
+    <li><a data-go="17"><span class="n">5</span> Finance — billing &amp; payments</a></li>
+    <li><a data-go="22"><span class="n">6</span> Store &amp; Point of Sale</a></li>
+    <li><a data-go="25"><span class="n">7</span> Expenses &amp; Profit &amp; Loss</a></li>
+    <li><a data-go="28"><span class="n">8</span> Results &amp; the approval chain</a></li>
+    <li><a data-go="32"><span class="n">9</span> Parent portal, SMS &amp; the full circle</a></li>
+  </ul>`,
+  notes:`Use this agenda as a roadmap so the board knows exactly where we are heading.
+Emphasise the key idea: the modules are NOT separate — they form one continuous flow.
+Point out that each of the 9 steps depends on the previous one, which is why the presentation will feel like a single story rather than a list of features.` },
+
+/* 2 DIVIDER 1 */
+{ type:'divider', part:'Part 1', title:'Login & the big picture', sub:'What Edus is, and why every school gets its own private space' },
+
+/* 3 LOGIN / PITCH */
+{ type:'body', kicker:'Part 1 · Login', title:'One secure portal, private to your school', body:`
+  <p class="sub">Each school gets its own <b>isolated database</b> — its data is completely private and separate from every other school on the platform.</p>
+  <div class="columns">
+    <div class="card">
+      <h4>What the school sees</h4>
+      <ul class="tight">
+        <li>A dedicated web address (your school's own subdomain)</li>
+        <li>Secure login with email &amp; password</li>
+        <li>Role-based access — Admin, Bursar, Teacher, Store Keeper</li>
+        <li>Parents get their own separate login</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Why it matters to you</h4>
+      <ul class="tight">
+        <li>No manual record books or spreadsheets</li>
+        <li>Every fee, payment and result is stored safely</li>
+        <li>One source of truth for the whole school</li>
+        <li>Financial data visible to authorised staff only</li>
+      </ul>
+    </div>
+  </div>
+  <div class="chain" style="margin-top:20px">
+    <div class="node">Login<span class="pill indigo" style="display:block;margin-top:4px">Role-based</span></div>
+    <div class="arrow">→</div>
+    <div class="node hot">First-time Setup Wizard<span class="pill amber" style="display:block;margin-top:4px">Automatic</span></div>
+  </div>`,
+  notes:`Before any live demo, explain the login screen simply: every school has its own private web address and its own private database.
+Mention that different staff roles see different parts of the system — the Bursar sees finance, the teacher sees results, the store keeper sees the POS.
+Then say: "The first time you log in, the system automatically opens a Setup Wizard — let me show you."` },
+
+/* 4 DIVIDER 2 */
+{ type:'divider', part:'Part 2', title:'The Onboarding Wizard', sub:"Five quick steps that build the school's entire foundation" },
+
+/* 5 ONBOARDING 1-2 */
+{ type:'body', kicker:'Part 2 · Onboarding', title:'Steps 1–2: Identity & Class Structure', body:`
+  <div class="columns">
+    <div class="card">
+      <h4><span class="num">1</span> School Identity</h4>
+      <ul class="tight">
+        <li>School name, motto &amp; institution type</li>
+        <li>Brand colour &amp; logo (appears on every invoice &amp; receipt)</li>
+        <li>Official email, phone &amp; address</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4><span class="num">2</span> Build Class Structure</h4>
+      <ul class="tight">
+        <li>Tick the levels your school runs (JSS 1 – SS 3)</li>
+        <li>Enter the arms as letters: <b>A, B, C</b></li>
+        <li>The system auto-generates <b>JSS 1A, JSS 1B, JSS 1C…</b></li>
+      </ul>
+    </div>
+  </div>
+  <div class="chain" style="margin-top:14px">
+    <div class="node">Levels<span class="pill indigo" style="display:block;margin-top:4px">JSS 1–3</span></div>
+    <div class="arrow">+</div>
+    <div class="node">Arms<span class="pill indigo" style="display:block;margin-top:4px">A, B, C</span></div>
+    <div class="arrow">=</div>
+    <div class="node hot">JSS 1A · 1B · 1C …<span class="pill amber" style="display:block;margin-top:4px">auto-created</span></div>
+  </div>`,
+  notes:`The wizard is the foundation of the whole system — everything else (billing, results, store) hangs off the classes we create here.
+Step 1 sets the school's branding, which will automatically appear on every printed invoice and receipt.
+Step 2 shows the "smart class generator": type a level and its arms, and the system creates every arm for you. No manual typing of each class.
+This is where our demo classes — JSS 1A to JSS 3C — come from.` },
+
+/* 6 ONBOARDING 3-4 */
+{ type:'body', kicker:'Part 2 · Onboarding', title:'Steps 3–4: Calendar & Fee Items', body:`
+  <div class="columns">
+    <div class="card">
+      <h4><span class="num">3</span> Academic Calendar</h4>
+      <ul class="tight">
+        <li>Current session (e.g. 2026/2027)</li>
+        <li>Current term (e.g. First Term)</li>
+        <li>Resumption &amp; vacation dates</li>
+        <li>Only one session / term is "active" at a time</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4><span class="num">4</span> Configure Fee Items</h4>
+      <ul class="tight">
+        <li>Activate what you charge for (Tuition, PTA Levy…)</li>
+        <li>Set frequency: Every Term vs Once per Session</li>
+        <li>Set target: All Students vs New Intake Only</li>
+        <li>Add custom fee items if needed</li>
+      </ul>
+    </div>
+  </div>
+  <p class="muted" style="margin-top:16px"><b>Why this matters:</b> the active session &amp; term determine what every student is billed for, and the fee items are the building blocks of every invoice.</p>`,
+  notes:`Step 3 fixes the academic calendar. Note that the system enforces ONE active session and ONE active term — this stops bills and results from being posted to the wrong period.
+Step 4 defines the chargeable items. Explain the frequency idea: tuition repeats every term, but an admission form is a one-time charge.
+These fee items will be priced per class in the next step.` },
+
+/* 7 ONBOARDING 5 + SUMMARY */
+{ type:'body', kicker:'Part 2 · Onboarding', title:'Step 5: Fee Prices → Your Master Fee Schedule', body:`
+  <p class="sub">Assign a price to each fee for every class level. New-intake prices can differ from returning-student prices.</p>
+  <div class="chain">
+    <div class="node">Class<span class="pill indigo" style="display:block;margin-top:4px">JSS 1A</span></div>
+    <div class="arrow">×</div>
+    <div class="node">Fee Item<span class="pill indigo" style="display:block;margin-top:4px">Tuition</span></div>
+    <div class="arrow">=</div>
+    <div class="node hot">Fee Structure<span class="pill amber" style="display:block;margin-top:4px">amount per term</span></div>
+  </div>
+  <div class="card" style="margin-top:10px">
+    <h4>Finish → The Master Fee Schedule</h4>
+    <p>On completion the portal is live and shows a single fee-schedule matrix — the financial blueprint for the term. The main navigation now reveals the three areas: <b>Academic · Finance · System</b>.</p>
+  </div>`,
+  notes:`This final wizard step turns the fee items into actual prices per class.
+Show the master fee schedule and explain it is the "price list" the system will use automatically when generating bills.
+Highlight that the left-hand menu is the school's permanent control centre, organised into Academic, Finance and System.` },
+
+/* 8 DIVIDER 3 */
+{ type:'divider', part:'Part 3', title:'Academic Structure & Staff', sub:'Departments, subjects, grading — and the people who run them' },
+
+/* 9 ACADEMIC STRUCTURE */
+{ type:'body', kicker:'Part 3 · Structure', title:'Curriculum: Departments → Subjects → Class Subjects', body:`
+  <div class="chain">
+    <div class="node">Department<span class="pill indigo" style="display:block;margin-top:4px">Sciences</span></div>
+    <div class="arrow">→</div>
+    <div class="node">Subjects<span class="pill indigo" style="display:block;margin-top:4px">Maths · Physics…</span></div>
+    <div class="arrow">→</div>
+    <div class="node hot">Class Subjects<span class="pill amber" style="display:block;margin-top:4px">per class, core/elective</span></div>
+  </div>
+  <div class="columns">
+    <div class="card">
+      <h4>Why it matters</h4>
+      <ul class="tight">
+        <li>Each class only sees the subjects it actually offers</li>
+        <li>Subjects are tagged <b>core</b> or <b>elective</b></li>
+        <li>Sets up teachers, timetables and results entry</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Grading scale (configurable)</h4>
+      <ul class="tight">
+        <li>Define grade bands: A1–F9, WAEC/NECO, or custom</li>
+        <li>Score ranges + points + remarks</li>
+        <li>Applied consistently to every result</li>
+      </ul>
+    </div>
+  </div>`,
+  notes:`Explain the academic backbone: departments group subjects, and class-subjects decide which subject each class offers per session.
+Emphasise core vs elective — teachers only ever see the subjects relevant to their class.
+Mention the grading scale: the school defines its own grade bands once, and the system uses them everywhere results appear.` },
+
+/* 10 STAFF */
+{ type:'body', kicker:'Part 3 · Staff', title:'Staff accounts & the four academic roles', body:`
+  <p class="sub">Create staff logins with roles, then assign each staff member to their academic duties in one click.</p>
+  <div class="grid3">
+    <div class="stat"><div class="v">Form Teacher</div><div class="l">looks after a class in a term</div></div>
+    <div class="stat"><div class="v">Subject Teacher</div><div class="l">teaches a subject to a class</div></div>
+    <div class="stat"><div class="v">HOD</div><div class="l">heads a department per session</div></div>
+    <div class="stat"><div class="v">Year Group Master</div><div class="l">oversees a whole level</div></div>
+  </div>
+  <p class="muted" style="margin-top:16px"><b>Why this matters:</b> these four roles are the exact same roles used later in the results approval chain — the system already knows who signs off what.</p>`,
+  notes:`Staff are created once, then assigned to duties with one click each.
+Call out the four roles clearly — Form Teacher, Subject Teacher, HOD and Year Group Master.
+Then foreshadow: "Remember these four roles. They are exactly the four levels of our results approval chain later." This is a key connection that makes the demo feel joined-up.` },
+
+/* 11 DIVIDER 4 */
+{ type:'divider', part:'Part 4', title:'Admissions & Students', sub:'Bringing students in — and this is where Arraghibun joins' },
+
+/* 12 ADMISSION */
+{ type:'body', kicker:'Part 4 · Admissions', title:'New Admission — the "Parent First" flow', body:`
+  <span class="golden">Golden thread → <b>Arraghibun Bello</b>, JSS 1A</span>
+  <div class="columns">
+    <div class="card">
+      <h4><span class="num">1</span> Identify the parent</h4>
+      <ul class="tight">
+        <li>Search existing parents by phone number</li>
+        <li>Or register a new parent (with their own login)</li>
+        <li>One parent → many children (siblings linked)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4><span class="num">2</span> Register the student</h4>
+      <ul class="tight">
+        <li>Identity, DOB, gender</li>
+        <li>Class placement</li>
+        <li>Origin + medical profile</li>
+        <li><b>Admission number auto-generated</b></li>
+      </ul>
+    </div>
+  </div>
+  <p class="muted" style="margin-top:14px">We admit <b>Arraghibun</b> here — and from this moment she flows through every other module.</p>`,
+  notes:`This is the golden moment — admit Arraghibun Bello into JSS 1A live.
+Explain the parent-first architecture: the system links students to a central guardian profile, so one parent with three children sees all of them from a single login.
+Point out the auto-generated admission number, and that siblings can be registered without re-entering the parent.` },
+
+/* 13 BULK CSV */
+{ type:'body', kicker:'Part 4 · Bulk Import', title:'Bulk import — 360 students in one upload', body:`
+  <p class="sub">For the returning cohort we use the CSV importer with our prepared file <b>demo_students_360.csv</b>.</p>
+  <div class="grid3">
+    <div class="stat"><div class="v">360</div><div class="l">students</div></div>
+    <div class="stat"><div class="v">9</div><div class="l">classes (JSS 1A → 3C)</div></div>
+    <div class="stat"><div class="v">40</div><div class="l">per class</div></div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h4>How it works</h4>
+    <ul class="tight">
+      <li>Download the 13-column template, fill it, upload it</li>
+      <li>Class names are matched automatically (JSS 1A, JSS 1B…)</li>
+      <li>Parent accounts are created automatically for every guardian</li>
+      <li>Optional: <b>auto-generate invoices</b> for every student in one click</li>
+      <li>Blank admission numbers are auto-generated</li>
+    </ul>
+  </div>`,
+  notes:`Switch to bulk mode: show the prepared CSV with 360 students (40 in each of the 9 classes).
+Walk through the upload flow and emphasise three wins for the board:
+1) parent accounts are created automatically,
+2) admission numbers are auto-generated,
+3) with one checkbox, every student's invoice is generated at the same time.
+This is the "how we migrated the whole school in minutes" moment.` },
+
+/* 14 DIRECTORY */
+{ type:'body', kicker:'Part 4 · Directory', title:'Student directory & printed documents', body:`
+  <div class="columns">
+    <div class="card">
+      <h4>Searchable directory</h4>
+      <ul class="tight">
+        <li>Filter by class or finance status (debtors / cleared)</li>
+        <li>Search by name or admission number</li>
+        <li>Export the list to Excel</li>
+        <li>Quick actions: profile, letter, finance</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Professional documents</h4>
+      <ul class="tight">
+        <li><b>ID card</b> — printable with photo</li>
+        <li><b>Admission letter</b> — auto-filled, print as PDF</li>
+        <li><b>Full profile</b> — academics, guardian, medical alerts</li>
+      </ul>
+    </div>
+  </div>
+  <p class="muted" style="margin-top:14px">Arraghibun's profile shows her <b>financial overview</b> — which is exactly where billing begins next.</p>`,
+  notes:`Show the directory and find Arraghibun.
+Demonstrate the finance-status filter (who has cleared vs who still owes).
+Print or preview her ID card and admission letter — these are the "wow" touches the board can hold in their hands.
+End by opening her profile, because the financial overview there is our bridge into the finance module.` },
+
+/* 15 DIVIDER 5 */
+{ type:'divider', part:'Part 5', title:'Finance — Billing & Payments', sub:'The heart of the system: from bill to bank' },
+
+/* 16 FEE SCHEDULE + INVOICE */
+{ type:'body', kicker:'Part 5 · Billing', title:"Fee schedule → generating Arraghibun's invoice", body:`
+  <span class="golden">Golden thread → <b>Arraghibun Bello</b>, JSS 1A</span>
+  <div class="chain">
+    <div class="node">Fee Schedule<span class="pill indigo" style="display:block;margin-top:4px">class × term price</span></div>
+    <div class="arrow">→</div>
+    <div class="node">Generate Invoice<span class="pill indigo" style="display:block;margin-top:4px">one click</span></div>
+    <div class="arrow">→</div>
+    <div class="node hot">Itemised Invoice<span class="pill amber" style="display:block;margin-top:4px">Tuition · PTA · …</span></div>
+  </div>
+  <div class="card">
+    <h4>What an invoice contains</h4>
+    <ul class="tight">
+      <li>School logo &amp; details (snapshotted at generation time)</li>
+      <li>Every charge line item with amounts</li>
+      <li>Status: <span class="pill red">Unpaid</span> → <span class="pill amber">Partial</span> → <span class="pill green">Paid</span></li>
+      <li>Separate ledgers: <b>Academic Fees</b> vs <b>Store Sales</b></li>
+    </ul>
+  </div>`,
+  notes:`Move into finance — the manual's core.
+Show the fee schedule matrix, then generate Arraghibun's invoice from her profile in one click.
+Explain that the invoice automatically pulls the right prices for her class and new-intake status, and snapshots the school's branding so old receipts never change.
+Mention the two ledgers: academic fees vs store sales, kept separate for clean accounting.` },
+
+/* 17 DISCOUNTS */
+{ type:'body', kicker:'Part 5 · Billing', title:'Scholarships & discounts', body:`
+  <div class="columns">
+    <div class="card">
+      <h4>Discount rules</h4>
+      <ul class="tight">
+        <li>Create rules, e.g. "Staff Child" or "Sibling"</li>
+        <li>Percentage or fixed amount</li>
+        <li>Assign to a student (with duplicate protection)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Applied automatically</h4>
+      <ul class="tight">
+        <li>Discount is applied <b>at billing time</b></li>
+        <li>Shows on the invoice as a line</li>
+        <li>Keeps fee collection fair and auditable</li>
+      </ul>
+    </div>
+  </div>`,
+  notes:`Briefly show discounts as a finance feature the bursar controls.
+Explain a rule is created once and assigned to a student, then applied automatically the next time an invoice is generated.
+Keep this short — it's a supporting feature, not the main event.` },
+
+/* 18 PAYMENT TERMINAL */
+{ type:'body', kicker:'Part 5 · Payments', title:'The Payment Terminal — cash or bank transfer', body:`
+  <span class="golden">Golden thread → <b>Arraghibun Bello</b>, JSS 1A</span>
+  <div class="columns">
+    <div class="card">
+      <h4><span class="pill green">Option 1</span> Cash payment</h4>
+      <ul class="tight">
+        <li>Parent pays at the counter</li>
+        <li>Type the amount → Confirm Cash Payment</li>
+        <li>Balance updates instantly, receipt prints</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4><span class="pill indigo">Option 2</span> Bank transfer</h4>
+      <ul class="tight">
+        <li>Generate a payment slip with the school's bank details</li>
+        <li>Parent uploads proof of payment</li>
+        <li>Bursar verifies the reference → confirms</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h4>Why manual verification?</h4>
+    <p>No third-party card fees — the school receives <b>100%</b> of every naira directly into its own account, while parents still pay digitally.</p>
+  </div>`,
+  notes:`This is the payment engine — demonstrate both paths.
+For cash: record a payment on Arraghibun's invoice and watch her balance drop.
+For transfer: generate the slip, then explain the parent uploads proof and the bursar verifies it.
+Explain the "why" to the board: no card-processing fees, so the school keeps 100% of revenue — a strong selling point for a school board.` },
+
+/* 19 VERIFY + RECEIPT */
+{ type:'body', kicker:'Part 5 · Payments', title:'Verify a transfer → issue the receipt', body:`
+  <div class="chain">
+    <div class="node">Parent uploads slip<span class="pill amber" style="display:block;margin-top:4px">PENDING</span></div>
+    <div class="arrow">→</div>
+    <div class="node">Bursar checks bank &amp; enters reference</div>
+    <div class="arrow">→</div>
+    <div class="node hot">Confirm Payment Received<span class="pill green" style="display:block;margin-top:4px">PAID</span></div>
+  </div>
+  <div class="card">
+    <h4>The moment it's confirmed</h4>
+    <ul class="tight">
+      <li>Student's balance updates automatically</li>
+      <li>Parent portal flips from "Verifying…" to "Paid"</li>
+      <li>Official receipt becomes downloadable</li>
+      <li>Optional SMS receipt is sent to the parent</li>
+    </ul>
+  </div>`,
+  notes:`Show the payment-history verification screen.
+Enter a reference code, pull up the pending transfer, and confirm it.
+Highlight what happens in that single click: balance updates, parent sees "Paid", receipt becomes available, and an SMS is sent.
+This one click is the emotional payoff of the finance story.` },
+
+/* 20 DIVIDER 6 */
+{ type:'divider', part:'Part 6', title:'Store & Point of Sale', sub:'Selling books and uniforms, in the same system' },
+
+/* 21 STORE POS */
+{ type:'body', kicker:'Part 6 · Store', title:'Inventory & the POS terminal', body:`
+  <span class="golden">Golden thread → Arraghibun buys her uniform</span>
+  <div class="columns">
+    <div class="card">
+      <h4>Store inventory</h4>
+      <ul class="tight">
+        <li>Products with stock levels &amp; prices</li>
+        <li>Categories: books, uniforms, stationery</li>
+        <li>Can target specific classes</li>
+        <li>CSV bulk import supported</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Point of Sale</h4>
+      <ul class="tight">
+        <li>Search a student → build a cart</li>
+        <li><b>Student charge:</b> added to their store ledger</li>
+        <li><b>Walk-in sale:</b> instant cash + stock deduction</li>
+      </ul>
+    </div>
+  </div>`,
+  notes:`Move to the store. Stock a couple of products first.
+Then run the POS: search Arraghibun, add her uniform to the cart.
+Explain the two checkout modes — charge to the student's ledger, or a walk-in cash sale for a parent/guest.
+Show the walk-in receipt printing on the spot.` },
+
+/* 22 STORE LEDGER */
+{ type:'body', kicker:'Part 6 · Store', title:'Two clean ledgers: Academic vs Store', body:`
+  <table>
+    <tr><th></th><th>Academic Fees Ledger</th><th>Store Sales Ledger</th></tr>
+    <tr><td><b>Tracks</b></td><td>Tuition, PTA, exam fees</td><td>Books, uniforms, stationery sales</td></tr>
+    <tr><td><b>Who</b></td><td>Every enrolled student</td><td>Students + walk-in customers</td></tr>
+    <tr><td><b>Why separate</b></td><td>Statutory income</td><td>Retail income</td></tr>
+  </table>
+  <p class="muted" style="margin-top:14px">The board sees exactly how much comes from fees and how much from the shop — with no extra accounting software.</p>`,
+  notes:`Explain the separation of the two ledgers — it keeps the school's accounting clean and lets the proprietor see fee income and shop income independently.
+Show the store ledger filtering walk-in vs student sales.
+This connects directly to the Profit & Loss report coming next.` },
+
+/* 23 DIVIDER 7 */
+{ type:'divider', part:'Part 7', title:'Expenses & Profit & Loss', sub:"Money out — and the school's true financial health" },
+
+/* 24 EXPENSES P&L */
+{ type:'body', kicker:'Part 7 · Financial health', title:'Expenses → Profit & Loss', body:`
+  <div class="columns">
+    <div class="card">
+      <h4>Record expenses</h4>
+      <ul class="tight">
+        <li>Categories: fuel, salaries, supplies, maintenance…</li>
+        <li>Title, amount, date, category, notes</li>
+        <li>Total-spent updates instantly</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Profit &amp; Loss report</h4>
+      <ul class="tight">
+        <li>Pick any date range (a term, a session…)</li>
+        <li>Income split: Academic vs Store</li>
+        <li>Minus expenses = <b>net profit</b></li>
+        <li>Colour-coded cash-flow chart</li>
+      </ul>
+    </div>
+  </div>
+  <div class="chain" style="margin-top:12px">
+    <div class="node">Revenue<span class="pill green" style="display:block;margin-top:4px">fees + store</span></div>
+    <div class="arrow">−</div>
+    <div class="node">Expenses</div>
+    <div class="arrow">=</div>
+    <div class="node hot">Net Profit<span class="pill amber" style="display:block;margin-top:4px">one screen</span></div>
+  </div>`,
+  notes:`Show the expense manager: create a category, record a daily expense, watch total-spent update.
+Then open Profit & Loss and pick a date range.
+This is the slide the proprietor cares most about: one screen that subtracts expenses from revenue to show true net profit, split by academic vs store income.` },
+
+/* 25 DIVIDER 8 */
+{ type:'divider', part:'Part 8', title:'Results & the Approval Chain', sub:"From teacher's marks to an official report card" },
+
+/* 26 RESULT ENTRY */
+{ type:'body', kicker:'Part 8 · Results', title:'Teacher result entry', body:`
+  <span class="golden">Golden thread → Arraghibun's First Term scores</span>
+  <div class="columns">
+    <div class="card">
+      <h4>Fast score entry</h4>
+      <ul class="tight">
+        <li>CA1–CA3, theory &amp; practical per student</li>
+        <li>Save drafts, submit for approval</li>
+        <li>Download Excel template &amp; bulk-import scores</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Guardrails</h4>
+      <ul class="tight">
+        <li>Results <b>lock after submission</b></li>
+        <li>Only an authorised unlock re-opens them</li>
+        <li>Grading scale applied automatically</li>
+      </ul>
+    </div>
+  </div>`,
+  notes:`Switch to results — a teacher logs in and enters scores for their class and subject.
+Enter a few of Arraghibun's scores, save as draft, then submit.
+Emphasise the lock: once submitted, scores can't be silently changed — this is the accountability the board wants.
+Mention the Excel import for large classes.` },
+
+/* 27 APPROVAL CHAIN */
+{ type:'body', kicker:'Part 8 · Approvals', title:'The four-stage approval chain', body:`
+  <div class="chain">
+    <div class="node">Teacher<span class="pill indigo" style="display:block;margin-top:4px">enters &amp; submits</span></div>
+    <div class="arrow">→</div>
+    <div class="node">Form Teacher<span class="pill indigo" style="display:block;margin-top:4px">confirms</span></div>
+    <div class="arrow">→</div>
+    <div class="node">HOD<span class="pill indigo" style="display:block;margin-top:4px">approves</span></div>
+    <div class="arrow">→</div>
+    <div class="node hot">Year Group Master<span class="pill amber" style="display:block;margin-top:4px">final sign-off</span></div>
+  </div>
+  <div class="card" style="margin-top:10px">
+    <h4>Real school governance</h4>
+    <ul class="tight">
+      <li>Each level confirms, approves or rejects</li>
+      <li>A rejection automatically unlocks the result for rework</li>
+      <li>HODs / admins can unlock for re-editing at any time</li>
+      <li>Full audit trail of who approved what, when</li>
+    </ul>
+  </div>`,
+  notes:`This is the governance moment — remember the four staff roles from Part 3? They are exactly these four approval levels.
+Walk the board through the chain: teacher submits, form teacher confirms, HOD approves, year group master gives the final sign-off.
+Stress that a rejection automatically unlocks the result, and everything is timestamped and auditable.` },
+
+/* 28 REPORTS */
+{ type:'body', kicker:'Part 8 · Reports', title:'Reports for every stakeholder', body:`
+  <div class="grid3">
+    <div class="stat"><div class="v">Mark sheet</div><div class="l">teacher — class &amp; subject</div></div>
+    <div class="stat"><div class="v">Broadsheet</div><div class="l">form teacher — whole class</div></div>
+    <div class="stat"><div class="v">Subject master</div><div class="l">HOD — across all arms</div></div>
+    <div class="stat"><div class="v">Year-group board</div><div class="l">approval progress</div></div>
+    <div class="stat"><div class="v">Admin dashboard</div><div class="l">grade distribution A1–F9</div></div>
+    <div class="stat"><div class="v">Result sheet</div><div class="l">student / parent view</div></div>
+  </div>`,
+  notes:`Show the reporting suite quickly — each role sees the report that matters to them.
+For the board, the admin dashboard (school-wide grade distribution) and Arraghibun's individual result sheet are the most compelling.
+This leads naturally to the parent portal: the parent sees that same result sheet.` },
+
+/* 29 DIVIDER 9 */
+{ type:'divider', part:'Part 9', title:'Parent Portal, SMS & the Full Circle', sub:'Closing the loop back to the family' },
+
+/* 30 PARENT PORTAL */
+{ type:'body', kicker:'Part 9 · Parents', title:'The Parent Portal', body:`
+  <span class="golden">Golden thread → Mrs. Hauwa Bello (Arraghibun's parent)</span>
+  <div class="columns">
+    <div class="card">
+      <h4>Parent dashboard</h4>
+      <ul class="tight">
+        <li>One card per child, with financial status</li>
+        <li>Invoices, payments &amp; receipts</li>
+        <li>Generate a bank-payment slip from home</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Transparency</h4>
+      <ul class="tight">
+        <li>Parents see only their own children</li>
+        <li>Calendar of school events</li>
+        <li>Fewer phone calls to the bursar</li>
+      </ul>
+    </div>
+  </div>`,
+  notes:`Log in as Mrs. Hauwa Bello (Arraghibun's parent) and show the parent dashboard.
+Point out the card showing Arraghibun's paid balance — the receipt from earlier is right there.
+Explain that parents only see their own children, and that this transparency cuts down the constant "how much do I owe?" phone calls.` },
+
+/* 31 SMS + EVENTS */
+{ type:'body', kicker:'Part 9 · Communication', title:'SMS alerts, events & the school website', body:`
+  <div class="columns">
+    <div class="card">
+      <h4>Automated SMS</h4>
+      <ul class="tight">
+        <li>Payment receipts, new-enrolment alerts, event reminders</li>
+        <li>Toggle each notification on/off in Settings</li>
+        <li>Funded from the school's SMS wallet</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Events &amp; public website</h4>
+      <ul class="tight">
+        <li>School calendar &amp; events, with Excel import</li>
+        <li>One-click "notify" to push announcements to parents</li>
+        <li>A public website on your own subdomain</li>
+      </ul>
+    </div>
+  </div>`,
+  notes:`Briefly show the communication layer: SMS notifications (with a funded wallet), the school calendar, and the one-click notify button.
+Mention the school also gets a public website on its own address — a professional face for prospective parents.
+Keep this light; it's the cherry on top.` },
+
+/* 32 CLOSING / FULL CIRCLE */
+{ type:'body', kicker:'Closing', title:'One student, end to end — the full circle', body:`
+  <div class="chain">
+    <div class="node">Admitted<span class="pill indigo" style="display:block;margin-top:4px">JSS 1A</span></div>
+    <div class="arrow">→</div>
+    <div class="node">Billed<span class="pill indigo" style="display:block;margin-top:4px">invoice</span></div>
+    <div class="arrow">→</div>
+    <div class="node">Paid<span class="pill green" style="display:block;margin-top:4px">receipt</span></div>
+    <div class="arrow">→</div>
+    <div class="node">Bought uniform<span class="pill indigo" style="display:block;margin-top:4px">store</span></div>
+    <div class="arrow">→</div>
+    <div class="node">Scored<span class="pill indigo" style="display:block;margin-top:4px">approved</span></div>
+    <div class="arrow">→</div>
+    <div class="node hot">Parent sees it all</div>
+  </div>
+  <p class="muted" style="margin-top:16px"><b>Arraghibun</b> appeared in admissions → billing → payment → store → results → parent portal. That single thread is the proof that every module connects.</p>`,
+  notes:`Close by replaying Arraghibun's journey in one breath: admitted, billed, paid, bought her uniform, scored and approved, and her parent saw it all.
+This is the emotional summary — it proves to the board that the system is one connected whole, not a collection of disconnected screens.` },
+
+/* 33 THANK YOU */
+{ type:'cover', title:'Thank you', sub:'', body:`
+  <div class="part">Questions &amp; Answers</div>
+  <div class="brand">Thank you<span class="dot">.</span></div>
+  <p class="tagline">Edus — one portal for admissions, academics, finance, store, results and parents.</p>`,
+  notes:`Open the floor for questions.
+Keep the last slide on screen during Q&A so the board can refer back to the agenda if needed.` },
+];
+
+const stage = document.getElementById('stage');
+const counter = document.getElementById('counter');
+const progress = document.getElementById('progress');
+const notesDrawer = document.getElementById('notesDrawer');
+const notesContent = document.getElementById('notesContent');
+
+function render(){
+  stage.innerHTML = '';
+  SLIDES.forEach((s, i) => {
+    const sec = document.createElement('section');
+    sec.className = 'slide' + (s.type === 'divider' ? ' dark' : '') + (s.type === 'cover' ? ' dark' : '');
+    sec.dataset.i = i;
+    let inner;
+    if (s.type === 'divider') {
+      inner = '<div class="part">' + (s.part || '') + '</div>'
+            + '<div class="brand">' + (s.title || '') + '</div>'
+            + '<p class="tagline">' + (s.sub || '') + '</p>';
+    } else {
+      inner = (s.kicker ? '<span class="kicker">' + s.kicker + '</span>' : '') + (s.body || '');
+    }
+    sec.innerHTML = '<div class="slide-body">' + inner + '</div>';
+    stage.appendChild(sec);
+  });
+}
+render();
+
+const slides = [...document.querySelectorAll('.slide')];
+let current = 0;
+
+function show(i){
+  i = Math.max(0, Math.min(SLIDES.length - 1, i));
+  slides[current].classList.remove('active');
+  current = i;
+  slides[current].classList.add('active');
+  counter.textContent = (current + 1) + ' / ' + SLIDES.length;
+  progress.style.width = ((current + 1) / SLIDES.length * 100) + '%';
+  updateNotes();
+}
+function next(){ show(current + 1); }
+function prev(){ show(current - 1); }
+
+function updateNotes(){
+  const n = SLIDES[current].notes || '';
+  notesContent.innerHTML = '<h4>Speaker notes — ' + (SLIDES[current].title || SLIDES[current].part || '') + '</h4><p>' + n + '</p>';
+}
+
+document.getElementById('nextBtn').addEventListener('click', next);
+document.getElementById('prevBtn').addEventListener('click', prev);
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); next(); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prev(); }
+  else if (e.key === 'Home') { e.preventDefault(); show(0); }
+  else if (e.key === 'End') { e.preventDefault(); show(SLIDES.length - 1); }
+  else if (e.key.toLowerCase() === 'n') { notesDrawer.classList.toggle('open'); }
+  else if (e.key.toLowerCase() === 'f') {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  }
+});
+
+// agenda links
+stage.addEventListener('click', e => {
+  const link = e.target.closest('a[data-go]');
+  if (link) { e.preventDefault(); show(parseInt(link.dataset.go, 10)); }
+});
+
+// notes toggle on click of hint N (keep keyboard too)
+document.querySelector('.hint').addEventListener('click', () => notesDrawer.classList.toggle('open'));
+
+show(0);
+</script>
+</body>
+</html>

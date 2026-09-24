@@ -1,0 +1,100 @@
+{% extends 'base.html.twig' %}
+
+{% set brand = school is defined and school and school.primaryColor ? school.primaryColor : '#1e40af' %}
+{% set school_name = school is defined and school and school.name ? school.name : 'School Portal' %}
+{% set school_motto = school is defined and school and school.motto ? school.motto : null %}
+{% set school_logo = school is defined and school and school.logoFilename ? school.logoFilename : null %}
+{% set school_address = school is defined and school and school.address ? school.address : null %}
+{% set school_phone = school is defined and school and school.phoneNumber ? school.phoneNumber : null %}
+{% set school_email = school is defined and school and school.email ? school.email : null %}
+{% set school_website = school is defined and school and school.website ? school.website : null %}
+{% set school_map = school is defined and school and school.mapEmbedUrl ? school.mapEmbedUrl : null %}
+{% set hero_tagline = school is defined and school and school.heroTagline ? school.heroTagline : null %}
+{% set hero_image_filename = school is defined and school and school.heroImageFilename ? school.heroImageFilename : null %}
+{% set about_content = school is defined and school and school.aboutContent ? school.aboutContent : null %}
+{% set admissions_intro = school is defined and school and school.admissionsIntro ? school.admissionsIntro : null %}
+{% set facebook_url = school is defined and school and school.facebookUrl ? school.facebookUrl : null %}
+{% set twitter_url = school is defined and school and school.twitterUrl ? school.twitterUrl : null %}
+{% set instagram_url = school is defined and school and school.instagramUrl ? school.instagramUrl : null %}
+
+{% block body %}
+<header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-100">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between py-4">
+            <a href="{{ path('app_tenant_home', {'subdomain': subdomain}) }}" class="flex items-center gap-3">
+                {% if school_logo %}
+                    <img src="{{ asset('uploads/logos/' ~ school_logo) }}" alt="{{ school_name }}" class="h-10 w-10 rounded-lg object-contain border border-gray-200 bg-white" />
+                {% else %}
+                    <span class="h-10 w-10 rounded-lg flex items-center justify-center text-white font-bold text-lg" style="background-color: {{ brand }};">{{ school_name|first|upper }}</span>
+                {% endif %}
+                <span class="text-xl font-black tracking-tight text-gray-900">{{ school_name }}</span>
+            </a>
+
+            <nav class="hidden md:flex items-center space-x-6">
+                <a href="{{ path('app_tenant_home', {'subdomain': subdomain}) }}" class="text-sm font-medium text-gray-700 hover:text-gray-900">Home</a>
+                <a href="{{ path('app_tenant_about', {'subdomain': subdomain}) }}" class="text-sm font-medium text-gray-700 hover:text-gray-900">About</a>
+                <a href="{{ path('app_tenant_admissions', {'subdomain': subdomain}) }}" class="text-sm font-medium text-gray-700 hover:text-gray-900">Admissions</a>
+                <a href="{{ path('app_tenant_contact', {'subdomain': subdomain}) }}" class="text-sm font-medium text-gray-700 hover:text-gray-900">Contact</a>
+            </nav>
+
+            <div class="flex items-center gap-2">
+                <a href="{{ path('app_login') }}" class="hidden md:inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white rounded-lg shadow-sm hover:opacity-90" style="background-color: {{ brand }};">
+                    Sign In
+                </a>
+                <button type="button" id="mobile-menu-btn" class="md:hidden inline-flex items-center justify-center p-2 rounded-lg text-gray-600 hover:bg-gray-100" aria-label="Toggle navigation">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mobile-menu" class="hidden md:hidden border-t border-gray-100 bg-white">
+        <nav class="max-w-7xl mx-auto px-4 py-4 flex flex-col space-y-2">
+            <a href="{{ path('app_tenant_home', {'subdomain': subdomain}) }}" class="px-3 py-2 rounded-lg font-medium text-gray-700 hover:bg-gray-50">Home</a>
+            <a href="{{ path('app_tenant_about', {'subdomain': subdomain}) }}" class="px-3 py-2 rounded-lg font-medium text-gray-700 hover:bg-gray-50">About</a>
+            <a href="{{ path('app_tenant_admissions', {'subdomain': subdomain}) }}" class="px-3 py-2 rounded-lg font-medium text-gray-700 hover:bg-gray-50">Admissions</a>
+            <a href="{{ path('app_tenant_contact', {'subdomain': subdomain}) }}" class="px-3 py-2 rounded-lg font-medium text-gray-700 hover:bg-gray-50">Contact</a>
+            <a href="{{ path('app_login') }}" class="mt-2 inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white rounded-lg" style="background-color: {{ brand }};">Sign In</a>
+        </nav>
+    </div>
+</header>
+
+{% block tenant_public_content %}{% endblock %}
+
+<footer class="bg-white border-t border-gray-200 mt-12">
+    <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 text-center">
+        <p class="font-bold text-gray-800">{{ school_name }}</p>
+        {% if school_motto %}<p class="mt-1 text-sm italic text-gray-500">“{{ school_motto }}”</p>{% endif %}
+
+        <div class="mt-4 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-gray-400">
+            <a href="{{ path('app_tenant_home', {'subdomain': subdomain}) }}" class="hover:text-gray-600">Home</a>
+            <a href="{{ path('app_tenant_about', {'subdomain': subdomain}) }}" class="hover:text-gray-600">About</a>
+            <a href="{{ path('app_tenant_admissions', {'subdomain': subdomain}) }}" class="hover:text-gray-600">Admissions</a>
+            <a href="{{ path('app_tenant_contact', {'subdomain': subdomain}) }}" class="hover:text-gray-600">Contact</a>
+            <a href="{{ path('app_login') }}" class="hover:text-gray-600">Login</a>
+        </div>
+
+        <p class="mt-4 text-xs text-gray-400">© {{ "now"|date("Y") }} {{ school_name }}. Powered by Edus.</p>
+
+        {% if facebook_url or twitter_url or instagram_url %}
+        <div class="mt-5 flex justify-center gap-4">
+            {% if facebook_url %}
+                <a href="{{ facebook_url }}" target="_blank" rel="noopener" class="text-gray-400 hover:text-gray-600">Facebook</a>
+            {% endif %}
+            {% if twitter_url %}
+                <a href="{{ twitter_url }}" target="_blank" rel="noopener" class="text-gray-400 hover:text-gray-600">Twitter / X</a>
+            {% endif %}
+            {% if instagram_url %}
+                <a href="{{ instagram_url }}" target="_blank" rel="noopener" class="text-gray-400 hover:text-gray-600">Instagram</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</footer>
+
+<script>
+document.getElementById('mobile-menu-btn').addEventListener('click', function () {
+    document.getElementById('mobile-menu').classList.toggle('hidden');
+});
+</script>
+{% endblock %}
