@@ -1,0 +1,50 @@
+{% extends 'tenant/apply/layout.html.twig' %}
+
+{% block title %}Check your email{% endblock %}
+
+{% block content %}
+{# ⚠️ This page must look identical whether or not we found an account — it is
+   how we avoid leaking which parents the school has on file. #}
+<div class="text-center">
+    <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 text-3xl">📧</div>
+
+    <h1 class="mt-4 text-2xl font-extrabold text-gray-900">Check your email</h1>
+
+    {% if reason|default('') == 'phone' %}
+        {# Matched by phone number: we can only mail the address the school already holds. #}
+        <p class="mt-3 text-sm text-gray-600">
+            The phone number <strong>{{ contact }}</strong> is already registered to a family account,
+            so we have sent the sign-in link to the email address the school has on file for it.
+        </p>
+    {% else %}
+        {# Anti-enumeration: identical wording whether or not the account exists. #}
+        <p class="mt-3 text-sm text-gray-600">
+            If an account exists for
+            {% if contact %}<strong>{{ contact }}</strong>,{% else %}that contact,{% endif %}
+            we have sent a link to that address. Open it to continue.
+        </p>
+    {% endif %}
+
+    <div class="mt-6 bg-white rounded-2xl ring-1 ring-gray-200 p-6 text-left text-sm text-gray-600">
+        <p class="font-semibold text-gray-800">Not seeing it?</p>
+        <ul class="mt-2 space-y-1 list-disc list-inside">
+            <li>Check the spam or promotions folder.</li>
+            <li>The link expires in 2 hours — request a new one if it has been longer.</li>
+            <li>Make sure you used the same email address the school has on file.</li>
+            <li>No email on your account? Visit the school office with a valid ID.</li>
+        </ul>
+    </div>
+
+    <div class="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+        <a href="/apply/recover"
+           class="rounded-lg px-5 py-3 font-semibold text-white shadow-sm hover:opacity-90 transition"
+           style="background-color: {{ brand }};">
+            Send it again
+        </a>
+        <a href="/apply"
+           class="rounded-lg px-5 py-3 font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">
+            Back to applications
+        </a>
+    </div>
+</div>
+{% endblock %}

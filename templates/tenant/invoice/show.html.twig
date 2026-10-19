@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Invoice #{{ invoice.invoiceNumber }}{% endblock %}
+{% block title %}Invoice {{ invoice.invoiceNumber }}{% endblock %}
 
 {% block body %}
 
@@ -14,7 +14,7 @@
 {% set email = invoice.schoolEmail|default(liveSchool ? liveSchool.email : '') %}
 {% set logo = invoice.schoolLogo|default(liveSchool ? liveSchool.logoFilename : null) %}
 
-<div class="container mx-auto mt-10 p-5 max-w-4xl">
+<div class="mt-10 px-4">
     
     {# === INVOICE CONTAINER === #}
     <div class="bg-white shadow-lg rounded-lg overflow-hidden border border-gray-200">
@@ -36,7 +36,7 @@
                 
                 {# NAME & ADDRESS #}
                 <div>
-                    <h1 class="text-xl font-bold uppercase tracking-wider">
+                    <h1 class="text-base font-bold uppercase tracking-wider sm:text-xl">
                         {{ name }}
                     </h1>
                     <p class="text-gray-400 text-sm">
@@ -51,7 +51,7 @@
             {# RIGHT: Invoice Meta #}
             <div class="text-left md:text-right">
                 <p class="text-gray-400 text-xs uppercase tracking-widest">Invoice Number</p>
-                <h2 class="text-3xl font-mono font-bold text-white mb-2">#{{ invoice.invoiceNumber }}</h2>
+                <h2 class="break-all font-mono text-lg font-bold text-white mb-2 sm:text-2xl lg:text-3xl">{{ invoice.invoiceNumber }}</h2>
                 
                 {% if invoice.status == 'PAID' %}
                     <span class="bg-green-500 text-white font-bold px-4 py-1 rounded-full text-xs tracking-wide">PAID IN FULL</span>
@@ -68,8 +68,8 @@
         {# STUDENT & CLASS INFO #}
         <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-8 border-b">
             <div>
-                <p class="text-gray-400 text-xs uppercase font-bold mb-1">Billed To Student</p>
-                <p class="text-2xl font-bold text-gray-800">{{ invoice.student.fullName }}</p>
+                <p class="text-gray-400 text-xs uppercase font-bold mb-1">Billed To {{ learner.capital }}</p>
+                <p class="break-words text-lg font-bold text-gray-800 sm:text-2xl">{{ invoice.student.fullName }}</p>
                 
                 <div class="flex gap-4 mt-2">
                     <div>
@@ -87,7 +87,7 @@
             
             <div class="md:text-right">
                 <p class="text-gray-400 text-xs uppercase font-bold mb-1">Academic Session</p>
-                <p class="text-xl font-bold text-gray-800">{{ invoice.term.name }}</p>
+                <p class="text-base font-bold text-gray-800 sm:text-xl">{{ invoice.term.name }}</p>
                 <p class="text-gray-600">{{ invoice.session.name }}</p>
             </div>
         </div>
@@ -126,15 +126,21 @@
                     
                     {# Subtotal #}
                     <div class="flex justify-between text-gray-500 text-sm">
-                        <span>Subtotal</span>
+                        <span>Subtotal (fees)</span>
                         <span>₦{{ (invoice.totalAmount + invoice.discountApplied)|number_format(2) }}</span>
                     </div>
 
-                    {# Discount #}
+                    {# Scholarship / discount — named, because a parent is entitled to
+                       know why the bill is lower than the items add up to. #}
                     {% if invoice.discountApplied > 0 %}
-                    <div class="flex justify-between text-green-600 text-sm font-bold">
-                        <span>Discount Applied</span>
-                        <span>- ₦{{ invoice.discountApplied|number_format(2) }}</span>
+                    <div class="space-y-1">
+                        <div class="flex justify-between gap-3 text-paid text-sm font-bold">
+                            <span class="break-words">{{ invoice.discountLabel ?: 'Scholarship / discount' }}</span>
+                            <span class="whitespace-nowrap">- ₦{{ invoice.discountApplied|number_format(2) }}</span>
+                        </div>
+                        {% if invoice.discountLabel %}
+                            <p class="text-xs text-gray-500">This pupil is on scholarship. The total below is already reduced by it.</p>
+                        {% endif %}
                     </div>
                     {% endif %}
 

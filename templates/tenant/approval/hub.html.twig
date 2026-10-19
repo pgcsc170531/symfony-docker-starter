@@ -3,13 +3,15 @@
 {% block title %}Result Approvals{% endblock %}
 
 {% block body %}
-<div class="p-6 max-w-6xl mx-auto">
+<div class="px-4">
     <h1 class="text-2xl font-bold mb-6">📋 Result Approvals</h1>
 
     {% set status_badge = {
-        pending: 'bg-yellow-100 text-yellow-800',
-        approved: 'bg-green-100 text-green-800',
-        rejected: 'bg-red-100 text-red-800',
+        pending: 'bg-pending/15 text-pending',
+        approved: 'bg-paid/15 text-paid',
+        rejected: 'bg-failed/15 text-failed',
+        submitted: 'bg-accent-100 text-accent-800',
+        not_submitted: 'bg-ink-100 text-ink-600',
     } %}
 
     {# ==================== FORM TEACHER ==================== #}
@@ -24,6 +26,7 @@
                             <span class="text-gray-500 font-normal">• {{ group.assignment.term.name }}</span>
                         </div>
                         <form method="post" action="{{ path('tenant_approval_form_teacher_confirm', {id: group.assignment.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('approval_action') }}">
                             <button class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">Confirm Class</button>
                         </form>
                     </div>
@@ -34,16 +37,30 @@
                         <tbody>
                             {% for item in group.items %}
                                 <tr class="border-t">
-                                    <td class="py-1">{{ item.classSubject.subject.name }}</td>
-                                    <td>{{ item.teacher ? item.teacher.user.fullName|default(item.teacher.user.email) : '—' }}</td>
+                                    <td class="py-1">
+                                        {# Read before you approve: opens the sheet with no editable fields. #}
+                                        <a href="{{ path('tenant_result_sheet_view', {id: item.classSubject.id}) }}"
+                                           class="inline-flex min-h-[44px] items-center font-bold text-accent-700 hover:text-accent-900">
+                                            {{ item.classSubject.subject.name }}
+                                        </a>
+                                    </td>
                                     <td>
-                                        {% set st = (item.approval and item.approval.id) ? item.approval.formTeacherStatus : 'pending' %}
-                                        <span class="px-2 py-0.5 rounded-full text-xs {{ status_badge[st]|default(status_badge.pending) }}">{{ st }}</span>
+                                        {# "pending" meant two different things: submitted and
+                                           waiting for me, or never submitted at all. Say which. #}
+                                        {% set stage = (item.approval and item.approval.id) ? item.approval.formTeacherStatus : 'pending' %}
+                                        {% if stage == 'approved' or stage == 'rejected' %}
+                                            <span class="px-2 py-0.5 rounded-full text-xs {{ status_badge[stage]|default(status_badge.pending) }}">{{ stage }}</span>
+                                        {% elseif item.submitted %}
+                                            <span class="px-2 py-0.5 rounded-full text-xs {{ status_badge.submitted }}">submitted</span>
+                                        {% else %}
+                                            <span class="px-2 py-0.5 rounded-full text-xs {{ status_badge.not_submitted }}">not submitted</span>
+                                        {% endif %}
                                     </td>
                                 </tr>
                             {% endfor %}
                         </tbody>
                     </table>
+                    </div>
                 </div>
             {% endfor %}
         </div>
@@ -74,16 +91,36 @@
                                             <td>
                                                 {% set st = (item.approval and item.approval.id) ? item.approval.hodStatus : 'pending' %}
                                                 <span class="px-2 py-0.5 rounded-full text-xs {{ status_badge[st]|default(status_badge.pending) }}">{{ st }}</span>
+                                                {% if st == 'rejected' and item.approval.hodReason %}
+                                                    <span class="mt-1 block text-xs text-failed">{{ item.approval.hodReason }}</span>
+                                                {% endif %}
                                             </td>
                                             <td class="text-right">
+                                                <a href="{{ path('tenant_result_sheet_view', {id: item.classSubject.id}) }}"
+                                                   class="inline-flex min-h-[44px] items-center px-2 text-sm font-bold text-accent-700 hover:text-accent-900">
+                                                    View
+                                                </a>
                                                 {% if item.approval and item.approval.id %}
-                                                    <form method="post" action="{{ path('tenant_approval_hod_approve', {id: item.approval.id}) }}" class="inline">
-                                                        <button class="text-green-600 text-sm px-2">Approve</button>
-                                                    </form>
-                                                    <form method="post" action="{{ path('tenant_approval_hod_reject', {id: item.approval.id}) }}" class="inline">
-                                                        <button class="text-red-600 text-sm px-2">Reject</button>
+                                                    {% if item.approval.formTeacherStatus == 'approved' %}
+                                                        <form method="post" action="{{ path('tenant_approval_hod_approve', {id: item.approval.id}) }}" class="inline">
+                                                            <input type="hidden" name="_token" value="{{ csrf_token('approval_action') }}">
+                                                            <button class="text-green-600 text-sm px-2">Approve</button>
+                                                        </form>
+                                                    {% else %}
+                                                        <span class="text-xs text-gray-400">Awaiting form teacher</span>
+                                                    {% endif %}
+                                                    <form method="post" action="{{ path('tenant_approval_hod_reject', {id: item.approval.id}) }}" class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+                                                        <input type="hidden" name="_token" value="{{ csrf_token('approval_action') }}">
+                                                        {# The reason is mandatory in the controller: a rejection with no
+                                                           reason sends the sheet back with nothing to fix. #}
+                                                        <label class="sr-only" for="reason-{{ item.approval.id }}">Reason for rejecting {{ item.classSubject.subject.name }}</label>
+                                                        <input id="reason-{{ item.approval.id }}" name="reason" maxlength="255" required
+                                                               placeholder="What must the teacher fix?"
+                                                               class="min-h-[44px] w-full rounded border px-3 text-sm sm:w-64">
+                                                        <button class="min-h-[44px] rounded border border-failed px-3 text-sm font-bold text-failed">Reject</button>
                                                     </form>
                                                     <form method="post" action="{{ path('tenant_approval_unlock', {id: item.approval.id}) }}" class="inline">
+                                                        <input type="hidden" name="_token" value="{{ csrf_token('approval_action') }}">
                                                         <button class="text-gray-600 text-sm px-2">Unlock</button>
                                                     </form>
                                                 {% endif %}
@@ -105,40 +142,63 @@
         <div class="grid gap-4 mb-8">
             {% for group in yearGroupGroups %}
                 <div class="bg-white rounded-lg shadow p-4">
-                    <div class="font-semibold mb-3">
-                        {{ group.assignment.yearGroup.name }}
-                        <span class="text-gray-500 font-normal">• {{ group.term ? group.term.name : 'No active term' }}</span>
+                    <div class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="font-semibold">
+                            {{ group.assignment.yearGroup.name }}
+                            <span class="text-gray-500 font-normal">• {{ group.term ? group.term.name : 'No active term' }}</span>
+                            <span class="block text-xs font-normal text-gray-400">
+                                {{ group.items|length }} subject{{ group.items|length == 1 ? '' : 's' }} must all be HOD-approved
+                            </span>
+                        </div>
+                        {# One button per year group: a half-released class shows parents
+                           some marks and hides the rest, so the group goes out together. #}
+                        <form method="post" action="{{ path('tenant_approval_year_group_approve', {id: group.assignment.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('approval_action') }}">
+                            <button class="min-h-[44px] w-full rounded-lg bg-ink-900 px-4 text-sm font-bold text-white sm:w-auto">
+                                Release {{ group.assignment.yearGroup.name }}
+                            </button>
+                        </form>
                     </div>
-                    <table class="w-full text-sm">
-                        <thead class="text-left text-gray-500">
-                            <tr><th class="py-1">Class</th><th>Subject</th><th>HOD</th><th>Status</th><th class="text-right">Action</th></tr>
-                        </thead>
-                        <tbody>
-                            {% for item in group.items %}
-                                <tr class="border-t">
-                                    <td class="py-1">{{ item.classSubject.classroom.name }}</td>
-                                    <td>{{ item.classSubject.subject.name }}</td>
-                                    <td>{{ item.approval ? item.approval.hodStatus : 'pending' }}</td>
-                                    <td>
-                                        {% set st = (item.approval and item.approval.id) ? item.approval.yearGroupStatus : 'pending' %}
-                                        <span class="px-2 py-0.5 rounded-full text-xs {{ status_badge[st]|default(status_badge.pending) }}">{{ st }}</span>
-                                    </td>
-                                    <td class="text-right">
-                                        {% if item.approval and item.approval.id %}
-                                            <form method="post" action="{{ path('tenant_approval_year_group_approve', {id: item.approval.id}) }}" class="inline">
-                                                <button class="text-green-600 text-sm px-2">Final Approve</button>
-                                            </form>
-                                            {% if isAdmin %}
-                                                <form method="post" action="{{ path('tenant_approval_unlock', {id: item.approval.id}) }}" class="inline">
-                                                    <button class="text-gray-600 text-sm px-2">Unlock</button>
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-[520px] text-sm">
+                            <thead class="text-left text-gray-500">
+                                <tr>
+                                    <th class="py-1">Class</th>
+                                    <th>Subject</th>
+                                    <th>HOD</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in group.items %}
+                                    <tr class="border-t">
+                                        <td class="py-1">{{ item.classSubject.classroom.name }}</td>
+                                        <td>
+                                            {# Review before releasing: the sheet opens read-only. #}
+                                            <a href="{{ path('tenant_result_sheet_view', {id: item.classSubject.id}) }}"
+                                               class="inline-flex min-h-[44px] items-center font-bold text-accent-700 hover:text-accent-900">
+                                                {{ item.classSubject.subject.name }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            {% set hodStage = item.approval and item.approval.id ? item.approval.hodStatus : 'pending' %}
+                                            <span class="px-2 py-0.5 rounded-full text-xs {{ status_badge[hodStage]|default(status_badge.pending) }}">{{ hodStage }}</span>
+                                        </td>
+                                        <td>
+                                            {% set st = (item.approval and item.approval.id) ? item.approval.yearGroupStatus : 'pending' %}
+                                            <span class="px-2 py-0.5 rounded-full text-xs {{ status_badge[st]|default(status_badge.pending) }}">{{ st }}</span>
+                                            {% if isAdmin and item.approval and item.approval.id %}
+                                                <form method="post" action="{{ path('tenant_approval_unlock', {id: item.approval.id}) }}" class="mt-1">
+                                                    <input type="hidden" name="_token" value="{{ csrf_token('approval_action') }}">
+                                                    <button class="min-h-[44px] text-xs font-bold text-ink-500 hover:text-failed">Unlock</button>
                                                 </form>
                                             {% endif %}
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             {% endfor %}
         </div>

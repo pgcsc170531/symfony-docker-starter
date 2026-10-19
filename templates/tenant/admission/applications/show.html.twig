@@ -1,0 +1,372 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ application.reference }} — {{ application.fullName }}{% endblock %}
+
+{% import _self as ui %}
+
+{% block body %}
+<div class="px-4">
+
+    {# ── Back + identity ────────────────────────────────────────────── #}
+    <a href="{{ path('app_tenant_application_index') }}"
+       class="mb-4 inline-flex min-h-[44px] items-center gap-1 text-sm font-semibold text-ink-600 hover:text-accent-700">
+        <span aria-hidden="true">&larr;</span> All applications
+    </a>
+
+    <div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div class="min-w-0">
+            <h1 class="break-words text-2xl font-bold text-ink-900">{{ application.fullName }}</h1>
+            <p class="mt-1 break-words text-sm text-ink-500">
+                <span class="font-mono">{{ application.reference }}</span>
+                · applied {{ application.createdAt ? application.createdAt|date('d M Y, H:i') : '—' }}
+                {% if application.source %}· via {{ application.source|replace({'_': ' '}) }}{% endif %}
+            </p>
+        </div>
+        <span class="shrink-0 self-start rounded px-3 py-1 text-xs font-semibold {{ ui.badge(application.status) }}">
+            {{ application.status|replace({'_': ' '})|capitalize }}
+        </span>
+    </div>
+
+    {% if application.status == 'needs_info' and application.infoRequestedNote %}
+        <div class="mb-4 rounded-xl border border-pending/30 bg-pending/10 p-4">
+            <p class="text-sm font-semibold text-pending">Waiting on the parent</p>
+            <p class="mt-1 text-sm text-ink-700">{{ application.infoRequestedNote }}</p>
+        </div>
+    {% elseif application.status == 'rejected' and application.rejectionReason %}
+        <div class="mb-4 rounded-xl border border-failed/30 bg-failed/10 p-4">
+            <p class="text-sm font-semibold text-failed">Rejected</p>
+            <p class="mt-1 text-sm text-ink-700">{{ application.rejectionReason }}</p>
+        </div>
+    {% elseif application.status == 'enrolled' %}
+        <div class="mb-4 rounded-xl border border-paid/30 bg-paid/10 p-4">
+            <p class="text-sm font-semibold text-paid">Enrolled</p>
+            <p class="mt-1 text-sm text-ink-700">
+                {% if application.student %}
+                    Admitted as
+                    <a href="{{ path('app_tenant_admission_print', {id: application.student.id}) }}"
+                       class="font-semibold text-accent-700 underline">{{ application.student.admissionNumber }}</a>
+                    {% if application.enrolledAt %}on {{ application.enrolledAt|date('d M Y, H:i') }}{% endif %}.
+                    The first invoice has been raised — the parent can now pay it from their portal.
+                {% else %}
+                    This application was closed as enrolled without a linked {{ learner }}.
+                {% endif %}
+            </p>
+        </div>
+    {% endif %}
+
+    <div class="grid gap-4 lg:grid-cols-3">
+
+        {# ── Left: the facts ───────────────────────────────────────── #}
+        <div class="space-y-4 lg:col-span-2">
+
+            {# Child #}
+            <section class="rounded-xl border border-ink-200 bg-white p-4 shadow-card sm:p-6">
+                <h2 class="mb-4 text-sm font-bold uppercase tracking-wide text-ink-500">The child</h2>
+                <dl class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+                    {{ ui.field('Full name', application.fullName) }}
+                    {{ ui.field('Gender', application.gender|capitalize) }}
+                    {{ ui.field('Date of birth', application.dateOfBirth ? application.dateOfBirth|date('d M Y') : null) }}
+                    {{ ui.field('Religion', application.religion) }}
+                    {{ ui.field('Nationality', application.nationality ? application.nationality.name : null) }}
+                    {{ ui.field('State of origin', application.stateOfOrigin ? application.stateOfOrigin.name : null) }}
+                    {{ ui.field('LGA', application.lga ? application.lga.name : null) }}
+                    {{ ui.field('Home town', application.homeTown) }}
+                    {{ ui.field('Blood group', application.bloodGroup) }}
+                    {{ ui.field('Genotype', application.genotype) }}
+                    {{ ui.field('Previous school', application.previousSchool) }}
+                    {{ ui.field('Previous class', application.previousClass) }}
+                    <div class="sm:col-span-2">
+                        {{ ui.field('Medical notes', application.medicalConditions ?: 'None given') }}
+                    </div>
+                </dl>
+            </section>
+
+            {# Guardian #}
+            <section class="rounded-xl border border-ink-200 bg-white p-4 shadow-card sm:p-6">
+                <h2 class="mb-4 text-sm font-bold uppercase tracking-wide text-ink-500">The parent / guardian</h2>
+                <dl class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+                    {{ ui.field('Name', application.guardianName) }}
+                    {{ ui.field('Relationship', application.relationshipToStudent) }}
+                    {{ ui.field('Phone', application.guardianPhone) }}
+                    {{ ui.field('Alternate phone', application.guardianAlternatePhone) }}
+                    {{ ui.field('Email', application.guardianEmail) }}
+                    {{ ui.field('Occupation', application.guardianOccupation) }}
+                    {{ ui.field('Address', application.guardianAddress) }}
+                    {{ ui.field('Office address', application.guardianOfficeAddress) }}
+                </dl>
+            </section>
+
+            {# Documents #}
+            {% set documents = [
+                {'kind': 'photo',  'label': "Child's photograph", 'file': application.passportPhotoFilename},
+                {'kind': 'birth',  'label': 'Birth certificate',  'file': application.birthCertificateFilename},
+                {'kind': 'result', 'label': 'Previous result',    'file': application.previousResultFilename},
+                {'kind': 'fee',    'label': 'Fee receipt',        'file': application.feeProofFilename}
+            ]|filter(d => d.file) %}
+
+            <section class="rounded-xl border border-ink-200 bg-white p-4 shadow-card sm:p-6">
+                <h2 class="mb-4 text-sm font-bold uppercase tracking-wide text-ink-500">Documents</h2>
+                {% if documents is empty %}
+                    <p class="text-sm text-ink-500">The parent has not uploaded anything.</p>
+                {% else %}
+                    <ul class="space-y-2">
+                        {% for document in documents %}
+                            <li class="flex items-center justify-between gap-3 rounded-lg border border-ink-200 bg-ink-50 p-3">
+                                <span class="min-w-0 break-words text-sm font-medium text-ink-800">{{ document.label }}</span>
+                                <a href="{{ path('app_tenant_application_document', {id: application.id, kind: document.kind}) }}"
+                                   target="_blank" rel="noopener"
+                                   class="inline-flex min-h-[40px] shrink-0 items-center rounded-lg border border-ink-300 bg-white px-3 text-xs font-semibold text-ink-700 transition hover:border-accent-400 hover:text-accent-700">
+                                    Open
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </section>
+
+            {# Timeline #}
+            <section class="rounded-xl border border-ink-200 bg-white p-4 shadow-card sm:p-6">
+                <h2 class="mb-4 text-sm font-bold uppercase tracking-wide text-ink-500">History</h2>
+                {% if application.events is empty %}
+                    <p class="text-sm text-ink-500">No recorded activity.</p>
+                {% else %}
+                    <ol class="space-y-3">
+                        {% for event in application.events|sort((a, b) => a.createdAt <=> b.createdAt) %}
+                            <li class="flex gap-3">
+                                <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent-500" aria-hidden="true"></span>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-ink-900">{{ event.label }}</p>
+                                    <p class="text-xs text-ink-500">
+                                        {{ event.createdAt ? event.createdAt|date('d M Y, H:i') : '' }}
+                                        {% if event.actorLabel %}· {{ event.actorLabel }}{% endif %}
+                                    </p>
+                                    {% if event.note %}<p class="mt-1 break-words text-sm text-ink-700">{{ event.note }}</p>{% endif %}
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ol>
+                {% endif %}
+            </section>
+
+            {# Other applications from this family #}
+            {% if siblings is not empty %}
+                <section class="rounded-xl border border-ink-200 bg-white p-4 shadow-card sm:p-6">
+                    <h2 class="mb-4 text-sm font-bold uppercase tracking-wide text-ink-500">Same family</h2>
+                    <ul class="space-y-2">
+                        {% for sibling in siblings %}
+                            <li class="flex items-center justify-between gap-3 rounded-lg border border-ink-200 bg-ink-50 p-3">
+                                <span class="min-w-0">
+                                    <span class="block break-words text-sm font-semibold text-ink-900">{{ sibling.fullName }}</span>
+                                    <span class="block font-mono text-xs text-ink-500">{{ sibling.reference }}</span>
+                                </span>
+                                <a href="{{ path('app_tenant_application_show', {id: sibling.id}) }}"
+                                   class="inline-flex min-h-[40px] shrink-0 items-center rounded-lg border border-ink-300 bg-white px-3 text-xs font-semibold text-ink-700 transition hover:border-accent-400 hover:text-accent-700">
+                                    Open
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </section>
+            {% endif %}
+        </div>
+
+        {# ── Right: the decision ───────────────────────────────────── #}
+        <div class="space-y-4">
+
+            <section class="rounded-xl border border-ink-200 bg-white p-4 shadow-card sm:p-6">
+                <h2 class="mb-4 text-sm font-bold uppercase tracking-wide text-ink-500">Decision</h2>
+
+                {% if application.isFinal %}
+                    <p class="text-sm text-ink-600">
+                        This application is closed as
+                        <span class="font-semibold">{{ application.status }}</span>.
+                        There is nothing left to action.
+                    </p>
+                {% else %}
+
+                    {# Class to admit into #}
+                    <dl class="mb-4 grid grid-cols-2 gap-y-1 text-sm">
+                        <dt class="text-ink-500">Requested class</dt>
+                        <dd class="text-right font-semibold text-ink-900">
+                            {{ application.requestedClassroom ? application.requestedClassroom.name : '—' }}
+                        </dd>
+                        <dt class="text-ink-500">Application fee</dt>
+                        <dd class="text-right">
+                            <span class="rounded px-2 py-0.5 text-[11px] font-semibold {{ application.feeStatus in ['paid','waived'] ? 'bg-paid/10 text-paid' : 'bg-pending/10 text-pending' }}">
+                                {{ application.feeStatus|replace({'_': ' '}) }}
+                            </span>
+                        </dd>
+                    </dl>
+
+                    {# ── Application fee ─────────────────────────────────
+                       A parent can upload a transfer proof, but until this
+                       panel existed no member of staff could confirm it. A
+                       confirmed fee also releases the application from
+                       `awaiting_payment` into the review queue. #}
+                    <div class="mb-4 rounded-lg border border-ink-200 bg-ink-50 p-3">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">Application fee</p>
+                            <span class="rounded px-2 py-0.5 text-[11px] font-semibold
+                                {% if application.feeStatus in ['paid', 'waived'] %}bg-paid/10 text-paid
+                                {% elseif application.feeStatus == 'awaiting_confirmation' %}bg-pending/10 text-pending
+                                {% else %}bg-failed/10 text-failed{% endif %}">
+                                {{ application.feeStatus|replace({'_': ' '}) }}
+                            </span>
+                        </div>
+
+                        <p class="mt-1 text-sm text-ink-700">
+                            <span class="font-semibold money">₦{{ application.feeAmount ? application.feeAmount|number_format(2) : '0.00' }}</span>
+                            {% if application.feeChannel %} · {{ application.feeChannel|replace({'_': ' '}) }}{% endif %}
+                            {% if application.feeReference %}
+                                · ref <span class="break-all font-mono text-xs">{{ application.feeReference }}</span>
+                            {% endif %}
+                        </p>
+
+                        {% if application.feeStatus == 'awaiting_confirmation' %}
+                            <p class="mt-2 text-xs leading-relaxed text-ink-600">
+                                The parent uploaded a proof of payment. Check the bank statement before confirming —
+                                confirming records the fee as collected.
+                            </p>
+                            <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                <form method="post" action="{{ path('app_tenant_application_fee_confirm', {id: application.id}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('application_fee_confirm_' ~ application.id) }}">
+                                    <label for="actual_amount" class="mb-1 block text-xs text-ink-600">Amount received (₦)</label>
+                                    <input id="actual_amount" name="actual_amount" type="number" step="0.01" min="0"
+                                           inputmode="decimal" value="{{ application.feeAmount }}"
+                                           class="mb-2 w-full rounded-lg border border-ink-300 p-2.5 text-base focus:border-accent-500 focus:ring-accent-500">
+                                    <button type="submit"
+                                            class="min-h-[44px] w-full rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white transition hover:bg-accent-700">
+                                        Confirm fee
+                                    </button>
+                                </form>
+                                <form method="post" action="{{ path('app_tenant_application_fee_reject', {id: application.id}) }}" class="flex items-end">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('application_fee_reject_' ~ application.id) }}">
+                                    <button type="submit"
+                                            class="min-h-[44px] w-full rounded-lg border border-ink-300 bg-white px-4 text-sm font-semibold text-ink-700 transition hover:border-failed hover:text-failed">
+                                        Reject proof
+                                    </button>
+                                </form>
+                            </div>
+                        {% elseif application.feeStatus == 'unpaid' %}
+                            <form method="post" action="{{ path('app_tenant_application_fee_waive', {id: application.id}) }}" class="mt-3">
+                                <input type="hidden" name="_token" value="{{ csrf_token('application_fee_waive_' ~ application.id) }}">
+                                <button type="submit"
+                                        class="min-h-[44px] w-full rounded-lg border border-ink-300 bg-white px-4 text-sm font-semibold text-ink-700 transition hover:border-accent-400 hover:text-accent-700">
+                                    Waive fee (staff child / hardship)
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+
+                    {% if not application.requestedClassroom %}
+                        <p class="mb-4 rounded-lg bg-failed/10 p-3 text-xs text-failed">
+                            The parent did not choose a class, so this cannot be enrolled.
+                            Ask for the class using <em>Request information</em> below.
+                        </p>
+                    {% else %}
+                        <form method="post" action="{{ path('app_tenant_application_enrol', {id: application.id}) }}" class="mb-4">
+                            <input type="hidden" name="_token" value="{{ csrf_token('application_enrol_' ~ application.id) }}">
+                            <label for="notes" class="mb-1 block text-sm font-medium text-ink-700">Note (optional)</label>
+                            <textarea id="notes" name="notes" rows="2"
+                                      class="mb-3 w-full rounded-lg border border-ink-300 p-2.5 text-base focus:border-accent-500 focus:ring-accent-500"
+                                      placeholder="Anything to record on the admission"></textarea>
+                            <button type="submit"
+                                    class="min-h-[44px] w-full rounded-lg bg-accent-600 px-5 font-semibold text-white transition hover:bg-accent-700">
+                                Approve &amp; enrol
+                            </button>
+                            <p class="mt-2 text-xs text-ink-500">
+                                Creates the {{ learner }}, the enrolment and the first invoice, then notifies the guardian.
+                            </p>
+                        </form>
+                    {% endif %}
+
+                    {# Other outcomes #}
+                    <div class="space-y-3 border-t border-ink-200 pt-4">
+                        <form method="post" action="{{ path('app_tenant_application_status', {id: application.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('application_status_' ~ application.id) }}">
+                            <input type="hidden" name="status" value="needs_info">
+                            <label for="info" class="mb-1 block text-sm font-medium text-ink-700">Request information</label>
+                            <textarea id="info" name="note" rows="2" required
+                                      class="mb-2 w-full rounded-lg border border-ink-300 p-2.5 text-base focus:border-accent-500 focus:ring-accent-500"
+                                      placeholder="What is missing? The parent sees this."></textarea>
+                            <button type="submit"
+                                    class="min-h-[44px] w-full rounded-lg border border-pending/40 bg-pending/10 px-4 text-sm font-semibold text-pending transition hover:bg-pending/20">
+                                Send back to parent
+                            </button>
+                        </form>
+
+                        <form method="post" action="{{ path('app_tenant_application_status', {id: application.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('application_status_' ~ application.id) }}">
+                            <input type="hidden" name="status" value="rejected">
+                            <label for="reason" class="mb-1 block text-sm font-medium text-ink-700">Reject</label>
+                            <textarea id="reason" name="note" rows="2" required
+                                      class="mb-2 w-full rounded-lg border border-ink-300 p-2.5 text-base focus:border-accent-500 focus:ring-accent-500"
+                                      placeholder="Reason — shown to the parent"></textarea>
+                            <button type="submit"
+                                    class="min-h-[44px] w-full rounded-lg border border-failed/40 bg-failed/10 px-4 text-sm font-semibold text-failed transition hover:bg-failed/20">
+                                Reject application
+                            </button>
+                        </form>
+
+                        <form method="post" action="{{ path('app_tenant_application_status', {id: application.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('application_status_' ~ application.id) }}">
+                            <input type="hidden" name="status" value="waitlisted">
+                            <button type="submit"
+                                    class="min-h-[44px] w-full rounded-lg border border-ink-300 px-4 text-sm font-semibold text-ink-700 transition hover:border-accent-400 hover:text-accent-700">
+                                Put on waiting list
+                            </button>
+                        </form>
+                    </div>
+                {% endif %}
+            </section>
+
+            {# Recorded decision #}
+            {% if application.decisionNotes or application.reviewedBy %}
+                <section class="rounded-xl border border-ink-200 bg-white p-4 text-sm shadow-card sm:p-6">
+                    <h2 class="mb-3 text-sm font-bold uppercase tracking-wide text-ink-500">Recorded</h2>
+                    <dl class="grid grid-cols-2 gap-y-1">
+                        <dt class="text-ink-500">Reviewed by</dt>
+                        <dd class="text-right font-medium text-ink-900">
+                            {{ application.reviewedBy ? (application.reviewedBy.fullName ?: application.reviewedBy.email) : '—' }}
+                        </dd>
+                        <dt class="text-ink-500">Reviewed at</dt>
+                        <dd class="text-right font-medium text-ink-900">
+                            {{ application.reviewedAt ? application.reviewedAt|date('d M Y') : '—' }}
+                        </dd>
+                    </dl>
+                    {% if application.decisionNotes %}
+                        <p class="mt-3 break-words border-t border-ink-200 pt-3 text-ink-700">{{ application.decisionNotes }}</p>
+                    {% endif %}
+                </section>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{# ── Macros ─────────────────────────────────────────────────────────── #}
+
+{% macro badge(status) %}
+    {%- set map = {
+        submitted:        'bg-accent-50 text-accent-700',
+        under_review:     'bg-accent-50 text-accent-700',
+        approved:         'bg-paid/10 text-paid',
+        enrolled:         'bg-paid/10 text-paid',
+        needs_info:       'bg-pending/10 text-pending',
+        awaiting_payment: 'bg-pending/10 text-pending',
+        waitlisted:       'bg-ink-100 text-ink-700',
+        draft:            'bg-ink-100 text-ink-600',
+        rejected:         'bg-failed/10 text-failed',
+        withdrawn:        'bg-ink-100 text-ink-500',
+    } -%}
+    {{- map[status]|default('bg-ink-100 text-ink-700') -}}
+{% endmacro %}
+
+{# One label/value pair. Renders an en-dash for missing data rather than
+   leaving a blank a bursar could mistake for "nothing to check". #}
+{% macro field(label, value) %}
+    <div>
+        <dt class="text-xs font-medium uppercase tracking-wide text-ink-400">{{ label }}</dt>
+        <dd class="mt-0.5 break-words font-medium text-ink-900">{{ value is same as(null) or value is same as('') ? '—' : value }}</dd>
+    </div>
+{% endmacro %}

@@ -8,6 +8,8 @@ use App\Entity\Tenant\DepartmentHead;
 use App\Entity\Tenant\FormTeacher;
 use App\Entity\Tenant\GradingScale;
 use App\Entity\Tenant\Guardian;
+use App\Entity\Tenant\ReportShareToken;
+use App\Entity\Tenant\ReportArchive;
 use App\Entity\Tenant\ResultApproval;
 use App\Entity\Tenant\ResultComponentScore;
 use App\Entity\Tenant\Session;
@@ -19,10 +21,19 @@ use App\Entity\Tenant\Term;
 use App\Entity\Tenant\User;
 use App\Entity\Tenant\YearGroupMaster;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Service\Results\ReportAccessGate;
+use App\Service\Results\ReportArchiveService;
+use App\Service\Results\ReportPdfRendererInterface;
+use App\Service\Results\ReportShareService;
+use App\Service\Results\ResultMailer;
+use App\Service\Results\ResultSheetBuilder;
+use App\Service\Results\TranscriptPdfRenderer;
+use App\Service\SchoolLife\TermRelease;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/reports')]
@@ -31,8 +42,17 @@ class ResultReportController extends AbstractController
 {
     private ?array $cachedGradingScales = null;
 
-    public function __construct(private EntityManagerInterface $em)
-    {
+    public function __construct(
+        private EntityManagerInterface $em,
+        private ResultSheetBuilder $sheetBuilder,
+        private ReportPdfRendererInterface $pdfRenderer,
+        private ReportShareService $shareService,
+        private ReportAccessGate $gate,
+        private ResultMailer $mailer,
+        private TranscriptPdfRenderer $transcriptRenderer,
+        private ReportArchiveService $archives,
+        private TermRelease $release,
+    ) {
     }
 
     #[Route('', name: 'app_tenant_reports_hub')]
@@ -307,42 +327,379 @@ class ResultReportController extends AbstractController
     // ------------------------------------------------------------
 
     #[Route('/student', name: 'app_tenant_report_student')]
-    public function studentSheet(): Response
+    public function studentSheet(Request $request): Response
     {
         $students = $this->studentsForCurrentUser();
         if (!$students) {
-            throw $this->createAccessDeniedException('No student records are linked to your account.');
+            return $this->noLinkedStudents();
         }
 
-        $result = [];
+        // One term at a time: the card is a document for a term, not a transcript.
+        // Defaults to the active term; ?term=<id> lets a parent look back.
+        $termId = $request->query->getInt('term');
+        $term = $termId > 0
+            ? $this->em->getRepository(Term::class)->find($termId)
+            : $this->em->getRepository(Term::class)->findOneBy(['isActive' => true]);
+
+        if (!$term) {
+            throw $this->createNotFoundException('No academic term is available yet.');
+        }
+
+        $sheets = [];
+        $shares = [];
+        $shareUrls = [];
+        $shareNotices = [];
+        $emailNotices = [];
         foreach ($students as $student) {
-            $scores = $this->em->getRepository(ResultComponentScore::class)->findBy(['student' => $student], ['term' => 'ASC']);
-            $byTerm = [];
-            foreach ($scores as $score) {
-                $key = $score->getTerm()->getId();
-                $byTerm[$key]['term'] = $score->getTerm();
-                $csId = $score->getClassSubject()->getId();
-                $byTerm[$key]['subjects'][$csId]['classSubject'] = $score->getClassSubject();
-                $byTerm[$key]['subjects'][$csId]['components'][$score->getComponent()] = (float) $score->getScore();
-            }
-            foreach ($byTerm as &$t) {
-                foreach ($t['subjects'] as &$s) {
-                    $s['total'] = array_sum($s['components']);
-                    $s['grade'] = $this->gradeFor($s['total']);
-                }
-                unset($s);
-            }
-            unset($t);
+            $studentId = (int) $student->getId();
+            $withheld = !$this->isGranted('ROLE_ADMIN') && $this->gate->isWithheld($student);
 
-            $result[] = ['student' => $student, 'terms' => $byTerm];
+            // Unapproved marks are not a report card. Staff may preview a sheet
+            // that is still in the approval chain; a parent may not see one.
+            $released = $this->classroomOf($student) && $this->release->isReleased($this->classroomOf($student), $term);
+            $maySee = $released || $this->isGranted('ROLE_TEACHER');
+
+            if ($withheld) {
+                $sheets[] = ['withheld' => true, 'student' => $student, 'outstanding' => $this->gate->outstanding($student)];
+            } elseif (!$maySee) {
+                $sheets[] = ['not_released' => true, 'student' => $student];
+            } else {
+                $sheets[] = $this->sheetBuilder->build($student, $term);
+            }
+            $shares[$studentId] = $withheld ? [] : $this->shareService->activeFor($student, $term);
+
+            // Session, not flash: base.html.twig renders every flash bag before
+            // the page body, which would swallow a card-specific panel.
+            $url = $request->getSession()->remove('report_share_url_' . $studentId);
+            if ($url) {
+                $shareUrls[$studentId] = $url;
+            }
+            $notice = $request->getSession()->remove('report_share_notice_' . $studentId);
+            if ($notice) {
+                $shareNotices[$studentId] = $notice;
+            }
+            $emailNotice = $request->getSession()->remove('report_email_notice_' . $studentId);
+            if ($emailNotice) {
+                $emailNotices[$studentId] = $emailNotice;
+            }
         }
 
-        return $this->render('tenant/reports/student.html.twig', ['result' => $result]);
+        return $this->render('tenant/reports/card.html.twig', [
+            'sheets' => $sheets,
+            'shares' => $shares,
+            'share_urls' => $shareUrls,
+            'share_notices' => $shareNotices,
+            'email_notices' => $emailNotices,
+            'term' => $term,
+        ]);
+    }
+
+    /**
+     * The PDF is the artefact that gets printed, forwarded and shown to relatives.
+     * It is rendered from the same ResultSheetBuilder structure as the screen, so a
+     * parent can never download different figures from the ones they just read.
+     */
+    private function classroomOf(Student $student): ?Classroom
+    {
+        return $student->getCurrentClass();
+    }
+
+    #[Route('/student/pdf', name: 'app_tenant_report_student_pdf', methods: ['GET'])]
+    public function studentPdf(Request $request): Response
+    {
+        [$student, $term] = $this->studentAndTerm($request);
+
+        if (!$this->isGranted('ROLE_ADMIN') && $this->gate->isWithheld($student)) {
+            $response = $this->render('tenant/reports/withheld.html.twig', [
+                'student' => $student,
+                'term' => $term,
+                'school' => $this->gate->school(),
+                'outstanding' => $this->gate->outstanding($student),
+            ]);
+            $response->setStatusCode(Response::HTTP_PAYMENT_REQUIRED);
+            $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
+
+            return $response;
+        }
+
+        $classroom = $this->classroomOf($student);
+        if (!$this->isGranted('ROLE_TEACHER') && (!$classroom || !$this->release->isReleased($classroom, $term))) {
+            $response = $this->render('tenant/reports/not_released.html.twig', [
+                'student' => $student,
+                'term' => $term,
+                'school' => $this->gate->school(),
+            ]);
+            $response->setStatusCode(Response::HTTP_CONFLICT);
+            $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
+
+            return $response;
+        }
+
+        $sheet = $this->sheetBuilder->build($student, $term);
+
+        if ($sheet['empty'] ?? false) {
+            throw $this->createNotFoundException('There is no report card for this pupil and term.');
+        }
+
+        $pdf = $this->pdfRenderer->render($sheet);
+        $this->archives->record($student, $term, ReportArchive::KIND_CARD, $pdf, $this->getUser()?->getUserIdentifier());
+
+        $name = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $student->getFullName()) ?: 'pupil';
+        $termName = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $term->getName()) ?: 'term';
+        $filename = sprintf('report-%s-%s.pdf', trim($name, '-'), trim($termName, '-'));
+
+        $disposition = $request->query->getBoolean('inline') ? 'inline' : 'attachment';
+        $response = new Response($pdf);
+        $response->headers->set('Content-Type', 'application/pdf');
+        $response->headers->set('Content-Disposition', $disposition . '; filename="' . $filename . '"');
+        $response->headers->set('X-Content-Type-Options', 'nosniff');
+        $response->headers->set('Cache-Control', 'private, no-store');
+
+        return $response;
+    }
+
+    /**
+     * Creates a signed 30-day link the parent can send on WhatsApp.
+     *
+     * Refused unless the term is final-approved: the public link is the point at
+     * which a figure leaves the school, so it must be a figure the school signed
+     * off (RESULT-CARD-DESIGN.md §9 items 1 and 3).
+     */
+    #[Route('/student/share', name: 'app_tenant_report_student_share', methods: ['POST'])]
+    public function shareStudentSheet(Request $request): Response
+    {
+        if (!$this->isCsrfTokenValid('report_share', (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('That form expired. Reload the page and try again.');
+        }
+
+        [$student, $term] = $this->studentAndTerm($request);
+
+        if ($this->gate->isWithheld($student)) {
+            $this->addFlash('error', 'A share link cannot be created while outstanding fees are on the account.');
+            return $this->redirectToRoute('app_tenant_report_student', ['term' => $term->getId()]);
+        }
+
+        $sheet = $this->sheetBuilder->build($student, $term);
+
+        if ($sheet['empty'] ?? false) {
+            $this->addFlash('report_error_' . $student->getId(), 'There is no report card to share for this term.');
+            return $this->redirectToRoute('app_tenant_report_student', ['term' => $term->getId()]);
+        }
+
+        if (!($sheet['released'] ?? false)) {
+            $this->addFlash(
+                'report_error_' . $student->getId(),
+                'Sharing opens when the term is final-approved. The card is still in progress.'
+            );
+            return $this->redirectToRoute('app_tenant_report_student', ['term' => $term->getId()]);
+        }
+
+        /** @var User|null $user */
+        $user = $this->getUser();
+        $created = $this->shareService->create($student, $term, $user);
+
+        $url = $this->generateUrl(
+            'app_tenant_report_shared',
+            ['token' => $created['token']],
+            UrlGeneratorInterface::ABSOLUTE_URL
+        );
+        $request->getSession()->set('report_share_url_' . $student->getId(), $url);
+
+        return $this->redirectToRoute('app_tenant_report_student', ['term' => $term->getId()]);
+    }
+
+    /**
+     * Email the PDF to the parent who asked for it. The attachment is the same
+     * document the Download button produces, including its verification code.
+     */
+    #[Route('/student/email', name: 'app_tenant_report_student_email', methods: ['POST'])]
+    public function emailStudentSheet(Request $request): Response
+    {
+        if (!$this->isCsrfTokenValid('report_email', (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('That form expired. Reload the page and try again.');
+        }
+
+        [$student, $term] = $this->studentAndTerm($request);
+
+        if ($this->gate->isWithheld($student)) {
+            $request->getSession()->set('report_email_notice_' . $student->getId(), 'The report cannot be emailed while outstanding fees remain.');
+            return $this->redirectToRoute('app_tenant_report_student', ['term' => $term->getId()]);
+        }
+
+        $sheet = $this->sheetBuilder->build($student, $term);
+        if ($sheet['empty'] ?? false) {
+            $request->getSession()->set('report_email_notice_' . $student->getId(), 'There is no report card to email for this term.');
+            return $this->redirectToRoute('app_tenant_report_student', ['term' => $term->getId()]);
+        }
+
+        $guardian = $student->getGuardian();
+        $user = $this->getUser();
+        $toEmail = $guardian?->getEmail() ?: ($user instanceof User ? $user->getEmail() : null);
+        $toName = $guardian?->getFullName() ?: ($user instanceof User ? $user->getFullName() : null);
+
+        $pdf = $this->pdfRenderer->render($sheet);
+        $filename = sprintf(
+            'report-%s-%s.pdf',
+            trim((string) preg_replace('/[^A-Za-z0-9]+/', '-', (string) $student->getFullName()), '-') ?: 'pupil',
+            trim((string) preg_replace('/[^A-Za-z0-9]+/', '-', (string) $term->getName()), '-') ?: 'term'
+        );
+
+        $school = $sheet['school'] ?? $this->gate->school();
+        if (!$school) {
+            $request->getSession()->set('report_email_notice_' . $student->getId(), 'The school profile is incomplete; the report could not be emailed.');
+            return $this->redirectToRoute('app_tenant_report_student', ['term' => $term->getId()]);
+        }
+
+        $this->archives->record($student, $term, ReportArchive::KIND_CARD, $pdf, $this->getUser()?->getUserIdentifier());
+        $sent = $this->mailer->send($school, $student, $term, $pdf, $filename, $toEmail, $toName);
+
+        $request->getSession()->set(
+            'report_email_notice_' . $student->getId(),
+            $sent
+                ? 'Report emailed to ' . $toEmail . '.'
+                : 'We could not send that email. Check the address on the parent record or try again later.'
+        );
+
+        return $this->redirectToRoute('app_tenant_report_student', ['term' => $term->getId()]);
+    }
+
+    /**
+     * The session transcript: all terms, all subjects, one printable record.
+     */
+    #[Route('/student/transcript', name: 'app_tenant_report_student_transcript', methods: ['GET'])]
+    public function studentTranscript(Request $request): Response
+    {
+        [$student, $term] = $this->studentAndTerm($request);
+
+        if (!$this->isGranted('ROLE_ADMIN') && $this->gate->isWithheld($student)) {
+            return $this->withheldResponse($student, $term);
+        }
+
+        $sheet = $this->sheetBuilder->build($student, $term);
+        if ($sheet['empty'] ?? false) {
+            throw $this->createNotFoundException('There is no transcript for this pupil and term.');
+        }
+
+        return $this->render('tenant/reports/transcript.html.twig', [
+            'sheet' => $sheet,
+            'term' => $term,
+        ]);
+    }
+
+    #[Route('/student/transcript/pdf', name: 'app_tenant_report_student_transcript_pdf', methods: ['GET'])]
+    public function studentTranscriptPdf(Request $request): Response
+    {
+        [$student, $term] = $this->studentAndTerm($request);
+
+        if (!$this->isGranted('ROLE_ADMIN') && $this->gate->isWithheld($student)) {
+            return $this->withheldResponse($student, $term);
+        }
+
+        $sheet = $this->sheetBuilder->build($student, $term);
+        if ($sheet['empty'] ?? false) {
+            throw $this->createNotFoundException('There is no transcript for this pupil and term.');
+        }
+
+        $pdf = $this->transcriptRenderer->render($sheet);
+        $this->archives->record($student, $term, ReportArchive::KIND_TRANSCRIPT, $pdf, $this->getUser()?->getUserIdentifier());
+        $name = preg_replace('/[^A-Za-z0-9]+/', '-', (string) $student->getFullName()) ?: 'pupil';
+
+        $response = new Response($pdf);
+        $response->headers->set('Content-Type', 'application/pdf');
+        $response->headers->set(
+            'Content-Disposition',
+            ($request->query->getBoolean('inline') ? 'inline' : 'attachment') . '; filename="transcript-' . trim($name, '-') . '.pdf"'
+        );
+        $response->headers->set('X-Content-Type-Options', 'nosniff');
+        $response->headers->set('Cache-Control', 'private, no-store');
+
+        return $response;
+    }
+
+    /**
+     * PTA-day batch print: every report in the class, one per printed page.
+     * This is the printer-friendly screen; it deliberately does not create a
+     * single giant PDF, because a browser print dialog already paginates.
+     */
+    #[Route('/class/{classroom}/print', name: 'app_tenant_report_class_print', methods: ['GET'])]
+    #[IsGranted('ROLE_TEACHER')]
+    public function classPrint(Classroom $classroom, Request $request): Response
+    {
+        $term = $request->query->getInt('term') > 0
+            ? $this->em->getRepository(Term::class)->find($request->query->getInt('term'))
+            : $this->em->getRepository(Term::class)->findOneBy(['isActive' => true]);
+
+        if (!$term) {
+            throw $this->createNotFoundException('No academic term is available.');
+        }
+
+        if (!$this->isGranted('ROLE_ADMIN')) {
+            $staff = $this->currentStaff();
+            $assignment = $staff ? $this->em->getRepository(FormTeacher::class)->findOneBy([
+                'staff' => $staff,
+                'term' => $term,
+            ]) : null;
+
+            if (!$assignment || (int) $assignment->getClassroom()?->getId() !== (int) $classroom->getId()) {
+                throw $this->createAccessDeniedException('Only the form teacher or an administrator can print this class.');
+            }
+        }
+
+        $sheets = [];
+        foreach ($this->studentsForClassroom($classroom, $term) as $student) {
+            $withheld = !$this->isGranted('ROLE_ADMIN') && $this->gate->isWithheld($student);
+            $sheets[] = $withheld
+                ? ['withheld' => true, 'student' => $student, 'outstanding' => $this->gate->outstanding($student)]
+                : $this->sheetBuilder->build($student, $term);
+        }
+
+        return $this->render('tenant/reports/class_print.html.twig', [
+            'classroom' => $classroom,
+            'term' => $term,
+            'sheets' => $sheets,
+        ]);
+    }
+
+    /** A parent can withdraw a link they have already sent. */
+    #[Route('/student/share/{id}/revoke', name: 'app_tenant_report_student_share_revoke', methods: ['POST'], requirements: ['id' => '\\d+'])]
+    public function revokeStudentShare(ReportShareToken $share, Request $request): Response
+    {
+        if (!$this->isCsrfTokenValid('report_share_revoke_' . $share->getId(), (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('That form expired. Reload the page and try again.');
+        }
+
+        $student = $share->getStudent();
+        if (!$student) {
+            throw $this->createNotFoundException('No such share link.');
+        }
+        $this->assertStudentAccess($student);
+
+        $this->shareService->revoke($share);
+        $request->getSession()->set('report_share_notice_' . $student->getId(), 'That link has been revoked.');
+
+        return $this->redirectToRoute('app_tenant_report_student', [
+            'term' => $share->getTerm()?->getId(),
+        ]);
     }
 
     // ------------------------------------------------------------
     // Helpers
     // ------------------------------------------------------------
+
+    private function withheldResponse(Student $student, Term $term): Response
+    {
+        $response = $this->render('tenant/reports/withheld.html.twig', [
+            'student' => $student,
+            'term' => $term,
+            'school' => $this->gate->school(),
+            'outstanding' => $this->gate->outstanding($student),
+        ]);
+        $response->setStatusCode(Response::HTTP_PAYMENT_REQUIRED);
+        $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
+        $response->headers->set('Cache-Control', 'private, no-store');
+
+        return $response;
+    }
 
     private function getStaff(): Staff
     {
@@ -381,6 +738,121 @@ class ResultReportController extends AbstractController
         }
 
         return [];
+    }
+
+    /**
+     * Resolve the pupil and term for a card request, enforcing the guardian link.
+     * A query-string id is never trusted on its own.
+     *
+     * @return array{0: Student, 1: Term}
+     */
+    private function studentAndTerm(Request $request): array
+    {
+        $students = $this->studentsForCurrentUser();
+        if (!$students) {
+            throw $this->createAccessDeniedException('No student records are linked to your account.');
+        }
+
+        $studentId = $request->query->getInt('student') ?: $request->request->getInt('student');
+        $student = null;
+        foreach ($students as $candidate) {
+            if ($studentId > 0 && (int) $candidate->getId() === $studentId) {
+                $student = $candidate;
+                break;
+            }
+        }
+        if (!$student) {
+            if (count($students) === 1) {
+                $student = $students[0];
+            } else {
+                throw $this->createNotFoundException('Choose which child this report is for.');
+            }
+        }
+
+        $termId = $request->query->getInt('term') ?: $request->request->getInt('term');
+        $term = $termId > 0
+            ? $this->em->getRepository(Term::class)->find($termId)
+            : $this->em->getRepository(Term::class)->findOneBy(['isActive' => true]);
+
+        if (!$term) {
+            throw $this->createNotFoundException('No academic term is available yet.');
+        }
+
+        return [$student, $term];
+    }
+
+    /**
+     * @return list<Student>
+     */
+    private function studentsForClassroom(Classroom $classroom, Term $term): array
+    {
+        $session = $term->getSession();
+        $students = [];
+
+        if ($session) {
+            foreach ($this->em->getRepository(\App\Entity\Tenant\Enrollment::class)->findBy([
+                'classroom' => $classroom,
+                'session' => $session,
+            ]) as $enrollment) {
+                if ($enrollment->getStudent()) {
+                    $students[(int) $enrollment->getStudent()->getId()] = $enrollment->getStudent();
+                }
+            }
+        }
+
+        if ($students === []) {
+            foreach ($this->em->getRepository(Student::class)->findBy(['currentClassroom' => $classroom]) as $student) {
+                $students[(int) $student->getId()] = $student;
+            }
+        }
+
+        uasort($students, static fn (Student $a, Student $b) => strcasecmp(
+            ($a->getLastName() ?? '') . ' ' . ($a->getFirstName() ?? ''),
+            ($b->getLastName() ?? '') . ' ' . ($b->getFirstName() ?? '')
+        ));
+
+        return array_values($students);
+    }
+
+    private function assertStudentAccess(Student $student): void
+    {
+        foreach ($this->studentsForCurrentUser() as $candidate) {
+            if ((int) $candidate->getId() === (int) $student->getId()) {
+                return;
+            }
+        }
+
+        throw $this->createAccessDeniedException('That pupil is not linked to your account.');
+    }
+
+    /**
+     * A staff account has no pupils of its own, so "My Results" is simply the wrong
+     * page for it. Send staff to the report tools with an explanation, and show a
+     * parent a calm page that says what to do next — never a raw Symfony 403.
+     */
+    private function noLinkedStudents(): Response
+    {
+        $user = $this->getUser();
+
+        // A staff account has no pupils of its own. Some admin accounts have no
+        // Staff row at all, so the role is the reliable signal — ROLE_PARENT is
+        // the only role that should ever reach a child's card.
+        if ($user instanceof User && ($user->getStaff() !== null || !$this->isGranted('ROLE_PARENT'))) {
+            $this->addFlash(
+                'info',
+                'Report cards are shown to parent accounts. Use the report tools below to review results.'
+            );
+
+            return $this->redirectToRoute(
+                $this->isGranted('ROLE_TEACHER') ? 'app_tenant_reports_hub' : 'app_tenant_dashboard'
+            );
+        }
+
+        $response = $this->render('tenant/reports/no_students.html.twig');
+        $response->setStatusCode(Response::HTTP_FORBIDDEN);
+        $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
+
+        return $response;
     }
 
     private function assertOwnAssignment(SubjectTeacher $assignment): void

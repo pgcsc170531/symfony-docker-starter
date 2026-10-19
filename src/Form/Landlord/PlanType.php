@@ -4,12 +4,13 @@ namespace App\Form\Landlord;
 
 use App\Entity\Landlord\Plan;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\MoneyType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 
 class PlanType extends AbstractType
 {
@@ -52,6 +53,64 @@ class PlanType extends AbstractType
                 'label' => 'Is this the Free Trial Plan?',
                 'required' => false,
                 'help' => 'If checked, new schools will be automatically assigned to this plan for 14 days.',
+            ])
+
+            // ── The live tracks: per pupil, or licence ──────────────────────
+            ->add('pricingModel', ChoiceType::class, [
+                'label' => 'Pricing model',
+                'choices' => [
+                    'Flat price (legacy contracts only)' => 'flat',
+                    'Per pupil (Standard)' => 'per_student',
+                    'Licence (Enterprise)' => 'licence',
+                ],
+                'help' => 'Per-pupil and licence plans ignore “Price” above — it stays 0.',
+            ])
+            ->add('termPricePerStudent', MoneyType::class, [
+                'currency' => '',
+                'label' => 'Standard: ₦ per pupil per term',
+                'divisor' => 1,
+                'required' => false,
+            ])
+            ->add('annualPricePerStudent', MoneyType::class, [
+                'currency' => '',
+                'label' => 'Standard: ₦ per pupil per term, when the year is prepaid',
+                'divisor' => 1,
+                'required' => false,
+                'help' => '₦500 here means ₦1,500 per pupil per year.',
+            ])
+            ->add('minimumTermInvoice', MoneyType::class, [
+                'currency' => '',
+                'label' => 'Minimum termly invoice (₦)',
+                'divisor' => 1,
+                'required' => false,
+            ])
+            ->add('minimumAnnualInvoice', MoneyType::class, [
+                'currency' => '',
+                'label' => 'Minimum annual invoice (₦)',
+                'divisor' => 1,
+                'required' => false,
+            ])
+            ->add('licenceFee', MoneyType::class, [
+                'currency' => '',
+                'label' => 'Enterprise: one-off licence (₦)',
+                'divisor' => 1,
+                'required' => false,
+            ])
+            ->add('annualFee', MoneyType::class, [
+                'currency' => '',
+                'label' => 'Enterprise: annual fee (₦, email included)',
+                'divisor' => 1,
+                'required' => false,
+            ])
+            ->add('implementationFee', MoneyType::class, [
+                'currency' => '',
+                'label' => 'Enterprise: implementation (₦, one-off)',
+                'divisor' => 1,
+                'required' => false,
+            ])
+            ->add('isPublic', CheckboxType::class, [
+                'label' => 'Show this plan to schools',
+                'required' => false,
             ])
         ;
     }

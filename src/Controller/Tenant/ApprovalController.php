@@ -8,14 +8,18 @@ use App\Entity\Tenant\DepartmentHead;
 use App\Entity\Tenant\FormTeacher;
 use App\Entity\Tenant\ResultApproval;
 use App\Entity\Tenant\ResultComponentScore;
+use App\Entity\Tenant\School;
 use App\Entity\Tenant\Session;
 use App\Entity\Tenant\Staff;
+use App\Entity\Tenant\Student;
 use App\Entity\Tenant\Subject;
 use App\Entity\Tenant\SubjectTeacher;
 use App\Entity\Tenant\Term;
 use App\Entity\Tenant\YearGroupMaster;
+use App\Service\SchoolMailer;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -42,8 +46,9 @@ class ApprovalController extends AbstractController
     }
 
     #[Route('/form-teacher/{id}/confirm', name: 'tenant_approval_form_teacher_confirm', methods: ['POST'])]
-    public function confirmClass(FormTeacher $formTeacher): Response
+    public function confirmClass(FormTeacher $formTeacher, Request $request): Response
     {
+        $this->assertCsrf($request);
         $staff = $this->getStaff();
 
         if ($formTeacher->getStaff()->getId() !== $staff->getId() && !$this->isGranted('ROLE_ADMIN')) {
@@ -51,7 +56,27 @@ class ApprovalController extends AbstractController
         }
 
         $term = $formTeacher->getTerm();
-        foreach ($this->classSubjectsForClassroom($formTeacher->getClassroom(), $term->getSession()) as $classSubject) {
+        $classSubjects = $this->classSubjectsForClassroom($formTeacher->getClassroom(), $term->getSession());
+
+        $missing = [];
+        foreach ($classSubjects as $classSubject) {
+            $submitted = (int) $this->em->getRepository(ResultComponentScore::class)->count([
+                'classSubject' => $classSubject,
+                'term' => $term,
+                'status' => ResultComponentScore::STATUS_SUBMITTED,
+            ]);
+            if ($submitted === 0) {
+                $missing[] = $classSubject->getSubject()?->getName() ?? 'a subject';
+            }
+        }
+
+        if ($missing !== []) {
+            $this->addFlash('warning', 'Cannot confirm yet — no submitted results for: ' . implode(', ', $missing) . '.');
+
+            return $this->redirectToRoute('tenant_approval_hub');
+        }
+
+        foreach ($classSubjects as $classSubject) {
             $approval = $this->approvalFor($classSubject, $term);
             $approval->setFormTeacherStatus(ResultApproval::STATUS_APPROVED);
             $approval->setFormTeacher($staff);
@@ -66,10 +91,17 @@ class ApprovalController extends AbstractController
     }
 
     #[Route('/hod/{id}/approve', name: 'tenant_approval_hod_approve', methods: ['POST'])]
-    public function hodApprove(ResultApproval $approval): Response
+    public function hodApprove(ResultApproval $approval, Request $request): Response
     {
+        $this->assertCsrf($request);
         $staff = $this->getStaff();
         $this->assertHodOf($approval, $staff);
+
+        if (!$this->isGranted('ROLE_ADMIN') && $approval->getFormTeacherStatus() !== ResultApproval::STATUS_APPROVED) {
+            $this->addFlash('warning', 'The form teacher must confirm the class before the HOD can approve this subject.');
+
+            return $this->redirectToRoute('tenant_approval_hub');
+        }
 
         $approval->setHodStatus(ResultApproval::STATUS_APPROVED);
         $approval->setHod($staff);
@@ -82,12 +114,22 @@ class ApprovalController extends AbstractController
     }
 
     #[Route('/hod/{id}/reject', name: 'tenant_approval_hod_reject', methods: ['POST'])]
-    public function hodReject(ResultApproval $approval): Response
+    public function hodReject(ResultApproval $approval, Request $request): Response
     {
+        $this->assertCsrf($request);
         $staff = $this->getStaff();
         $this->assertHodOf($approval, $staff);
 
+        // A rejection has to say what to fix — otherwise the teacher is simply
+        // told "no" and resubmits the same sheet.
+        $reason = trim((string) $request->request->get('reason'));
+        if ($reason === '') {
+            $this->addFlash('error', 'Say why the results are being sent back — the subject teacher sees this reason.');
+            return $this->redirectToRoute('tenant_approval_hub');
+        }
+
         $approval->setHodStatus(ResultApproval::STATUS_REJECTED);
+        $approval->setHodReason(mb_substr($reason, 0, 255));
         $approval->setHod($staff);
         $approval->setHodAt(new \DateTimeImmutable());
 
@@ -109,24 +151,196 @@ class ApprovalController extends AbstractController
     }
 
     #[Route('/year-group/{id}/approve', name: 'tenant_approval_year_group_approve', methods: ['POST'])]
-    public function yearGroupApprove(ResultApproval $approval): Response
+    public function yearGroupApprove(YearGroupMaster $assignment, SchoolMailer $mailer, Request $request): Response
     {
+        $this->assertCsrf($request);
         $staff = $this->getStaff();
-        $this->assertYearGroupMasterOf($approval, $staff);
 
-        $approval->setYearGroupStatus(ResultApproval::STATUS_APPROVED);
-        $approval->setYearGroupMaster($staff);
-        $approval->setYearGroupAt(new \DateTimeImmutable());
-        $this->em->persist($approval);
+        if (!$this->isGranted('ROLE_ADMIN') && $assignment->getStaff()?->getId() !== $staff->getId()) {
+            throw $this->createAccessDeniedException('That year group is not yours to release.');
+        }
+
+        $term = $this->getActiveTerm($assignment->getSession());
+        if (!$term) {
+            $this->addFlash('error', 'No term is open for this year group.');
+            return $this->redirectToRoute('tenant_approval_hub');
+        }
+
+        $classrooms = $this->em->getRepository(Classroom::class)->findBy(['yearGroup' => $assignment->getYearGroup()]);
+        $classSubjects = $classrooms === [] ? [] : $this->em->getRepository(ClassSubject::class)->findBy([
+            'classroom' => $classrooms,
+            'session' => $assignment->getSession(),
+        ]);
+
+        if ($classSubjects === []) {
+            $this->addFlash('warning', 'There are no class subjects in this year group to release.');
+            return $this->redirectToRoute('tenant_approval_hub');
+        }
+
+        // Releasing is a year-group decision, not a per-subject one. A class that
+        // is half-released shows parents some marks and hides the rest, so the
+        // group goes out together or not at all — and the refusal names the
+        // subjects that are holding it up.
+        $outstanding = [];
+        foreach ($classSubjects as $classSubject) {
+            $approval = $this->em->getRepository(ResultApproval::class)->findOneBy([
+                'classSubject' => $classSubject,
+                'term' => $term,
+            ]);
+
+            if (!$approval || $approval->getHodStatus() !== ResultApproval::STATUS_APPROVED) {
+                $outstanding[] = sprintf(
+                    '%s (%s)',
+                    $classSubject->getSubject()?->getName() ?? 'a subject',
+                    $classSubject->getClassroom()?->getName() ?? 'a class'
+                );
+            }
+        }
+
+        if ($outstanding !== []) {
+            $this->addFlash('warning', sprintf(
+                'Cannot release yet — these subjects still need HOD approval: %s.',
+                implode(', ', $outstanding)
+            ));
+
+            return $this->redirectToRoute('tenant_approval_hub');
+        }
+
+        // How many were already out before this click — used so a second press
+        // of Release does not email every family again.
+        $alreadyReleased = 0;
+        foreach ($classSubjects as $classSubject) {
+            $existing = $this->em->getRepository(ResultApproval::class)->findOneBy([
+                'classSubject' => $classSubject,
+                'term' => $term,
+            ]);
+            if ($existing && $existing->getYearGroupStatus() === ResultApproval::STATUS_APPROVED) {
+                $alreadyReleased++;
+            }
+        }
+
+        foreach ($classSubjects as $classSubject) {
+            $approval = $this->approvalFor($classSubject, $term);
+            $approval->setYearGroupStatus(ResultApproval::STATUS_APPROVED);
+            $approval->setYearGroupMaster($staff);
+            $approval->setYearGroupAt(new \DateTimeImmutable());
+            $this->em->persist($approval);
+        }
+
         $this->em->flush();
-        $this->addFlash('success', 'Results final-approved.');
+        $this->addFlash('success', sprintf(
+            'Results for %s released — %d subjects final-approved.',
+            $assignment->getYearGroup()?->getName() ?? 'the year group',
+            count($classSubjects)
+        ));
+
+        if ($alreadyReleased >= count($classSubjects)) {
+            return $this->redirectToRoute('tenant_approval_hub');
+        }
+
+        // Publish once per **class**, not once per subject. The first version
+        // called this for all five subjects, so a 67-pupil class sent 335 mails
+        // inside one request and the release died on the 30-second limit.
+        $published = [];
+        $notSent = 0;
+        foreach ($classSubjects as $classSubject) {
+            $classroomId = $classSubject->getClassroom()?->getId();
+            if ($classroomId === null || isset($published[$classroomId])) {
+                continue;
+            }
+            $published[$classroomId] = true;
+
+            $approval = $this->em->getRepository(ResultApproval::class)->findOneBy([
+                'classSubject' => $classSubject,
+                'term' => $term,
+            ]);
+            if ($approval) {
+                $notSent += $this->publishResultsIfComplete($approval, $mailer);
+            }
+        }
+
+        // Telling a parent is a separate job from releasing the marks. If the
+        // queue is unavailable the release still stands — say so instead of
+        // pretending every family was notified.
+        if ($notSent > 0) {
+            $this->addFlash('warning', sprintf(
+                '%d of the notifications could not be queued — check the mail settings and the worker.',
+                $notSent
+            ));
+        }
 
         return $this->redirectToRoute('tenant_approval_hub');
     }
 
-    #[Route('/{id}/unlock', name: 'tenant_approval_unlock', methods: ['POST'])]
-    public function unlock(ResultApproval $approval): Response
+    /**
+     * "Publish" a class's results once nothing is left to sign off.
+     *
+     * A class has one approval row per subject, so emailing on every approval
+     * would spam each parent once per subject on the timetable. Instead the
+     * parents hear about it exactly once — when the last subject clears.
+     */
+    /** @return int number of notifications that could not be queued */
+    private function publishResultsIfComplete(ResultApproval $approval, SchoolMailer $mailer): int
     {
+        $classSubject = $approval->getClassSubject();
+        $classroom = $classSubject?->getClassroom();
+        $session = $classSubject?->getSession();
+        $term = $approval->getTerm();
+
+        if ($classroom === null || $session === null || $term === null) {
+            return 0;
+        }
+
+        $outstanding = (int) $this->em->createQueryBuilder()
+            ->select('COUNT(ra.id)')
+            ->from(ResultApproval::class, 'ra')
+            ->join('ra.classSubject', 'cs')
+            ->andWhere('cs.classroom = :classroom')
+            ->andWhere('cs.session = :session')
+            ->andWhere('ra.term = :term')
+            ->andWhere('ra.yearGroupStatus != :approved')
+            ->setParameter('classroom', $classroom)
+            ->setParameter('session', $session)
+            ->setParameter('term', $term)
+            ->setParameter('approved', ResultApproval::STATUS_APPROVED)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        if ($outstanding > 0) {
+            return 0;
+        }
+
+        $school = $this->em->getRepository(School::class)->findOneBy([]);
+        if ($school === null) {
+            return 0;
+        }
+
+        // Parents reach their children's results at /reports/student.
+        $url = $this->generateUrl(
+            'app_tenant_report_student',
+            [],
+            \Symfony\Component\Routing\Generator\UrlGeneratorInterface::ABSOLUTE_URL
+        );
+
+        $failed = 0;
+        foreach ($this->em->getRepository(Student::class)->findBy(['currentClass' => $classroom]) as $student) {
+            if ($student->getGuardian()?->getEmail() === null) {
+                continue;
+            }
+
+            // Queued, not sent: one message per family, delivered by the worker.
+            if (!$mailer->resultPublished($school, $student, $term, $url)) {
+                $failed++;
+            }
+        }
+
+        return $failed;
+    }
+
+    #[Route('/{id}/unlock', name: 'tenant_approval_unlock', methods: ['POST'])]
+    public function unlock(ResultApproval $approval, Request $request): Response
+    {
+        $this->assertCsrf($request);
         $staff = $this->getStaff();
 
         if (!$this->isGranted('ROLE_ADMIN')) {
@@ -271,10 +485,23 @@ class ApprovalController extends AbstractController
             $teacher = $subjectTeacher?->getStaff();
         }
 
+        // Approving a class needs to show *which* subjects are actually waiting.
+        // The stage status alone cannot: it reads "pending" both for a sheet the
+        // teacher submitted and for one nobody has touched.
+        $submitted = 0;
+        if ($term) {
+            $submitted = (int) $this->em->getRepository(ResultComponentScore::class)->count([
+                'classSubject' => $classSubject,
+                'term' => $term,
+                'status' => ResultComponentScore::STATUS_SUBMITTED,
+            ]);
+        }
+
         return [
             'classSubject' => $classSubject,
             'approval' => $approval,
             'teacher' => $teacher,
+            'submitted' => $submitted > 0,
         ];
     }
 
@@ -293,6 +520,13 @@ class ApprovalController extends AbstractController
         }
 
         return $staff;
+    }
+
+    private function assertCsrf(Request $request): void
+    {
+        if (!$this->isCsrfTokenValid('approval_action', (string) $request->request->get('_token', ''))) {
+            throw $this->createAccessDeniedException('That form expired. Reload the page and try again.');
+        }
     }
 
     private function classSubjectsForClassroom(Classroom $classroom, ?Session $session): array

@@ -1,0 +1,537 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Pricing — Edus{% endblock %}
+{% block title_suffix %}{% endblock %}
+{% block meta_description %}Real prices, no sales call: ₦750 per pupil per term or ₦1,500 per pupil per year on Standard; licence, annual and implementation on Enterprise. See which is cheaper at your roll.{% endblock %}
+
+{% block structured_data %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Edus",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "url": "{{ app.request.schemeAndHttpHost }}{{ path('app_pricing') }}",
+    "description": "School management software for Nigerian schools, priced per pupil or by licence.",
+    "offers": [
+        {
+            "@type": "Offer",
+            "name": "Standard — termly",
+            "price": "{{ pricing.termRate }}",
+            "priceCurrency": "NGN",
+            "description": "Per pupil, per 4-month term."
+        },
+        {
+            "@type": "Offer",
+            "name": "Standard — annual prepay",
+            "price": "{{ pricing.annualPerPupilYear }}",
+            "priceCurrency": "NGN",
+            "description": "Per pupil, per year, paid up front."
+        },
+        {
+            "@type": "Offer",
+            "name": "Enterprise — licence",
+            "price": "{{ pricing.licenceFee }}",
+            "priceCurrency": "NGN",
+            "description": "One-off licence for unlimited pupils."
+        },
+        {
+            "@type": "Offer",
+            "name": "Enterprise — annual",
+            "price": "{{ pricing.enterpriseAnnualFee }}",
+            "priceCurrency": "NGN",
+            "description": "Per year from year one. Email notifications included."
+        },
+        {
+            "@type": "Offer",
+            "name": "Enterprise — implementation",
+            "price": "{{ pricing.implementationFee }}",
+            "priceCurrency": "NGN",
+            "description": "One-off server setup, migration and training."
+        }
+    ]
+}
+</script>
+{% endblock %}
+
+{% block body %}
+<style>
+    /* Native <details> needs a marker reset; this is the only custom rule. */
+    details > summary { list-style: none; }
+    details > summary::-webkit-details-marker { display: none; }
+</style>
+
+{# ───────────────────────── NAV ───────────────────────── #}
+{% include 'landlord/home/_nav.html.twig' with { current: 'pricing' } %}
+
+{# ───────────────────────── HERO ───────────────────────── #}
+<header class="bg-white">
+    <div class="mx-auto max-w-3xl px-4 py-12 text-center sm:px-6 sm:py-16 lg:px-8">
+        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-accent-700">Pricing</p>
+        <h1 class="mt-3 text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl lg:text-5xl">
+            Priced by your roll,<br class="hidden sm:block"> not by a sales call.
+        </h1>
+        <p class="mt-4 text-base text-ink-700 sm:text-lg">
+            Two ways to pay: per pupil each term, or a licence for a large school.
+            Both prices are below — with the arithmetic that tells you which one is cheaper.
+        </p>
+        <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <a href="https://wa.me/2348032714999?text=Hello!%20I%20am%20a%20school%20proprietor%20interested%20in%20a%20Free%20Trial%20of%20EDUS."
+               target="_blank" rel="noopener noreferrer"
+               class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-accent-600 px-6 font-semibold text-white hover:bg-accent-700 sm:w-auto">
+                Start a free trial
+            </a>
+            <a href="#calculator"
+               class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-ink-300 px-6 font-semibold text-ink-900 hover:bg-ink-50 sm:w-auto">
+                Compare at my roll
+            </a>
+        </div>
+        <p class="mt-4 text-sm text-ink-600">No card required · Set up in under 10 minutes · Email notifications included</p>
+    </div>
+</header>
+
+{# ───────────────────────── THE ROLL RULE ───────────────────────── #}
+<section class="bg-ink-50 border-y border-ink-200">
+    <div class="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <h2 class="text-center text-2xl font-extrabold tracking-tight text-ink-900 sm:text-3xl">
+            The one line that matters
+        </h2>
+        <p class="mx-auto mt-3 max-w-2xl text-center text-base text-ink-700">
+            <strong class="font-semibold text-ink-900">Under {{ pricing.standardBelow }} pupils, Standard is cheaper.
+            Over {{ pricing.enterpriseFrom }} pupils, Enterprise is cheaper.</strong>
+            Between the two it depends on how you pay.
+        </p>
+
+        <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div class="rounded-xl border border-ink-200 bg-white p-5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">Under {{ pricing.standardBelow }} pupils</p>
+                <p class="mt-2 text-lg font-bold text-ink-900">Standard, paid for the year</p>
+                <p class="mt-2 text-sm text-ink-700">
+                    At {{ pricing.standardBelow }} pupils: ₦{{ (pricing.standardBelow * pricing.annualPerPupilYear)|number_format(0) }}
+                    over three years, against ₦{{ pricing.enterpriseThreeYear|number_format(0) }} for Enterprise.
+                </p>
+            </div>
+            <div class="rounded-xl border border-ink-200 bg-white p-5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">{{ pricing.standardBelow }} – {{ pricing.enterpriseFrom }} pupils</p>
+                <p class="mt-2 text-lg font-bold text-ink-900">It depends how you pay</p>
+                <p class="mt-2 text-sm text-ink-700">
+                    Termly → Enterprise wins from {{ pricing.breakEvenTermly }} pupils.
+                    Paid annually → Standard wins up to {{ pricing.breakEvenAnnual }}.
+                </p>
+            </div>
+            <div class="rounded-xl border border-accent-200 bg-accent-50 p-5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-accent-700">{{ pricing.enterpriseFrom }} pupils and above</p>
+                <p class="mt-2 text-lg font-bold text-ink-900">Enterprise is cheaper</p>
+                <p class="mt-2 text-sm text-ink-700">
+                    ₦{{ pricing.enterpriseThreeYear|number_format(0) }} over three years, against
+                    ₦{{ (pricing.enterpriseFrom * pricing.annualPerPupilYear * pricing.enterpriseTermYears)|number_format(0) }}
+                    on annual Standard.
+                </p>
+            </div>
+        </div>
+
+        <div class="mt-4 rounded-xl border border-pending/30 bg-white p-4 sm:p-5">
+            <p class="text-sm text-ink-700">
+                <strong class="font-semibold text-ink-900">Year one is different.</strong>
+                Enterprise bills ₦{{ pricing.enterpriseYearOne|number_format(0) }} up front (licence + implementation + first year),
+                so it is more expensive in year 1 and wins from year 3. The comparison above is over the three-year term,
+                with the <strong class="font-semibold text-ink-900">₦{{ pricing.emailServiceFee|number_format(0) }} email service already included</strong>
+                in the ₦{{ pricing.enterpriseAnnualFee|number_format(0) }} annual fee.
+            </p>
+        </div>
+    </div>
+</section>
+
+{# ───────────────────────── PLAN CARDS ───────────────────────── #}
+<section class="bg-white">
+    <div class="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+
+            {# Standard #}
+            <div class="flex flex-col rounded-2xl border border-ink-200 bg-white p-6 shadow-card sm:p-8">
+                <h2 class="text-xl font-bold text-ink-900">Standard</h2>
+                <p class="mt-1 text-sm text-ink-700">For most schools, from start-ups to about 1,000 pupils.</p>
+
+                <p class="mt-6 flex flex-wrap items-baseline gap-x-2">
+                    <span class="text-4xl font-extrabold tracking-tight text-ink-900">₦{{ pricing.termRate|number_format(0) }}</span>
+                    <span class="text-sm font-medium text-ink-700">per pupil, per 4-month term</span>
+                </p>
+                <p class="mt-2 text-sm text-ink-700">
+                    Or <strong class="font-semibold text-ink-900">₦{{ pricing.annualPerPupilYear|number_format(0) }}/pupil/year</strong>
+                    when the whole year is paid up front — 33% less.
+                </p>
+
+                <ul class="mt-6 space-y-2.5 text-sm text-ink-700">
+                    <li class="flex gap-2"><span class="text-paid" aria-hidden="true">✓</span> Every module: admissions, fees, results, store, portal</li>
+                    <li class="flex gap-2"><span class="text-paid" aria-hidden="true">✓</span> Unlimited staff accounts</li>
+                    <li class="flex gap-2"><span class="text-paid" aria-hidden="true">✓</span> Email notifications included</li>
+                    <li class="flex gap-2"><span class="text-paid" aria-hidden="true">✓</span> Term registration link — your roll sets the bill</li>
+                    <li class="flex gap-2"><span class="text-paid" aria-hidden="true">✓</span> Minimum ₦{{ pricing.termlyMinimum|number_format(0) }} per term
+                        (₦{{ pricing.annualMinimum|number_format(0) }} per year on annual)</li>
+                </ul>
+
+                <a href="https://wa.me/2348032714999?text=Hello!%20I%20am%20a%20school%20proprietor%20interested%20in%20the%20Standard%20plan."
+                   target="_blank" rel="noopener noreferrer"
+                   class="mt-8 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-accent-600 px-5 font-semibold text-white hover:bg-accent-700">
+                    Start with Standard
+                </a>
+            </div>
+
+            {# Enterprise #}
+            <div class="relative flex flex-col rounded-2xl border-2 border-accent-600 bg-white p-6 shadow-card sm:p-8">
+                <span class="absolute -top-3 left-6 rounded-full bg-accent-600 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
+                    {{ pricing.enterpriseFrom }}+ pupils
+                </span>
+                <h2 class="text-xl font-bold text-ink-900">Enterprise</h2>
+                <p class="mt-1 text-sm text-ink-700">For large schools and groups that would rather not count pupils.</p>
+
+                <dl class="mt-6 space-y-2 text-sm">
+                    <div class="flex items-baseline justify-between gap-4">
+                        <dt class="text-ink-700">Licence, one-off</dt>
+                        <dd class="text-lg font-extrabold text-ink-900">₦{{ pricing.licenceFee|number_format(0) }}</dd>
+                    </div>
+                    <div class="flex items-baseline justify-between gap-4">
+                        <dt class="text-ink-700">Annual, from year 1 <span class="text-ink-500">(email included)</span></dt>
+                        <dd class="text-lg font-extrabold text-ink-900">₦{{ pricing.enterpriseAnnualFee|number_format(0) }}</dd>
+                    </div>
+                    <div class="flex items-baseline justify-between gap-4">
+                        <dt class="text-ink-700">Implementation, one-off</dt>
+                        <dd class="text-lg font-extrabold text-ink-900">₦{{ pricing.implementationFee|number_format(0) }}</dd>
+                    </div>
+                </dl>
+
+                <p class="mt-4 rounded-lg bg-ink-50 p-3 text-sm text-ink-700">
+                    Year 1: <strong class="text-ink-900">₦{{ pricing.enterpriseYearOne|number_format(0) }}</strong> ·
+                    Three years: <strong class="text-ink-900">₦{{ pricing.enterpriseThreeYear|number_format(0) }}</strong>
+                </p>
+
+                <ul class="mt-6 space-y-2.5 text-sm text-ink-700">
+                    <li class="flex gap-2"><span class="text-paid" aria-hidden="true">✓</span> Unlimited pupils — the roll is never invoiced</li>
+                    <li class="flex gap-2"><span class="text-paid" aria-hidden="true">✓</span> SSO, API access and your own domain</li>
+                    <li class="flex gap-2"><span class="text-paid" aria-hidden="true">✓</span> Migration, data validation and staff training</li>
+                    <li class="flex gap-2"><span class="text-paid" aria-hidden="true">✓</span> Multi-campus roll and reporting</li>
+                    <li class="flex gap-2"><span class="text-paid" aria-hidden="true">✓</span> Named success manager and SLA</li>
+                </ul>
+
+                <a href="https://wa.me/2348032714999?text=Hello!%20I%20am%20a%20school%20proprietor%20interested%20in%20Enterprise%20pricing."
+                   target="_blank" rel="noopener noreferrer"
+                   class="mt-8 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-ink-900 px-5 font-semibold text-white hover:bg-ink-800">
+                    Talk to us about Enterprise
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+{# ───────────────────────── CALCULATOR ───────────────────────── #}
+<section id="calculator" class="bg-ink-50 border-y border-ink-200">
+    <div class="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <h2 class="text-2xl font-extrabold tracking-tight text-ink-900 sm:text-3xl">Which is cheaper at my roll?</h2>
+        <p class="mt-2 text-base text-ink-700">Enter your roll. We compare three years, because that is the Enterprise term.</p>
+
+        <div id="pricing-calculator"
+             class="mt-6 rounded-2xl border border-ink-200 bg-white p-5 shadow-card sm:p-6"
+             data-term-rate="{{ pricing.termRate }}"
+             data-annual-term-rate="{{ pricing.annualTermRate }}"
+             data-terms-per-year="{{ pricing.termsPerYear }}"
+             data-termly-minimum="{{ pricing.termlyMinimum }}"
+             data-annual-minimum="{{ pricing.annualMinimum }}"
+             data-licence="{{ pricing.licenceFee }}"
+             data-annual-fee="{{ pricing.enterpriseAnnualFee }}"
+             data-implementation="{{ pricing.implementationFee }}"
+             data-term-years="{{ pricing.enterpriseTermYears }}">
+
+            <label for="pupils" class="block text-sm font-semibold text-ink-900">How many pupils will you register?</label>
+            <div class="mt-2 flex items-center gap-3">
+                <input id="pupils" name="pupils" type="number" inputmode="numeric" min="0" step="10" value="400"
+                       class="min-h-[44px] w-full rounded-lg border border-ink-300 px-3 text-base text-ink-900 focus:border-accent-600 focus:outline-none focus:ring-2 focus:ring-accent-200 sm:w-44">
+                <span class="text-sm text-ink-700">pupils</span>
+            </div>
+
+            <dl class="mt-6 divide-y divide-ink-100" aria-live="polite">
+                <div class="flex items-baseline justify-between gap-4 py-3">
+                    <dt class="text-sm text-ink-700">Standard, termly (3 terms)</dt>
+                    <dd id="out-termly" class="text-lg font-bold text-ink-900">—</dd>
+                </div>
+                <div class="flex items-baseline justify-between gap-4 py-3">
+                    <dt class="text-sm text-ink-700">Standard, annual prepay</dt>
+                    <dd id="out-annual" class="text-lg font-bold text-ink-900">—</dd>
+                </div>
+                <div class="flex items-baseline justify-between gap-4 py-3">
+                    <dt class="text-sm text-ink-700">Enterprise (year 1 → 3 years)</dt>
+                    <dd id="out-enterprise" class="text-lg font-bold text-ink-900">—</dd>
+                </div>
+            </dl>
+
+            <p id="pricing-verdict" class="mt-5 rounded-lg bg-accent-50 p-4 text-sm text-ink-900" aria-live="polite">
+                Enter your roll to compare.
+            </p>
+            <p class="mt-3 text-xs text-ink-600">
+                Estimates use the published rates and minimums. Gateway charges on parent payments are separate.
+            </p>
+        </div>
+    </div>
+</section>
+
+{# ───────────────────────── COMPARISON TABLE ───────────────────────── #}
+<section class="bg-white">
+    <div class="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <h2 class="text-2xl font-extrabold tracking-tight text-ink-900 sm:text-3xl">The exact crossovers</h2>
+        <p class="mt-2 text-base text-ink-700">Three-year cost, email included. No formulas to interpret.</p>
+
+        <div class="mt-6 overflow-x-auto rounded-xl border border-ink-200">
+            <table class="w-full min-w-[640px] text-left text-sm">
+                <thead class="bg-ink-50 text-xs font-bold uppercase tracking-wide text-ink-600">
+                    <tr>
+                        <th scope="col" class="px-4 py-3">Roll</th>
+                        <th scope="col" class="px-4 py-3">vs Standard termly</th>
+                        <th scope="col" class="px-4 py-3">vs Standard annual</th>
+                        <th scope="col" class="px-4 py-3">What we recommend</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-ink-100">
+                    <tr>
+                        <td class="px-4 py-3 font-semibold text-ink-900">Under {{ pricing.breakEvenTermly }}</td>
+                        <td class="px-4 py-3 text-ink-700">Standard cheaper</td>
+                        <td class="px-4 py-3 text-ink-700">Standard cheaper</td>
+                        <td class="px-4 py-3 text-ink-700">Standard</td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-3 font-semibold text-ink-900">{{ pricing.breakEvenTermly }} – {{ pricing.breakEvenAnnual - 1 }}</td>
+                        <td class="px-4 py-3 text-ink-700">Enterprise cheaper</td>
+                        <td class="px-4 py-3 text-ink-700">Standard cheaper</td>
+                        <td class="px-4 py-3 text-ink-700">Standard if you can pay annually; Enterprise if you must pay termly</td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-3 font-semibold text-ink-900">{{ pricing.breakEvenAnnual }} – {{ pricing.enterpriseFrom - 1 }}</td>
+                        <td class="px-4 py-3 text-ink-700">Enterprise cheaper</td>
+                        <td class="px-4 py-3 text-ink-700">Level at {{ pricing.breakEvenAnnual }}, Enterprise above it</td>
+                        <td class="px-4 py-3 text-ink-700">Enterprise — the saving is real but thin</td>
+                    </tr>
+                    <tr class="bg-accent-50">
+                        <td class="px-4 py-3 font-semibold text-ink-900">{{ pricing.enterpriseFrom }} and above</td>
+                        <td class="px-4 py-3 text-ink-700">Enterprise cheaper</td>
+                        <td class="px-4 py-3 text-ink-700">Enterprise cheaper</td>
+                        <td class="px-4 py-3 font-semibold text-ink-900">Enterprise</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+{# ───────────────────────── WHAT IS NOT INCLUDED ───────────────────────── #}
+<section class="bg-ink-50 border-y border-ink-200">
+    <div class="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <h2 class="text-2xl font-extrabold tracking-tight text-ink-900 sm:text-3xl">What is not in the subscription</h2>
+        <p class="mt-2 text-base text-ink-700">We would rather say it here than surprise you on an invoice.</p>
+
+        <ul class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <li class="rounded-xl border border-ink-200 bg-white p-5">
+                <p class="font-semibold text-ink-900">Parent payment charges</p>
+                <p class="mt-1 text-sm text-ink-700">
+                    When a parent pays online, the processing fee is charged to the parent:
+                    ₦200 handling, with the total capped at ₦500. The school receives the full invoice amount.
+                </p>
+            </li>
+            <li class="rounded-xl border border-ink-200 bg-white p-5">
+                <p class="font-semibold text-ink-900">Message credits beyond the bonus</p>
+                <p class="mt-1 text-sm text-ink-700">
+                    Each plan includes a starting SMS/WhatsApp credit. Extra messages come from the wallet, at cost.
+                </p>
+            </li>
+            <li class="rounded-xl border border-ink-200 bg-white p-5">
+                <p class="font-semibold text-ink-900">Custom development</p>
+                <p class="mt-1 text-sm text-ink-700">
+                    Bespoke reports, integrations or workflows are quoted separately. Standard product changes are free.
+                </p>
+            </li>
+            <li class="rounded-xl border border-ink-200 bg-white p-5">
+                <p class="font-semibold text-ink-900">Your own domain</p>
+                <p class="mt-1 text-sm text-ink-700">
+                    Included on Enterprise. On Standard your school lives on a free Edus subdomain.
+                </p>
+            </li>
+        </ul>
+    </div>
+</section>
+
+{# ───────────────────────── FAQ ───────────────────────── #}
+<section class="bg-white">
+    <div class="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <h2 class="text-2xl font-extrabold tracking-tight text-ink-900 sm:text-3xl">Questions we actually get asked</h2>
+
+        <div class="mt-6 divide-y divide-ink-200 border-y border-ink-200">
+            {% set faqs = [
+                {
+                    q: 'What is a term?',
+                    a: 'Four months. Three terms make a school year, so termly billing is three invoices a year.'
+                },
+                {
+                    q: 'Which track should I choose?',
+                    a: 'Under ' ~ pricing.standardBelow ~ ' pupils, Standard paid annually is cheaper. Over ' ~ pricing.enterpriseFrom ~ ' pupils, Enterprise is cheaper over three years. In between, it depends on whether you can pay for the year or must pay termly.'
+                },
+                {
+                    q: 'What if my roll changes during the term?',
+                    a: 'A change of 5% or 10 pupils — whichever is larger — does not reprice the term. Beyond that, the difference is applied at your next registration.'
+                },
+                {
+                    q: 'When do I confirm my roll?',
+                    a: 'The term registration link opens 14 days before term and stays open until the end of week one. Nothing is charged until you accept the count.'
+                },
+                {
+                    q: 'What happens if I do not renew?',
+                    a: 'The account becomes read-only after a 7-day grace period. Your data is kept — it is never deleted for non-payment — and you can export it at any time.'
+                },
+                {
+                    q: 'Is email included?',
+                    a: 'Yes, on both tracks. Email is not an optional extra: on Enterprise the ₦' ~ pricing.emailServiceFee|number_format(0) ~ ' email service is already inside the ₦' ~ pricing.enterpriseAnnualFee|number_format(0) ~ ' annual fee.'
+                },
+                {
+                    q: 'Can I export my data?',
+                    a: 'Yes — students, fees, results and payments as CSV, at any time, including after you stop paying.'
+                },
+                {
+                    q: 'Do you support multiple campuses?',
+                    a: 'Enterprise does: one consolidated roll and one bill. Standard covers a single school.'
+                }
+            ] %}
+
+            {% for faq in faqs %}
+                <details class="group">
+                    <summary class="flex min-h-[44px] cursor-pointer items-center justify-between gap-4 py-4 text-left font-semibold text-ink-900">
+                        {{ faq.q }}
+                        <span class="shrink-0 text-ink-400 transition group-open:rotate-45" aria-hidden="true">＋</span>
+                    </summary>
+                    <p class="pb-4 text-sm text-ink-700">{{ faq.a }}</p>
+                </details>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+{# ───────────────────────── CTA ───────────────────────── #}
+<section class="bg-ink-900">
+    <div class="mx-auto max-w-3xl px-4 py-14 text-center sm:px-6 lg:px-8">
+        <h2 class="text-2xl font-extrabold text-white sm:text-3xl">Start this term, not next session.</h2>
+        <p class="mt-3 text-base text-ink-200">
+            Set up your school in under 10 minutes. Import your students, and the first term is free for 14 days.
+        </p>
+        <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <a href="https://wa.me/2348032714999?text=Hello!%20I%20am%20a%20school%20proprietor%20interested%20in%20a%20Free%20Trial%20of%20EDUS."
+               target="_blank" rel="noopener noreferrer"
+               class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-white px-6 font-semibold text-ink-900 hover:bg-ink-100 sm:w-auto">
+                Start a free trial
+            </a>
+            <a href="{{ path('app_manual') }}"
+               class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-white/30 px-6 font-semibold text-white hover:bg-white/10 sm:w-auto">
+                Read the manual first
+            </a>
+        </div>
+    </div>
+</section>
+
+{# ───────────────────────── FOOTER ───────────────────────── #}
+<footer class="bg-ink-900 border-t border-white/10">
+    <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div class="flex flex-col gap-8 sm:flex-row sm:justify-between">
+            <div class="max-w-sm">
+                <a href="{{ path('app_home') }}" class="flex min-h-[44px] items-center gap-2 text-white no-underline">
+                    {% import '_brand.html.twig' as brand %}
+                    {{ brand.wordmark('md', 'light') }}
+                </a>
+                <p class="mt-3 text-sm text-ink-400">The school operating system — admissions, fees, results and the parent portal in one place.</p>
+            </div>
+            <nav class="grid grid-cols-2 gap-x-10 gap-y-1 text-sm sm:grid-cols-2" aria-label="Footer">
+                <a href="{{ path('app_features') }}" class="flex min-h-[44px] items-center text-ink-300 hover:text-white">Features</a>
+                <a href="{{ path('app_pricing') }}" class="flex min-h-[44px] items-center text-ink-300 hover:text-white">Pricing</a>
+                <a href="{{ path('app_partners') }}" class="flex min-h-[44px] items-center text-ink-300 hover:text-white">Partners</a>
+                <a href="{{ path('app_manual') }}" class="flex min-h-[44px] items-center text-ink-300 hover:text-white">User Manual</a>
+                <a href="{{ path('app_login') }}" class="flex min-h-[44px] items-center text-ink-300 hover:text-white">Sign In</a>
+                <a href="https://wa.me/2348032714999" target="_blank" rel="noopener noreferrer" class="flex min-h-[44px] items-center text-ink-300 hover:text-white">WhatsApp</a>
+            </nav>
+        </div>
+        <p class="mt-10 border-t border-white/10 pt-6 text-center text-sm text-ink-500">
+            &copy; {{ "now"|date('Y') }} Edus. All rights reserved.
+        </p>
+    </div>
+</footer>
+
+{# ───────────────────────── CALCULATOR SCRIPT ───────────────────────── #}
+<script>
+(function () {
+    var root = document.getElementById('pricing-calculator');
+    if (!root) return;
+
+    var data = {
+        termRate: Number(root.dataset.termRate),
+        annualTermRate: Number(root.dataset.annualTermRate),
+        terms: Number(root.dataset.termsPerYear),
+        termlyMin: Number(root.dataset.termlyMinimum),
+        annualMin: Number(root.dataset.annualMinimum),
+        licence: Number(root.dataset.licence),
+        annualFee: Number(root.dataset.annualFee),
+        implementation: Number(root.dataset.implementation),
+        years: Number(root.dataset.termYears)
+    };
+
+    var input = document.getElementById('pupils');
+    var outTermly = document.getElementById('out-termly');
+    var outAnnual = document.getElementById('out-annual');
+    var outEnterprise = document.getElementById('out-enterprise');
+    var verdict = document.getElementById('pricing-verdict');
+
+    function naira(value) {
+        return '₦' + Math.round(value).toLocaleString('en-NG');
+    }
+
+    function withMinimum(raw, minimum) {
+        return raw <= 0 ? 0 : Math.max(raw, minimum);
+    }
+
+    function render() {
+        var pupils = Math.max(0, parseInt(input.value, 10) || 0);
+
+        var termlyPerYear = withMinimum(pupils * data.termRate, data.termlyMin) * data.terms;
+        var annual = withMinimum(pupils * data.annualTermRate * data.terms, data.annualMin);
+        var enterpriseOne = data.licence + data.implementation + data.annualFee;
+        var enterpriseThree = enterpriseOne + (data.years - 1) * data.annualFee;
+
+        outTermly.textContent = naira(termlyPerYear);
+        outAnnual.textContent = naira(annual);
+        outEnterprise.textContent = naira(enterpriseOne) + ' → ' + naira(enterpriseThree);
+
+        if (pupils === 0) {
+            verdict.textContent = 'Enter your roll to compare.';
+            return;
+        }
+
+        var termlyThree = termlyPerYear * data.years;
+        var annualThree = annual * data.years;
+        var standardThree = Math.min(termlyThree, annualThree);
+        var standardName = annualThree <= termlyThree ? 'annual Standard' : 'termly Standard';
+        var message;
+
+        if (enterpriseThree < standardThree) {
+            message = 'At ' + pupils.toLocaleString('en-NG') + ' pupils, Enterprise is cheaper over three years: '
+                + naira(enterpriseThree) + ' against ' + naira(standardThree) + ' on ' + standardName + '.';
+        } else {
+            message = 'At ' + pupils.toLocaleString('en-NG') + ' pupils, ' + standardName
+                + ' is cheaper over three years: ' + naira(standardThree) + ' against '
+                + naira(enterpriseThree) + ' for Enterprise.';
+        }
+
+        if (enterpriseOne > annual) {
+            message += ' Note that Enterprise bills ' + naira(enterpriseOne) + ' in year one, against '
+                + naira(annual) + ' on annual Standard — the saving starts in year three.';
+        }
+
+        verdict.textContent = message;
+    }
+
+    input.addEventListener('input', render);
+    render();
+})();
+</script>
+{% endblock %}

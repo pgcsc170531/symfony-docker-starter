@@ -3,7 +3,7 @@
 {% block title %}My Wallet & Credits{% endblock %}
 
 {% block body %}
-<div class="max-w-7xl mx-auto mt-4 md:mt-8 px-4 sm:px-6">
+<div class="mt-4 px-4 md:mt-8">
     
     <div class="mb-6 md:mb-8">
         <h1 class="text-2xl md:text-3xl font-black text-gray-900">💳 Wallet & Credits</h1>
@@ -53,7 +53,7 @@
             
             <div class="relative z-10">
                 <h2 class="text-indigo-200 font-bold text-[10px] md:text-xs uppercase tracking-widest mb-1">Available Balance</h2>
-                <div class="text-4xl md:text-5xl font-black mb-6 md:mb-8">₦{{ school.walletBalance|number_format(2) }}</div>
+                <div class="text-[clamp(1.5rem,7vw,3rem)] font-black mb-6 md:mb-8 whitespace-nowrap tabular-nums">₦{{ school.walletBalance|number_format(2) }}</div>
                 
                 <div class="bg-indigo-800/50 p-4 md:p-5 rounded-xl backdrop-blur-sm border border-indigo-700/50">
                     <p class="text-[10px] md:text-xs font-bold text-indigo-300 uppercase mb-3">⚡️ Quick Top Up</p>

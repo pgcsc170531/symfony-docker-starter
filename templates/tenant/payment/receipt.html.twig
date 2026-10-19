@@ -72,7 +72,7 @@
                     <div class="h-16 w-16 bg-gray-700 rounded flex items-center justify-center text-3xl">🏫</div>
                 {% endif %}
                 <div>
-                    <h1 class="font-black text-2xl uppercase tracking-tighter">{{ name }}</h1>
+                    <h1 class="font-black text-lg uppercase tracking-tighter sm:text-2xl">{{ name }}</h1>
                     <p class="text-xs text-gray-500">{{ address }}</p>
                     <p class="text-xs text-gray-500">{{ email }}</p>
                 </div>
@@ -108,7 +108,7 @@
             </div>
             <div class="flex justify-between items-center border-t border-gray-200 pt-2 mt-2">
                 <span class="text-gray-800 font-black text-lg">Amount Paid:</span>
-                <span class="text-2xl font-black text-gray-900">₦{{ payment.amount|number_format(2) }}</span>
+                <span class="text-xl font-black text-gray-900 sm:text-2xl">₦{{ payment.amount|number_format(2) }}</span>
             </div>
         </div>
 

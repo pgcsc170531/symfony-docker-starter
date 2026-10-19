@@ -3,7 +3,7 @@
 {% block title %}Admin Dashboard{% endblock %}
 
 {% block body %}
-<div class="p-6 max-w-6xl mx-auto">
+<div class="px-4">
     <h1 class="text-2xl font-bold mb-6">📈 Admin Dashboard</h1>
 
     <form method="get" class="mb-6 flex items-end gap-3">
@@ -24,7 +24,7 @@
                 <tr>
                     <th class="p-3">Class</th>
                     <th class="p-3">Subject</th>
-                    <th class="p-3">Students</th>
+                    <th class="p-3">{{ learner.pluralCapital }}</th>
                     <th class="p-3">Average</th>
                     <th class="p-3">A1</th><th class="p-3">B2</th><th class="p-3">B3</th><th class="p-3">C4</th>
                     <th class="p-3">C5</th><th class="p-3">C6</th><th class="p-3">D7</th><th class="p-3">E8</th><th class="p-3">F9</th>

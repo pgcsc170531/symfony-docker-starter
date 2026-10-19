@@ -5,27 +5,19 @@ namespace App\Controller\Tenant;
 use App\Entity\Tenant\Guardian;
 use App\Entity\Tenant\Student;
 use App\Entity\Tenant\User;
-use App\Entity\Tenant\Enrollment;
-use App\Entity\Tenant\Term;
 use App\Entity\Tenant\Session;
 use App\Entity\Tenant\State;
-use App\Entity\Tenant\FeeStructure; 
-use App\Entity\Tenant\Invoice;
-use App\Entity\Tenant\InvoiceItem;
-use App\Entity\Tenant\School as TenantSchool;
 use App\Form\GuardianType;
 use App\Form\StudentAdmissionType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use App\Service\NotificationService; 
-use App\Service\Finance\DiscountCalculator; // 🟢 ADDED FOR AUTOMATED BILLING
+use App\Service\AdmissionService; // 🟢 shared admission engine (walk-in + online)
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use Doctrine\Persistence\ManagerRegistry;
 
 #[Route('/admission')]
 #[IsGranted('ROLE_BURSAR')]
@@ -90,10 +82,7 @@ class AdmissionController extends AbstractController
     public function register(
         Guardian $guardian, 
         Request $request, 
-        EntityManagerInterface $em,
-        NotificationService $notifier, 
-        ManagerRegistry $doctrine,
-        DiscountCalculator $discountCalculator // 🟢 INJECTED SERVICE
+        AdmissionService $admissions // 🟢 shared admission engine
     ): Response {
         $student = new Student();
         $student->setGuardian($guardian); 
@@ -104,103 +93,11 @@ class AdmissionController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            
-            $admissionSuccess = $em->wrapInTransaction(function($em) use ($student, $discountCalculator) {
-                
-                // ========================================================
-                // 1. AUTO-GENERATE ADMISSION NUMBER
-                // ========================================================
-                if (!$student->getAdmissionNumber()) {
-                    $currentYear = date('Y');
-                    $lastStudent = $em->getRepository(Student::class)->findOneBy([], ['id' => 'DESC']);
-                    $nextSequence = $lastStudent ? ($lastStudent->getId() + 1) : 1;
-                    $paddedSequence = str_pad((string)$nextSequence, 4, '0', STR_PAD_LEFT);
-                    $student->setAdmissionNumber(sprintf('ADM/%s/%s', $currentYear, $paddedSequence));
-                }
-
-                $em->persist($student);
-
-                // ========================================================
-                // 2. AUTOMATED ENROLLMENT & ACADEMIC BILLING
-                // ========================================================
-                $activeTerm = $em->getRepository(Term::class)->findOneBy(['isActive' => true]);
-                $classroom = $student->getCurrentClassroom();
-
-                if ($activeTerm && $classroom) {
-                    $session = $activeTerm->getSession();
-
-                    // A. Create Official Enrollment Record
-                    $enrollment = new Enrollment();
-                    $enrollment->setStudent($student);
-                    $enrollment->setSession($session);
-                    $enrollment->setClassroom($classroom);
-                    $enrollment->setEnrolledAt(new \DateTimeImmutable());
-                    $em->persist($enrollment);
-
-                    // B. Fetch Fees for this Class
-                    $fees = $em->getRepository(FeeStructure::class)->findBy([
-                        'classroom' => $classroom,
-                        'term' => $activeTerm
-                    ]);
-
-                    if (count($fees) > 0) {
-                        // C. Generate Academic Invoice
-                        $invoice = new Invoice();
-                        $invoice->setStudent($student);
-                        $invoice->setTerm($activeTerm);
-                        $invoice->setSession($session);
-                        $invoice->setClassroom($classroom);
-                        $invoice->setInvoiceNumber('INV-' . date('Y') . '-' . uniqid());
-                        $invoice->setStatus('UNPAID');
-                        $invoice->setType('ACADEMIC'); // 🟢 Flagged as Academic Fee
-                        $invoice->setPaidAmount("0");
-                        $invoice->setCreatedAt(new \DateTimeImmutable());
-
-                        $total = 0;
-                        foreach ($fees as $fee) {
-                            if (!$fee->getFeeItem()->isOptional()) { 
-                                $item = new InvoiceItem();
-                                $item->setInvoice($invoice);
-                                $item->setFeeItem($fee->getFeeItem());
-                                $item->setDescription($fee->getFeeItem()->getName());
-                                $item->setAmount((string)$fee->getAmount());
-                                $em->persist($item);
-                                $total += $fee->getAmount();
-                            }
-                        }
-
-                        if ($total > 0) {
-                            $discountValue = $discountCalculator->calculateDiscount($student, $total);
-                            $invoice->setTotalAmount((string)$total);
-                            $invoice->setDiscountApplied((string)$discountValue);
-                            $em->persist($invoice);
-                        }
-                    }
-                }
-
-                return true; 
-            });
-
-            // Trigger SMS if database transaction was successful
-            if ($admissionSuccess) {
-                // 🟢 FIXED: Use TenantSchool to prevent NotificationService crash
-                $tenantSchool = $em->getRepository(TenantSchool::class)->findOneBy([]);
-
-                if ($tenantSchool) {
-                    $notifier->sendSms(
-                        $tenantSchool, 
-                        $guardian->getPhoneNumber(), 
-                        "Admission Successful! [student_name] has been admitted to [class] at [school_name]. Adm No: [adm_no]", 
-                        'enrollment', 
-                        [
-                            '[student_name]' => $student->getFullName(),
-                            '[class]'        => $student->getCurrentClassroom()?->getName() ?? 'New Intake',
-                            '[school_name]'  => $tenantSchool->getName(),
-                            '[adm_no]'       => $student->getAdmissionNumber()
-                        ]
-                    );
-                }
-            }
+            // 🟢 One shared admission engine: admission number → Enrollment →
+            //    invoice + discount → SMS. The online application flow calls the
+            //    exact same service, so walk-in and online students can never
+            //    be treated differently.
+            $admissions->admit($student);
 
             $this->addFlash('success', "Admission Successful! Student enrolled and billed automatically.");
             

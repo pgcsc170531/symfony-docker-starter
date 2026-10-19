@@ -20,7 +20,7 @@
         <div class="lg:col-span-1 space-y-6">
             
             <div class="bg-white p-6 rounded shadow-md border-t-4 border-blue-600">
-                <h2 class="text-lg font-bold text-gray-800 mb-4">1. Find Student</h2>
+                <h2 class="text-lg font-bold text-gray-800 mb-4">1. Find {{ learner.capital }}</h2>
                 <form method="get" action="{{ path('app_tenant_discount_assign') }}" class="flex gap-2">
                     <input type="text" name="q" value="{{ searchQuery }}" placeholder="Enter Name or Adm No." 
                            class="w-full border-2 border-gray-300 rounded-md p-3 focus:outline-none focus:border-blue-500 text-gray-700">
@@ -91,16 +91,23 @@
             <div class="bg-white rounded shadow-md p-6 h-full">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl font-bold text-gray-800">Active Scholarships</h2>
-                    <span class="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full font-bold border">{{ activeDiscounts|length }} Students</span>
+                    <span class="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full font-bold border">{{ activeDiscounts|length }} {{ learner.pluralCapital }}</span>
                 </div>
+
+                <p class="mb-4 text-xs leading-relaxed text-gray-500">
+                    Assigning a rule re-prices the pupil's unpaid bill straight away.
+                    <strong class="text-gray-700">Bill effect</strong> shows what actually happened to the money —
+                    a rule that never reached an invoice is called out rather than left looking successful.
+                </p>
                 
                 <div class="overflow-x-auto">
                     <table class="min-w-full">
                         <thead class="bg-gray-50 border-b-2 border-gray-100">
                             <tr>
-                                <th class="text-left py-3 px-4 text-gray-500 font-bold uppercase text-xs tracking-wider">Student</th>
+                                <th class="text-left py-3 px-4 text-gray-500 font-bold uppercase text-xs tracking-wider">{{ learner.capital }}</th>
                                 <th class="text-left py-3 px-4 text-gray-500 font-bold uppercase text-xs tracking-wider">Class</th>
                                 <th class="text-left py-3 px-4 text-gray-500 font-bold uppercase text-xs tracking-wider">Discount Rule</th>
+                                <th class="text-left py-3 px-4 text-gray-500 font-bold uppercase text-xs tracking-wider">Bill effect</th>
                                 <th class="text-right py-3 px-4 text-gray-500 font-bold uppercase text-xs tracking-wider">Action</th>
                             </tr>
                         </thead>
@@ -124,6 +131,32 @@
                                         {% endif %}
                                     </span>
                                 </td>
+                                {# A rule that reached the bill and one that did not look
+                                   identical in this table before. Say which is which, in
+                                   money, next to the pupil's current bill. #}
+                                {% set effect = effects[item.id] ?? null %}
+                                <td class="py-4 px-4 text-sm">
+                                    {% if effect is null %}
+                                        <span class="text-gray-400">—</span>
+                                    {% elseif effect.invoice is null %}
+                                        <span class="text-xs font-bold text-gray-600">No open bill</span>
+                                        <span class="block text-xs text-gray-400">Applies to the next bill.</span>
+                                    {% elseif effect.inSync %}
+                                        <span class="text-xs font-bold text-paid">
+                                            ₦{{ effect.gross|number_format(0) }} → ₦{{ effect.net|number_format(0) }}
+                                        </span>
+                                        <span class="block text-xs text-gray-500">
+                                            ₦{{ effect.discount|number_format(0) }} off bill {{ effect.invoice }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-xs font-bold text-pending">
+                                            Bill {{ effect.invoice }} still ₦{{ effect.total|number_format(0) }}
+                                        </span>
+                                        <span class="block text-xs text-gray-500">
+                                            Not applied yet — revoke and re-assign to re-price it.
+                                        </span>
+                                    {% endif %}
+                                </td>
                                 <td class="py-4 px-4 text-right">
                                     <form method="post" action="{{ path('app_tenant_discount_remove', {'id': item.id}) }}" onsubmit="return confirm('Are you sure you want to revoke this scholarship for {{ item.student.fullName }}?');">
                                         <button class="text-red-500 hover:text-red-700 text-xs font-bold border border-red-200 bg-red-50 px-3 py-1 rounded hover:bg-red-100 transition">
@@ -133,7 +166,7 @@
                                 </td>
                             </tr>
                             {% else %}
-                            <tr><td colspan="4" class="p-10 text-center text-gray-400 italic">No scholarships assigned yet.</td></tr>
+                            <tr><td colspan="5" class="p-10 text-center text-gray-400 italic">No scholarships assigned yet.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>

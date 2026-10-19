@@ -1,0 +1,152 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Register {{ period.term }}{% endblock %}
+
+{% block body %}
+<div class="px-4 py-4 sm:py-6">
+
+    <a href="{{ path('tenant_subscription_index') }}" class="inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-600 hover:underline">
+        ← Subscription
+    </a>
+
+    <h1 class="mt-2 text-xl font-bold text-ink-900 sm:text-2xl">
+        Register {{ period.session }} · {{ period.term }}
+    </h1>
+    <p class="mt-1 text-sm text-ink-700">
+        Declare the roll you will run this term. The invoice is generated from this number — nobody has to count {{ learner.plural }} by hand.
+    </p>
+
+    {% if invite %}
+        {# The emailed invitation. It is single-use, so the page says so before the
+           bursar submits — otherwise a second attempt looks like a broken link. #}
+        <div class="mt-4 rounded-xl border border-accent-200 bg-accent-50 p-4">
+            <p class="text-sm font-semibold text-accent-900">You were invited to declare this term's roll</p>
+            <p class="mt-1 text-xs text-ink-700">
+                This link is single-use and expires {{ invite.expiresAt|date('j F Y') }}.
+                Submitting the form below uses it up.
+            </p>
+        </div>
+    {% endif %}
+
+    {# ── Quote inputs ───────────────────────────────────────────────────── #}
+    <form method="get" action="{{ path('tenant_subscription_register') }}"
+          class="mt-4 rounded-xl border border-ink-200 bg-white p-4 shadow-card sm:p-5">
+        {% if invite_token %}
+            <input type="hidden" name="invite" value="{{ invite_token }}">
+        {% endif %}
+        <label for="students" class="block text-sm font-semibold text-ink-900">{{ learner.pluralCapital }} on roll</label>
+        <div class="mt-2 flex flex-wrap items-center gap-3">
+            <input id="students" name="students" type="number" inputmode="numeric" min="1" max="100000" step="1"
+                   value="{{ students }}"
+                   class="min-h-[44px] w-full rounded-lg border border-ink-300 px-3 text-base text-ink-900 focus:border-accent-600 focus:outline-none focus:ring-2 focus:ring-accent-200 sm:w-40">
+            <p class="text-xs text-ink-600">
+                Your register currently shows <span class="font-semibold text-ink-900">{{ roll|number_format(0) }}</span> {{ learner.plural }}.
+            </p>
+        </div>
+
+        <fieldset class="mt-4">
+            <legend class="text-sm font-semibold text-ink-900">How will you pay?</legend>
+            <div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-ink-200 p-3 hover:bg-ink-50">
+                    <input type="radio" name="cycle" value="termly" class="mt-1 h-4 w-4 accent-accent-600" {{ cycle == 'termly' ? 'checked' }}>
+                    <span>
+                        <span class="block text-sm font-semibold text-ink-900">Termly</span>
+                        <span class="block text-xs text-ink-600">One invoice now, two more during the year.</span>
+                    </span>
+                </label>
+                <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-ink-200 p-3 hover:bg-ink-50">
+                    <input type="radio" name="cycle" value="annual" class="mt-1 h-4 w-4 accent-accent-600" {{ cycle == 'annual' ? 'checked' }}>
+                    <span>
+                        <span class="block text-sm font-semibold text-ink-900">Whole year, paid now</span>
+                        <span class="block text-xs text-ink-600">33% off the termly rate.</span>
+                    </span>
+                </label>
+            </div>
+        </fieldset>
+
+        <button type="submit"
+                class="mt-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-ink-300 px-5 text-sm font-semibold text-ink-900 hover:bg-ink-50 sm:w-auto">
+            Update quote
+        </button>
+    </form>
+
+    {# ── The arithmetic ─────────────────────────────────────────────────── #}
+    <section class="mt-4 rounded-xl border border-ink-200 bg-white p-4 shadow-card sm:p-5">
+        <h2 class="text-base font-bold text-ink-900">
+            {{ cycle == 'annual' ? 'Annual prepay' : 'Termly invoice' }}
+        </h2>
+        <p class="mt-1 text-xs text-ink-600">{{ period.session }} · {{ period.term }}</p>
+
+        <dl class="mt-4 space-y-2 text-sm">
+            <div class="flex items-baseline justify-between gap-3">
+                <dt class="text-ink-700">
+                    {{ quote.students|number_format(0) }} {{ learner.plural }} × ₦{{ quote.unitPrice|number_format(0) }}
+                    <span class="text-ink-500">({{ quote.unitLabel|replace({'pupil': '' ~ learner}) }})</span>
+                </dt>
+                <dd class="font-semibold text-ink-900">₦{{ quote.rawSubtotal|number_format(0) }}</dd>
+            </div>
+
+            {% if quote.minimumApplied %}
+                <div class="flex items-baseline justify-between gap-3">
+                    <dt class="text-ink-700">Minimum invoice applied</dt>
+                    <dd class="font-semibold text-ink-900">₦{{ quote.minimum|number_format(0) }}</dd>
+                </div>
+            {% endif %}
+
+            {% if quote.discount > 0 %}
+                <div class="flex items-baseline justify-between gap-3">
+                    <dt class="text-ink-700">Annual discount</dt>
+                    <dd class="font-semibold text-paid">− ₦{{ quote.discount|number_format(0) }} ({{ quote.savingsPercent }}%)</dd>
+                </div>
+            {% endif %}
+
+            <div class="flex items-baseline justify-between gap-3 border-t border-ink-200 pt-3">
+                <dt class="text-sm font-bold text-ink-900">Total due</dt>
+                <dd class="text-lg font-extrabold text-ink-900">₦{{ quote.total|number_format(0) }}</dd>
+            </div>
+        </dl>
+
+        {% if cycle == 'termly' and annual_quote.total < (quote.total * 3) %}
+            <p class="mt-3 rounded-lg bg-accent-50 p-3 text-sm text-ink-900">
+                Paying for the whole year now costs <strong>₦{{ annual_quote.total|number_format(0) }}</strong>
+                instead of ₦{{ (quote.total * 3)|number_format(0) }} over three invoices —
+                a saving of <strong>₦{{ annual_quote.discount|number_format(0) }}</strong>.
+                <a href="{{ path('tenant_subscription_register', {'cycle': 'annual', 'students': students}) }}"
+                   class="font-semibold text-accent-700 underline">Switch to annual</a>
+            </p>
+        {% elseif cycle == 'annual' and quote.discount > 0 %}
+            <p class="mt-3 rounded-lg bg-ink-50 p-3 text-sm text-ink-700">
+                That is ₦{{ quote.discount|number_format(0) }} less than three termly invoices
+                (₦{{ quote.termlyYearCost|number_format(0) }}).
+            </p>
+        {% endif %}
+    </section>
+
+    {# ── Confirm ────────────────────────────────────────────────────────── #}
+    <form method="post" action="{{ path('tenant_subscription_register') }}"
+          class="mt-4 rounded-xl border border-ink-200 bg-white p-4 shadow-card sm:p-5">
+        <input type="hidden" name="_token" value="{{ csrf_token('term_register') }}">
+        <input type="hidden" name="students" value="{{ students }}">
+        <input type="hidden" name="cycle" value="{{ cycle }}">
+        {% if invite_token %}
+            <input type="hidden" name="invite" value="{{ invite_token }}">
+        {% endif %}
+
+        <label for="notes" class="block text-sm font-semibold text-ink-900">
+            Note for the bursar <span class="font-normal text-ink-600">(optional)</span>
+        </label>
+        <textarea id="notes" name="notes" rows="2"
+                  class="mt-2 w-full rounded-lg border border-ink-300 px-3 py-2 text-base text-ink-900 focus:border-accent-600 focus:outline-none focus:ring-2 focus:ring-accent-200"
+                  placeholder="e.g. 12 new {{ learner.plural }} joined on Monday"></textarea>
+
+        <button type="submit"
+                class="mt-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-accent-600 px-5 font-semibold text-white hover:bg-accent-700">
+            Confirm and generate invoice · ₦{{ quote.total|number_format(0) }}
+        </button>
+        <p class="mt-2 text-xs text-ink-600">
+            This creates one invoice for this term. Paying it (or uploading your transfer receipt) activates the term.
+            Your declared roll is checked against enrolment in week one.
+        </p>
+    </form>
+</div>
+{% endblock %}

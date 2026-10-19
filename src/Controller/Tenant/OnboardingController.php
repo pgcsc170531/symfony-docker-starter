@@ -8,6 +8,7 @@ use App\Entity\Tenant\FeeStructure;
 use App\Entity\Tenant\School;
 use App\Entity\Tenant\Session;
 use App\Entity\Tenant\Term;
+use App\Entity\Tenant\YearGroup;
 use App\Form\Wizard\ClassStructureType;
 use App\Form\Wizard\FeeItemsType;
 use App\Form\Wizard\OnboardingCalendarType;
@@ -84,6 +85,11 @@ class OnboardingController extends AbstractController
         
         $suggestions = match($type) {
             'primary' => ['Nursery 1', 'Nursery 2', 'KG 1', 'KG 2', 'Primary 1', 'Primary 2', 'Primary 3', 'Primary 4', 'Primary 5', 'Primary 6'],
+            'combined' => [
+                'Nursery 1', 'Nursery 2', 'KG 1', 'KG 2',
+                'Primary 1', 'Primary 2', 'Primary 3', 'Primary 4', 'Primary 5', 'Primary 6',
+                'JSS 1', 'JSS 2', 'JSS 3', 'SS 1', 'SS 2', 'SS 3',
+            ],
             'tertiary' => ['ND 1', 'ND 2', 'HND 1', 'HND 2', 'Year 1', 'Year 2', 'Year 3', 'Year 4'],
             default => ['JSS 1', 'JSS 2', 'JSS 3', 'SS 1', 'SS 2', 'SS 3'],
         };
@@ -123,6 +129,16 @@ class OnboardingController extends AbstractController
             $data = $form->getData();
             $classes = $data['selectedClasses'];
             $arms = $data['arms'] ? array_map('trim', explode(',', $data['arms'])) : [];
+
+            // A school with no classes cannot bill, register or report. The form
+            // ships with the suggested levels pre-checked, so an empty selection
+            // means somebody deliberately cleared them — refuse instead of
+            // flashing "Success! 0 classrooms generated" and moving on.
+            if ($classes === []) {
+                $this->addFlash('error', 'Select at least one class level to continue.');
+
+                return $this->redirectToRoute('app_tenant_onboarding_structure');
+            }
             
             $count = 0;
             foreach ($classes as $className) {
@@ -545,11 +561,28 @@ class OnboardingController extends AbstractController
     private function createClass(EntityManagerInterface $em, string $name): void
     {
         $exists = $em->getRepository(Classroom::class)->findOneBy(['name' => $name]);
-        if (!$exists) {
-            $classroom = new Classroom();
-            $classroom->setName($name);
-            $em->persist($classroom);
+        if ($exists) {
+            return;
         }
+
+        $classroom = new Classroom();
+        $classroom->setName($name);
+
+        // "JSS 1 A" belongs to the "JSS 1" year group. The wizard used to create
+        // the class and stop there, so the Year Group Master's screen and the
+        // final result approval were empty for every school set up through it.
+        $level = trim((string) preg_replace('/\s+[A-Za-z]$/', '', $name));
+        if ($level !== '' && $level !== $name) {
+            $yearGroup = $em->getRepository(YearGroup::class)->findOneBy(['name' => $level]);
+            if (!$yearGroup) {
+                $yearGroup = new YearGroup();
+                $yearGroup->setName($level);
+                $em->persist($yearGroup);
+            }
+            $classroom->setYearGroup($yearGroup);
+        }
+
+        $em->persist($classroom);
     }
 
     // ==========================================

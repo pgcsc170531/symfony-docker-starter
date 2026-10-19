@@ -14,7 +14,7 @@
             <div>
                 <h1 class="text-2xl font-bold text-gray-800">Financial History</h1>
                 <p class="text-gray-500 text-sm">
-                    Student: <span class="font-semibold text-gray-700">{{ student.fullName }}</span>
+                    {{ learner.capital }}: <span class="font-semibold text-gray-700">{{ student.fullName }}</span>
                 </p>
             </div>
         </div>
@@ -45,7 +45,7 @@
                 {% for invoice in invoices %}
                 <tr class="hover:bg-gray-50 transition group">
                     <td class="px-6 py-4 font-mono font-bold text-indigo-600">
-                        #{{ invoice.invoiceNumber }}
+                        {{ invoice.invoiceNumber }}
                     </td>
                     <td class="px-6 py-4 text-gray-600">
                         {{ invoice.createdAt|date('M j, Y') }}

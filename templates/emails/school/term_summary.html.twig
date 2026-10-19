@@ -1,0 +1,30 @@
+{% extends 'emails/layout.html.twig' %}
+{% import 'emails/_components.html.twig' as ui %}
+
+{% block content %}
+    <p style="margin:0 0 16px;font-size:34px;line-height:1;">📊</p>
+
+    <h1 style="margin:0 0 16px;font-size:20px;line-height:1.3;color:#111827;">{{ headline }}</h1>
+
+    <p style="margin:0 0 12px;">Hello{% if guardian_name is defined and guardian_name %} {{ guardian_name }}{% endif %},</p>
+    <p style="margin:0 0 20px;">{{ intro }}</p>
+
+    {{ ui.amountBox('Outstanding fees', '₦' ~ outstanding|number_format(2), brand) }}
+
+    {{ ui.rows({
+        'Term'            : period,
+        'Expected'        : '₦' ~ expected|number_format(2),
+        'Collected'       : '₦' ~ collected|number_format(2),
+        'Collection rate' : rate is null ? '—' : rate ~ '%',
+        'Unverified'      : '₦' ~ pending|number_format(2),
+        'Expenses'        : '₦' ~ expenses|number_format(2),
+        'Net (cash)'      : '₦' ~ net_cash|number_format(2),
+    }) }}
+
+    <p style="margin:0 0 20px;font-size:14px;line-height:1.65;">
+        The complete {{ period }} summary is attached as an A4 PDF, with a verification QR
+        for boards and auditors. Figures are a snapshot at the moment of sending.
+    </p>
+
+    {{ ui.button(button_label, url, brand) }}
+{% endblock %}

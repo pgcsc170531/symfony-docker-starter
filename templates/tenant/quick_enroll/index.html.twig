@@ -1,9 +1,9 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Quick Student Migration{% endblock %}
+{% block title %}Quick {{ learner.capital }} Migration{% endblock %}
 
 {% block body %}
-<div class="max-w-7xl mx-auto mt-10 px-4">
+<div class="mt-10 px-4">
     {# --- FLASH MESSAGES BLOCK --- #}
     {% for label, messages in app.flashes %}
         {% for message in messages %}
@@ -36,7 +36,7 @@
     {# 👆 -------------------------------------- 👆 #}
     
     <div class="mb-8">
-        <h1 class="text-3xl font-black text-gray-800">🚀 Quick Student Migration</h1>
+        <h1 class="text-3xl font-black text-gray-800">🚀 Quick {{ learner.capital }} Migration</h1>
         <p class="text-gray-600 mt-2">
             Onboard existing students via Excel (CSV) or Manual Entry.
         </p>

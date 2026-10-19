@@ -1,0 +1,38 @@
+{% extends 'emails/layout.html.twig' %}
+{% import 'emails/_components.html.twig' as ui %}
+
+{% block content %}
+    {% if approved %}
+        <p style="margin:0 0 16px;font-size:34px;line-height:1;">🎉</p>
+    {% endif %}
+
+    <h1 style="margin:0 0 16px;font-size:20px;line-height:1.3;color:#111827;">{{ headline }}</h1>
+
+    <p style="margin:0 0 12px;">Hello{% if guardian_name is defined and guardian_name %} {{ guardian_name }}{% endif %},</p>
+    <p style="margin:0 0 20px;">{{ intro }}</p>
+
+    {{ ui.rows({
+        'Child'           : child_name,
+        'Admission number': approved ? admission_number : null,
+        'Class'           : approved ? classroom : null,
+    }) }}
+
+    {{ ui.note(note) }}
+
+    {% if approved %}
+        <p style="margin:0 0 20px;font-size:14px;line-height:1.65;">
+            <strong>What happens next:</strong> sign in to the parent portal to see your child's fee
+            invoice, pay online or by transfer, and follow their progress through the term.
+        </p>
+        {{ ui.button(button_label, url, brand) }}
+    {% else %}
+        <p style="margin:0 0 20px;font-size:14px;line-height:1.65;">
+            We know this is disappointing, and we thank you for the time you invested in applying.
+            You are welcome to apply again in a future admissions window.
+        </p>
+    {% endif %}
+
+    <p style="margin:0;padding-top:16px;border-top:1px solid #e5e7eb;font-size:12px;color:#9ca3af;line-height:1.6;">
+        Questions? Reply to this email or call the school{% if school_phone %} on {{ school_phone }}{% endif %}.
+    </p>
+{% endblock %}

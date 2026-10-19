@@ -1,0 +1,158 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}My Applications{% endblock %}
+
+{% block body %}
+<div class="mt-6 px-4 pb-12">
+
+    {# ── HEADER ────────────────────────────────────────────────────────── #}
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-gray-200 pb-4 mb-8">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Admission Applications</h1>
+            <p class="text-gray-500 text-sm mt-1">
+                Apply for your children online and follow each application here.
+            </p>
+        </div>
+        {% if applicationsOpen %}
+            <a href="{{ path('app_parent_applications_new') }}"
+               class="shrink-0 w-full sm:w-auto text-center bg-indigo-600 text-white font-bold text-base sm:text-sm px-5 py-3.5 sm:py-2.5 rounded-xl shadow hover:bg-indigo-700 active:bg-indigo-800 transition-colors">
+                + Apply for another child
+            </a>
+        {% endif %}
+    </div>
+
+    {% if not applicationsOpen %}
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-6">
+            <p class="font-bold text-amber-900 text-sm">Applications are currently closed for this school.</p>
+            <p class="text-amber-800 text-xs mt-1">
+                You can still view the applications you have already made. Please contact the school office
+                {% if school and school.phoneNumber %}on {{ school.phoneNumber }}{% endif %} if you need to apply now.
+            </p>
+        </div>
+    {% endif %}
+
+    {% if applications is empty %}
+
+        {# ── EMPTY STATE ───────────────────────────────────────────────── #}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-10 text-center">
+            <div class="text-4xl mb-4">📝</div>
+            <h2 class="text-lg font-bold text-gray-800">You have not applied for any child yet</h2>
+            <p class="text-gray-500 text-sm mt-2 max-w-md mx-auto">
+                The application takes about ten minutes. Your answers are saved as you go, so you can stop
+                and come back — even if your network drops.
+            </p>
+
+            <div class="grid sm:grid-cols-3 gap-4 mt-8 text-left max-w-2xl mx-auto">
+                <div class="p-4 rounded-lg bg-gray-50 border border-gray-100">
+                    <div class="text-xl mb-2">1️⃣</div>
+                    <p class="text-xs font-bold text-gray-700">Fill your child's details</p>
+                    <p class="text-[11px] text-gray-500 mt-1">Name, date of birth, class, origin and health.</p>
+                </div>
+                <div class="p-4 rounded-lg bg-gray-50 border border-gray-100">
+                    <div class="text-xl mb-2">2️⃣</div>
+                    <p class="text-xs font-bold text-gray-700">The school reviews it</p>
+                    <p class="text-[11px] text-gray-500 mt-1">You receive a reference number immediately.</p>
+                </div>
+                <div class="p-4 rounded-lg bg-gray-50 border border-gray-100">
+                    <div class="text-xl mb-2">3️⃣</div>
+                    <p class="text-xs font-bold text-gray-700">Your child is enrolled</p>
+                    <p class="text-[11px] text-gray-500 mt-1">Then fees, results and notices appear here.</p>
+                </div>
+            </div>
+
+            {% if applicationsOpen %}
+                <a href="{{ path('app_parent_applications_new') }}"
+                   class="block sm:inline-block mt-8 w-full sm:w-auto text-center bg-indigo-600 text-white font-bold text-base sm:text-sm px-6 py-3.5 rounded-xl shadow hover:bg-indigo-700 active:bg-indigo-800 transition-colors">
+                    Start an application
+                </a>
+            {% endif %}
+        </div>
+
+    {% else %}
+
+        {# ── FAMILY HEADER ─────────────────────────────────────────────── #}
+        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">
+            Applications from your family ({{ applications|length }} child{{ applications|length == 1 ? '' : 'ren' }})
+        </p>
+
+        {# ── APPLICATION CARDS ─────────────────────────────────────────── #}
+        <div class="space-y-4">
+            {% for application in applications %}
+                {% set editable = application.status in ['draft', 'needs_info'] %}
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="p-5 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-3 flex-wrap">
+                                <h2 class="font-bold text-gray-800 text-base truncate">
+                                    {{ application.fullName ?: 'Unnamed draft' }}
+                                </h2>
+                                {% include 'tenant/parent/applications/_status_badge.html.twig' with {
+                                    status: application.status,
+                                    label: application.statusLabel
+                                } only %}
+                            </div>
+
+                            <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
+                                {% if application.reference %}
+                                    <span>Reference:
+                                        <span class="font-mono font-bold text-gray-700">{{ application.reference }}</span>
+                                    </span>
+                                {% endif %}
+                                {% if application.requestedClassroom %}
+                                    <span>Class applied for: <strong class="text-gray-700">{{ application.requestedClassroom.name }}</strong></span>
+                                {% endif %}
+                                {% if application.submittedAt %}
+                                    <span>Submitted {{ application.submittedAt|date('d M Y') }}</span>
+                                {% endif %}
+                            </div>
+
+                            {# The one sentence a parent actually wants: what happens next #}
+                            <p class="mt-3 text-xs text-gray-600 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 inline-block">
+                                {% if application.status == 'draft' %}
+                                    Not submitted yet — finish the form when you are ready.
+                                {% elseif application.status == 'awaiting_payment' %}
+                                    Waiting for the form fee of {{ application.feeAmount }}. Processing starts once it is confirmed.
+                                {% elseif application.status == 'submitted' %}
+                                    Received. The school will review it and get back to you.
+                                {% elseif application.status == 'under_review' %}
+                                    The school is reviewing this application now.
+                                {% elseif application.status == 'needs_info' %}
+                                    The school needs more information — please open it and resubmit.
+                                {% elseif application.status == 'approved' %}
+                                    Approved 🎉 — the school will finish the enrolment.
+                                {% elseif application.status == 'enrolled' %}
+                                    Enrolled. Your child now appears on your dashboard.
+                                {% elseif application.status == 'rejected' %}
+                                    Not successful this time. Open it to see the reason.
+                                {% elseif application.status == 'withdrawn' %}
+                                    You withdrew this application.
+                                {% else %}
+                                    On the waiting list.
+                                {% endif %}
+                            </p>
+                        </div>
+
+                        {# 📱 Full-width stacked actions on a phone; inline from sm up. #}
+                        <div class="shrink-0 flex flex-col gap-2 w-full sm:w-auto">
+                            {% if editable %}
+                                <a href="{{ path('app_parent_applications_edit', {id: application.id}) }}"
+                                   class="w-full sm:w-auto text-center bg-indigo-600 text-white font-bold text-sm px-4 py-3 rounded-xl hover:bg-indigo-700 active:bg-indigo-800 transition-colors">
+                                    {{ application.status == 'draft' ? 'Resume' : 'Edit & resubmit' }}
+                                </a>
+                            {% endif %}
+                            <a href="{{ path('app_parent_applications_show', {id: application.id}) }}"
+                               class="w-full sm:w-auto text-center bg-white border border-gray-300 text-gray-700 font-bold text-sm px-4 py-3 rounded-xl hover:border-indigo-500 hover:text-indigo-600 transition-colors">
+                                View details
+                            </a>
+                        </div>
+
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+    {% endif %}
+
+</div>
+{% endblock %}

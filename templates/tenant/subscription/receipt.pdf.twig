@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ school_name }} — Receipt {{ receipt_no }}</title>
+<style>
+    /* Same page geometry, masthead, strip and footer as the statement and the
+       invoice — one document family (see .github/skills/pdf-documents). */
+    @page { size: A4 portrait; margin: 6mm 8mm 4mm 8mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "DejaVu Sans", sans-serif; font-size: 10.5pt; color: #111827; }
+
+    /* ── Masthead ───────────────────────────────────────────────────────── */
+    .header { width: 100%; border-collapse: collapse; background: #16223C; color: #ffffff; }
+    .header td { padding: 7pt 9pt; vertical-align: bottom; }
+    .brand-cell { width: 58%; }
+    .wordmark { font-family: "DejaVu Serif", serif; font-size: 20pt; font-weight: bold; color: #ffffff; letter-spacing: -0.35pt; line-height: 1; }
+    .wordmark .dot { color: #60A5FA; }
+    .tagline { display: block; font-size: 7.6pt; color: #B8C4D8; letter-spacing: .05em; margin-top: 4pt; }
+    .doc-cell { text-align: right; }
+    .doc-type { display: block; font-size: 7.6pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1.1pt; color: #C3CFE2; }
+    .doc-no { display: block; font-family: "DejaVu Sans Mono", monospace; font-size: 12pt; font-weight: bold; color: #ffffff; margin-top: 3pt; white-space: nowrap; }
+    .accent-rule { height: 2.2pt; background: #059669; margin-bottom: 6pt; }
+
+    /* ── Identity strip ─────────────────────────────────────────────────── */
+    .identity { width: 100%; border-collapse: collapse; background: #F9FAFB; border-bottom: 0.8pt solid #D1D5DB; }
+    .identity td { padding: 4pt 7pt; vertical-align: top; border-left: 0.6pt solid #E5E7EB; }
+    .identity td:first-child { border-left: 0; padding-left: 9pt; }
+    .identity td:last-child { padding-right: 9pt; }
+    .label { display: block; font-size: 7pt; text-transform: uppercase; letter-spacing: .5pt; color: #6B7280; margin-bottom: 1pt; }
+    .value { font-size: 9.8pt; font-weight: bold; color: #111827; }
+    .value.small { font-size: 8.8pt; font-weight: normal; color: #374151; }
+    .value.mono { font-family: "DejaVu Sans Mono", monospace; font-size: 9pt; }
+    .value.nowrap { white-space: nowrap; }
+
+    /* ── PAID band ──────────────────────────────────────────────────────── */
+    .paid-band { width: 100%; border-collapse: collapse; margin-top: 8pt;
+                 background: #ECFDF5; border-top: 0.8pt solid #A7F3D0; border-bottom: 0.8pt solid #A7F3D0; }
+    .paid-band td { padding: 6pt 9pt; vertical-align: middle; }
+    .paid-word { font-size: 14pt; font-weight: bold; color: #047857; letter-spacing: .16em; text-transform: uppercase; }
+    .paid-amount { text-align: right; font-size: 20pt; font-weight: bold; color: #065F46; white-space: nowrap; }
+    .paid-note { display: block; font-size: 7.6pt; font-weight: normal; letter-spacing: 0; text-transform: none; color: #6B7280; margin-top: 2pt; }
+
+    /* ── Sections ───────────────────────────────────────────────────────── */
+    h2 { font-size: 9.5pt; font-weight: bold; text-transform: uppercase;
+         letter-spacing: 0.6pt; color: #374151; margin: 9pt 0 0; padding-bottom: 1pt; }
+    table.grid { width: 100%; border-collapse: collapse; }
+    table.grid th { background: #F3F4F6; border: 0.6pt solid #D1D5DB; padding: 2.2pt 2.6pt;
+                    font-size: 8.4pt; font-weight: bold; text-transform: uppercase;
+                    letter-spacing: 0.2pt; color: #1F2937; text-align: left; }
+    table.grid td { border: 0.6pt solid #E5E7EB; padding: 1.8pt 2.6pt; font-size: 9.6pt; }
+    table.grid td.num, table.grid th.num { text-align: right; white-space: nowrap; }
+    table.grid tr.total td { background: #F9FAFB; font-weight: bold; border-top: 0.9pt solid #9CA3AF; }
+    .muted { color: #4B5563; }
+
+    table.kv { width: 100%; border-collapse: collapse; margin-top: 2pt; }
+    table.kv td { padding: 2pt 0; font-size: 9.4pt; border-bottom: 0.6pt solid #E5E7EB; vertical-align: top; }
+    table.kv tr:last-child td { border-bottom: 0; }
+    table.kv td.k { color: #6B7280; width: 40%; }
+    table.kv td.v { font-weight: bold; text-align: right; }
+    table.kv td.v.mono { font-family: "DejaVu Sans Mono", monospace; letter-spacing: .04em; }
+
+    .notes { background: #F9FAFB; border-left: 2.5pt solid #059669; padding: 4pt 7pt; margin-top: 10pt; font-size: 8.4pt; line-height: 1.35; color: #374151; }
+    .notes strong { color: #111827; }
+
+    .signature { margin-top: 14pt; }
+    .sign-role { font-size: 8.2pt; color: #374151; margin-bottom: 1pt; }
+    .sign-line { border-top: 0.5pt solid #9CA3AF; height: 16pt; }
+    .sign-name { font-size: 7.6pt; color: #6B7280; padding-top: 2pt; }
+
+    .footer { font-size: 7.8pt; color: #6B7280; border-top: 0.5pt solid #E5E7EB; padding-top: 2pt; margin-top: 12pt; }
+    .footer .verify { text-align: center; font-size: 7pt; line-height: 1.3; }
+    .footer .verify .code { font-family: "DejaVu Sans Mono", monospace; font-size: 8pt; letter-spacing: 0.4pt; }
+</style>
+</head>
+<body>
+
+<table class="header">
+    <tr>
+        <td class="brand-cell">
+            <span class="wordmark">Edus<span class="dot">.</span></span>
+            <span class="tagline">The school operating system · edus.ng</span>
+        </td>
+        <td class="doc-cell">
+            <span class="doc-type">Subscription Receipt</span>
+            <span class="doc-no">{{ receipt_no }}</span>
+        </td>
+    </tr>
+</table>
+<div class="accent-rule"></div>
+
+<table class="identity">
+    <tr>
+        <td style="width: 40%;">
+            <span class="label">Received from</span>
+            <table style="border-collapse: collapse;"><tr>
+                {% if logo %}
+                    <td style="width: 22pt; padding: 0 5pt 0 0; vertical-align: middle;">
+                        <img src="{{ logo }}" alt="" style="max-width: 19pt; max-height: 19pt;">
+                    </td>
+                {% endif %}
+                <td style="padding: 0; vertical-align: middle;">
+                    <span class="value">{{ school_name }}</span>
+                    {% if school_address %}<br><span class="value small">{{ school_address }}</span>{% endif %}
+                </td>
+            </tr></table>
+        </td>
+        <td style="width: 20%;">
+            <span class="label">Receipt no.</span>
+            <span class="value mono nowrap">{{ receipt_no }}</span>
+        </td>
+        <td style="width: 24%;">
+            <span class="label">Billing period</span>
+            <span class="value small nowrap">{{ period }}</span>
+        </td>
+        <td style="width: 16%;">
+            <span class="label">Paid on</span>
+            <span class="value small nowrap">{{ paid_at|date('j M Y') }}</span>
+        </td>
+    </tr>
+</table>
+
+<table class="paid-band">
+    <tr>
+        <td>
+            <span class="paid-word">Paid</span>
+            <span class="paid-note">Received in full, with thanks</span>
+        </td>
+        <td class="paid-amount">
+            ₦{{ amount|number_format(0) }}
+            <span class="paid-note">{{ plan_name }} · {{ supplementary ? 'overage' : (billing_cycle == 'annual' ? 'whole year' : 'termly') }}</span>
+        </td>
+    </tr>
+</table>
+
+<h2>What was paid for</h2>
+<table class="grid">
+    <thead>
+        <tr>
+            <th style="width: 56%;">Description</th>
+            <th class="num" style="width: 22%;">Amount</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+                <strong>{{ plan_name }} subscription{% if declared_students %} · {{ declared_students|number_format(0) }} {{ learner.plural }}{% endif %}</strong>
+                <div class="muted" style="font-size: 8.4pt;">{{ period }}{% if supplementary %} · overage for {{ learner.plural }} above the declared roll{% endif %}</div>
+            </td>
+            <td class="num">₦{{ amount|number_format(0) }}</td>
+        </tr>
+    </tbody>
+    <tfoot>
+        <tr class="total">
+            <td>Amount received</td>
+            <td class="num">₦{{ amount|number_format(0) }}</td>
+        </tr>
+    </tfoot>
+</table>
+
+<h2>Payment details</h2>
+<table class="kv">
+    <tr>
+        <td class="k">Payment method</td>
+        <td class="v">{{ method }}</td>
+    </tr>
+    <tr>
+        <td class="k">Invoice reference</td>
+        <td class="v mono">{{ reference }}</td>
+    </tr>
+    {% if gateway_reference %}
+        <tr>
+            <td class="k">Provider reference</td>
+            <td class="v mono">{{ gateway_reference }}</td>
+        </tr>
+    {% endif %}
+    <tr>
+        <td class="k">Date received</td>
+        <td class="v">{{ paid_at|date('j F Y') }}</td>
+    </tr>
+</table>
+
+<div class="notes">
+    <strong>Keep this receipt.</strong>
+    It is proof that this invoice was settled. Any later invoice, overage charge
+    or renewal is separate — the Value &amp; Billing statement in your portal
+    always shows the complete position.
+</div>
+
+<div class="signature">
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="width: 47%; padding: 0; vertical-align: bottom;">
+                <div class="sign-role">For Edus — Accounts</div>
+                <div class="sign-line"></div>
+                <div class="sign-name">Name · Date</div>
+            </td>
+            <td style="width: 6%; padding: 0;"></td>
+            <td style="width: 47%; padding: 0; vertical-align: bottom;">
+                <div class="sign-role">Received by {{ school_name }}</div>
+                <div class="sign-line"></div>
+                <div class="sign-name">Name · Date</div>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div class="footer">
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="width: 38%;">Edus · {{ receipt_no }} · {{ paid_at|date('j M Y') }}</td>
+            <td style="width: 40%;" class="verify">
+                {% if verification %}
+                    Scan or visit to verify:<br>
+                    <span style="font-size: 6.4pt;">{{ verification.url }}</span><br>
+                    Code: <span class="code">{{ verification.code }}</span>
+                {% endif %}
+            </td>
+            <td style="width: 22%; text-align: right;">
+                {% if verification %}
+                    <img src="{{ verification.qr }}" style="width: 34pt; height: 34pt;" alt=""><br>
+                {% endif %}
+                Generated by Edus
+            </td>
+        </tr>
+    </table>
+</div>
+
+</body>
+</html>

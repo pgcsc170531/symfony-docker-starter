@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#111827">
+    <meta name="robots" content="noindex, nofollow">
+    <title>{{ sheet.student.fullName }} — {{ term.name }} report</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    {% include '_design_tokens.html.twig' %}
+    <style>
+        body { background-color: #F9FAFB; }
+        .tabular { font-variant-numeric: tabular-nums; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <div class="px-4 py-4 sm:px-6 sm:py-6">
+
+        <div class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p class="text-sm text-ink-500">
+                Shared {{ term.name }} report{% if term.session %} · {{ term.session.name }}{% endif %}
+            </p>
+            <div class="flex flex-col gap-2 sm:flex-row">
+                <a href="{{ path('app_tenant_report_shared_pdf', {token: token}) }}" target="_blank" rel="noopener"
+                   class="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-accent-600 px-5 font-semibold text-white transition hover:bg-accent-700">
+                    Open PDF
+                </a>
+                <a href="{{ path('app_tenant_report_shared_pdf', {token: token, download: 1}) }}"
+                   class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-ink-300 bg-white px-5 text-sm font-semibold text-ink-700 transition hover:border-accent-400 hover:text-accent-700">
+                    Download
+                </a>
+            </div>
+        </div>
+
+        {% include 'tenant/reports/_document.html.twig' with {sheet: sheet, term: term} %}
+
+        <p class="mt-2 text-center text-[11px] text-ink-400">
+            This link expires {{ expires_at|date('j F Y') }}.
+        </p>
+    </div>
+
+    <footer class="border-t border-ink-200 bg-white px-4 py-5 text-center">
+        <a href="https://edus.ng" target="_blank" rel="noopener"
+           class="inline-flex min-h-[44px] items-center text-ink-700 hover:text-accent-700">
+            {% import '_brand.html.twig' as brand %}
+            {{ brand.wordmark('sm') }}
+        </a>
+        <p class="mt-1 text-xs text-ink-500">The school operating system</p>
+        <p class="mt-2 text-[11px] text-ink-400">© {{ 'now'|date('Y') }} · All rights reserved</p>
+    </footer>
+
+</body>
+</html>

@@ -46,6 +46,21 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToOne(mappedBy: 'user', targetEntity: Staff::class)]
     private ?Staff $staff = null;
 
+    // 🆕 Two-factor authentication (TOTP / Google Authenticator compatible).
+    // See docs/authentication/VERIFICATION-AND-2FA.md — replaces paid SMS OTP where possible.
+    #[ORM\Column(name: 'totp_secret', length: 255, nullable: true)]
+    private ?string $totpSecret = null;
+
+    #[ORM\Column(name: 'totp_enabled', options: ['default' => false])]
+    private ?bool $totpEnabled = false;
+
+    #[ORM\Column(name: 'totp_enabled_at', type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $totpEnabledAt = null;
+
+    /** JSON array of hashed single-use recovery codes. */
+    #[ORM\Column(name: 'totp_recovery_codes', type: 'text', nullable: true)]
+    private ?string $totpRecoveryCodes = null;
+
     public function getId(): ?int { return $this->id; }
 
     public function getEmail(): ?string { return $this->email; }
@@ -74,6 +89,29 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getStaff(): ?Staff { return $this->staff; }
     public function setStaff(?Staff $staff): static { $this->staff = $staff; return $this; }
+
+    // ── Two-factor authentication (TOTP) ──────────────────────────────
+    public function getTotpSecret(): ?string { return $this->totpSecret; }
+    public function setTotpSecret(?string $totpSecret): static { $this->totpSecret = $totpSecret; return $this; }
+
+    public function isTotpEnabled(): bool { return (bool) $this->totpEnabled; }
+    public function setTotpEnabled(bool $totpEnabled): static { $this->totpEnabled = $totpEnabled; return $this; }
+
+    public function getTotpEnabledAt(): ?\DateTimeImmutable { return $this->totpEnabledAt; }
+    public function setTotpEnabledAt(?\DateTimeImmutable $totpEnabledAt): static { $this->totpEnabledAt = $totpEnabledAt; return $this; }
+
+    /** @return string[] hashed recovery codes */
+    public function getTotpRecoveryCodes(): array
+    {
+        return $this->totpRecoveryCodes ? (json_decode($this->totpRecoveryCodes, true) ?: []) : [];
+    }
+
+    /** @param string[] $hashedCodes */
+    public function setTotpRecoveryCodes(array $hashedCodes): static
+    {
+        $this->totpRecoveryCodes = $hashedCodes ? json_encode(array_values($hashedCodes)) : null;
+        return $this;
+    }
 
    // 💡 2. ADD GETTER AND SETTER FOR SCHOOL
     public function getSchool(): ?School

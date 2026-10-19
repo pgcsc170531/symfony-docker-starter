@@ -3,7 +3,7 @@
 {% block title %}Complete Payment{% endblock %}
 
 {% block body %}
-<div class="max-w-5xl mx-auto mt-8 px-4">
+<div class="mt-8 px-4">
 
     <div class="flex justify-between items-center mb-6">
         {# 1. Back Button (Renamed to 'Back' to avoid confusion) #}
@@ -23,16 +23,70 @@
         {% endif %}
     </div>
 
+    {# The same invoice as a document, for filing, signing and forwarding. #}
+    <a href="{{ path('tenant_subscription_invoice_pdf', {id: payment.id}) }}"
+       target="_blank" rel="noopener"
+       class="mb-3 inline-flex min-h-[44px] items-center gap-1 text-sm font-semibold text-accent-600 transition hover:text-accent-700 hover:underline">
+        Download this invoice (PDF) <span aria-hidden="true">↗</span>
+    </a>
+
+    {# ── Pay online: activates the subscription with no manual verification ── #}
+    {% if gateway_ready %}
+        <section class="mt-2 rounded-xl border border-ink-200 bg-white p-4 shadow-card sm:p-5">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-ink-900">Pay online and activate immediately</h2>
+                    <p class="mt-1 text-sm text-ink-700">
+                        Card, bank transfer or USSD. Your subscription turns on as soon as Paystack confirms —
+                        no waiting for a manual check.
+                    </p>
+                    <p class="mt-2 text-xs text-ink-600">
+                        ₦{{ payment.amount|number_format(0) }} invoice
+                        + ₦{{ gateway_fee|number_format(2) }} provider charge
+                        = <span class="font-semibold text-ink-900">₦{{ gateway_total|number_format(2) }}</span>.
+                        The charge is the payment provider's fee on this transaction, paid by the school.
+                    </p>
+                </div>
+                <form method="post" action="{{ path('tenant_subscription_pay', {'id': payment.id}) }}" class="sm:shrink-0">
+                    <input type="hidden" name="_token" value="{{ csrf_token('pay' ~ payment.id) }}">
+                    <button type="submit"
+                            class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-accent-600 px-5 font-semibold text-white hover:bg-accent-700 sm:w-auto">
+                        Pay ₦{{ gateway_total|number_format(0) }} now
+                    </button>
+                </form>
+            </div>
+        </section>
+    {% else %}
+        <section class="mt-2 rounded-xl border border-ink-200 bg-white p-4 shadow-card sm:p-5">
+            <p class="text-sm text-ink-700">
+                {% if bank.account %}
+                    Online payment is not available at the moment. Use the bank transfer details below and upload your receipt.
+                {% else %}
+                    Online payment is not available at the moment. Contact us for the transfer details, quoting the reference below, then upload your receipt.
+                {% endif %}
+            </p>
+        </section>
+    {% endif %}
+
+    <p class="my-4 text-center text-xs font-semibold uppercase tracking-wide text-ink-500">
+        {% if gateway_ready %}or pay by bank transfer{% endif %}
+    </p>
+
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-0 bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100">
         
         {# LEFT: INVOICE (Dark Side) #}
-        <div class="bg-indigo-900 p-10 text-white flex flex-col relative overflow-hidden">
+        <div class="bg-indigo-900 p-5 text-white flex flex-col relative overflow-hidden sm:p-8 lg:p-10">
             <div class="absolute -top-24 -right-24 w-64 h-64 bg-indigo-700 rounded-full blur-3xl opacity-40 pointer-events-none"></div>
 
             <div class="relative z-10 mb-8">
                 <p class="text-indigo-300 uppercase tracking-widest text-xs font-bold mb-2">Total Amount Due</p>
-                <h1 class="text-6xl font-black mb-1 tracking-tight">₦{{ payment.amount|number_format }}</h1>
-                <p class="text-indigo-200 font-medium text-lg">{{ payment.plan.name }} Plan Subscription</p>
+                {# 📱 The one figure on this page that must never break. A fixed
+                   60px wrapped "₦100,000" into "₦100,00" / "0" on a 320px phone —
+                   a wrong-looking number on the screen where money is paid.
+                   `clamp` scales it with the viewport, `nowrap` forbids the break,
+                   and `tabular-nums` keeps the digits aligned at every size. #}
+                <h1 class="text-[clamp(1.75rem,8.5vw,3.75rem)] font-black tracking-tight whitespace-nowrap tabular-nums">₦{{ payment.amount|number_format }}</h1>
+                <p class="text-indigo-200 font-medium text-base sm:text-lg">{{ payment.plan.name }} Plan Subscription</p>
             </div>
 
             {# ⚠️ THE CRITICAL TRANSFER REMARK ⚠️ #}
@@ -40,7 +94,7 @@
                 <p class="text-indigo-300 text-xs uppercase tracking-wider font-bold mb-3">⚠️ Essential Transfer Remark</p>
                 
                 <div class="flex items-center gap-3">
-                    <div class="bg-yellow-400 text-black font-mono text-3xl md:text-4xl font-black px-4 py-3 rounded-lg tracking-wider w-full text-center shadow-lg transform rotate-1 border-2 border-yellow-200">
+                    <div class="bg-yellow-400 text-black font-mono text-xl sm:text-2xl md:text-4xl font-black px-3 py-3 rounded-lg tracking-wider w-full text-center shadow-lg border-2 border-yellow-200 whitespace-nowrap">
                         {{ payment.reference }}
                     </div>
                 </div>
@@ -52,20 +106,35 @@
 
             <div class="relative z-10">
                 <h3 class="font-bold text-indigo-300 text-xs uppercase tracking-wider mb-4">Bank Account Details</h3>
-                <div class="space-y-4">
-                    <div class="flex justify-between border-b border-indigo-800 pb-2">
-                        <span class="text-indigo-300">Bank Name</span>
-                        <span class="font-bold">Guaranty Trust Bank</span>
+                {% if bank.account %}
+                    <div class="space-y-4">
+                        {% if bank.name %}
+                            <div class="flex justify-between border-b border-indigo-800 pb-2">
+                                <span class="text-indigo-300">Bank Name</span>
+                                <span class="font-bold">{{ bank.name }}</span>
+                            </div>
+                        {% endif %}
+                        <div class="flex justify-between border-b border-indigo-800 pb-2">
+                            <span class="text-indigo-300">Account Number</span>
+                            <span class="font-mono font-bold text-xl tracking-widest">{{ bank.account }}</span>
+                        </div>
+                        {% if bank.account_name %}
+                            <div class="flex justify-between border-b border-indigo-800 pb-2">
+                                <span class="text-indigo-300">Account Name</span>
+                                <span class="font-bold">{{ bank.account_name }}</span>
+                            </div>
+                        {% endif %}
                     </div>
-                    <div class="flex justify-between border-b border-indigo-800 pb-2">
-                        <span class="text-indigo-300">Account Number</span>
-                        <span class="font-mono font-bold text-xl tracking-widest">0123 456 789</span>
-                    </div>
-                    <div class="flex justify-between border-b border-indigo-800 pb-2">
-                        <span class="text-indigo-300">Account Name</span>
-                        <span class="font-bold">Edus SaaS Ltd</span>
-                    </div>
-                </div>
+                {% else %}
+                    {# No account configured: say so. Printing a placeholder
+                       number here would invite a transfer that can never clear. #}
+                    <p class="text-sm text-indigo-200">
+                        Transfer details are sent with your invoice. Ask us on
+                        <a href="https://wa.me/2348032714999" target="_blank" rel="noopener"
+                           class="font-semibold text-white underline underline-offset-2">WhatsApp</a>
+                        quoting the reference above.
+                    </p>
+                {% endif %}
             </div>
         </div>
 
@@ -77,7 +146,7 @@
                 </div>
                 <h2 class="text-2xl font-black text-gray-900">Upload Receipt</h2>
                 <p class="text-gray-500 text-sm mt-2">
-                    Made the transfer? Upload the screenshot here to complete your renewal.
+                    Paid by bank transfer? Upload the screenshot here — the Edus team will verify it.
                 </p>
             </div>
 
@@ -99,13 +168,13 @@
                 </div>
 
                 <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl hover:bg-indigo-700 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 flex justify-center items-center gap-2">
-                    <span>Submit for Verification</span>
+                    <span>Submit receipt for verification</span>
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                 </button>
             {{ form_end(form) }}
 
             <p class="text-xs text-center text-gray-400 mt-6">
-                Verification usually takes 15-30 minutes during business hours.
+                Transfer receipts are checked during business hours. Paying online avoids the wait.
             </p>
             
             <script>

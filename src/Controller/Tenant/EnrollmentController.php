@@ -10,6 +10,7 @@ use App\Entity\Tenant\InvoiceItem;
 use App\Entity\Tenant\FeeStructure;
 use App\Entity\Tenant\Term;
 use App\Service\Finance\DiscountCalculator; // 👈 ENSURE THIS IS HERE
+use App\Service\Finance\InvoiceNumberGenerator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -23,7 +24,8 @@ class EnrollmentController extends AbstractController
 {
     // ✅ CORRECT INJECTION
     public function __construct(
-        private DiscountCalculator $discountCalculator
+        private DiscountCalculator $discountCalculator,
+        private InvoiceNumberGenerator $invoiceNumbers,
     ) {}
 
     #[Route('/promote', name: 'app_tenant_enrollment_promote', methods: ['GET', 'POST'])]
@@ -162,7 +164,7 @@ class EnrollmentController extends AbstractController
         $exists = $em->getRepository(Invoice::class)->findOneBy([
             'student' => $student,
             'term' => $term,
-            'type' => 'ACADEMIC'
+            'type' => Invoice::TYPE_ACADEMIC
         ]);
         if ($exists) return;
 
@@ -180,9 +182,9 @@ class EnrollmentController extends AbstractController
         $invoice->setTerm($term);
         $invoice->setSession($session);
         $invoice->setClassroom($classroom);
-        $invoice->setInvoiceNumber('INV-' . date('Y') . '-' . uniqid());
-        $invoice->setStatus('UNPAID');
-        $invoice->setType('ACADEMIC');
+        $invoice->setInvoiceNumber($this->invoiceNumbers->next($this->invoiceNumbers->yearFor($session)));
+        $invoice->setStatus(Invoice::STATUS_UNPAID);
+        $invoice->setType(Invoice::TYPE_ACADEMIC);
         $invoice->setPaidAmount("0");
         $invoice->setCreatedAt(new \DateTimeImmutable());
 
@@ -203,11 +205,11 @@ class EnrollmentController extends AbstractController
         if ($total > 0) {
             // 5. Calculate Discount using the Service
             $discountValue = $this->discountCalculator->calculateDiscount($student, $total);
-            
-            $invoice->setTotalAmount((string)$total);
-            
-            // 6. Use the EXACT method name from your Invoice Entity
-            $invoice->setDiscountApplied((string)$discountValue); 
+
+            // `total_amount` is NET of the discount (Invoice::getNetBillable()).
+            $invoice->setDiscountApplied((string) $discountValue);
+            $invoice->setDiscountLabel($this->discountCalculator->describe($student));
+            $invoice->setTotalAmount((string) max(0.0, $total - $discountValue));
 
             $em->persist($invoice);
         }

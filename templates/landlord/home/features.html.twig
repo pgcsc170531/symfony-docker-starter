@@ -16,31 +16,12 @@
 {% endmacro %}
 
 {% block title %}System Features - Edus{% endblock %}
+{% block title_suffix %}{% endblock %}
+{% block meta_description %}Every module in Edus: admissions and enrolment, fee schedules and invoices, results and report cards, attendance, staff, store, messaging and the parent portal.{% endblock %}
 
 {% block body %}
 {# --- 0. NAVIGATION BAR --- #}
-<div class="relative bg-white border-b border-gray-100">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center py-6 md:justify-start md:space-x-10">
-            <div class="flex justify-start lg:w-0 lg:flex-1">
-                <a href="{{ path('app_home') }}" class="text-3xl font-black tracking-tighter text-blue-600 no-underline hover:text-blue-700">
-                    Edus<span class="text-gray-900">.</span>
-                </a>
-            </div>
-            <div class="hidden md:flex space-x-10">
-                <a href="{{ path('app_features') }}" class="text-base font-medium text-gray-900 hover:text-blue-600">Features</a>
-                <a href="{{ path('app_partners') }}" class="text-base font-medium text-gray-500 hover:text-gray-900">Partners</a>
-                <a href="{{ path('app_login') }}" class="text-base font-medium text-blue-600 hover:text-blue-500">Log in</a>
-            </div>
-            <div class="hidden md:flex items-center justify-end md:flex-1 lg:w-0">
-                {# 🟢 MODIFIED: Top Nav WhatsApp Link #}
-                <a href="https://wa.me/2348032714999?text=Hi!%20I'm%20interested%20in%20using%20Edus%20for%20my%20school." target="_blank" class="ml-8 whitespace-nowrap inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors">
-                    <span class="mr-2 text-green-300">💬</span> Get Started
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
+{% include 'landlord/home/_nav.html.twig' with { current: 'features' } %}
 
 {# 1. HEADER #}
 <div class="bg-white border-b border-gray-200">
@@ -295,7 +276,7 @@
                             </div>
                         </div>
                         <div class="text-right">
-                            <h2 class="text-xl font-mono font-bold text-white">#INV-001</h2>
+                            <h2 class="text-xl font-mono font-bold text-white">INV-001</h2>
                             <span class="bg-yellow-500 text-white font-bold px-2 py-0.5 rounded-full text-[10px]">PARTIAL</span>
                         </div>
                     </div>
@@ -471,7 +452,7 @@
                 </div>
                 <p class="mt-3 lg:mt-0 text-lg text-gray-500">
                     From the fee schedule that prices every class, through discounts and invoices, to expenses,
-                    daily cash and a true Profit &amp; Loss statement — plus a prepaid SMS wallet so parent
+                    daily cash and a true Income &amp; Expenditure statement — plus a prepaid SMS wallet so parent
                     notifications never stop.
                 </p>
             </div>
@@ -479,7 +460,7 @@
             <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {{ _self.browser('screencapture-gobarau-localhost-8082-finance-payment-terminal-10-2026-04-21-15_29_26.png', 'Payment terminal', 'h-48') }}
                 {{ _self.browser('screencapture-gobarau-localhost-8082-finance-payment-verify-2026-04-21-17_53_54.png', 'Bank transfer verification', 'h-48') }}
-                {{ _self.browser('screencapture-gobarau-localhost-8082-finance-report-profit-loss-2026-04-21-21_29_53.png', 'Profit and loss report', 'h-48') }}
+                {{ _self.browser('screencapture-gobarau-localhost-8082-finance-report-profit-loss-2026-04-21-21_29_53.png', 'Income and expenditure report', 'h-48') }}
             </div>
 
             <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -490,7 +471,7 @@
                     { 'icon': '📋', 'title': 'Fee Items & Structures', 'text': 'Tuition, books, uniform — assigned with amounts to classes and terms.' },
                     { 'icon': '🎖️', 'title': 'Scholarships & Discounts', 'text': 'Rules like "Staff Child" applied automatically at billing, with duplicate protection.' },
                     { 'icon': '💸', 'title': 'Expenses', 'text': 'Daily costs by category with instant total-spent visibility.' },
-                    { 'icon': '📈', 'title': 'Profit & Loss', 'text': 'Any date range: academic vs. store income, minus expenses, for your true net position.' },
+                    { 'icon': '📈', 'title': 'Income & Expenditure', 'text': 'Any date range: academic vs. store income, minus expenses, for your true net position.' },
                     { 'icon': '📲', 'title': 'SMS Wallet', 'text': 'Top up credits, review transactions and submit payment proof for approval.' }
                 ] %}
                 {% for f in finance %}
@@ -608,13 +589,17 @@
 <footer class="bg-white border-t border-gray-200">
     <div class="max-w-7xl mx-auto py-12 px-4 overflow-hidden sm:px-6 lg:px-8">
         <div class="flex justify-center space-x-6 mb-4 text-gray-400">
-            <a href="{{ path('app_home') }}" class="hover:text-gray-500">Home</a>
-            <span>•</span>
-            <a href="{{ path('app_features') }}" class="hover:text-gray-500">Features</a>
-            <span>•</span>
-            <a href="{{ path('app_partners') }}" class="hover:text-gray-500">Partners</a>
-            <span>•</span>
-            <a href="{{ path('app_login') }}" class="hover:text-gray-500">Login</a>
+            <a href="{{ path('app_home') }}" class="inline-flex min-h-[44px] items-center hover:text-gray-500">Home</a>
+            <span aria-hidden="true">•</span>
+            <a href="{{ path('app_features') }}" class="inline-flex min-h-[44px] items-center hover:text-gray-500">Features</a>
+            <span aria-hidden="true">•</span>
+            <a href="{{ path('app_pricing') }}" class="inline-flex min-h-[44px] items-center hover:text-gray-500">Pricing</a>
+            <span aria-hidden="true">•</span>
+            <a href="{{ path('app_manual') }}" class="inline-flex min-h-[44px] items-center hover:text-gray-500">User Manual</a>
+            <span aria-hidden="true">•</span>
+            <a href="{{ path('app_partners') }}" class="inline-flex min-h-[44px] items-center hover:text-gray-500">Partners</a>
+            <span aria-hidden="true">•</span>
+            <a href="{{ path('app_login') }}" class="inline-flex min-h-[44px] items-center hover:text-gray-500">Login</a>
         </div>
         <p class="mt-8 text-center text-base text-gray-400">
             &copy; {{ "now"|date("Y") }} Edus. Built for Nigerian Schools.

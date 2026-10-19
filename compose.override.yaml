@@ -9,9 +9,11 @@ services:
 ###> symfony/mailer ###
   mailer:
     image: axllent/mailpit
+    # Publish the ports explicitly — "1025"/"8025" alone only exposes them to
+    # other containers, so the Mailpit UI was unreachable from the host.
     ports:
-      - "1025"
-      - "8025"
+      - "1025:1025"   # SMTP  → MAILER_DSN=smtp://mailer:1025
+      - "8025:8025"   # Web UI + API → http://localhost:8025
     environment:
       MP_SMTP_AUTH_ACCEPT_ANY: 1
       MP_SMTP_AUTH_ALLOW_INSECURE: 1

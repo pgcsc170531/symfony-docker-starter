@@ -1,0 +1,229 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Register — {{ classroom.name }} {{ date|date('j M') }}{% endblock %}
+
+{% block body %}
+{% set rows = [] %}
+{% for id, info in roster %}
+    {% set rows = rows|merge([{
+        id: id,
+        name: (info.student.firstName ~ ' ' ~ info.student.lastName)|trim,
+        status: existing[id].status|default('P'),
+        note: existing[id].note|default('')
+    }]) %}
+{% endfor %}
+
+<div class="px-4">
+
+    <a href="{{ path('app_tenant_my_class_attendance', {classroom: classroom.id}) }}"
+       class="mb-4 inline-flex min-h-[44px] items-center gap-1 text-sm font-semibold text-ink-600 hover:text-accent-700">
+        <span aria-hidden="true">&larr;</span> All days
+    </a>
+
+    <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div class="min-w-0">
+            <h1 class="text-2xl font-bold text-ink-900">{{ date|date('l, j F Y') }}</h1>
+            <p class="mt-1 text-sm text-ink-500">
+                {{ classroom.name }} · {{ term.name }} · {{ rows|length }} {{ rows|length == 1 ? learner : learner.plural }}
+            </p>
+        </div>
+        {% if locked %}
+            <span class="shrink-0 self-start rounded bg-paid/10 px-2.5 py-1 text-xs font-semibold text-paid">Released — read only</span>
+        {% elseif not isSchoolDay %}
+            <span class="shrink-0 self-start rounded bg-ink-100 px-2.5 py-1 text-xs font-semibold text-ink-600">Not a school day</span>
+        {% elseif isFuture %}
+            <span class="shrink-0 self-start rounded bg-ink-100 px-2.5 py-1 text-xs font-semibold text-ink-600">In the future</span>
+        {% endif %}
+    </div>
+
+    {% if not isSchoolDay %}
+        <p class="mb-4 rounded-lg border border-ink-200 bg-white p-3 text-sm text-ink-700">
+            This date is a weekend or a holiday on the school calendar, so there is nobody to mark.
+            If the school was in fact open, add or correct the date under
+            <span class="font-medium">Administration → School Calendar</span>.
+        </p>
+    {% elseif rows is empty %}
+        <div class="rounded-xl border border-dashed border-ink-300 bg-white px-6 py-12 text-center">
+            <p class="text-lg font-semibold text-ink-700">No {{ learner.plural }} in {{ classroom.name }}</p>
+            <p class="mx-auto mt-1 max-w-md text-sm text-ink-500">
+                Enrol {{ learner.plural }} into this class and they will appear on the register.
+            </p>
+        </div>
+    {% else %}
+
+        {# Legend — also the only place these colour classes are declared, so the
+           Tailwind CDN emits them for the active buttons below. #}
+        <div class="mb-3 flex flex-wrap items-center gap-2 text-[11px] font-semibold">
+            <span class="rounded bg-paid px-2 py-1 text-white">P · Present</span>
+            <span class="rounded bg-pending px-2 py-1 text-white">L · Late</span>
+            <span class="rounded bg-failed px-2 py-1 text-white">A · Absent</span>
+            <span class="rounded bg-ink-700 px-2 py-1 text-white">E · Excused</span>
+        </div>
+
+        <div x-data="attendanceRegister()"
+             x-init="init($el)"
+             data-rows="{{ rows|json_encode|e('html_attr') }}"
+             data-save-url="{{ path('app_tenant_my_class_register', {date: date|date('Y-m-d')}) }}"
+             data-token="{{ csrf }}"
+             data-locked="{{ locked ? '1' : '0' }}">
+
+            {# ── Sticky action bar ──────────────────────────────────── #}
+            <div class="sticky top-14 z-10 mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-ink-200 bg-white/90 p-3 backdrop-blur">
+                <p class="text-sm text-ink-700">
+                    <span class="font-bold text-ink-900 tabular" x-text="presentCount"></span> present
+                    · <span class="font-bold text-ink-900 tabular" x-text="absentCount"></span> absent
+                    <template x-if="noteCount > 0">
+                        <span class="text-ink-500">· <span x-text="noteCount"></span> with a note</span>
+                    </template>
+                </p>
+
+                <div class="flex w-full gap-2 sm:w-auto">
+                    {% if not locked %}
+                        <button type="button" @click="markAllPresent()"
+                                class="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-lg border border-ink-300 px-3 text-sm font-semibold text-ink-700 transition hover:border-accent-400 hover:text-accent-700 sm:flex-none">
+                            All present
+                        </button>
+                        <button type="button" @click="save()" :disabled="saving"
+                                class="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-lg bg-accent-600 px-5 font-semibold text-white transition hover:bg-accent-700 disabled:opacity-60 sm:flex-none">
+                            <span x-text="saving ? 'Saving…' : 'Save register'">Save register</span>
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <p x-show="message" :style="message ? '' : 'display:none'"
+               :class="isError ? 'border-failed/30 bg-failed/10 text-failed' : 'border-paid/30 bg-paid/10 text-paid'"
+               class="mb-3 rounded-lg border p-3 text-sm font-medium"
+               x-text="message"></p>
+
+            {# ── The pupils ─────────────────────────────────────────── #}
+            <ul class="divide-y divide-ink-100 overflow-hidden rounded-xl border border-ink-200 bg-white">
+                <template x-for="row in rows" :key="row.id">
+                    <li class="px-4 py-3">
+                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <p class="min-w-0 break-words font-medium text-ink-900" x-text="row.name"></p>
+
+                            <div class="grid grid-cols-4 gap-1 sm:w-72 sm:shrink-0">
+                                <button type="button" @click="setStatus(row, 'P')" :aria-pressed="row.status === 'P'"
+                                        aria-label="Present"
+                                        :class="row.status === 'P' ? 'bg-paid text-white border-paid' : 'border-ink-300 text-ink-600 hover:border-ink-400'"
+                                        :disabled="locked"
+                                        class="min-h-[44px] rounded-lg border text-sm font-bold transition">P</button>
+                                <button type="button" @click="setStatus(row, 'L')" :aria-pressed="row.status === 'L'"
+                                        aria-label="Late"
+                                        :class="row.status === 'L' ? 'bg-pending text-white border-pending' : 'border-ink-300 text-ink-600 hover:border-ink-400'"
+                                        :disabled="locked"
+                                        class="min-h-[44px] rounded-lg border text-sm font-bold transition">L</button>
+                                <button type="button" @click="setStatus(row, 'A')" :aria-pressed="row.status === 'A'"
+                                        aria-label="Absent"
+                                        :class="row.status === 'A' ? 'bg-failed text-white border-failed' : 'border-ink-300 text-ink-600 hover:border-ink-400'"
+                                        :disabled="locked"
+                                        class="min-h-[44px] rounded-lg border text-sm font-bold transition">A</button>
+                                <button type="button" @click="setStatus(row, 'E')" :aria-pressed="row.status === 'E'"
+                                        aria-label="Excused"
+                                        :class="row.status === 'E' ? 'bg-ink-700 text-white border-ink-700' : 'border-ink-300 text-ink-600 hover:border-ink-400'"
+                                        :disabled="locked"
+                                        class="min-h-[44px] rounded-lg border text-sm font-bold transition">E</button>
+                            </div>
+                        </div>
+
+                        {# A reason is only offered once the pupil is not simply present. #}
+                        <div class="mt-2" :style="row.status === 'P' ? 'display:none' : ''">
+                            <label class="sr-only" :for="'note-' + row.id">Reason or note</label>
+                            <input type="text" :id="'note-' + row.id" x-model="row.note" :disabled="locked"
+                                   @input="dirty = true"
+                                   placeholder="Reason (optional) — e.g. travelled, sick"
+                                   class="w-full rounded-lg border border-ink-300 p-2.5 text-base text-ink-900 placeholder:text-ink-400 focus:border-accent-500 focus:ring-accent-500">
+                        </div>
+                    </li>
+                </template>
+            </ul>
+
+            <script>
+                function attendanceRegister() {
+                    return {
+                        rows: [],
+                        saveUrl: '',
+                        token: '',
+                        locked: false,
+                        saving: false,
+                        dirty: false,
+                        message: '',
+                        isError: false,
+
+                        init(el) {
+                            this.rows = JSON.parse(el.dataset.rows || '[]');
+                            this.saveUrl = el.dataset.saveUrl;
+                            this.token = el.dataset.token;
+                            this.locked = el.dataset.locked === '1';
+                        },
+
+                        get presentCount() {
+                            return this.rows.filter(r => r.status === 'P' || r.status === 'L').length;
+                        },
+                        get absentCount() {
+                            return this.rows.filter(r => r.status === 'A').length;
+                        },
+                        get noteCount() {
+                            return this.rows.filter(r => r.note && r.note.trim() !== '').length;
+                        },
+
+                        setStatus(row, status) {
+                            if (this.locked) return;
+                            row.status = status;
+                            if (status === 'P') row.note = '';
+                            this.dirty = true;
+                            this.message = '';
+                        },
+
+                        markAllPresent() {
+                            if (this.locked) return;
+                            this.rows.forEach(r => { r.status = 'P'; r.note = ''; });
+                            this.dirty = true;
+                            this.message = '';
+                        },
+
+                        async save() {
+                            this.saving = true;
+                            this.message = '';
+                            try {
+                                const res = await fetch(this.saveUrl, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        _token: this.token,
+                                        entries: this.rows.map(r => ({ student_id: r.id, status: r.status, note: r.note }))
+                                    })
+                                });
+                                const data = await res.json();
+                                if (!res.ok || !data.success) {
+                                    throw new Error(data.error || 'Could not save the register.');
+                                }
+                                this.isError = false;
+                                this.dirty = false;
+                                const t = data.summary || {};
+                                this.message = 'Saved · ' + (t.P || 0) + ' present, ' + (t.A || 0) + ' absent, ' + (t.L || 0) + ' late, ' + (t.E || 0) + ' excused.';
+                            } catch (e) {
+                                this.isError = true;
+                                this.message = e.message;
+                            } finally {
+                                this.saving = false;
+                            }
+                        }
+                    };
+                }
+
+                window.addEventListener('beforeunload', (e) => {
+                    const root = document.querySelector('[data-rows]');
+                    if (!root || !root._x_dataStack) return;
+                    const data = root._x_dataStack[0];
+                    if (data && data.dirty) {
+                        e.preventDefault();
+                        e.returnValue = '';
+                    }
+                });
+            </script>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

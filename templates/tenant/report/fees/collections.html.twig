@@ -1,0 +1,165 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Daily Collections{% endblock %}
+
+{% block body %}
+<div class="px-4 py-4 sm:px-6 sm:py-6">
+
+    <div class="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+            <a href="{{ path('app_tenant_report_fees') }}" class="inline-flex min-h-[44px] items-center text-xs font-semibold text-accent-700 hover:underline">&larr; Fee reports</a>
+            <h1 class="mt-1 text-2xl font-black tracking-tight text-ink-900 sm:text-3xl">Daily collections</h1>
+            <p class="mt-1 text-sm text-ink-600">{{ date|date('l, j M Y') }}</p>
+        </div>
+
+        <div class="flex flex-wrap items-end gap-2 no-print">
+            <form method="get" action="{{ path('app_tenant_report_collections') }}" class="flex items-end gap-2">
+                <div>
+                    <label for="date" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Date</label>
+                    <input type="date" id="date" name="date" value="{{ date|date('Y-m-d') }}"
+                           class="min-h-[44px] rounded-lg border border-ink-300 px-3 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500">
+                </div>
+                <button type="submit" class="min-h-[44px] rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white hover:bg-accent-700">Show</button>
+            </form>
+            <button type="button" onclick="window.print()"
+                    class="min-h-[44px] rounded-lg border border-ink-300 px-4 text-sm font-semibold text-ink-700 hover:border-accent-400 hover:text-accent-700">
+                Print
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+        <div class="rounded-xl border border-ink-200 bg-white p-4">
+            <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">Confirmed</p>
+            <p class="money mt-1 text-xl font-black text-paid">₦{{ totals.confirmedTotal|number_format(2) }}</p>
+        </div>
+        <div class="rounded-xl border border-ink-200 bg-white p-4">
+            <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">Claimed, not verified</p>
+            <p class="money mt-1 text-xl font-black {{ totals.pendingTotal > 0 ? 'text-pending' : 'text-ink-400' }}">
+                ₦{{ totals.pendingTotal|number_format(2) }}
+            </p>
+        </div>
+    </div>
+
+    {% if totals.confirmed is not empty %}
+        <div class="mt-4 rounded-xl border border-ink-200 bg-white p-4">
+            <h2 class="text-xs font-semibold uppercase tracking-wide text-ink-500">Confirmed by method</h2>
+            <ul class="mt-2 divide-y divide-ink-100">
+                {% for method, amount in totals.confirmed %}
+                    <li class="flex items-center justify-between gap-3 py-2 text-sm">
+                        <span class="font-semibold text-ink-800">{{ method|replace({'_': ' '}) }}</span>
+                        <span class="money font-semibold text-ink-900">₦{{ amount|number_format(2) }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    {% if payments is empty %}
+        <div class="mt-4 rounded-xl border border-ink-200 bg-white p-8 text-center">
+            <p class="text-4xl" aria-hidden="true">🧾</p>
+            <h2 class="mt-3 text-lg font-bold text-ink-900">No payments recorded on this date</h2>
+            <p class="mt-1 text-sm text-ink-600">Pick another date, or take a payment from the terminal.</p>
+            <a href="{{ path('app_tenant_payment_index') }}"
+               class="mt-4 inline-flex min-h-[44px] items-center rounded-lg bg-accent-600 px-5 text-sm font-semibold text-white">
+                Open payment terminal
+            </a>
+        </div>
+    {% else %}
+
+        {# Desktop table #}
+        <div class="mt-4 hidden overflow-x-auto rounded-xl border border-ink-200 bg-white sm:block">
+            <table class="min-w-[720px] w-full text-left text-sm">
+                <thead class="bg-ink-50 text-xs uppercase tracking-wide text-ink-500">
+                    <tr>
+                        <th class="px-4 py-3">Time</th>
+                        <th class="px-4 py-3">Pupil / buyer</th>
+                        <th class="px-4 py-3">Invoice</th>
+                        <th class="px-4 py-3">Method</th>
+                        <th class="px-4 py-3">Reference</th>
+                        <th class="px-4 py-3 text-right">Amount</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-ink-100">
+                    {% for payment in payments %}
+                        <tr class="align-top">
+                            <td class="whitespace-nowrap px-4 py-3 text-ink-600">
+                                {{ (payment.paidAt ?? payment.createdAt)|date('H:i') }}
+                            </td>
+                            <td class="px-4 py-3">
+                                {% if payment.invoice.student %}
+                                    <span class="block font-semibold text-ink-900">{{ payment.invoice.student.fullName }}</span>
+                                    <span class="block text-xs text-ink-500">{{ payment.invoice.student.admissionNumber }}</span>
+                                {% else %}
+                                    <span class="block font-semibold text-ink-900">{{ payment.invoice.buyerName ?: 'Walk-in customer' }}</span>
+                                    <span class="block text-xs text-ink-500">Walk-in sale</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 font-mono text-xs text-ink-600">{{ payment.invoice.invoiceNumber }}</td>
+                            <td class="px-4 py-3 text-ink-700">{{ payment.method|replace({'_': ' '}) }}</td>
+                            <td class="px-4 py-3 font-mono text-xs text-ink-500">{{ payment.referenceCode ?: '—' }}</td>
+                            <td class="money px-4 py-3 text-right font-semibold text-ink-900">₦{{ payment.amount|number_format(2) }}</td>
+                            <td class="px-4 py-3">
+                                {% if payment.status == 'CONFIRMED' %}
+                                    <span class="badge-paid">Paid</span>
+                                {% elseif payment.status == 'PENDING' %}
+                                    <span class="badge-pending">Unverified</span>
+                                {% else %}
+                                    <span class="badge-failed">{{ payment.status|capitalize }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                                {% if payment.status == 'CONFIRMED' %}
+                                    <a href="{{ path('app_tenant_payment_receipt', {id: payment.id}) }}"
+                                       class="text-xs font-semibold text-accent-700 hover:underline">Receipt</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {# Mobile cards #}
+        <div class="mt-4 space-y-2 sm:hidden">
+            {% for payment in payments %}
+                <div class="rounded-xl border border-ink-200 bg-white p-3">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="break-words font-semibold text-ink-900">
+                                {% if payment.invoice.student %}{{ payment.invoice.student.fullName }}{% else %}{{ payment.invoice.buyerName ?: 'Walk-in customer' }}{% endif %}
+                            </p>
+                            <p class="text-xs text-ink-500">
+                                {{ (payment.paidAt ?? payment.createdAt)|date('H:i') }} ·
+                                {{ payment.method|replace({'_': ' '}) }} ·
+                                {{ payment.referenceCode ?: 'no ref' }}
+                            </p>
+                        </div>
+                        <p class="money shrink-0 font-bold text-ink-900">₦{{ payment.amount|number_format(2) }}</p>
+                    </div>
+                    <div class="mt-2 flex items-center justify-between gap-2">
+                        {% if payment.status == 'CONFIRMED' %}
+                            <span class="badge-paid">Paid</span>
+                            <a href="{{ path('app_tenant_payment_receipt', {id: payment.id}) }}"
+                               class="inline-flex min-h-[44px] items-center text-xs font-semibold text-accent-700">Receipt</a>
+                        {% elseif payment.status == 'PENDING' %}
+                            <span class="badge-pending">Unverified</span>
+                            <a href="{{ path('app_tenant_payment_verify', {code: payment.referenceCode}) }}"
+                               class="inline-flex min-h-[44px] items-center text-xs font-semibold text-accent-700">Verify</a>
+                        {% else %}
+                            <span class="badge-failed">{{ payment.status|capitalize }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <p class="mt-4 text-xs leading-relaxed text-ink-500">
+        The day is based on when the money was confirmed, falling back to when it was recorded.
+        Unverified proofs are never added to “Confirmed”.
+    </p>
+</div>
+{% endblock %}

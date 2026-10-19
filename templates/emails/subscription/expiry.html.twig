@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>{{ expired ? 'Subscription ended' : 'Subscription renews soon' }}</title>
+</head>
+<body style="margin:0;padding:0;background:#F9FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#111827;">
+<div style="max-width:560px;margin:0 auto;padding:24px;">
+    <div style="background:#111827;color:#ffffff;border-radius:12px 12px 0 0;padding:20px 24px;">
+        <p style="margin:0;font-size:20px;font-weight:800;letter-spacing:-0.02em;">Edus</p>
+        <p style="margin:4px 0 0;font-size:13px;color:#D1D5DB;">The school operating system</p>
+    </div>
+
+    <div style="background:#ffffff;border:1px solid #E5E7EB;border-top:0;border-radius:0 0 12px 12px;padding:24px;">
+        {% if expired %}
+            <h1 style="margin:0 0 12px;font-size:19px;">Your subscription has ended</h1>
+            <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#374151;">
+                Hello {{ school_name }}, your {{ plan_name }} subscription ended on <strong>{{ end_date }}</strong>.
+                The account is read-only — you can still view and export everything, but nothing can be changed
+                until a new term is registered.
+            </p>
+        {% else %}
+            <h1 style="margin:0 0 12px;font-size:19px;">Your subscription renews soon</h1>
+            <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#374151;">
+                Hello {{ school_name }}, your {{ plan_name }} subscription ends on <strong>{{ end_date }}</strong>
+                — that is {{ days_left }} day{{ days_left == 1 ? '' : 's' }} from now.
+                Register the next term before then so nobody is locked out.
+            </p>
+        {% endif %}
+
+        {% if portal_url %}
+            <p style="margin:0 0 20px;">
+                <a href="{{ portal_url }}"
+                   style="display:inline-block;background:#2563EB;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;padding:12px 20px;border-radius:8px;">
+                    Open Subscription
+                </a>
+            </p>
+        {% endif %}
+
+        <p style="margin:16px 0 0;font-size:13px;color:#6B7280;">
+            Questions? Reply to this email and we will help.
+        </p>
+    </div>
+
+    <p style="margin:16px 0 0;text-align:center;font-size:12px;color:#9CA3AF;">
+        Sent by Edus · edus.ng
+    </p>
+</div>
+</body>
+</html>

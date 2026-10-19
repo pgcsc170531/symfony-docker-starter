@@ -1,0 +1,98 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Transcript — {{ sheet.student.fullName }}{% endblock %}
+
+{% block body %}
+<div class="px-4">
+
+    <a href="{{ path('app_tenant_report_student', {term: term.id, student: sheet.student.id}) }}"
+       class="mb-4 inline-flex min-h-[44px] items-center gap-1 text-sm font-semibold text-ink-600 hover:text-accent-700">
+        <span aria-hidden="true">&larr;</span> Report card
+    </a>
+
+    <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div class="min-w-0">
+            <h1 class="text-2xl font-bold text-ink-900">Transcript</h1>
+            <p class="mt-1 text-sm text-ink-500">
+                {{ sheet.student.fullName }} · {{ sheet.classroom.name }}
+                {% if sheet.trend.session %} · {{ sheet.trend.session.name }}{% endif %}
+            </p>
+        </div>
+        <a href="{{ path('app_tenant_report_student_transcript_pdf', {term: term.id, student: sheet.student.id}) }}"
+           class="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-accent-600 px-5 font-semibold text-white hover:bg-accent-700">
+            Download transcript
+        </a>
+    </div>
+
+    {% set trend = sheet.trend %}
+    {% if trend.subjects is empty %}
+        <div class="rounded-xl border border-dashed border-ink-300 bg-white px-6 py-12 text-center">
+            <p class="text-lg font-semibold text-ink-700">No results yet</p>
+            <p class="mx-auto mt-1 max-w-md text-sm text-ink-500">
+                This transcript fills in as each term's results are entered and approved.
+            </p>
+        </div>
+    {% else %}
+        {% if not sheet.released %}
+            <p class="mb-3 rounded-lg border border-pending/30 bg-pending/10 p-3 text-xs text-ink-700">
+                <span class="font-semibold text-pending">Provisional.</span>
+                At least one subject is still awaiting final approval. Figures may change.
+            </p>
+        {% endif %}
+
+        <div class="overflow-hidden rounded-xl border border-ink-200 bg-white shadow-card">
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[640px] text-sm">
+                    <thead class="bg-ink-100 text-left text-[11px] uppercase tracking-wide text-ink-500">
+                        <tr>
+                            <th class="px-3 py-2.5 font-semibold">Subject</th>
+                            {% for termPoint in trend.terms %}
+                                <th class="px-3 py-2.5 text-right font-semibold">{{ termPoint.name }}</th>
+                            {% endfor %}
+                            <th class="px-3 py-2.5 text-right font-semibold">Cumulative</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-ink-100">
+                        {% for subject in trend.subjects %}
+                            {% set values = [] %}
+                            <tr>
+                                <td class="px-3 py-2 font-medium text-ink-900">{{ subject.name }}</td>
+                                {% for termPoint in trend.terms %}
+                                    {% set point = subject.points[termPoint.id] ?? null %}
+                                    <td class="px-3 py-2 text-right tabular text-ink-700">
+                                        {{ point and point.percentage is not null ? point.percentage ~ '%' : '—' }}
+                                        {% if point and point.grade %}<span class="text-xs text-ink-400">({{ point.grade }})</span>{% endif %}
+                                    </td>
+                                    {% if point and point.percentage is not null %}{% set values = values|merge([point.percentage]) %}{% endif %}
+                                {% endfor %}
+                                <td class="px-3 py-2 text-right font-semibold tabular text-ink-900">
+                                    {{ values is empty ? '—' : ((values|reduce((carry, v) => carry + v)) / (values|length))|round(1) ~ '%' }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <dl class="grid grid-cols-2 gap-3 border-t border-ink-200 bg-ink-50 p-4 text-sm sm:grid-cols-4">
+                <div>
+                    <dt class="text-xs text-ink-500">Session obtained</dt>
+                    <dd class="font-bold tabular text-ink-900">{{ trend.cumulative.obtained }} / {{ trend.cumulative.obtainable }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-ink-500">Cumulative average</dt>
+                    <dd class="font-semibold tabular text-ink-900">{{ trend.cumulative.percentage is null ? '—' : trend.cumulative.percentage ~ '%' }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-ink-500">Cumulative grade</dt>
+                    <dd class="font-semibold text-ink-900">{{ trend.cumulative.grade ?? '—' }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-ink-500">Terms included</dt>
+                    <dd class="font-semibold tabular text-ink-900">{{ trend.terms|length }}</dd>
+                </div>
+            </dl>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,399 @@
+{% set s = data.summary %}
+{% set schoolName = school ? school.name : 'School' %}
+{% set colour = school and school.primaryColor ? school.primaryColor : '#16223C' %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ schoolName }} — {{ term.name }} performance report</title>
+<style>
+    @page { size: 210mm 297mm; margin: 10mm 11mm 13mm 11mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "DejaVu Sans", sans-serif; font-size: 9.2pt; color: #111827; }
+    .header { width: 100%; border-collapse: collapse; background: {{ colour }}; color: #ffffff; }
+    .header td { padding: 5pt 8pt; vertical-align: middle; }
+    .header .logo { width: 38pt; height: 38pt; text-align: center; vertical-align: middle; }
+    .header .logo img { max-width: 37pt; max-height: 37pt; }
+    .header .logo .initial { display: block; font-family: "DejaVu Serif", serif; font-size: 20pt; font-weight: bold; color: #ffffff; line-height: 36pt; }
+    .school-name { font-family: "DejaVu Serif", serif; font-size: 15pt; font-weight: bold; line-height: 1.15; }
+    .school-meta { font-size: 7.6pt; color: #E5E7EB; margin-top: 2pt; }
+    .doc-type { text-align: right; font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.7pt; color: #E5E7EB; }
+    .doc-type strong { display: block; font-size: 10.5pt; color: #ffffff; letter-spacing: 0.4pt; }
+    h1 { font-size: 17pt; margin: 9pt 0 2pt 0; color: #111827; }
+    .period { font-size: 9pt; color: #4B5563; margin-bottom: 6pt; }
+    .headline { border-left: 3pt solid {{ colour }}; background: #F9FAFB; padding: 6pt 8pt; font-size: 10pt; line-height: 1.35; color: #1F2937; }
+    .provisional { border: 0.7pt solid #D97706; background: #FFFBEB; color: #92400E; padding: 4pt 7pt; margin-top: 6pt; font-size: 8.4pt; }
+    .section { margin-top: 10pt; }
+    h2 { font-size: 9.5pt; text-transform: uppercase; letter-spacing: 0.7pt; color: #374151; margin: 0 0 4pt 0; font-weight: bold; }
+    .kpi { width: 100%; border-collapse: collapse; }
+    .kpi td { width: 33.33%; border: 0.6pt solid #D1D5DB; padding: 5pt 5pt; vertical-align: top; }
+    .kpi .k { display: block; font-size: 7.2pt; text-transform: uppercase; letter-spacing: 0.4pt; color: #4B5563; }
+    .kpi .v { display: block; font-size: 15pt; font-weight: bold; color: #111827; margin-top: 1pt; }
+    .kpi .h { display: block; font-size: 7.1pt; color: #6B7280; margin-top: 1pt; }
+    .findings { width: 100%; border-collapse: collapse; }
+    .findings td { padding: 3pt 0; vertical-align: top; font-size: 8.9pt; line-height: 1.3; }
+    .findings td.tone { width: 54pt; font-size: 6.8pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.3pt; white-space: nowrap; }
+    .tone-positive { color: #047857; }
+    .tone-negative { color: #B91C1C; }
+    .tone-neutral { color: #4B5563; }
+    table.grid { width: 100%; border-collapse: collapse; }
+    table.grid th { background: #F3F4F6; border: 0.6pt solid #D1D5DB; padding: 2.6pt 3pt; font-size: 7.1pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.2pt; color: #1F2937; text-align: left; }
+    table.grid td { border: 0.6pt solid #E5E7EB; padding: 2.2pt 3pt; font-size: 8.3pt; }
+    table.grid td.num, table.grid th.num { text-align: right; }
+    table.grid tbody tr:nth-child(even) td { background: #FAFAFA; }
+    table.grid td.subject { font-weight: bold; }
+    .muted { color: #4B5563; }
+    .pos { color: #047857; font-weight: bold; }
+    .neg { color: #B91C1C; font-weight: bold; }
+    .bar { background: #E5E7EB; height: 5pt; width: 100%; }
+    .bar span { display: block; height: 5pt; background: #2563EB; }
+    .page { page-break-before: always; }
+    .subhead { width: 100%; border-collapse: collapse; border-bottom: 0.7pt solid #D1D5DB; margin-bottom: 7pt; }
+    .subhead td { padding-bottom: 3pt; vertical-align: bottom; }
+    .subhead .name { font-family: "DejaVu Serif", serif; font-size: 11pt; font-weight: bold; }
+    .subhead .right { text-align: right; font-size: 7.6pt; color: #6B7280; }
+    .note { font-size: 7.3pt; color: #4B5563; line-height: 1.28; margin-top: 5pt; }
+    .spotlight { width: 100%; border-collapse: collapse; margin-top: 7pt; }
+    .spotlight td { width: 50%; border: 0.6pt solid #D1D5DB; padding: 5pt 6pt; vertical-align: top; }
+    .spotlight .label { font-size: 6.8pt; text-transform: uppercase; letter-spacing: 0.4pt; font-weight: bold; }
+    .spotlight .subject { font-size: 10pt; font-weight: bold; margin-top: 1pt; }
+    .spotlight .detail { font-size: 7.6pt; color: #4B5563; margin-top: 1pt; }
+    .footer { margin-top: 8pt; border-top: 0.5pt solid #E5E7EB; padding-top: 2.5pt; font-size: 6.9pt; color: #6B7280; }
+    .footer .right { text-align: right; }
+    .empty { border: 0.6pt solid #D1D5DB; padding: 8pt; color: #4B5563; font-size: 9pt; }
+</style>
+</head>
+<body>
+
+<table class="header">
+    <tr>
+        <td style="width: 46pt;">
+            <div class="logo">
+                {% if logo %}<img src="{{ logo }}" alt="">{% else %}<span class="initial">{{ schoolName|slice(0, 1)|upper }}</span>{% endif %}
+            </div>
+        </td>
+        <td>
+            <div class="school-name">{{ schoolName }}</div>
+            {% if school and school.motto %}<div class="school-meta">{{ school.motto }}</div>{% endif %}
+            {% if school and (school.address or school.phoneNumber) %}
+                <div class="school-meta">{{ school.address }}{% if school.address and school.phoneNumber %} · {% endif %}{{ school.phoneNumber }}</div>
+            {% endif %}
+        </td>
+        <td class="doc-type" style="width: 115pt;">
+            <strong>Performance Report</strong>
+            {{ term.name }}
+        </td>
+    </tr>
+</table>
+
+<h1>Whole-school performance</h1>
+<p class="period">
+    {{ term.name }}{% if term.session %} · {{ term.session.name }}{% endif %}
+    {% if yearGroup %} · {{ yearGroup.name }}{% endif %}
+    · {{ data.pupil_count }} {{ learner.plural }} · {{ data.subject_count }} subjects · {{ data.class_count }} classes
+    · generated {{ data.generated_at|date('j F Y H:i') }}
+</p>
+
+<p class="headline">{{ data.headline }}</p>
+
+{% if data.provisional %}
+    <div class="provisional">
+        <strong>Provisional figures.</strong>
+        {{ s.entered|number_format }} of {{ s.expected|number_format }} expected subject entries are present;
+        {{ s.approved }} of {{ s.class_subjects }} class subjects are final-approved.
+    </div>
+{% endif %}
+
+<div class="section">
+    <h2>The headline numbers</h2>
+    <table class="kpi">
+        <tr>
+            <td>
+                <span class="k">Average</span>
+                <span class="v">{{ s.average is null ? '—' : s.average ~ '%' }}</span>
+                <span class="h">mean of {{ learner }} percentages</span>
+            </td>
+            <td>
+                <span class="k">Pass rate</span>
+                <span class="v">{{ s.pass_rate is null ? '—' : s.pass_rate ~ '%' }}</span>
+                <span class="h">{{ data.thresholds.pass_grade }} or better</span>
+            </td>
+            <td>
+                <span class="k">5+ credits</span>
+                <span class="v">{{ s.five_credit_rate is null ? 'n/a' : s.five_credit_rate ~ '%' }}</span>
+                <span class="h">including English and Mathematics</span>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="k">Distinction</span>
+                <span class="v">{{ s.distinction_rate is null ? '—' : s.distinction_rate ~ '%' }}</span>
+                <span class="h">{{ data.thresholds.distinction_grade }} or better</span>
+            </td>
+            <td>
+                <span class="k">Coverage</span>
+                <span class="v">{{ s.coverage is null ? '—' : s.coverage ~ '%' }}</span>
+                <span class="h">{{ s.entered|number_format }} of {{ s.expected|number_format }} entries</span>
+            </td>
+            <td>
+                <span class="k">Attendance</span>
+                <span class="v">{{ s.attendance is null ? '—' : s.attendance ~ '%' }}</span>
+                <span class="h">present in registers taken</span>
+            </td>
+        </tr>
+    </table>
+</div>
+
+{% if data.findings is not empty %}
+    <div class="section">
+        <h2>What stands out</h2>
+        <table class="findings">
+            {% for finding in data.findings %}
+                <tr>
+                    <td class="tone tone-{{ finding.tone }}">{{ finding.tone == 'positive' ? 'Strength' : (finding.tone == 'negative' ? 'Watch' : 'Context') }}</td>
+                    <td>{{ finding.text }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+{% endif %}
+
+{% if data.grade_distribution is not empty %}
+    <div class="section">
+        <h2>Grade mix</h2>
+        <table class="grid">
+            <thead>
+                <tr>
+                    <th>Band</th>
+                    <th class="num">{{ learner.pluralCapital }}</th>
+                    <th class="num">Share</th>
+                    <th style="width: 40%;">Distribution</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for band in data.grade_distribution %}
+                    <tr>
+                        <td class="subject">{{ band.label }}</td>
+                        <td class="num">{{ band.count }}</td>
+                        <td class="num">{{ band.percentage }}%</td>
+                        <td><div class="bar"><span style="width: {{ band.percentage }}%"></span></div></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <p class="note">
+            Bands follow the school's grading scale: distinction from {{ data.thresholds.distinction }}%,
+            credit from {{ data.thresholds.credit }}%, pass from {{ data.thresholds.pass }}%.
+        </p>
+    </div>
+{% endif %}
+
+<div class="footer">
+    <table style="width: 100%;">
+        <tr>
+            <td>{{ schoolName }} · {{ term.name }}{% if yearGroup %} · {{ yearGroup.name }}{% endif %}</td>
+            <td class="right">Generated by Edus on {{ data.generated_at|date('j F Y H:i') }}</td>
+        </tr>
+    </table>
+</div>
+
+{# ══════════════════════ PAGE 2 — SUBJECTS ══════════════════════ #}
+<div class="page"></div>
+<table class="subhead">
+    <tr>
+        <td class="name">{{ schoolName }}</td>
+        <td class="right">Subject analysis · {{ term.name }}{% if yearGroup %} · {{ yearGroup.name }}{% endif %}</td>
+    </tr>
+</table>
+<h1>Subject performance</h1>
+<p class="period">Every subject taught this term, ranked by average. A result counts only when a {{ learner }} has a score for that subject.</p>
+
+{% if data.subjects is empty %}
+    <div class="empty">No subject results have been entered for this term.</div>
+{% else %}
+    {% set populated = data.subjects|filter(subject => subject.entered >= 5) %}
+    {% if populated|length >= 2 %}
+        {% set strongest = populated|first %}
+        {% set weakest = populated|last %}
+        <table class="spotlight">
+            <tr>
+                <td>
+                    <p class="label tone-positive">Strongest</p>
+                    <p class="subject">{{ strongest.name }}</p>
+                    <p class="detail">{{ strongest.average }}% average · {{ strongest.pass_rate }}% pass · {{ strongest.entered }} entries</p>
+                </td>
+                <td>
+                    <p class="label tone-negative">Needs attention</p>
+                    <p class="subject">{{ weakest.name }}</p>
+                    <p class="detail">{{ weakest.average }}% average · {{ weakest.pass_rate }}% pass · {{ weakest.entered }} entries</p>
+                </td>
+            </tr>
+        </table>
+    {% endif %}
+
+    <div class="section">
+        <table class="grid">
+            <thead>
+                <tr>
+                    <th class="num" style="width: 18pt;">#</th>
+                    <th>Subject</th>
+                    <th class="num">Entries</th>
+                    <th class="num">Average</th>
+                    <th class="num">Pass</th>
+                    <th class="num">Credit</th>
+                    <th class="num">Distinction</th>
+                    <th class="num">vs school</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for subject in data.subjects %}
+                    {% set diff = subject.average is not null and s.average is not null ? subject.average - s.average : null %}
+                    <tr>
+                        <td class="num muted">{{ loop.index }}</td>
+                        <td class="subject">{{ subject.name }}{% if not subject.approved %} <span class="muted">*</span>{% endif %}</td>
+                        <td class="num">{{ subject.entered }}</td>
+                        <td class="num"><strong>{{ subject.average }}%</strong></td>
+                        <td class="num">{{ subject.pass_rate }}%</td>
+                        <td class="num">{{ subject.credit_rate }}%</td>
+                        <td class="num">{{ subject.distinction_rate }}%</td>
+                        <td class="num {{ diff is not null ? (diff >= 0 ? 'pos' : 'neg') : 'muted' }}">
+                            {% if diff is not null %}{{ diff >= 0 ? '+' : '' }}{{ diff|round(1) }}{% else %}—{% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <p class="note">
+            * This subject's results are not final-approved, so its figures are provisional.
+            Pass is {{ data.thresholds.pass_grade }} ({{ data.thresholds.pass }}%),
+            credit is {{ data.thresholds.credit_grade }} ({{ data.thresholds.credit }}%),
+            distinction is {{ data.thresholds.distinction_grade }} ({{ data.thresholds.distinction }}%).
+        </p>
+    </div>
+{% endif %}
+
+<div class="footer">
+    <table style="width: 100%;">
+        <tr>
+            <td>{{ schoolName }} · {{ term.name }}{% if yearGroup %} · {{ yearGroup.name }}{% endif %}</td>
+            <td class="right">Generated by Edus on {{ data.generated_at|date('j F Y H:i') }}</td>
+        </tr>
+    </table>
+</div>
+
+{# ══════════════════════ PAGE 3 — CLASSES ══════════════════════ #}
+<div class="page"></div>
+<table class="subhead">
+    <tr>
+        <td class="name">{{ schoolName }}</td>
+        <td class="right">Class analysis · {{ term.name }}{% if yearGroup %} · {{ yearGroup.name }}{% endif %}</td>
+    </tr>
+</table>
+<h1>Class performance</h1>
+<p class="period">A class average is the mean of its {{ learner.plural }}' overall percentages, weighted by the subjects each {{ learner }} actually sat.</p>
+
+{% if data.classes is empty %}
+    <div class="empty">No class results have been entered for this term.</div>
+{% else %}
+    <table class="grid">
+        <thead>
+            <tr>
+                <th class="num" style="width: 18pt;">#</th>
+                <th>Class</th>
+                <th>Year group</th>
+                <th class="num">{{ learner.pluralCapital }}</th>
+                <th class="num">Average</th>
+                <th class="num">Pass</th>
+                <th class="num">5+ credits</th>
+                <th class="num">Attendance</th>
+                <th class="num">vs school</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for class in data.classes %}
+                {% set diff = class.average is not null and s.average is not null ? class.average - s.average : null %}
+                <tr>
+                    <td class="num muted">{{ loop.index }}</td>
+                    <td class="subject">{{ class.name }}</td>
+                    <td class="muted">{{ class.year_group ?? '—' }}</td>
+                    <td class="num">{{ class.pupils }}</td>
+                    <td class="num"><strong>{{ class.average is null ? '—' : class.average ~ '%' }}</strong></td>
+                    <td class="num">{{ class.pass_rate is null ? '—' : class.pass_rate ~ '%' }}</td>
+                    <td class="num">{{ class.five_credit_rate is null ? 'n/a' : class.five_credit_rate ~ '%' }}</td>
+                    <td class="num">{{ class.attendance is null ? '—' : class.attendance ~ '%' }}</td>
+                    <td class="num {{ diff is not null ? (diff >= 0 ? 'pos' : 'neg') : 'muted' }}">
+                        {% if diff is not null %}{{ diff >= 0 ? '+' : '' }}{{ diff|round(1) }}{% else %}—{% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if data.year_groups is not empty and not yearGroup %}
+        <div class="section">
+            <h2>Year-group roll-up</h2>
+            <table class="grid">
+                <thead>
+                    <tr>
+                        <th>Year group</th>
+                        <th class="num">{{ learner.pluralCapital }}</th>
+                        <th class="num">Average</th>
+                        <th class="num">Pass</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for group in data.year_groups %}
+                        <tr>
+                            <td class="subject">{{ group.name }}</td>
+                            <td class="num">{{ group.pupils }}</td>
+                            <td class="num">{{ group.average is null ? '—' : group.average ~ '%' }}</td>
+                            <td class="num">{{ group.pass_rate is null ? '—' : group.pass_rate ~ '%' }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+{% endif %}
+
+<div class="section">
+    <h2>How to read this report</h2>
+    <p class="note">
+        A {{ learner }}'s overall percentage is the total obtained divided by the total obtainable across the
+        subjects that {{ learner }} actually sat. The school average is the mean of those percentages, not the
+        mean of subject averages. “5+ credits” counts {{ learner.plural }} with at least five credits including English
+        and Mathematics. Coverage compares the results entered with the results expected from the class
+        rolls; figures below 90% are marked provisional. Attendance is present (including late) divided by
+        registers taken.
+    </p>
+    <p class="note">
+        This is an aggregate report. It contains no individual {{ learner }}'s marks. Prepared
+        {{ data.generated_at|date('j F Y H:i') }}.
+    </p>
+</div>
+
+<div class="footer">
+    <table style="width: 100%;">
+        <tr>
+            <td style="width: 38%;">
+                {{ schoolName }} · {{ term.name }}{% if yearGroup %} · {{ yearGroup.name }}{% endif %}<br>
+                Generated {{ data.generated_at|date('j F Y H:i') }}
+            </td>
+            <td style="width: 40%; text-align: center; font-size: 7pt;">
+                {% if verification %}
+                    Scan to verify this report<br>
+                    Code: <strong>{{ verification.code }}</strong>
+                {% endif %}
+            </td>
+            <td style="width: 22%; text-align: right;">
+                {% if verification %}
+                    <img src="{{ verification.qr }}" style="width: 46pt; height: 46pt;"><br>
+                {% endif %}
+                Generated by Edus
+            </td>
+        </tr>
+    </table>
+</div>
+
+</body>
+</html>

@@ -3,13 +3,37 @@
 {% block title %}Global Settings | Edus Ng{% endblock %}
 
 {% block body %}
-<div class="max-w-7xl mx-auto mt-6 px-4 sm:px-6 lg:px-8">
+<div class="mt-6 px-4">
 
     {# 1. HEADER SECTION - Matches your Plan Index #}
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-6 gap-4">
         <div>
             <h1 class="text-2xl font-bold text-gray-900">⚙️ Global Settings</h1>
             <p class="text-gray-500 text-sm mt-1">Manage system-wide variables and notification costs.</p>
+        </div>
+    </div>
+
+    {# 1b. PLATFORM PAYMENTS SWITCH #}
+    <div class="mb-6 rounded-xl border {{ onlinePaymentsEnabled ? 'border-paid/40 bg-paid/5' : 'border-failed/40 bg-failed/5' }} p-4">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <p class="font-bold text-ink-900">
+                    Online payments are {{ onlinePaymentsEnabled ? 'ON' : 'OFF' }} platform-wide
+                </p>
+                <p class="mt-1 text-sm text-ink-600">
+                    A school still chooses <em>offline / online / both</em> for itself. This switch is the layer
+                    above it: turning it off hides every "Pay online" button on every school at once, and
+                    turning it back on restores each school's own setting. Nothing is deleted either way.
+                </p>
+            </div>
+            <form method="post" action="{{ path('landlord_settings_online_payments') }}" class="shrink-0">
+                <input type="hidden" name="_token" value="{{ csrf_token('platform_online_payments') }}">
+                <input type="hidden" name="enabled" value="{{ onlinePaymentsEnabled ? '0' : '1' }}">
+                <button class="min-h-[44px] w-full rounded-lg px-4 text-sm font-bold text-white sm:w-auto
+                               {{ onlinePaymentsEnabled ? 'bg-failed hover:bg-failed/90' : 'bg-paid hover:bg-paid/90' }}">
+                    {{ onlinePaymentsEnabled ? 'Turn online payments off' : 'Turn online payments on' }}
+                </button>
+            </form>
         </div>
     </div>
 

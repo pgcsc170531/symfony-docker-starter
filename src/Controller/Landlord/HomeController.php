@@ -2,6 +2,7 @@
 
 namespace App\Controller\Landlord;
 
+use App\Service\Pricing\PricingCatalog;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -25,6 +26,18 @@ class HomeController extends AbstractController
     public function features(): Response
     {
         return $this->render('landlord/home/features.html.twig');
+    }
+
+    /**
+     * Public price list. Figures come from PricingCatalog — never from the
+     * template — so the website cannot quote a price the invoice will not honour.
+     */
+    #[Route('/pricing', name: 'app_pricing', methods: ['GET'], host: '%app.base_domain%')]
+    public function pricing(PricingCatalog $catalog): Response
+    {
+        return $this->render('landlord/home/pricing.html.twig', [
+            'pricing' => $catalog->toArray(),
+        ]);
     }
 
     #[Route('/partners', name: 'app_partners', methods: ['GET'], host: '%app.base_domain%')]

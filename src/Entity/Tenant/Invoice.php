@@ -6,12 +6,22 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use App\Entity\Tenant\Classroom;
+use App\Repository\Tenant\InvoiceRepository;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: InvoiceRepository::class)]
 #[ORM\Table(name: 'invoice')]
 class Invoice
 {
+    // ── Document type ────────────────────────────────────────────────────
+    public const TYPE_ACADEMIC = 'ACADEMIC';
+    public const TYPE_STORE    = 'STORE';
+
+    // ── Settlement status ────────────────────────────────────────────────
+    public const STATUS_UNPAID  = 'UNPAID';
+    public const STATUS_PARTIAL = 'PARTIAL';
+    public const STATUS_PAID    = 'PAID';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -28,6 +38,9 @@ class Invoice
 
     #[ORM\Column(name: 'discount_applied', type: Types::DECIMAL, precision: 10, scale: 2)]
     private ?string $discountApplied = '0.00';
+
+    #[ORM\Column(name: 'discount_label', length: 120, nullable: true)]
+    private ?string $discountLabel = null;
 
     #[ORM\Column(name: 'status', length: 20)]
     private ?string $status = 'UNPAID'; // UNPAID, PARTIAL, PAID
@@ -92,7 +105,8 @@ class Invoice
         $this->createdAt = new \DateTimeImmutable();
         $this->items = new ArrayCollection();
         $this->payments = new ArrayCollection();
-        $this->invoiceNumber = strtoupper(uniqid('INV-'));
+        // No number here on purpose: `App\Service\Finance\InvoiceNumberGenerator`
+        // owns the series so every screen mints the same shape. See setInvoiceNumber().
     }
 
     // GETTERS & SETTERS
@@ -131,6 +145,43 @@ class Invoice
 
     public function getDiscountApplied(): ?string { return $this->discountApplied; }
     public function setDiscountApplied(string $discountApplied): static { $this->discountApplied = $discountApplied; return $this; }
+
+    /**
+     * The name of the rule that produced `discount_applied`, captured when the
+     * bill was priced.
+     *
+     * A parent must be able to read *why* the bill is lower — "Staff Child
+     * Scholarship (10%)" — not just see a smaller number than the items add up
+     * to. It is stored, not looked up, so renaming or retiring a rule later
+     * cannot rewrite what a family was told at the time.
+     */
+    public function getDiscountLabel(): ?string { return $this->discountLabel; }
+    public function setDiscountLabel(?string $discountLabel): static { $this->discountLabel = $discountLabel; return $this; }
+
+    /**
+     * What the school is actually entitled to collect.
+     *
+     * `total_amount` is stored NET of `discount_applied` — the invoice screen,
+     * the payment terminal and the parent portal all compare payments against
+     * this figure. Every invoice-creation path must subtract the discount
+     * before calling setTotalAmount(); see docs/payments/FEES-REPORTING-DESIGN.md §3.2.
+     */
+    public function getNetBillable(): float
+    {
+        return (float) $this->totalAmount;
+    }
+
+    /** The value of the invoice lines before the discount was applied. */
+    public function getGrossBilled(): float
+    {
+        return (float) $this->totalAmount + (float) $this->discountApplied;
+    }
+
+    /** Still owed on this invoice; never negative. */
+    public function getOutstanding(): float
+    {
+        return max(0.0, $this->getNetBillable() - (float) $this->paidAmount);
+    }
 
     public function getClassroom(): ?Classroom { return $this->classroom; }
     public function setClassroom(?Classroom $classroom): static { $this->classroom = $classroom; return $this; }

@@ -1,0 +1,53 @@
+{# Shared shell for every Edus email. Kept deliberately simple (inline CSS,
+   table layout) because email clients are not browsers — no Tailwind here. #}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ subject_line|default(school_name|default('Edus')) }}</title>
+</head>
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:28px 12px;">
+    <tr>
+        <td align="center">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08);">
+
+                {# ── School header ───────────────────────────────────── #}
+                <tr>
+                    <td style="background:{{ brand|default('#1e40af') }};padding:20px 26px;">
+                        <p style="margin:0;color:#ffffff;font-size:18px;font-weight:700;letter-spacing:-.01em;">
+                            {{ school_name|default('Edus') }}
+                        </p>
+                        {% if school_motto is defined and school_motto %}
+                            <p style="margin:4px 0 0;color:rgba(255,255,255,.85);font-size:12px;">{{ school_motto }}</p>
+                        {% endif %}
+                    </td>
+                </tr>
+
+                {# ── Body ────────────────────────────────────────────── #}
+                <tr>
+                    <td style="padding:28px 26px;color:#111827;font-size:15px;line-height:1.65;">
+                        {% block content %}{% endblock %}
+                    </td>
+                </tr>
+
+                {# ── Footer ──────────────────────────────────────────── #}
+                <tr>
+                    <td style="padding:16px 26px;background:#f9fafb;border-top:1px solid #e5e7eb;color:#6b7280;font-size:12px;line-height:1.6;">
+                        {% block footer %}
+                            {{ school_name|default('Edus') }}{% if school_address %} · {{ school_address }}{% endif %}{% if school_phone %} · {{ school_phone }}{% endif %}
+                            {% if school_email %}<br>{{ school_email }}{% endif %}
+                        {% endblock %}
+                    </td>
+                </tr>
+            </table>
+
+            <p style="margin:14px 0 0;color:#9ca3af;font-size:11px;">
+                Sent by {{ school_name|default('Edus') }} · powered by Edus, the school operating system.
+            </p>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

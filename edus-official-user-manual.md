@@ -66,7 +66,7 @@ From this screen, notice the Main Navigation Menu on the left side. This menu is
 ![Left Navigation Menu](/images/manual/screencapture-demo-edus-ng-academic-2026-04-21-14_30_47.png)
 The left-hand side menu is your permanent control center. It is divided into three main operational categories: Academic, Finance, and System.
 *   **ACADEMIC:** This section handles all student records and the school calendar (Sessions & Terms, School Calendar, New Admission, Bulk Import, Students, Promote Students, Classes).
-*   **FINANCE:** This section is the core of your EDUS portal, handling all money flowing in and out of the school (Fee Schedule, Academic Fees, Store Sales / Store Inventory / Store POS, Payment History, Scholarships, Expenses, Profit & Loss).
+*   **FINANCE:** This section is the core of your EDUS portal, handling all money flowing in and out of the school (Fee Schedule, Invoices, Payment Terminal, Discounts, Expenses, Income & Expenditure, Subscription).
 *   **SYSTEM:** This section manages your software account and administrative preferences (My Subscription, My Wallet, Settings).
 2\. Student Management: Migrating Your Records
 ----------------------------------------------
@@ -278,19 +278,19 @@ To log a routine school purchase or payment, navigate back to the main Finance >
 5.  **Additional Notes:** (Optional) Add any necessary context, such as the name of the vendor or the staff member who made the purchase.
 6.  Click Save Record.
 Once saved, the transaction will appear in the "Recent Transactions" list, and the "Total Spent" metric at the top right of the screen will automatically update.
-### 7.3 Generating Profit & Loss Reports
-![Profit and Loss Visual Dashboard](/images/manual/screencapture-gobarau-localhost-8082-finance-report-profit-loss-2026-04-21-21_29_53.png)
-The ultimate tool for the school proprietor is the Profit & Loss dashboard. This screen automatically calculates your net revenue without requiring any manual spreadsheet work. Navigate to Finance > Profit & Loss on the left-hand menu.
-*   **Custom Date Filtering:** Use the calendar fields at the top to filter the report. You can review the financial performance of a specific week, a single term, or the entire academic session. Click Filter Report to update the data.
-*   **Total Revenue:** This card automatically pulls all collected income and splits it between your Academic Fees (tuition, levies) and your Store Sales (books, uniforms), giving you clear insight into your revenue streams.
-*   **Total Expenses:** This pulls the sum of everything logged in the Expense Manager during that timeframe.
-*   **Net Profit / (Loss):** The system automatically subtracts your expenses from your revenue to display your exact profit.
-*   **Cash Flow Visualization:** A clear, color-coded bar chart provides a visual percentage breakdown of how much of your revenue was retained as profit versus how much was consumed by operational expenses.
+### 7.3 Generating Income & Expenditure Reports
+![Income and Expenditure dashboard](/images/manual/screencapture-gobarau-localhost-8082-finance-report-profit-loss-2026-04-21-21_29_53.png)
+The report a proprietor actually needs: Income & Expenditure. It adds up every naira that came in, subtracts the naira that went out, and tells you whether the school finished the period in surplus or in deficit — without a spreadsheet. Open Finance > Income & Expenditure on the left-hand menu.
+*   **Custom Date Filtering:** Use the calendar fields at the top to filter the report. You can review a specific week, a single term, or the entire academic session. Click Filter Report to update the data.
+*   **Total Income:** This card pulls all confirmed money received and splits it between Academic Fees (tuition, levies) and Store Sales (books, uniforms).
+*   **Total Expenses:** This pulls the sum of everything logged in the Expense Manager during the same dates.
+*   **Surplus / (Deficit):** Income minus expenditure, labelled for what it is. A positive figure is a surplus; a negative figure is a deficit the school has to cover.
+*   **Where the income went:** A colour-coded bar showing what share of income was kept as surplus and what share was consumed by running costs.
 8\. System Administration
 -------------------------
 The System section on your left-hand navigation menu is restricted to the Proprietor or top-level Administrator. Here, you manage your EDUS software license, fund your communication wallet, and customize your school's core identity.
 ### 8.1 My Subscription
-![Subscription Plans](/images/manual/screencapture-gobarau-localhost-8082-subscription-2026-04-21-21_38_33.png)
+The subscription screen shows the plans currently on offer and their prices. This manual does not reproduce them, because prices change — the screen is always the current source.
 To keep your EDUS portal active and seamlessly manage your student data, you must maintain an active subscription. Navigate to System > My Subscription.
 *   **Current Status:** The top banner displays your current active plan and its expiration date. If your trial or plan has expired, a red "EXPIRED" tag will alert you.
 *   **Choosing a Plan:** EDUS offers flexible plans based on your school's size:

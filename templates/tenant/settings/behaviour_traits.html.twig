@@ -1,0 +1,129 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Behaviour traits{% endblock %}
+
+{% block body %}
+<div class="px-4">
+
+    <div class="mb-5">
+        <h1 class="text-2xl font-bold text-ink-900">Behaviour traits</h1>
+        <p class="mt-1 text-sm text-ink-500">
+            The traits your form masters rate each term, and that parents see on the report card.
+            Rename them to match your school's own wording. Disabling a trait hides it from new
+            ratings — it never deletes what has already been recorded.
+        </p>
+    </div>
+
+    {# ── The scale ──────────────────────────────────────────────────── #}
+    <div class="mb-5 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-ink-200 bg-white p-3 text-xs text-ink-600">
+        <span class="font-semibold text-ink-800">Rating scale (fixed)</span>
+        {% for score, label in labels %}
+            <span class="inline-flex items-center gap-1">
+                <span class="inline-flex gap-0.5" aria-hidden="true">
+                    {% for n in 1..5 %}
+                        <span class="h-2 w-2 rounded-full {{ n <= score ? 'bg-accent-600' : 'bg-ink-200' }}"></span>
+                    {% endfor %}
+                </span>
+                {{ label }}
+            </span>
+        {% endfor %}
+    </div>
+
+    {# ── Add ────────────────────────────────────────────────────────── #}
+    <form method="post" action="{{ path('app_tenant_behaviour_trait_add') }}"
+          class="mb-6 rounded-xl border border-ink-200 bg-white p-4 shadow-card sm:p-5">
+        <input type="hidden" name="_token" value="{{ csrf_token('behaviour_trait') }}">
+        <h2 class="mb-3 text-sm font-bold uppercase tracking-wide text-ink-500">Add a trait</h2>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <label class="flex-1">
+                <span class="mb-1 block text-sm font-medium text-ink-700">Name</span>
+                <input type="text" name="label" required maxlength="120"
+                       placeholder="e.g. Respect for elders"
+                       class="w-full rounded-lg border border-ink-300 p-2.5 text-base text-ink-900 placeholder:text-ink-400 focus:border-accent-500 focus:ring-accent-500">
+            </label>
+            <label class="sm:w-56">
+                <span class="mb-1 block text-sm font-medium text-ink-700">Domain</span>
+                <select name="domain"
+                        class="w-full rounded-lg border border-ink-300 p-2.5 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500">
+                    {% for key, label in domains %}
+                        <option value="{{ key }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <button type="submit"
+                    class="min-h-[44px] w-full rounded-lg bg-accent-600 px-5 font-semibold text-white transition hover:bg-accent-700 sm:w-auto">
+                Add trait
+            </button>
+        </div>
+    </form>
+
+    {# ── The lists ──────────────────────────────────────────────────── #}
+    {% for domain, traits in grouped %}
+        <section class="mb-6">
+            <h2 class="mb-2 text-sm font-bold uppercase tracking-wide text-ink-500">
+                {{ domains[domain] }}
+                <span class="font-normal normal-case text-ink-400">· {{ traits|length }}</span>
+            </h2>
+
+            {% if traits is empty %}
+                <p class="rounded-xl border border-dashed border-ink-300 bg-white px-4 py-8 text-center text-sm text-ink-500">
+                    No traits in this domain yet. Add one above.
+                </p>
+            {% else %}
+                <ul class="divide-y divide-ink-100 overflow-hidden rounded-xl border border-ink-200 bg-white">
+                    {% for trait in traits %}
+                        <li class="p-3 sm:p-4">
+                            <form method="post" action="{{ path('app_tenant_behaviour_trait_update', {id: trait.id}) }}"
+                                  class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                <input type="hidden" name="_token" value="{{ csrf_token('behaviour_trait_' ~ trait.id) }}">
+
+                                <div class="min-w-0 flex-1">
+                                    <label class="sr-only" for="label-{{ trait.id }}">{{ trait.label }}</label>
+                                    <input type="text" id="label-{{ trait.id }}" name="label"
+                                           value="{{ trait.label }}" maxlength="120"
+                                           class="w-full rounded-lg border border-ink-300 p-2.5 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500">
+                                    <p class="mt-1 text-xs text-ink-400">
+                                        {% set used = usage[trait.id]|default(0) %}
+                                        {% if used > 0 %}
+                                            {{ used }} {{ used == 1 ? 'rating' : 'ratings' }} recorded
+                                        {% else %}
+                                            Not rated yet
+                                        {% endif %}
+                                    </p>
+                                </div>
+
+                                <label class="flex min-h-[44px] items-center gap-2 text-sm text-ink-700 sm:w-32">
+                                    <input type="checkbox" name="is_active" value="1" {{ trait.isActive ? 'checked' }}
+                                           class="h-5 w-5 rounded border-ink-300 text-accent-600 focus:ring-accent-500">
+                                    Active
+                                </label>
+
+                                <button type="submit"
+                                        class="min-h-[44px] rounded-lg border border-ink-300 px-4 text-sm font-semibold text-ink-700 transition hover:border-accent-400 hover:text-accent-700 sm:w-auto">
+                                    Save
+                                </button>
+                            </form>
+
+                            <div class="mt-2 flex items-center gap-2">
+                                {% for direction, meta in {'up': {'symbol': '↑', 'title': 'Move up'}, 'down': {'symbol': '↓', 'title': 'Move down'}} %}
+                                    <form method="post" action="{{ path('app_tenant_behaviour_trait_move', {id: trait.id, direction: direction}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('behaviour_trait_move_' ~ trait.id) }}">
+                                        <button type="submit" aria-label="{{ meta.title }}"
+                                                class="min-h-[44px] min-w-[44px] rounded-lg border border-ink-200 px-3 text-ink-600 transition hover:border-accent-400 hover:text-accent-700">
+                                            <span aria-hidden="true">{{ meta.symbol }}</span>
+                                        </button>
+                                    </form>
+                                {% endfor %}
+
+                                {% if not trait.isActive %}
+                                    <span class="rounded bg-ink-100 px-2 py-0.5 text-[11px] font-semibold text-ink-600">Hidden from new ratings</span>
+                                {% endif %}
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </section>
+    {% endfor %}
+</div>
+{% endblock %}

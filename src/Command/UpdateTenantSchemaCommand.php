@@ -39,6 +39,15 @@ class UpdateTenantSchemaCommand extends Command
         $io->title('🚀 Starting Tenant Schema Update...');
 
         // 1. Get all Schools
+        // The shared message queue lives in the landlord database, so a single
+        // worker serves every school. Prepare it before the tenant loop.
+        try {
+            $landlordConnection = $this->landlordEm->getConnection();
+            $this->ensureMessengerTable($landlordConnection, $io);
+        } catch (\Exception $e) {
+            $io->warning('Could not prepare the landlord message queue: ' . $e->getMessage());
+        }
+
         $schools = $this->landlordEm->getRepository(School::class)->findAll();
         $io->text(sprintf('Found %d schools to update.', count($schools)));
 
@@ -98,6 +107,7 @@ class UpdateTenantSchemaCommand extends Command
 
                 // 🆕 Phase 5 — Result approvals (Form Teacher / HOD / Year Group Master)
                 $this->ensurePhaseFiveTables($connection, $io);
+                $this->ensureMessengerTable($connection, $io);
 
                 $io->success('✅ Schema updated successfully.');
                 $connection->close();
@@ -188,6 +198,34 @@ class UpdateTenantSchemaCommand extends Command
         $this->ensureForeignKey($connection, 'classroom', 'year_group_id', 'year_group', 'id', $io);
 
         $io->text('  ✓ Exam collection foundation tables verified.');
+    }
+
+    /**
+     * The queue table, per tenant.
+     *
+     * Email is queued rather than sent inside a web request (a real relay takes
+     * seconds per message), and the doctrine transport will not create its own
+     * table here — each school database needs it before the first dispatch.
+     */
+    private function ensureMessengerTable(\Doctrine\DBAL\Connection $connection, SymfonyStyle $io): void
+    {
+        $connection->executeStatement(<<<'SQL'
+            CREATE TABLE IF NOT EXISTS messenger_messages (
+                id BIGINT AUTO_INCREMENT NOT NULL,
+                body LONGTEXT NOT NULL,
+                headers LONGTEXT NOT NULL,
+                queue_name VARCHAR(190) NOT NULL,
+                created_at DATETIME NOT NULL,
+                available_at DATETIME NOT NULL,
+                delivered_at DATETIME DEFAULT NULL,
+                INDEX IDX_75EA56E0FB7336F0 (queue_name),
+                INDEX IDX_75EA56E0E3BD61CE (available_at),
+                INDEX IDX_75EA56E016BA31DB (delivered_at),
+                PRIMARY KEY(id)
+            ) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
+            SQL);
+
+        $io->text('  ✓ messenger_messages ready.');
     }
 
     private function ensureColumn(Connection $connection, string $table, string $column, string $definition, SymfonyStyle $io): void

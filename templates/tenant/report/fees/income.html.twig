@@ -1,0 +1,129 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Income Statement{% endblock %}
+
+{% block body %}
+<div class="px-4 py-4 sm:px-6 sm:py-6">
+
+    <div class="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+            <a href="{{ path('app_tenant_report_fees') }}" class="inline-flex min-h-[44px] items-center text-xs font-semibold text-accent-700 hover:underline">&larr; Fee reports</a>
+            <h1 class="mt-1 text-2xl font-black tracking-tight text-ink-900 sm:text-3xl">Income statement</h1>
+            {% if term %}<p class="mt-1 text-sm text-ink-600">{{ term.session.name }} · {{ term.name }}</p>{% endif %}
+        </div>
+        <div class="flex flex-wrap items-end gap-2 no-print">
+            {% include 'tenant/report/fees/_term_filter.html.twig' with {
+                action: path('app_tenant_report_income'),
+                terms: terms,
+                term: term
+            } only %}
+            {% if term %}
+                <a href="{{ path('app_tenant_report_summary_pdf', {term: term.id}) }}?download=1"
+                   class="inline-flex min-h-[44px] items-center rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white hover:bg-accent-700">
+                    Download summary PDF
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if term is null or statement is null %}
+        <div class="rounded-xl border border-ink-200 bg-white p-8 text-center text-sm text-ink-600">
+            No term selected.
+        </div>
+    {% else %}
+
+        <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div class="rounded-xl border border-ink-200 bg-white p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">Expected</p>
+                <p class="money mt-1 text-xl font-black text-ink-900">₦{{ statement.academic.accrued|number_format(2) }}</p>
+            </div>
+            <div class="rounded-xl border border-ink-200 bg-white p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">Collected</p>
+                <p class="money mt-1 text-xl font-black text-paid">₦{{ statement.academic.collected|number_format(2) }}</p>
+            </div>
+            <div class="rounded-xl border border-ink-200 bg-white p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">Outstanding</p>
+                <p class="money mt-1 text-xl font-black text-failed">₦{{ statement.academic.outstanding|number_format(2) }}</p>
+            </div>
+            <div class="rounded-xl border border-ink-200 bg-white p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">Net (cash)</p>
+                <p class="money mt-1 text-xl font-black {{ statement.net.cash >= 0 ? 'text-paid' : 'text-failed' }}">
+                    ₦{{ statement.net.cash|number_format(2) }}
+                </p>
+            </div>
+        </div>
+
+        <div class="mt-4 overflow-x-auto rounded-xl border border-ink-200 bg-white">
+            <table class="min-w-[720px] w-full text-left text-sm">
+                <thead class="bg-ink-50 text-xs uppercase tracking-wide text-ink-500">
+                    <tr>
+                        <th class="px-4 py-3">Line</th>
+                        <th class="px-4 py-3 text-right">This term — accrual</th>
+                        <th class="px-4 py-3 text-right">This term — cash</th>
+                        <th class="px-4 py-3 text-right">Previous term — accrual</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-ink-100">
+                    <tr>
+                        <td class="px-4 py-3 font-medium text-ink-900">Academic fees</td>
+                        <td class="money px-4 py-3 text-right text-ink-900">₦{{ statement.academic.accrued|number_format(2) }}</td>
+                        <td class="money px-4 py-3 text-right text-ink-900">₦{{ statement.academic.collected|number_format(2) }}</td>
+                        <td class="money px-4 py-3 text-right text-ink-500">{{ previous ? '₦' ~ previous.academic.accrued|number_format(2) : '—' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-3 font-medium text-ink-900">Store sales</td>
+                        <td class="money px-4 py-3 text-right text-ink-900">₦{{ statement.store.accrued|number_format(2) }}</td>
+                        <td class="money px-4 py-3 text-right text-ink-900">₦{{ statement.store.collected|number_format(2) }}</td>
+                        <td class="money px-4 py-3 text-right text-ink-500">{{ previous ? '₦' ~ previous.store.accrued|number_format(2) : '—' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-3 font-medium text-ink-900">Application fees</td>
+                        <td class="money px-4 py-3 text-right text-ink-900">₦{{ (statement.applicationFees.paid + statement.applicationFees.waived)|number_format(2) }}</td>
+                        <td class="money px-4 py-3 text-right text-ink-900">₦{{ statement.applicationFees.paid|number_format(2) }}</td>
+                        <td class="money px-4 py-3 text-right text-ink-500">{{ previous ? '₦' ~ (previous.applicationFees.paid + previous.applicationFees.waived)|number_format(2) : '—' }}</td>
+                    </tr>
+                    <tr class="bg-ink-50 font-bold">
+                        <td class="px-4 py-3 text-ink-900">Total income</td>
+                        <td class="money px-4 py-3 text-right text-ink-900">₦{{ statement.income.accrual|number_format(2) }}</td>
+                        <td class="money px-4 py-3 text-right text-ink-900">₦{{ statement.income.cash|number_format(2) }}</td>
+                        <td class="money px-4 py-3 text-right text-ink-500">{{ previous ? '₦' ~ previous.income.accrual|number_format(2) : '—' }}</td>
+                    </tr>
+                    {% for category, amount in statement.expenses.byCategory %}
+                        <tr>
+                            <td class="px-4 py-3 text-ink-700">− {{ category }}</td>
+                            <td class="money px-4 py-3 text-right text-failed">₦{{ amount|number_format(2) }}</td>
+                            <td class="money px-4 py-3 text-right text-failed">₦{{ amount|number_format(2) }}</td>
+                            <td class="money px-4 py-3 text-right text-ink-500">
+                                {{ previous and previous.expenses.byCategory[category] is defined ? '₦' ~ previous.expenses.byCategory[category]|number_format(2) : '—' }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    <tr>
+                        <td class="px-4 py-3 font-semibold text-ink-900">Total expenses</td>
+                        <td class="money px-4 py-3 text-right font-semibold text-failed">₦{{ statement.expenses.total|number_format(2) }}</td>
+                        <td class="money px-4 py-3 text-right font-semibold text-failed">₦{{ statement.expenses.total|number_format(2) }}</td>
+                        <td class="money px-4 py-3 text-right text-ink-500">{{ previous ? '₦' ~ previous.expenses.total|number_format(2) : '—' }}</td>
+                    </tr>
+                    <tr class="bg-ink-50">
+                        <td class="px-4 py-3 font-black text-ink-900">Net surplus / (deficit)</td>
+                        <td class="money px-4 py-3 text-right font-black {{ statement.net.accrual >= 0 ? 'text-paid' : 'text-failed' }}">₦{{ statement.net.accrual|number_format(2) }}</td>
+                        <td class="money px-4 py-3 text-right font-black {{ statement.net.cash >= 0 ? 'text-paid' : 'text-failed' }}">₦{{ statement.net.cash|number_format(2) }}</td>
+                        <td class="money px-4 py-3 text-right font-black text-ink-500">{{ previous ? '₦' ~ previous.net.accrual|number_format(2) : '—' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-4 rounded-xl border border-ink-200 bg-white p-4 text-xs leading-relaxed text-ink-600">
+            <p><strong class="text-ink-900">Accrual</strong> is what the term was worth (billed, net of discounts).</p>
+            <p class="mt-1"><strong class="text-ink-900">Cash</strong> is what actually arrived (confirmed payments). The cash column is the one that pays salaries.</p>
+            {% if statement.periodMissing %}
+                <p class="mt-2 rounded-lg bg-pending/10 p-2 text-ink-700">This term has no start/end date, so expenses and application fees were not included.</p>
+            {% endif %}
+            {% if previousTerm %}
+                <p class="mt-1 text-ink-500">Previous comparison: {{ previousTerm.session.name }} · {{ previousTerm.name }}.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

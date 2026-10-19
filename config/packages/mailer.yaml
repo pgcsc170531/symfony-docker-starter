@@ -1,3 +1,7 @@
 framework:
     mailer:
         dsn: '%env(MAILER_DSN)%'
+        # Every message needs a real From address or providers (Brevo included)
+        # reject it. Set MAILER_FROM in the environment, e.g. "Edus <no-reply@edus.ng>".
+        envelope:
+            sender: '%env(MAILER_FROM)%'

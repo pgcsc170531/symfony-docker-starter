@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Report withheld</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    {% include '_design_tokens.html.twig' %}
+    <style>body { background-color: #F9FAFB; }</style>
+</head>
+<body class="flex min-h-screen flex-col">
+
+    <main class="flex flex-1 items-center justify-center px-4 py-10">
+        <div class="w-full max-w-md overflow-hidden rounded-xl border border-ink-200 bg-white shadow-card">
+            <div class="px-6 py-5 text-white" style="background-color: {{ school and school.primaryColor ? school.primaryColor : '#16223C' }}">
+                <p class="text-lg font-bold leading-tight">{{ school ? school.name : 'School' }}</p>
+                {% if term %}<p class="mt-0.5 text-xs text-white/80">{{ term.name }}{% if term.session %} · {{ term.session.name }}{% endif %}</p>{% endif %}
+            </div>
+
+            <div class="p-6 text-center">
+                <span class="mx-auto grid h-14 w-14 place-items-center rounded-full bg-pending/10 text-pending" aria-hidden="true">
+                    <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008M10.34 3.94l-8.4 14.55A1.5 1.5 0 003.24 21h17.52a1.5 1.5 0 001.3-2.51l-8.4-14.55a1.5 1.5 0 00-2.6 0z" />
+                    </svg>
+                </span>
+
+                <h1 class="mt-4 text-xl font-bold text-ink-900">Report available when fees are cleared</h1>
+                <p class="mt-2 text-sm leading-relaxed text-ink-600">
+                    The school has chosen to release report cards after outstanding fees are settled.
+                    {% if student %}{{ student.firstName }}'s{% endif %} report is ready and will appear here as soon as the balance is cleared.
+                </p>
+
+                {% if outstanding is not null and outstanding > 0 %}
+                    <p class="mt-4 rounded-lg border border-pending/30 bg-pending/10 p-3 text-sm text-ink-700">
+                        Outstanding balance:
+                        <strong class="tabular">₦{{ outstanding|number_format(2) }}</strong>
+                    </p>
+                {% endif %}
+
+                <p class="mt-4 text-xs text-ink-400">
+                    If you believe this is a mistake, contact the school office
+                    {% if school and school.phoneNumber %}on {{ school.phoneNumber }}{% endif %}.
+                </p>
+
+                {% if app.user %}
+                    <a href="{{ path('app_parent_fees_index') }}"
+                       class="mt-5 inline-flex min-h-[44px] items-center justify-center rounded-lg bg-accent-600 px-5 font-semibold text-white hover:bg-accent-700">
+                        Go to fees &amp; payments
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>

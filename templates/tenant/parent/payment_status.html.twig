@@ -1,0 +1,133 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Payment {{ intent.reference }}{% endblock %}
+
+{% block body %}
+<div class="max-w-lg mx-auto mt-8 px-4 pb-16">
+
+    <a href="{{ path('app_parent_finance_view', {id: student.id}) }}"
+       class="inline-flex items-center min-h-[44px] -my-2 text-sm font-bold text-gray-500 hover:text-gray-800 mb-3">&larr; Back to fees</a>
+
+    {% set paid = intent.status == 'paid' %}
+    {% set failed = intent.status == 'failed' %}
+
+    {# ── STATUS — the first thing a parent sees ─────────────────────────── #}
+    <div class="rounded-2xl border p-5 mb-4 text-center
+        {% if paid %}bg-green-50 border-green-200
+        {% elseif failed %}bg-red-50 border-red-200
+        {% else %}bg-amber-50 border-amber-200{% endif %}"
+        {% if not paid and not failed %}data-poll-url="{{ path('app_parent_payment_status_json', {reference: intent.reference}) }}"{% endif %}>
+
+        <div class="text-3xl mb-1">
+            {% if paid %}✅{% elseif failed %}⚠️{% else %}⏳{% endif %}
+        </div>
+
+        <h1 class="text-lg font-bold text-gray-800">
+            {% if paid %}Payment received
+            {% elseif failed %}Payment did not go through
+            {% else %}Waiting for your payment{% endif %}
+        </h1>
+
+        <p class="text-sm text-gray-600 mt-1">
+            {% if paid %}
+                Thank you — the invoice has been settled and a receipt is on its way to your email.
+            {% elseif failed %}
+                The payment was not completed, so nothing has been charged. You can try again below.
+            {% else %}
+                Finish the payment on the provider's page. This screen updates on its own — no need to refresh.
+            {% endif %}
+        </p>
+
+        {% if not paid and not failed %}
+            <div id="payment-spinner" class="mt-3 text-xs font-bold text-amber-700">Checking…</div>
+            {% if intent.authorizationUrl %}
+                <a href="{{ intent.authorizationUrl }}"
+                   class="mt-4 inline-flex w-full sm:w-auto items-center justify-center min-h-[44px] px-6 py-3 rounded-lg bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700">
+                    Return to the payment page
+                </a>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    {# ── WHAT WAS PAID FOR ──────────────────────────────────────────────── #}
+    <div class="bg-white rounded-2xl border border-gray-200 p-5 mb-4">
+        <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Summary</h2>
+
+        <dl class="space-y-3 text-sm">
+            <div class="flex items-start justify-between gap-4">
+                <dt class="text-gray-500">Child</dt>
+                <dd class="font-bold text-gray-800 text-right break-words min-w-0">{{ student.fullName }}</dd>
+            </div>
+            <div class="flex items-start justify-between gap-4">
+                <dt class="text-gray-500">Invoice</dt>
+                <dd class="font-mono font-bold text-gray-800 text-right break-all min-w-0">{{ invoice.invoiceNumber }}</dd>
+            </div>
+            <div class="flex items-start justify-between gap-4">
+                <dt class="text-gray-500">School fees</dt>
+                <dd class="font-bold text-gray-800 text-right">₦{{ intent.invoiceAmount|number_format(2) }}</dd>
+            </div>
+            <div class="flex items-start justify-between gap-4">
+                <dt class="text-gray-500">
+                    Payment processing
+                    <span class="block text-xs text-gray-400">capped at ₦500</span>
+                </dt>
+                <dd class="font-bold text-gray-800 text-right">₦{{ intent.processingFee|number_format(2) }}</dd>
+            </div>
+            <div class="flex items-start justify-between gap-4 pt-3 border-t border-gray-100">
+                <dt class="font-bold text-gray-800">Total charged</dt>
+                <dd class="text-xl font-bold text-indigo-700 text-right">₦{{ intent.amount|number_format(2) }}</dd>
+            </div>
+        </dl>
+
+        <p class="mt-4 text-xs text-gray-500 break-all">
+            Reference: <span class="font-mono">{{ intent.reference }}</span>
+        </p>
+    </div>
+
+    {% if failed %}
+        <form method="post" action="{{ path('app_parent_payment_start', {id: invoice.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('pay_start_' ~ invoice.id) }}">
+            <button type="submit"
+                    class="w-full min-h-[48px] rounded-lg bg-indigo-600 text-white font-bold hover:bg-indigo-700">
+                Try again
+            </button>
+        </form>
+    {% endif %}
+
+    <p class="mt-4 text-xs text-gray-400 text-center">
+        Your school receives the full ₦{{ intent.invoiceAmount|number_format(2) }}. The processing
+        charge covers the payment provider, so nothing is deducted from the school.
+    </p>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {% if intent.status == 'pending' %}
+        <script>
+            // Poll until the provider decides. A parent who pays and switches back
+            // should never have to wonder whether it worked.
+            (function () {
+                var box = document.querySelector('[data-poll-url]');
+                if (!box) return;
+                var url = box.getAttribute('data-poll-url');
+                var tries = 0;
+
+                var timer = setInterval(function () {
+                    tries++;
+                    fetch(url, { headers: { 'Accept': 'application/json' } })
+                        .then(function (r) { return r.ok ? r.json() : null; })
+                        .then(function (data) {
+                            if (!data) return;
+                            if (data.status !== 'pending') {
+                                clearInterval(timer);
+                                window.location.reload();
+                            }
+                        })
+                        .catch(function () { /* offline — the next tick retries */ });
+
+                    if (tries >= 60) clearInterval(timer);   // ~5 minutes, then stop
+                }, 5000);
+            })();
+        </script>
+    {% endif %}
+{% endblock %}

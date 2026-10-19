@@ -1,0 +1,69 @@
+{#
+    Shared marketing navigation — ONE nav for every public page.
+
+    Why a partial: the four marketing pages had drifted (home had 8 links and a
+    hamburger, features/partners had no mobile menu at all, pricing had its own
+    copy). A visitor must see the same five doors on every page, and the phone
+    must never be left without a way out of a page.
+
+    Deliberate choices (conversion pass, 19 Oct 2026):
+      • Five items only — Features · Pricing · User Manual · Sign In · CTA.
+        "What's New" and "Screenshots" are homepage anchors and live in the
+        footer; "Partners" is an agent programme, not a school's buying decision,
+        so it lives in the footer too.
+      • Every row is ≥44px tall, including the mobile drawer rows — a thumb is
+        not a mouse pointer.
+      • The mobile drawer carries the same CTA as the desktop bar, full width.
+
+    Usage:
+        {% include 'landlord/home/_nav.html.twig' with { current: 'features' } %}
+#}
+{% import '_brand.html.twig' as brand %}
+{% set current = current|default('') %}
+{% set trial_url = 'https://wa.me/2348032714999?text=' ~ ('Hello!%20I%20am%20a%20school%20proprietor%20interested%20in%20setting%20up%20a%20Free%20Trial%20for%20EDUS.') %}
+
+<div x-data="{ open: false }" class="sticky top-0 z-[60] border-b border-white/10 bg-ink-900/95 backdrop-blur-md">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between py-3.5">
+            <a href="{{ path('app_home') }}" class="flex min-h-[44px] items-center gap-2.5 text-white no-underline">
+                {{ brand.wordmark('lg', 'light') }}
+            </a>
+
+            <div class="flex items-center gap-2">
+                <nav class="hidden items-center gap-7 md:flex" aria-label="Main">
+                    <a href="{{ path('app_features') }}"
+                       class="text-sm font-medium {{ current == 'features' ? 'text-white' : 'text-ink-300 hover:text-white' }} transition">Features</a>
+                    <a href="{{ path('app_pricing') }}"
+                       class="text-sm font-medium {{ current == 'pricing' ? 'text-white' : 'text-ink-300 hover:text-white' }} transition">Pricing</a>
+                    <a href="{{ path('app_manual') }}"
+                       class="text-sm font-medium {{ current == 'manual' ? 'text-white' : 'text-ink-300 hover:text-white' }} transition">User Manual</a>
+                    <a href="{{ path('app_login') }}"
+                       class="text-sm font-semibold text-white hover:text-accent-300 transition">Sign In</a>
+                    <a href="{{ trial_url }}" target="_blank" rel="noopener noreferrer"
+                       class="inline-flex min-h-[44px] items-center rounded-lg bg-white px-5 text-sm font-semibold text-ink-900 hover:bg-ink-100 transition">
+                        Start Free Trial
+                    </a>
+                </nav>
+
+                <button type="button" @click="open = !open" :aria-expanded="open ? 'true' : 'false'"
+                        class="grid h-11 w-11 place-items-center rounded-lg text-white md:hidden"
+                        aria-label="Toggle menu" aria-controls="marketing-menu">
+                    <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div id="marketing-menu" x-show="open" x-cloak class="space-y-1 border-t border-white/10 pb-4 pt-3 md:hidden">
+            <a href="{{ path('app_features') }}" class="flex min-h-[44px] items-center px-2 text-sm text-ink-200 hover:text-white">Features</a>
+            <a href="{{ path('app_pricing') }}" class="flex min-h-[44px] items-center px-2 text-sm text-ink-200 hover:text-white">Pricing</a>
+            <a href="{{ path('app_manual') }}" class="flex min-h-[44px] items-center px-2 text-sm text-ink-200 hover:text-white">User Manual</a>
+            <a href="{{ path('app_login') }}" class="flex min-h-[44px] items-center px-2 text-sm font-semibold text-white">Sign In</a>
+            <a href="{{ trial_url }}" target="_blank" rel="noopener noreferrer"
+               class="mt-2 flex min-h-[48px] items-center justify-center rounded-lg bg-white px-5 text-center text-sm font-semibold text-ink-900">
+                Start Free Trial
+            </a>
+        </div>
+    </div>
+</div>

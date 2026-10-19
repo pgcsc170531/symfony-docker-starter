@@ -1,5 +1,9 @@
 twig:
     file_name_pattern: '*.twig'
+    globals:
+        # The word for a child on roll: "pupil" for a primary school, "student"
+        # for secondary / combined / tertiary. See App\Service\Wording\LearnerWording.
+        learner: '@App\Service\Wording\LearnerWording'
     # ADD THIS SECTION:
     form_themes:
         - 'form/tailwind_theme.html.twig'

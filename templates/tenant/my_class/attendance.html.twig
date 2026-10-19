@@ -1,0 +1,76 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Attendance — {{ classroom.name }}{% endblock %}
+
+{% block body %}
+<div class="px-4">
+
+    <a href="{{ path('app_tenant_my_class', {classroom: classroom.id}) }}"
+       class="mb-4 inline-flex min-h-[44px] items-center gap-1 text-sm font-semibold text-ink-600 hover:text-accent-700">
+        <span aria-hidden="true">&larr;</span> My Class
+    </a>
+
+    <div class="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div class="min-w-0">
+            <h1 class="text-2xl font-bold text-ink-900">Attendance</h1>
+            <p class="mt-1 text-sm text-ink-500">{{ classroom.name }} · {{ term.name }}</p>
+        </div>
+        <a href="{{ path('app_tenant_my_class_attendance_summary', {classroom: classroom.id}) }}"
+           class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-ink-300 px-4 text-sm font-semibold text-ink-700 transition hover:border-accent-400 hover:text-accent-700">
+            Term summary
+        </a>
+    </div>
+
+    {% if released %}
+        <p class="mb-4 rounded-lg border border-paid/30 bg-paid/10 p-3 text-sm text-ink-700">
+            Released term — days are read-only. An administrator can reopen one if needed.
+        </p>
+    {% endif %}
+
+    {% if days is empty %}
+        <div class="rounded-xl border border-dashed border-ink-300 bg-white px-6 py-12 text-center">
+            <p class="text-lg font-semibold text-ink-700">No school days in this term</p>
+            <p class="mx-auto mt-1 max-w-md text-sm text-ink-500">
+                Attendance needs the term's start and end dates. Set them in
+                Administration → Sessions &amp; Terms.
+            </p>
+        </div>
+    {% else %}
+        <ul class="divide-y divide-ink-100 overflow-hidden rounded-xl border border-ink-200 bg-white">
+            {% for day in days %}
+                <li>
+                    {% if day.taken or (not day.future and not released) %}
+                        <a href="{{ path('app_tenant_my_class_register', {date: day.key, classroom: classroom.id}) }}"
+                           class="flex min-h-[56px] items-center justify-between gap-3 px-4 py-3 transition hover:bg-ink-50">
+                    {% else %}
+                        <div class="flex min-h-[56px] items-center justify-between gap-3 px-4 py-3">
+                    {% endif %}
+
+                        <span class="min-w-0">
+                            <span class="block font-medium text-ink-900">{{ day.date|date('D j M Y') }}</span>
+                            <span class="block text-xs text-ink-500">
+                                {% if day.future %}Not yet — the day has not happened
+                                {% elseif day.taken %}Register taken
+                                {% else %}Not taken{% endif %}
+                            </span>
+                        </span>
+
+                        {% if day.future %}
+                            <span class="shrink-0 rounded bg-ink-100 px-2 py-0.5 text-[11px] font-semibold text-ink-500">Upcoming</span>
+                        {% elseif day.taken %}
+                            <span class="shrink-0 rounded bg-paid/10 px-2 py-0.5 text-[11px] font-semibold text-paid">Taken</span>
+                        {% else %}
+                            <span class="shrink-0 rounded bg-pending/10 px-2 py-0.5 text-[11px] font-semibold text-pending">Missing</span>
+                        {% endif %}
+
+                    {% if day.taken or (not day.future and not released) %}
+                        </a>
+                    {% else %}
+                        </div>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</div>
+{% endblock %}

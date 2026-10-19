@@ -25,3 +25,24 @@ edus_bundle.tar
 
 # === CUSTOM IGNORES ===
 compose.yaml
+
+# 🔐 Secrets — never commit. Set MAILER_DSN (Brevo), DATABASE_URL, APP_SECRET,
+# TERMII_API_KEY etc. as environment variables on the server / in .env.local.
+.env.local
+.env.*.local
+*.key
+*.pem
+smtpkey*
+*_key.txt
+smtpkey.text
+
+# Uploaded documents (payment proofs, application files) — real people's papers
+/public/uploads/**
+!/public/uploads/.gitkeep
+
+# Python helpers
+__pycache__/
+*.pyc
+
+# Editor / local machine state
+/.vscode/

@@ -1,0 +1,49 @@
+{# Reusable email building blocks. Inline CSS only, table layout — email clients
+   are not browsers. Kept mobile-first: one column, big numbers, 44px+ buttons. #}
+
+{% macro button(label, url, brand) %}
+    {% if label and url %}
+        <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 22px;">
+            <tr>
+                <td align="center" style="background:{{ brand|default('#1e40af') }};border-radius:8px;">
+                    <a href="{{ url }}"
+                       style="display:inline-block;padding:15px 32px;color:#ffffff;font-size:16px;font-weight:600;text-decoration:none;">
+                        {{ label }}
+                    </a>
+                </td>
+            </tr>
+        </table>
+    {% endif %}
+{% endmacro %}
+
+{% macro rows(items) %}
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;border-collapse:collapse;">
+        {% for label, value in items %}
+            {% if value is not null and value != '' %}
+                <tr>
+                    <td style="padding:9px 0;border-bottom:1px solid #e5e7eb;font-size:13px;color:#6b7280;vertical-align:top;">{{ label }}</td>
+                    <td style="padding:9px 0;border-bottom:1px solid #e5e7eb;font-size:14px;color:#111827;font-weight:600;text-align:right;word-break:break-word;">{{ value }}</td>
+                </tr>
+            {% endif %}
+        {% endfor %}
+    </table>
+{% endmacro %}
+
+{% macro amountBox(label, amount, brand) %}
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;">
+        <tr>
+            <td style="padding:16px 18px;">
+                <p style="margin:0;font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;">{{ label }}</p>
+                <p style="margin:6px 0 0;font-size:26px;line-height:1.2;font-weight:700;color:{{ brand|default('#1e40af') }};">{{ amount }}</p>
+            </td>
+        </tr>
+    </table>
+{% endmacro %}
+
+{% macro note(text) %}
+    {% if text %}
+        <p style="margin:0 0 18px;padding:12px 14px;background:#fffbeb;border-left:3px solid #f59e0b;font-size:13px;color:#78350f;line-height:1.6;">
+            {{ text }}
+        </p>
+    {% endif %}
+{% endmacro %}

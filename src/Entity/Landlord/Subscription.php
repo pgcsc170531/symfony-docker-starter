@@ -33,6 +33,10 @@ class Subscription
     #[ORM\Column(length: 20)]
     private ?string $status = 'ACTIVE'; // ACTIVE, EXPIRED, GRACE
 
+    /** Set by the daily reminder command; prevents two reminders in one day. */
+    #[ORM\Column(type: 'date_immutable', nullable: true)]
+    private ?\DateTimeImmutable $lastReminderSentAt = null;
+
     // --- LOGIC ---
     public function isValid(): bool
     {
@@ -63,4 +67,7 @@ class Subscription
 
     public function getStatus(): ?string { return $this->status; }
     public function setStatus(string $status): static { $this->status = $status; return $this; }
+
+    public function getLastReminderSentAt(): ?\DateTimeImmutable { return $this->lastReminderSentAt; }
+    public function setLastReminderSentAt(?\DateTimeImmutable $lastReminderSentAt): static { $this->lastReminderSentAt = $lastReminderSentAt; return $this; }
 }

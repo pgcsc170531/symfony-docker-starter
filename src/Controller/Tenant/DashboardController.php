@@ -88,6 +88,17 @@ class DashboardController extends AbstractController
         // 3. Total Students
         $studentCount = $em->getRepository(Student::class)->count([]);
 
+        /*
+            A school with no pupils has nothing to report on. An administrator is
+            sent to the setup wizard rather than shown a dashboard full of zeros;
+            the moment the first pupil exists, the dashboard is the right place
+            and this redirect stops happening. Staff who are not administrators
+            keep the dashboard — they cannot run onboarding anyway.
+        */
+        if ($studentCount === 0 && $this->isGranted('ROLE_ADMIN')) {
+            return $this->redirectToRoute('app_tenant_onboarding_identity');
+        }
+
         // 4. Total Outstanding Debt
         $qbTotal = $em->createQueryBuilder();
         $totalInvoiced = $qbTotal->select('SUM(i.totalAmount)')
@@ -117,11 +128,15 @@ class DashboardController extends AbstractController
             ->getQuery()->getResult();
             
         // 7. Total Unpaid Invoices
+        // The list is capped at the five largest balances for the preview table;
+        // the badge above it must report the real number of unpaid invoices, not
+        // the preview length — a school with 1,200 debtors read "Across 5 students".
         $debtors = $em->getRepository(Invoice::class)->findBy(
             ['status' => 'UNPAID'],
             ['totalAmount' => 'DESC'],
             5 
         );
+        $debtorCount = $em->getRepository(Invoice::class)->count(['status' => 'UNPAID']);
 
         $currentSession = $em->getRepository(Session::class)->findOneBy(['isActive' => true]);
         $currentTerm = $em->getRepository(Term::class)->findOneBy(['isActive' => true]);
@@ -135,10 +150,10 @@ class DashboardController extends AbstractController
             'cashInToday' => $cashInToday,
             'lowStock' => $lowStock,
             'debtors' => $debtors,
+            'debtorCount' => $debtorCount,
             
             'school_name' => $schoolName,
             'user_name'   => $userName,
-            'show_onboarding_modal' => ($studentCount === 0),
             'currentSession' => $currentSession,
             'currentTerm' => $currentTerm,
         ]);

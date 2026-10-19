@@ -1,0 +1,358 @@
+{% set summary = sheet.summary %}
+{% set school = sheet.school %}
+{% set maxCa = 0 %}
+{% for s in sheet.subjects %}{% set maxCa = max(maxCa, s.ca_count) %}{% endfor %}
+{% set hasDual = sheet.subjects|filter(s => s.exam_mode == 'dual')|length > 0 %}
+{% set att = sheet.attendance %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ sheet.student.fullName }} — {{ term.name }} report</title>
+<style>
+    @page { size: A4 portrait; margin: 6mm 8mm 4mm 8mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "DejaVu Sans", sans-serif; font-size: 11pt; color: #111827; }
+    .header { width: 100%; border-collapse: collapse; background: {{ school and school.primaryColor ? school.primaryColor : '#16223C' }}; color: #ffffff; }
+    .header td { padding: 2.5pt 8pt; vertical-align: middle; }
+    .header .logo { width: 42pt; height: 42pt; text-align: center; vertical-align: middle; }
+    .header .logo img { max-width: 40pt; max-height: 40pt; }
+    .header .logo .initial { display: block; font-family: "DejaVu Serif", serif; font-size: 20pt; font-weight: bold; color: #ffffff; line-height: 40pt; }
+    .school-name { font-family: "DejaVu Serif", serif; font-size: 16pt; font-weight: bold; line-height: 1.15; }
+    .school-meta { font-size: 8.6pt; color: #E5E7EB; margin-top: 2pt; }
+    .report-type { text-align: right; font-size: 9pt; text-transform: uppercase; letter-spacing: 0.6pt; color: #E5E7EB; }
+    .report-type strong { display: block; font-size: 12pt; color: #ffffff; letter-spacing: 0.4pt; }
+    .identity { width: 100%; border-collapse: collapse; margin-top: 0; }
+    .identity td { border: 0.6pt solid #D1D5DB; padding: 2pt 5pt; vertical-align: top; }
+    .label { display: block; font-size: 7.2pt; text-transform: uppercase; letter-spacing: 0.4pt; color: #4B5563; }
+    .value { font-size: 9.8pt; font-weight: bold; color: #111827; }
+    .headline { width: 100%; border-collapse: collapse; margin-top: 7pt; }
+    .headline td { border: 0.6pt solid #D1D5DB; text-align: center; padding: 3pt 3pt; }
+    .headline .big { display: block; font-size: 12pt; font-weight: bold; }
+    h2 { font-size: 9.5pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.6pt; color: #374151; margin: 0; padding-top: 1.5pt; padding-bottom: 1pt; }
+    table.grid { width: 100%; border-collapse: collapse; }
+    table.grid th { background: #F3F4F6; border: 0.6pt solid #D1D5DB; padding: 2.2pt 2.6pt; font-size: 8.4pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.2pt; color: #1F2937; text-align: left; }
+    table.grid td { border: 0.6pt solid #E5E7EB; padding: 0.8pt 2.6pt; font-size: 9.8pt; }
+    table.grid td.num, table.grid th.num { text-align: right; }
+    table.grid td.subject { font-weight: bold; }
+    table.grid tbody tr:nth-child(even) td { background: #FAFAFA; }
+    .muted { color: #4B5563; }
+    .summary { width: 100%; border-collapse: collapse; margin-top: 5pt; }
+    .summary td { border: 0.6pt solid #D1D5DB; padding: 2pt 5pt; }
+    .two-col { width: 100%; border-collapse: collapse; }
+    .two-col > tbody > tr > td { width: 50%; vertical-align: top; padding-right: 8pt; }
+    table.plain { width: 100%; border-collapse: collapse; }
+    table.plain td { padding: 0.6pt 0; font-size: 9.6pt; vertical-align: middle; }
+    table.plain td.dots { text-align: right; white-space: nowrap; letter-spacing: 1.2pt; }
+    .dot-on { color: #2563EB; }
+    .dot-off { color: #D1D5DB; }
+    .remark { border: 0.6pt solid #D1D5DB; padding: 1.5pt 6pt; margin-top: 1pt; }
+    .remark-text { font-size: 9pt; line-height: 1.2; }
+    .signature { margin-top: 6pt; }
+    .sign-line { border-top: 0.5pt solid #9CA3AF; width: 55%; padding-top: 1.2pt; font-size: 8.2pt; color: #374151; margin-top: 1pt; }
+    .warning { border: 0.7pt solid #D97706; background: #FFFBEB; color: #92400E; padding: 3pt 6pt; margin-top: 5pt; font-size: 9.2pt; }
+    .grading { font-size: 8.6pt; color: #374151; border-top: 0.6pt solid #D1D5DB; padding-top: 2.2pt; }
+    .footer { font-size: 7.8pt; color: #6B7280; border-top: 0.5pt solid #E5E7EB; padding-top: 1pt; }
+    .footer .right { text-align: right; }
+    .page-number:after { content: counter(page); }
+</style>
+</head>
+<body>
+
+<table class="header">
+    <tr>
+        <td style="width: 50pt;">
+            <div class="logo">
+                {% if logo %}<img src="{{ logo }}" alt="">{% else %}<span class="initial">{{ (school ? school.name : 'School')|slice(0, 1)|upper }}</span>{% endif %}
+            </div>
+        </td>
+        <td>
+            <div class="school-name">{{ school ? school.name : 'School' }}</div>
+            {% if school and school.motto %}<div class="school-meta">{{ school.motto }}</div>{% endif %}
+            {% if school and (school.address or school.phoneNumber) %}
+                <div class="school-meta">
+                    {{ school.address }}{% if school.address and school.phoneNumber %} · {% endif %}{{ school.phoneNumber }}
+                </div>
+            {% endif %}
+        </td>
+        <td class="report-type" style="width: 120pt;">
+            <strong>Terminal Report</strong>
+            {{ term.name }}
+        </td>
+    </tr>
+</table>
+
+<table class="identity">
+    <tr>
+        <td style="width: 40%;">
+            <span class="label">Name</span>
+            <span class="value">{{ sheet.student.fullName }}</span>
+        </td>
+        <td style="width: 28%;">
+            <span class="label">Admission no</span>
+            <span class="value">{{ sheet.student.admissionNumber ?? '—' }}</span>
+        </td>
+        <td style="width: 32%;">
+            <span class="label">Class</span>
+            <span class="value">{{ sheet.classroom.name }}</span>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <span class="label">Session</span>
+            <span class="value">{{ term.session ? term.session.name : '—' }}</span>
+        </td>
+        <td>
+            <span class="label">Term</span>
+            <span class="value">{{ term.name }}</span>
+        </td>
+        <td>
+            <span class="label">{{ learner.pluralCapital }} in class</span>
+            <span class="value">{{ summary.of }}</span>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <span class="label">Term ends</span>
+            <span class="value">{{ term.endDate ? term.endDate|date('j F Y') : '—' }}</span>
+        </td>
+        <td colspan="2">
+            <span class="label">Next term begins</span>
+            <span class="value">{{ sheet.next_term and sheet.next_term.start ? sheet.next_term.start|date('j F Y') : 'To be announced' }}</span>
+        </td>
+    </tr>
+</table>
+
+<table class="headline">
+    <tr>
+        <td>
+            <span class="label">Average</span>
+            <span class="big">{{ summary.percentage is null ? '—' : summary.percentage ~ '%' }}</span>
+        </td>
+        <td>
+            <span class="label">Position in class</span>
+            <span class="big">{{ summary.position ? summary.position ~ ' of ' ~ summary.of : '—' }}</span>
+        </td>
+        <td>
+            <span class="label">Grade</span>
+            <span class="big">{{ summary.grade ?? '—' }}</span>
+        </td>
+        <td>
+            <span class="label">Total obtained</span>
+            <span class="big">{{ summary.obtained }} / {{ summary.obtainable }}</span>
+        </td>
+    </tr>
+</table>
+
+{% if summary.subjects_entered < summary.subjects_total %}
+    <div class="warning">
+        <strong>Term in progress.</strong>
+        Figures are based on {{ summary.subjects_entered }} of {{ summary.subjects_total }} subjects.
+        This card becomes final when every subject has been entered and approved.
+    </div>
+{% endif %}
+
+<h2>Subjects</h2>
+{% if sheet.subjects is empty %}
+    <p class="muted">No subjects are set up for {{ sheet.classroom.name }}.</p>
+{% else %}
+<table class="grid">
+    <thead>
+        <tr>
+            <th>Subject</th>
+            {% for n in 1..maxCa %}<th class="num">CA{{ n }}</th>{% endfor %}
+            <th class="num">Exam</th>
+            {% if hasDual %}<th class="num">Prac.</th>{% endif %}
+            <th class="num">Total</th>
+            <th class="num">High</th>
+            <th class="num">Average</th>
+            <th class="num">Position</th>
+            <th class="num">Grade</th>
+            <th>Remark</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for s in sheet.subjects %}
+            <tr>
+                <td class="subject">{{ s.name }}</td>
+                {% for n in 1..maxCa %}
+                    <td class="num muted">{{ n <= s.ca_count ? (s.components['ca' ~ n]|default('—')) : '' }}</td>
+                {% endfor %}
+                <td class="num muted">{{ s.components.theory|default('—') }}</td>
+                {% if hasDual %}<td class="num muted">{{ s.components.practical|default('—') }}</td>{% endif %}
+                <td class="num"><strong>{{ s.total is null ? '—' : s.total }}</strong></td>
+                <td class="num muted">{{ s.class_highest ?? '—' }}</td>
+                <td class="num muted">{{ s.class_average ?? '—' }}</td>
+                <td class="num"><strong>{{ s.position ? s.position ~ '/' ~ s.position_of : '—' }}</strong></td>
+                <td class="num"><strong>{{ s.grade ?? '—' }}</strong></td>
+                <td class="muted">{{ s.remark ?? '' }}</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<table class="summary">
+    <tr>
+        <td><span class="label">Class average</span><strong>{{ summary.class_average is null ? '—' : summary.class_average ~ '%' }}</strong></td>
+        <td><span class="label">Highest in class</span><strong>{{ summary.class_highest is null ? '—' : summary.class_highest ~ '%' }}</strong></td>
+        <td><span class="label">Lowest in class</span><strong>{{ summary.class_lowest is null ? '—' : summary.class_lowest ~ '%' }}</strong></td>
+        <td><span class="label">Subjects entered</span><strong>{{ summary.subjects_entered }} of {{ summary.subjects_total }}</strong></td>
+    </tr>
+</table>
+{% endif %}
+
+<h2>Attendance</h2>
+{% if att.opened == 0 %}
+    <p class="muted">No register has been recorded for this term.</p>
+{% else %}
+    <table class="plain">
+        <tr>
+            <td class="muted" style="width: 14%; white-space: nowrap;">School opened</td><td style="width: 6%;"><strong>{{ att.opened }}</strong></td>
+            <td class="muted" style="width: 14%; padding-left: 12pt; white-space: nowrap;">Present</td><td style="width: 6%;"><strong>{{ att.present + att.late }}</strong></td>
+            <td class="muted" style="width: 14%; padding-left: 12pt; white-space: nowrap;">Absent{% if att.excused > 0 %} ({{ att.excused }} excused){% endif %}</td><td style="width: 6%;"><strong>{{ att.absent }}</strong></td>
+            <td class="muted" style="width: 14%; padding-left: 12pt; white-space: nowrap;">Attendance</td><td style="width: 6%;"><strong>{{ att.rate is null ? '—' : att.rate ~ '%' }}</strong></td>
+        </tr>
+    </table>
+{% endif %}
+
+<h2>Behaviour</h2>
+{% set affective = sheet.behaviour.AFFECTIVE %}
+{% set psychomotor = sheet.behaviour.PSYCHOMOTOR %}
+{% set behaviourRows = max(affective|length, psychomotor|length, 1) %}
+<table class="plain" style="width: 100%; border-collapse: collapse;">
+    {% for i in 0..(behaviourRows - 1) %}
+        {% set a = affective[i]|default(null) %}
+        {% set p = psychomotor[i]|default(null) %}
+        <tr>
+            <td style="width: 38%;">{{ a ? a.label : (i == 0 and affective is empty ? 'Not rated.' : '') }}</td>
+            <td class="dots" style="width: 10%;">
+                {% if a %}{% for n in 1..5 %}<span class="{{ n <= a.score ? 'dot-on' : 'dot-off' }}">{{ n <= a.score ? '●' : '○' }}</span>{% endfor %}{% endif %}
+            </td>
+            <td style="width: 38%; padding-left: 12pt;">{{ p ? p.label : (i == 0 and psychomotor is empty ? 'Not rated.' : '') }}</td>
+            <td class="dots" style="width: 10%;">
+                {% if p %}{% for n in 1..5 %}<span class="{{ n <= p.score ? 'dot-on' : 'dot-off' }}">{{ n <= p.score ? '●' : '○' }}</span>{% endfor %}{% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+</table>
+
+{# The printed card carries ONE remark only — the form teacher's. HOD and
+   principal remarks are an online-view extension and deliberately excluded
+   from the PDF so the legal document stays one page. #}
+<h2>Form teacher's remark</h2>
+<div class="remark">
+    {% if sheet.remark and sheet.remark.text %}
+        {# Two lines maximum. Older remarks may predate the 180-character limit,
+           so the print is the last line of defence. #}
+        <div class="remark-text">{{ sheet.remark.text|length > 180 ? sheet.remark.text|slice(0, 177) ~ '…' : sheet.remark.text }}</div>
+    {% else %}
+        <div class="remark-text muted">No remark recorded for this term.</div>
+    {% endif %}
+</div>
+<div class="sign-line">
+    <strong>{{ sheet.form_teacher ? sheet.form_teacher.name : 'Form Teacher' }}</strong>
+    {% if sheet.form_teacher and sheet.form_teacher.title %}, <span class="muted">{{ sheet.form_teacher.title }}</span>{% endif %}
+    · <span class="muted">{{ sheet.remark and sheet.remark.updated_at ? sheet.remark.updated_at|date('j F Y') : (term.endDate ? term.endDate|date('j F Y') : '') }}</span>
+</div>
+
+{% if sheet.grading is not empty %}
+    <div class="grading">
+        <strong>Grading:</strong>
+        {% for band in sheet.grading %}
+            {{ band.grade }} {{ band.min|round }}–{{ band.max|round }}{% if not loop.last %} · {% endif %}
+        {% endfor %}
+    </div>
+{% endif %}
+
+{% if sheet.trend and sheet.trend.has_history %}
+    <div style="page-break-before: always;"></div>
+
+    <table class="header">
+        <tr>
+            <td>
+                <div class="school-name">{{ school ? school.name : 'School' }}</div>
+                <div class="school-meta">Performance across the session</div>
+            </td>
+            <td class="report-type" style="width: 120pt;">
+                <strong>{{ sheet.trend.session ? sheet.trend.session.name : '' }}</strong>
+                {{ sheet.student.fullName }}
+            </td>
+        </tr>
+    </table>
+
+    <h2>Subject performance by term</h2>
+    <table class="grid">
+        <thead>
+            <tr>
+                <th>Subject</th>
+                {% for termPoint in sheet.trend.terms %}
+                    <th class="num">{{ termPoint.name }}</th>
+                {% endfor %}
+                <th class="num">Change</th>
+                <th class="num">Cumulative</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for subject in sheet.trend.subjects %}
+                <tr>
+                    <td>{{ subject.name }}</td>
+                    {% for termPoint in sheet.trend.terms %}
+                        {% set point = subject.points[termPoint.id] ?? null %}
+                        <td class="num">{{ point and point.percentage is not null ? point.percentage ~ '%' : '—' }}</td>
+                    {% endfor %}
+                    <td class="num">
+                        {% if subject.change is same as(null) %}—
+                        {% elseif subject.change > 0 %}▲ +{{ subject.change }}
+                        {% elseif subject.change < 0 %}▼ {{ subject.change }}
+                        {% else %}● 0{% endif %}
+                    </td>
+                    <td class="num">
+                        {% set values = [] %}
+                        {% for termPoint in sheet.trend.terms %}
+                            {% set point = subject.points[termPoint.id] ?? null %}
+                            {% if point and point.percentage is not null %}{% set values = values|merge([point.percentage]) %}{% endif %}
+                        {% endfor %}
+                        {{ values is empty ? '—' : ((values|reduce((carry, v) => carry + v)) / (values|length))|round(1) ~ '%' }}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <table class="summary" style="margin-top: 8pt;">
+        <tr>
+            <td><span class="label">Session average</span><strong>{{ sheet.trend.session_average is null ? '—' : sheet.trend.session_average ~ '%' }}</strong></td>
+            <td><span class="label">Cumulative obtained</span><strong>{{ sheet.trend.cumulative.obtained }} / {{ sheet.trend.cumulative.obtainable }}</strong></td>
+            <td><span class="label">Cumulative average</span><strong>{{ sheet.trend.cumulative.percentage is null ? '—' : sheet.trend.cumulative.percentage ~ '%' }}</strong></td>
+            <td><span class="label">Cumulative grade</span><strong>{{ sheet.trend.cumulative.grade ?? '—' }}</strong></td>
+        </tr>
+    </table>
+
+    <div class="warning" style="margin-top: 10pt;">
+        A change is this term compared with the previous term that has a result.
+        A blank term means no result was entered, not zero.
+    </div>
+{% endif %}
+
+<div class="footer">
+    <table style="width: 100%;">
+        <tr>
+            <td style="width: 38%;">{{ school ? school.name : '' }} · {{ term.name }}{% if term.session %} {{ term.session.name }}{% endif %}</td>
+            <td style="width: 40%; text-align: center; font-size: 7pt;">
+                {% if verification %}
+                    Verify: {{ verification.url }}<br>
+                    Code: <strong>{{ verification.code }}</strong>
+                {% endif %}
+            </td>
+            <td style="width: 22%; text-align: right;">
+                {% if verification %}
+                    <img src="{{ verification.qr }}" style="width: 36pt; height: 36pt;"><br>
+                {% endif %}
+                Generated by Edus
+            </td>
+        </tr>
+    </table>
+</div>
+
+</body>
+</html>

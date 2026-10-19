@@ -1,0 +1,202 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Report card — {{ term.name }}{% endblock %}
+
+{% block body %}
+<div class="px-4">
+
+    {% for sheet in sheets %}
+        {% if sheet.empty|default(false) %}
+            <div class="mb-6 rounded-xl border border-dashed border-ink-300 bg-white px-6 py-12 text-center">
+                <p class="text-lg font-semibold text-ink-700">No class on record</p>
+                <p class="mx-auto mt-1 max-w-md text-sm text-ink-500">
+                    {{ sheet.student.fullName }} is not enrolled in a class for {{ term.name }},
+                    so there is no report card for this term.
+                </p>
+            </div>
+        {% elseif sheet.not_released|default(false) %}
+            {# The approval chain has not finished. Showing a card here would publish
+               marks an HOD and the year group master have not signed off. #}
+            <div class="mb-6 rounded-xl border border-ink-200 bg-white p-5 shadow-card">
+                <p class="text-base font-bold text-ink-900">Results not released yet</p>
+                <p class="mt-1 text-sm text-ink-600">
+                    {{ sheet.student.firstName }}'s {{ term.name }} report card is still going through
+                    the school's approval. It appears here once the year group's results are released.
+                </p>
+            </div>
+        {% elseif sheet.withheld|default(false) %}
+            <div class="mb-6 rounded-xl border border-pending/30 bg-white p-5 shadow-card">
+                <p class="text-base font-bold text-ink-900">Report available when fees are cleared</p>
+                <p class="mt-1 text-sm text-ink-600">
+                    {{ sheet.student.firstName }}'s {{ term.name }} report is ready. The school releases
+                    it once the outstanding balance is settled.
+                </p>
+                <p class="mt-3 rounded-lg border border-pending/30 bg-pending/10 p-3 text-sm text-ink-700">
+                    Outstanding balance: <strong class="tabular">₦{{ sheet.outstanding|number_format(2) }}</strong>
+                </p>
+                <a href="{{ path('app_parent_fees_index') }}"
+                   class="mt-4 inline-flex min-h-[44px] items-center justify-center rounded-lg bg-accent-600 px-5 font-semibold text-white hover:bg-accent-700">
+                    Go to fees &amp; payments
+                </a>
+            </div>
+        {% else %}
+
+        {% set studentId = sheet.student.id %}
+        {% set shareUrl = share_urls[studentId]|default(null) %}
+        {% set shareNotice = share_notices[studentId]|default(null) %}
+        {% set emailNotice = email_notices[studentId]|default(null) %}
+        {% set studentShares = shares[studentId]|default([]) %}
+
+        {# ══ Actions — the parent's next move ═══════════════════════ #}
+        <div class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <a href="{{ path('app_tenant_report_student_pdf', {term: term.id, student: studentId}) }}"
+               class="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-accent-600 px-5 font-semibold text-white transition hover:bg-accent-700 sm:w-auto">
+                Download PDF
+            </a>
+
+            <form method="post" action="{{ path('app_tenant_report_student_email') }}" class="sm:w-auto">
+                <input type="hidden" name="_token" value="{{ csrf_token('report_email') }}">
+                <input type="hidden" name="student" value="{{ studentId }}">
+                <input type="hidden" name="term" value="{{ term.id }}">
+                <button type="submit"
+                        class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-ink-300 bg-white px-5 font-semibold text-ink-700 transition hover:border-accent-400 hover:text-accent-700 sm:w-auto">
+                    Email to me
+                </button>
+            </form>
+
+            <a href="{{ path('app_tenant_report_student_transcript', {term: term.id, student: studentId}) }}"
+               class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-ink-300 bg-white px-5 font-semibold text-ink-700 transition hover:border-accent-400 hover:text-accent-700 sm:w-auto">
+                Transcript
+            </a>
+
+            {% if sheet.released %}
+                <form method="post" action="{{ path('app_tenant_report_student_share') }}" class="sm:w-auto">
+                    <input type="hidden" name="_token" value="{{ csrf_token('report_share') }}">
+                    <input type="hidden" name="student" value="{{ studentId }}">
+                    <input type="hidden" name="term" value="{{ term.id }}">
+                    <button type="submit"
+                            class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-ink-300 bg-white px-5 font-semibold text-ink-700 transition hover:border-accent-400 hover:text-accent-700 sm:w-auto">
+                        Share as link
+                    </button>
+                </form>
+            {% else %}
+                <span class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-ink-200 bg-ink-50 px-5 text-sm text-ink-500 sm:w-auto">
+                    Sharing opens when the term is final-approved
+                </span>
+            {% endif %}
+        </div>
+
+        {% if shareNotice %}
+            <p class="mb-3 rounded-lg border border-paid/30 bg-paid/10 p-3 text-sm text-ink-700">{{ shareNotice }}</p>
+        {% endif %}
+        {% if emailNotice %}
+            <p class="mb-3 rounded-lg border border-accent-200 bg-accent-50 p-3 text-sm text-ink-700">{{ emailNotice }}</p>
+        {% endif %}
+
+        {# ══ Share panel — shown once, immediately after creating the link ══ #}
+        {% if shareUrl %}
+            {% set url = shareUrl %}
+            {% set waText = 'Dear parent, ' ~ sheet.student.firstName ~ "'s " ~ term.name ~ ' report is ready.'
+                ~ (sheet.summary.position ? ' Position: ' ~ sheet.summary.position ~ ' of ' ~ sheet.summary.of ~ '.')
+                ~ (sheet.summary.percentage is not null ? ' Average: ' ~ sheet.summary.percentage ~ '%.')
+                ~ ' ' ~ url %}
+            <div class="mb-4 rounded-xl border border-accent-200 bg-accent-50 p-4">
+                <p class="text-sm font-semibold text-accent-800">Your share link is ready</p>
+                <p class="mt-1 text-xs text-ink-600">
+                    Anyone with this link can view {{ sheet.student.firstName }}'s {{ term.name }} report
+                    for 30 days. You can revoke it at any time below.
+                </p>
+                <p class="mt-2 break-all rounded-lg border border-accent-200 bg-white p-2.5 text-xs text-ink-700">{{ url }}</p>
+
+                <div class="mt-3 flex flex-col gap-2 sm:flex-row">
+                    <a href="https://wa.me/?text={{ waText|url_encode }}" target="_blank" rel="noopener"
+                       class="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-paid px-5 font-semibold text-white transition hover:opacity-90 sm:flex-1">
+                        Send on WhatsApp
+                    </a>
+                    <button type="button"
+                            data-share-url="{{ url }}"
+                            data-share-title="{{ sheet.student.fullName }} — {{ term.name }} report"
+                            data-share-text="Dear parent, {{ sheet.student.firstName }}'s {{ term.name }} report is ready."
+                            onclick="edusShareReport(this)"
+                            class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-ink-300 bg-white px-5 text-sm font-semibold text-ink-700 transition hover:border-accent-400 hover:text-accent-700 sm:flex-1">
+                        Share as file / link
+                    </button>
+                    <button type="button"
+                            data-copy="{{ url }}"
+                            onclick="edusCopyShare(this)"
+                            class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-ink-300 bg-white px-5 text-sm font-semibold text-ink-700 transition hover:border-accent-400 hover:text-accent-700 sm:flex-1">
+                        Copy link
+                    </button>
+                </div>
+                <p class="mt-2 text-[11px] text-ink-500">
+                    "Share as file / link" opens your phone's share sheet, where WhatsApp appears.
+                    A browser cannot attach a PDF directly to WhatsApp; the link is the reliable route.
+                </p>
+            </div>
+        {% endif %}
+
+        {% include 'tenant/reports/_document.html.twig' with {sheet: sheet, term: term} %}
+
+        {# ══ Active links ═══════════════════════════════════════════ #}
+        {% if studentShares is not empty %}
+            <div class="mb-6 rounded-xl border border-ink-200 bg-white p-4">
+                <h2 class="text-xs font-bold uppercase tracking-wide text-ink-500">Active share links</h2>
+                <ul class="mt-2 divide-y divide-ink-100">
+                    {% for share in studentShares %}
+                        <li class="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div class="min-w-0">
+                                <p class="text-sm font-medium text-ink-800">
+                                    Expires {{ share.expiresAt|date('j M Y') }}
+                                </p>
+                                <p class="text-xs text-ink-500">
+                                    {{ share.viewCount }} {{ share.viewCount == 1 ? 'view' : 'views' }}
+                                    {% if share.lastViewedAt %} · last opened {{ share.lastViewedAt|date('j M Y') }}{% endif %}
+                                </p>
+                            </div>
+                            <form method="post"
+                                  action="{{ path('app_tenant_report_student_share_revoke', {id: share.id}) }}"
+                                  class="sm:shrink-0">
+                                <input type="hidden" name="_token" value="{{ csrf_token('report_share_revoke_' ~ share.id) }}">
+                                <button type="submit"
+                                        class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-ink-300 px-4 text-sm font-semibold text-ink-700 transition hover:border-failed hover:text-failed sm:w-auto">
+                                    Revoke
+                                </button>
+                            </form>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+        {% endif %}
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+    function edusShareReport(button) {
+        const url = button.dataset.shareUrl;
+        const data = {
+            title: button.dataset.shareTitle,
+            text: button.dataset.shareText,
+            url: url,
+        };
+
+        if (navigator.share) {
+            navigator.share(data).catch(() => {});
+            return;
+        }
+
+        // Desktop fallback: copy, because there is no share sheet.
+        navigator.clipboard.writeText(url).then(() => {
+            button.textContent = 'Link copied';
+        }).catch(() => {});
+    }
+
+    function edusCopyShare(button) {
+        navigator.clipboard.writeText(button.dataset.copy).then(() => {
+            button.textContent = 'Copied';
+        }).catch(() => {});
+    }
+</script>
+{% endblock %}

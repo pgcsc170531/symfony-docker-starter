@@ -11,6 +11,9 @@ use App\Entity\Tenant\Classroom;
 use App\Entity\Tenant\Invoice; 
 use App\Entity\Tenant\InvoiceItem;
 use App\Entity\Tenant\FeeStructure;
+use App\Service\Finance\DiscountCalculator;
+use App\Service\Admissions\AdmissionNumberGenerator;
+use App\Service\Finance\InvoiceNumberGenerator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,6 +28,22 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 #[IsGranted('ROLE_BURSAR')]
 class QuickAdmissionController extends AbstractController
 {
+    /**
+     * Guardians created earlier in the current import, keyed by normalised phone.
+     * Sibling rows share a phone number and the guardian is not flushed until the
+     * end of the batch, so a database lookup alone would create a duplicate.
+     *
+     * @var array<string, \App\Entity\Tenant\Guardian>
+     */
+    private array $guardianCache = [];
+
+    public function __construct(
+        private readonly DiscountCalculator $discountCalculator,
+        private readonly InvoiceNumberGenerator $invoiceNumbers,
+        private readonly AdmissionNumberGenerator $admissionNumbers,
+    ) {
+    }
+
     // ==========================================
     // 1. THE DASHBOARD (Manual Grid + CSV Form)
     // ==========================================
@@ -92,6 +111,13 @@ class QuickAdmissionController extends AbstractController
         // bcrypt/argon2 blows past PHP's 30s limit, so lift the limit and hash the
         // shared default parent password ONCE (reused for every new parent).
         set_time_limit(0);
+
+        // A 1,200-row file creates pupil + guardian + user + enrolment + invoice
+        // (+ items) per row and keeps every entity in the unit of work until the
+        // single flush at the end. With the profiler and the SQL logger on, that
+        // ran into the 128 MB default and died mid-import. The batch is still one
+        // transaction; only the memory ceiling moves.
+        ini_set('memory_limit', '512M');
         ini_set('auto_detect_line_endings', true);
         $defaultParentHash = $hasher->hashPassword(new User(), '12345678');
 
@@ -109,6 +135,9 @@ class QuickAdmissionController extends AbstractController
         foreach ($em->getRepository(Classroom::class)->findAll() as $c) {
             $classMap[$this->normalizeString($c->getName())] = $c;
         }
+
+        // Fresh cache for this upload: a previous request's guardians must not leak in.
+        $this->guardianCache = [];
 
         $rowsToSave = [];
         $errors = [];
@@ -135,6 +164,16 @@ class QuickAdmissionController extends AbstractController
                     continue;
                 }
 
+                // A number typed in the file that is already on roll used to abort
+                // the whole upload at flush time — one bad row and every good row
+                // had to be re-uploaded. Reject the row here, with its row number,
+                // and keep the rest of the file.
+                $typedNumber = trim($row[9]);
+                if ($typedNumber !== '' && $em->getRepository(Student::class)->findOneBy(['admissionNumber' => $typedNumber])) {
+                    $errors[] = "Row $rowNumber: admission number '$typedNumber' is already in use — that row was skipped.";
+                    continue;
+                }
+
                $rowsToSave[] = [
                 'data' => [
                     'first_name'       => trim($row[0]),
@@ -156,11 +195,13 @@ class QuickAdmissionController extends AbstractController
             fclose($handle);
         }
 
-        if (count($errors) > 0) {
+        // A bad row does not have to mean a bad file: report it and import the
+        // rest. Only a file with nothing importable stops here.
+        if (count($errors) > 0 && count($rowsToSave) === 0) {
             return $this->render('tenant/quick_enroll/index.html.twig', [
                 'terms' => $em->getRepository(Term::class)->findBy([], ['startDate' => 'DESC']),
                 'classes' => $em->getRepository(Classroom::class)->findAll(),
-                'csv_errors' => $errors, 
+                'csv_errors' => $errors,
                 'error_count' => count($errors)
             ]);
         }
@@ -175,10 +216,25 @@ class QuickAdmissionController extends AbstractController
             $em->flush();
             
             $this->addFlash('success', "Import Complete! " . count($rowsToSave) . " students are now linked to their parents.");
+
+            if ($errors !== []) {
+                $this->addFlash('warning', sprintf(
+                    '%d row%s skipped — %s',
+                    count($errors),
+                    count($errors) === 1 ? '' : 's',
+                    implode(' ', array_slice($errors, 0, 5))
+                ));
+            }
             
         } catch (\Doctrine\DBAL\Exception\UniqueConstraintViolationException $e) {
-            // Handle the Duplicate Admission Number error gracefully
-            $this->addFlash('error', "Upload Stopped! One or more Admission Numbers in your file already exist in the database. Please check for duplicates and try again.");
+            // Say what actually collided. "Duplicate admission number" was printed
+            // for every unique violation, including sibling guardians sharing a
+            // phone — which sent the school looking in the wrong place.
+            $reason = stripos($e->getMessage(), 'admission') !== false
+                ? 'One or more Admission Numbers in your file already exist in the database. Please check for duplicates and try again.'
+                : 'A row in your file clashes with a record that already exists (a guardian phone/email or a pupil already on roll). Check the phone numbers and parent names in the file, then upload again.';
+
+            $this->addFlash('error', 'Upload Stopped! ' . $reason);
             
             return $this->redirectToRoute('app_tenant_quick_enroll');
 
@@ -199,7 +255,17 @@ class QuickAdmissionController extends AbstractController
 {
     // 1. GUARDIAN LOGIC (Find or Create Parent)
     $phone = trim(str_replace([' ', '-', '+'], '', $data['parent_phone'])); 
-    $guardian = $em->getRepository(Guardian::class)->findOneBy(['phoneNumber' => $phone]);
+
+    // Siblings in one file share a phone number, and a guardian created earlier in
+    // this loop is not flushed yet — so the database lookup below cannot see it.
+    // Without this cache the second sibling tried to create a second guardian and
+    // the batch died on a unique violation that was reported as "duplicate
+    // admission number". The cache is reset at the start of each import.
+    $guardian = $this->guardianCache[$phone] ?? null;
+
+    if ($guardian === null) {
+        $guardian = $em->getRepository(Guardian::class)->findOneBy(['phoneNumber' => $phone]);
+    }
 
     if (!$guardian) {
         $guardian = new Guardian();
@@ -219,6 +285,8 @@ class QuickAdmissionController extends AbstractController
         $guardian->setUser($user);
         $em->persist($guardian);
     }
+
+    $this->guardianCache[$phone] = $guardian;
 
     // 2. STUDENT LOGIC
     $student = new Student();
@@ -241,14 +309,14 @@ class QuickAdmissionController extends AbstractController
         }
     }
 
-    // 👇 NEW: MANUAL VS AUTO ADMISSION NUMBER LOGIC
+    // A number typed in the file is kept as-is. A blank cell gets the next
+    // number in the school's own pattern — the import used to invent
+    // `26/6EDD7` (year + random hex), which matched nothing else in the system
+    // and could not be predicted by the school office.
     if (!empty($data['admission_number'])) {
-        // Use manual number from CSV if provided
         $student->setAdmissionNumber(trim($data['admission_number']));
     } else {
-        // Fallback to auto-generation
-        $uniqueId = strtoupper(substr(uniqid(), -5));
-        $student->setAdmissionNumber(date('y') . '/' . $uniqueId);
+        $student->setAdmissionNumber($this->admissionNumbers->next($term?->getSession()));
     }
 
     $student->setCurrentClassroom($classroom);
@@ -334,10 +402,12 @@ class QuickAdmissionController extends AbstractController
         $invoice->setTerm($term);
         $invoice->setSession($term->getSession());
         $invoice->setClassroom($classroom);
-        $invoice->setInvoiceNumber('INV-AUTO-' . uniqid());
-        $invoice->setStatus('UNPAID');
+        $invoice->setInvoiceNumber($this->invoiceNumbers->next($this->invoiceNumbers->yearFor($term->getSession())));
+        $invoice->setStatus(Invoice::STATUS_UNPAID);
         $invoice->setPaidAmount("0");
-        $invoice->setType('TUITION'); // Tag it clearly
+        // Was 'TUITION', which every fee report ignores. Bulk-imported pupils
+        // must land in the same academic ledger as walk-ins.
+        $invoice->setType(Invoice::TYPE_ACADEMIC);
 
         $total = 0;
         foreach ($fees as $fee) {
@@ -354,7 +424,10 @@ class QuickAdmissionController extends AbstractController
         }
 
         if ($total > 0) {
-            $invoice->setTotalAmount((string)$total);
+            $discount = $this->discountCalculator->calculateDiscount($student, (float) $total);
+            $invoice->setDiscountApplied((string) $discount);
+            $invoice->setDiscountLabel($this->discountCalculator->describe($student));
+            $invoice->setTotalAmount((string) max(0.0, (float) $total - $discount));
             $em->persist($invoice);
         }
     }

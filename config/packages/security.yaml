@@ -73,6 +73,12 @@ security:
                 check_path: app_login
                 enable_csrf: true
                 default_target_path: app_tenant_dashboard
+                # Without this Symfony returns the user to the page they first
+                # tried to reach — which, for anyone who browsed the school's
+                # public site before signing in, is the public site itself. A
+                # signed-in administrator always starts at the dashboard, which
+                # forwards a brand-new school into onboarding.
+                always_use_default_target_path: true
             logout:
                 path: app_logout
                 target: app_login
@@ -97,11 +103,60 @@ security:
         - { path: ^/features, roles: PUBLIC_ACCESS }
         - { path: ^/partners, roles: PUBLIC_ACCESS }
         - { path: ^/manual, roles: PUBLIC_ACCESS }
+        # Price list must be readable without an account — it is the page that
+        # answers "how much?" before a school ever talks to us.
+        - { path: ^/pricing, roles: PUBLIC_ACCESS }
 
-        # 🟢 2. Tenant public website pages
+        # Crawlers and WhatsApp's link previewer are anonymous.
+        - { path: ^/sitemap\.xml, roles: PUBLIC_ACCESS }
+        - { path: ^/robots\.txt, roles: PUBLIC_ACCESS }
+
+        # 🟢 2. Tenant public website pages + the public online-application flow
+        #      (parent self-registration, email verification, sign-in links).
+        #      Authenticated parent screens live under ^/parent, so this whole
+        #      prefix can stay public without any rule-ordering tricks.
+        - { path: ^/apply, roles: PUBLIC_ACCESS }
         - { path: ^/about, roles: PUBLIC_ACCESS }
         - { path: ^/admissions, roles: PUBLIC_ACCESS }
+        - { path: ^/academics, roles: PUBLIC_ACCESS }
+        - { path: ^/events, roles: PUBLIC_ACCESS }
         - { path: ^/contact, roles: PUBLIC_ACCESS }
+
+        # 🟢 2b. Payment-gateway endpoints — must work WITHOUT a session:
+        #       • the webhook is called by Paystack's servers (authenticated by
+        #         its HMAC signature, not by a session),
+        #       • the callback is where the parent's browser lands straight after
+        #         paying, possibly in a fresh tab, and it only *asks* the gateway
+        #         what happened, and
+        #       • the simulated checkout only exists when Paystack is unconfigured.
+        #       Nothing here trusts the caller — see SettlementService.
+        - { path: ^/payments/webhook, roles: PUBLIC_ACCESS }
+        - { path: ^/payments/callback, roles: PUBLIC_ACCESS }
+        - { path: ^/payments/fake-checkout, roles: PUBLIC_ACCESS }
+
+        # Edus subscription payments — Paystack calls the webhook with no session,
+        # and the callback lands in a fresh tab. Both verify with the gateway and
+        # compare the amount before activating anything.
+        - { path: ^/subscription/payment/callback, roles: PUBLIC_ACCESS }
+        - { path: ^/subscription/payment/webhook, roles: PUBLIC_ACCESS }
+
+        # 🟢 2c. Shared report links — the token IS the credential.
+        #       Deliberately public so a grandparent can open it without an account.
+        #       The token is random, expires, and is revocable
+        #       (docs/results/RESULT-CARD-DESIGN.md §6).
+        - { path: ^/r/, roles: PUBLIC_ACCESS }
+
+        # 🟢 2d. Report verification — reached by scanning a QR on a printed card.
+        #       Shows that a document is genuine, never the marks.
+        - { path: ^/verify/, roles: PUBLIC_ACCESS }
+
+        # 🟢 2e. Shared school-performance PDF — the signed, expiring URL is the
+        #       credential. Aggregate figures only, never a pupil's marks.
+        - { path: ^/p/performance, roles: PUBLIC_ACCESS }
+
+        # 🟢 2f. Short QR code printed on the performance PDF. The HMAC code is
+        #       the credential and stays valid after the share link expires.
+        - { path: ^/pv/, roles: PUBLIC_ACCESS }
 
         # ⚠️ 3. LOGIN PAGES MUST STAY PUBLIC.
         # If these are not public, the firewall denies the login form itself and

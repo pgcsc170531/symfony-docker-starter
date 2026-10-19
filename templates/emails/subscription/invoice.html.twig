@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Invoice {{ reference }}</title>
+</head>
+<body style="margin:0;padding:0;background:#F9FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#111827;">
+<div style="max-width:560px;margin:0 auto;padding:24px;">
+    <div style="background:#111827;color:#ffffff;border-radius:12px 12px 0 0;padding:20px 24px;">
+        <p style="margin:0;font-size:20px;font-weight:800;letter-spacing:-0.02em;">Edus</p>
+        <p style="margin:4px 0 0;font-size:13px;color:#D1D5DB;">The school operating system</p>
+    </div>
+
+    <div style="background:#ffffff;border:1px solid #E5E7EB;border-top:0;border-radius:0 0 12px 12px;padding:24px;">
+        <h1 style="margin:0 0 12px;font-size:19px;">Invoice {{ reference }}</h1>
+
+        <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#374151;">
+            Hello {{ school_name }}, here is your Edus invoice for {{ period }}. The PDF is attached,
+            and it is also available in your portal at any time.
+        </p>
+
+        <table style="width:100%;border-collapse:collapse;margin:0 0 18px;font-size:14px;">
+            <tr>
+                <td style="padding:8px 0;color:#6B7280;">Amount due</td>
+                <td style="padding:8px 0;text-align:right;font-weight:800;font-size:18px;">₦{{ amount }}</td>
+            </tr>
+            <tr>
+                <td style="padding:8px 0;color:#6B7280;border-top:1px solid #E5E7EB;">Plan</td>
+                <td style="padding:8px 0;text-align:right;border-top:1px solid #E5E7EB;">{{ plan_name }}</td>
+            </tr>
+            <tr>
+                <td style="padding:8px 0;color:#6B7280;border-top:1px solid #E5E7EB;">{{ learner.pluralCapital }} on roll</td>
+                <td style="padding:8px 0;text-align:right;border-top:1px solid #E5E7EB;">{{ declared_students }}</td>
+            </tr>
+            <tr>
+                <td style="padding:8px 0;color:#6B7280;border-top:1px solid #E5E7EB;">Transfer reference</td>
+                <td style="padding:8px 0;text-align:right;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:700;border-top:1px solid #E5E7EB;">{{ reference }}</td>
+            </tr>
+        </table>
+
+        <p style="margin:0 0 20px;">
+            <a href="{{ portal_url }}"
+               style="display:inline-block;background:#2563EB;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;padding:12px 20px;border-radius:8px;">
+                Pay this invoice
+            </a>
+        </p>
+
+        <p style="margin:0 0 8px;font-size:13px;line-height:1.6;color:#6B7280;">
+            {% if bank_account %}
+                Paying by bank transfer? Use the reference <strong style="color:#111827;">{{ reference }}</strong>
+                in the narration field — without it the payment cannot be matched to your account automatically.
+                The bank details are in the attached PDF.
+            {% else %}
+                Contact us for the transfer details, quoting the reference
+                <strong style="color:#111827;">{{ reference }}</strong>.
+            {% endif %}
+        </p>
+
+        <p style="margin:16px 0 0;font-size:13px;color:#6B7280;">
+            Online payment activates the subscription as soon as the provider confirms — no manual check.
+        </p>
+    </div>
+
+    <p style="margin:16px 0 0;text-align:center;font-size:12px;color:#9CA3AF;">
+        Sent by Edus · edus.ng
+    </p>
+</div>
+</body>
+</html>

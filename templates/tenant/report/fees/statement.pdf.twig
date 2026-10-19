@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ school.name ?? 'School' }} — Statement of Account</title>
+<style>
+    @page { size: A4 portrait; margin: 6mm 8mm 4mm 8mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "DejaVu Sans", sans-serif; font-size: 9.6pt; color: #111827; }
+
+    /* ── Masthead ─────────────────────────────────────────────────────── */
+    .header { width: 100%; border-collapse: collapse; background: #16223C; color: #ffffff; }
+    .header td { padding: 7pt 9pt; vertical-align: bottom; }
+    .brand-cell { width: 58%; }
+    .brand { font-family: "DejaVu Serif", serif; font-size: 18pt; font-weight: bold; color: #ffffff; }
+    .tagline { display: block; font-size: 7.6pt; color: #B8C4D8; letter-spacing: .05em; margin-top: 3pt; }
+    .doc-cell { text-align: right; }
+    .doc-type { display: block; font-size: 7.6pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1.1pt; color: #C3CFE2; }
+    .doc-no { display: block; font-family: "DejaVu Sans Mono", monospace; font-size: 11pt; font-weight: bold; color: #ffffff; margin-top: 3pt; white-space: nowrap; }
+    .accent-rule { height: 2.2pt; background: #2563EB; margin-bottom: 6pt; }
+
+    /* ── Meta strip ───────────────────────────────────────────────────── */
+    .identity { width: 100%; border-collapse: collapse; background: #F9FAFB; border-bottom: .8pt solid #D1D5DB; }
+    .identity td { padding: 4pt 7pt; vertical-align: top; border-left: .6pt solid #E5E7EB; }
+    .identity td:first-child { border-left: 0; }
+    .label { display: block; font-size: 6.8pt; text-transform: uppercase; letter-spacing: .5pt; color: #6B7280; margin-bottom: 1pt; }
+    .value { font-size: 9.4pt; font-weight: bold; }
+    .value.small { font-size: 8.4pt; font-weight: normal; color: #374151; }
+    .value.plain { font-size: 8.6pt; font-weight: bold; white-space: normal; }
+
+    h2 { font-size: 9pt; text-transform: uppercase; letter-spacing: .7pt; color: #374151; margin: 11pt 0 3pt; }
+
+    /* ── Figures ──────────────────────────────────────────────────────── */
+    .kpis { width: 100%; border-collapse: collapse; margin-top: 6pt; }
+    .kpis td { border: .6pt solid #E5E7EB; padding: 5pt 7pt; vertical-align: top; }
+    .k-label { font-size: 6.8pt; text-transform: uppercase; letter-spacing: .5pt; color: #6B7280; }
+    .k-value { font-size: 12pt; font-weight: bold; margin-top: 1pt; white-space: nowrap; }
+    .paid { color: #059669; }
+    .due { color: #B91C1C; }
+    .pending { color: #B45309; }
+
+    /* ── Ledger ───────────────────────────────────────────────────────── */
+    table.grid { width: 100%; border-collapse: collapse; }
+    table.grid th { background: #F3F4F6; border: .6pt solid #D1D5DB; padding: 2.4pt 3pt; font-size: 7.8pt; text-transform: uppercase; letter-spacing: .2pt; text-align: left; }
+    table.grid td { border: .6pt solid #E5E7EB; padding: 2pt 3pt; font-size: 9pt; vertical-align: top; }
+    table.grid td.num, table.grid th.num { text-align: right; white-space: nowrap; }
+    table.grid tr.total td { background: #F3F4F6; font-weight: bold; }
+    .detail { display: block; font-size: 7.6pt; color: #6B7280; }
+    .date { white-space: nowrap; }
+
+    .notes { background: #F9FAFB; border-left: 2.5pt solid #2563EB; padding: 5pt 8pt; margin-top: 12pt; font-size: 8.2pt; }
+    .notes strong { display: block; margin-bottom: 2pt; }
+    .muted { color: #6B7280; font-size: 8pt; }
+
+    .footer { font-size: 7.4pt; color: #6B7280; border-top: .5pt solid #E5E7EB; padding-top: 4pt; margin-top: 12pt; }
+</style>
+</head>
+<body>
+    <table class="header">
+        <tr>
+            <td class="brand-cell">
+                {% if logo %}<img src="{{ logo }}" alt="" style="height: 26pt; vertical-align: middle; margin-right: 5pt;">{% endif %}
+                <span class="brand">{{ school.name ?? 'School' }}</span>
+                <span class="tagline">
+                    {% if school.address %}{{ school.address }}{% endif %}
+                    {% if school.phoneNumber %}{% if school.address %} · {% endif %}{{ school.phoneNumber }}{% endif %}
+                </span>
+            </td>
+            <td class="doc-cell">
+                <span class="doc-type">Statement of account</span>
+                <span class="doc-no">{{ student.admissionNumber ?? '—' }}</span>
+            </td>
+        </tr>
+    </table>
+    <div class="accent-rule"></div>
+
+    <table class="identity">
+        <tr>
+            <td>
+                <span class="label">Pupil</span>
+                <span class="value plain">{{ student.fullName }}</span>
+            </td>
+            <td>
+                <span class="label">Class</span>
+                <span class="value">{{ classroom ?? '—' }}</span>
+            </td>
+            <td>
+                <span class="label">Guardian</span>
+                <span class="value">{{ guardian.fullName ?? '—' }}</span>
+            </td>
+            <td>
+                <span class="label">Period</span>
+                <span class="value">{{ period }}</span>
+            </td>
+            <td>
+                <span class="label">Issued</span>
+                <span class="value">{{ generated_at|date('j M Y') }}</span>
+            </td>
+        </tr>
+    </table>
+
+    <table class="kpis">
+        <tr>
+            <td>
+                <div class="k-label">Billed</div>
+                <div class="k-value">₦{{ totals.net|number_format(2) }}</div>
+            </td>
+            <td>
+                <div class="k-label">Paid</div>
+                <div class="k-value paid">₦{{ totals.paid|number_format(2) }}</div>
+            </td>
+            <td>
+                <div class="k-label">Outstanding</div>
+                <div class="k-value due">₦{{ totals.outstanding|number_format(2) }}</div>
+            </td>
+            <td>
+                <div class="k-label">Awaiting confirmation</div>
+                <div class="k-value pending">₦{{ totals.pending|number_format(2) }}</div>
+            </td>
+        </tr>
+    </table>
+
+    <h2>Account history</h2>
+    {% if lines is empty %}
+        <p class="muted">Nothing has been billed for this period.</p>
+    {% else %}
+        <table class="grid">
+            <thead>
+                <tr>
+                    <th style="width: 12%;">Date</th>
+                    <th style="width: 40%;">Description</th>
+                    <th class="num" style="width: 16%;">Charged</th>
+                    <th class="num" style="width: 16%;">Paid</th>
+                    <th class="num" style="width: 16%;">Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for line in lines %}
+                    <tr>
+                        <td class="date">{{ line.date ? line.date|date('j M Y') : '—' }}</td>
+                        <td>
+                            {{ line.label }}
+                            {% if line.detail %}<span class="detail">{{ line.detail }}</span>{% endif %}
+                        </td>
+                        <td class="num">{{ line.debit > 0 ? '₦' ~ line.debit|number_format(2) : '' }}</td>
+                        <td class="num">{{ line.credit > 0 ? '₦' ~ line.credit|number_format(2) : '' }}</td>
+                        <td class="num">₦{{ line.balance|number_format(2) }}</td>
+                    </tr>
+                {% endfor %}
+                <tr class="total">
+                    <td colspan="2">Total</td>
+                    <td class="num">₦{{ totals.net|number_format(2) }}</td>
+                    <td class="num">₦{{ totals.paid|number_format(2) }}</td>
+                    <td class="num">₦{{ totals.outstanding|number_format(2) }}</td>
+                </tr>
+            </tbody>
+        </table>
+    {% endif %}
+
+    <div class="notes">
+        <strong>How to settle this balance</strong>
+        {% if school.bankName %}
+            Pay into {{ school.bankName }}{% if school.accountNumber %}, account {{ school.accountNumber }}{% endif %}{% if school.accountName %} ({{ school.accountName }}){% endif %},
+            quoting <strong style="display: inline;">{{ student.admissionNumber ?? student.fullName }}</strong> as the reference.
+        {% else %}
+            Pay at the school office, quoting <strong style="display: inline;">{{ student.admissionNumber ?? student.fullName }}</strong> as the reference.
+        {% endif %}
+        A transfer counts as paid only once the bursar confirms it, so the
+        &ldquo;awaiting confirmation&rdquo; figure above may still clear.
+        {% if school.email %} Questions: {{ school.email }}.{% endif %}
+    </div>
+
+    <div class="footer">
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="width: 40%;">
+                    {{ school.name ?? 'School' }} · Statement of account · {{ period }}
+                </td>
+                <td style="width: 38%; text-align: center; font-size: 6.8pt; line-height: 1.35;">
+                    {% if verification %}
+                        Scan or visit to verify:<br>
+                        <span style="font-size: 6pt;">{{ verification.url }}</span><br>
+                        Code: <strong style="font-family: 'DejaVu Sans Mono', monospace;">{{ verification.code }}</strong>
+                    {% endif %}
+                </td>
+                <td style="width: 22%; text-align: right;">
+                    {% if verification %}<img src="{{ verification.qr }}" style="width: 32pt; height: 32pt;" alt=""><br>{% endif %}
+                    Generated by Edus
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

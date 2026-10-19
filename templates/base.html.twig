@@ -1,10 +1,42 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Welcome!{% endblock %} - Edus School SaaS</title>
+    {# 📱 MOBILE FIRST — see .github/copilot-instructions.md. This app is used mainly on phones. #}
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#111827">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>{% block title %}Welcome!{% endblock %}{% block title_suffix %} - Edus School SaaS{% endblock %}</title>
+
+    {# ── Discovery & sharing ─────────────────────────────────────────────────
+       A page overrides `meta_description`, `title_suffix` and `og_image`; every
+       other page inherits sane defaults, so nothing shares as a bare link on
+       WhatsApp. `canonical` deliberately drops the query string. #}
+    <meta name="description" content="{% block meta_description %}Edus is the school operating system for Nigerian schools — admissions, fees, results, staff records and the parent portal in one place.{% endblock %}">
+    <link rel="canonical" href="{% block canonical %}{{ app.request.schemeAndHttpHost }}{{ app.request.pathInfo }}{% endblock %}">
+
+    <meta property="og:site_name" content="Edus">
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:title" content="{{ block('title') }}">
+    <meta property="og:description" content="{{ block('meta_description') }}">
+    <meta property="og:url" content="{{ block('canonical') }}">
+    <meta property="og:image" content="{% block og_image %}{{ absolute_url(asset('images/brand/og-edus.png')) }}{% endblock %}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Edus — the school operating system">
+    <meta property="og:locale" content="en_NG">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ block('title') }}">
+    <meta name="twitter:description" content="{{ block('meta_description') }}">
+    <meta name="twitter:image" content="{{ block('og_image') }}">
+
+    {% block structured_data %}{% endblock %}
+
     <script src="https://cdn.tailwindcss.com"></script>
+    {# Design tokens (accent / ink / paid / pending / failed) — one source of truth. #}
+    {% include '_design_tokens.html.twig' %}
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
     {# 🛡️ LOGO LOGIC #}
@@ -16,500 +48,708 @@
           and app.user.tenant.logoFilename %}
         <link rel="icon" href="{{ asset('uploads/logos/' ~ app.user.tenant.logoFilename) }}">
     {% else %}
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><text y='1.2em' font-size='96'>🏫</text></svg>">
+        <link rel="icon" type="image/svg+xml" href="{{ asset('images/brand/edus-favicon.svg') }}">
+        <link rel="apple-touch-icon" href="{{ asset('images/brand/edus-favicon.svg') }}">
     {% endif %}
     
     <style>
         [x-cloak] { display: none !important; }
-        body { background-color: #f3f4f6; }
-        #sidebar { transition: transform 0.3s ease-in-out; }
-        /* Scrollbar for sidebar */
+        body { background-color: #F9FAFB; }
+        /* ═══════════════════════════════════════════════════════════════════
+           🎨 THE RAIL SURFACE
+
+           `ink-900` is a flat neutral near-black, and a flat neutral near-black
+           in a tall column reads as a hole cut in the page rather than as a
+           surface. Two layers fix that without adding one visible "design":
+
+           1. A base one or two shades BLUER than ink-900, so the rail belongs to
+              the same family as the canvas and the accent instead of looking
+              like a grey rectangle borrowed from another product.
+           2. A shallow vertical gradient, lighter at the top and settling darker
+              at the bottom, so the rail has a bottom without a line drawn across
+              it — plus a very wide, very faint accent glow at the top, the same
+              "light from above" idea as the wash on the content column.
+
+           The glow is 16% and 70% radius: you should notice the rail is not flat,
+           not notice that there is a glow. Nothing here is a signal — it never
+           means active, selected or status.
+
+           ⚠️ Because the rail is a GRADIENT, anything sticky inside it (the
+           filter bar, the section headings) must NOT be painted with a solid
+           colour: that shows up as a patch of the wrong shade. They use
+           translucent black + backdrop-blur, which composites with whatever part
+           of the gradient is behind them.
+           ═══════════════════════════════════════════════════════════════════ */
+        #sidebar {
+            transition: transform 0.3s ease-in-out;
+            background-color: #0D1526;
+            background-image:
+                radial-gradient(140% 38% at 50% 0%, rgba(37, 99, 235, 0.16), rgba(37, 99, 235, 0) 70%),
+                linear-gradient(180deg, #16223C 0%, #0D1526 55%, #0A0F1B 100%);
+        }
+        /* The rail scrolls independently of the page, and the scrollbar is styled to
+           be a hairline so it does not read as a third column of the layout. */
+        #sidebar nav { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.18) transparent; }
         #sidebar nav::-webkit-scrollbar { width: 6px; }
-        #sidebar nav::-webkit-scrollbar-thumb { background-color: #374151; border-radius: 3px; }
+        #sidebar nav::-webkit-scrollbar-track { background: transparent; }
+        #sidebar nav::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,.18); border-radius: 3px; }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           📱 MOBILE FIRST — non-negotiable, see .github/copilot-instructions.md
+
+           Parents and teachers use this portal on a phone, one-handed, often
+           on a slow connection. Every screen must be usable from 320px up.
+           Breakpoints in use: 320 (floor) · 360/390/414 (the phones we care
+           about) · sm 640 · md 768 · lg 1024.
+           ═══════════════════════════════════════════════════════════════════ */
+
+        /* iOS Safari zooms the whole page whenever a focused control is under
+           16px. That zoom is disorienting and hard to undo — never allow it. */
+        @media (max-width: 767.98px) {
+            input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+            select,
+            textarea {
+                font-size: 16px !important;
+            }
+
+            /* Comfortable tap targets — Apple guidance is 44pt, Material 48dp.
+               A thumb is not a mouse pointer.
+               Selects and text fields are in here too, not just buttons: a 38px
+               select is just as un-tappable as a 38px button, and the font-size
+               rule above only fixed the zoom, not the hit area. */
+            button,
+            input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+            select,
+            textarea {
+                min-height: 44px;
+            }
+
+            /* Long words, URLs and references must never push the layout wider
+               than the screen. */
+            main { overflow-wrap: break-word; }
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           🎨 DESIGN TOKENS — see docs/architecture/UI-SPEC.md
+
+           One accent colour, one grey ramp, three semantic colours. If a new
+           element "needs a colour to look nice", it does not get one.
+           ═══════════════════════════════════════════════════════════════════ */
+
+        /* Figures align in columns — money, marks, counts. */
+        .money, .tabular { font-variant-numeric: tabular-nums; }
+
+        /* Status colour is never the only signal — the badge text states it. */
+        .badge-paid     { background: #ECFDF5; color: #047857; border-color: #A7F3D0; }
+        .badge-pending  { background: #FFFBEB; color: #B45309; border-color: #FDE68A; }
+        .badge-failed   { background: #FEF2F2; color: #B91C1C; border-color: #FECACA; }
+        .badge-neutral  { background: #F3F4F6; color: #4B5563; border-color: #E5E7EB; }
+        .badge-paid, .badge-pending, .badge-failed, .badge-neutral {
+            display: inline-flex; align-items: center; gap: .25rem;
+            padding: .125rem .5rem; border: 1px solid; border-radius: 9999px;
+            font-size: .75rem; font-weight: 600; line-height: 1.5; white-space: nowrap;
+        }
+
+        /* The app header height, in one place so the content offset cannot drift. */
+        :root { --app-header-height: 3.5rem; --tabbar-height: 3.75rem; --footer-height: 4.75rem; }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           🫧 FROSTED BARS — the header and footer are glass, not paint
+
+           Both float over the scrolling column: content slides UNDER them and is
+           visible through the blur, so you can see something is there without
+           reading it. That is the entire point of the effect — a translucent bar
+           over nothing is just a slightly-off-white bar.
+
+           Which is why `main.app-scroll` below grows past its own row by exactly
+           the height of each bar: the scroll port has to physically extend behind
+           them, or the scroll container clips the content at the bar's edge and
+           there is nothing to blur.
+
+           72% white, not 50%: below ~70% the text on the bar starts fighting the
+           content underneath it, and this bar carries the school's name.
+           `saturate(140%)` keeps the blurred page colours from going grey.
+           ═══════════════════════════════════════════════════════════════════ */
+        .app-glass {
+            background-color: rgba(255, 255, 255, 0.72);
+            -webkit-backdrop-filter: blur(14px) saturate(140%);
+            backdrop-filter: blur(14px) saturate(140%);
+        }
+        /* No backdrop-filter (older Firefox, some embedded webviews): fall back to
+           a near-solid bar. Half-transparent-without-blur is the one combination
+           that genuinely looks broken — text on top of sharp text. */
+        @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+            .app-glass { background-color: rgba(255, 255, 255, 0.97); }
+        }
+
+        /* 📱 Reserved space for the bottom tab bar is DERIVED, not typed. A
+           hand-written pb-20 silently stops matching the moment the bar's height
+           changes — and then the last row of every page sits under the bar.
+
+        /* ═══════════════════════════════════════════════════════════════════
+           🧱 APP SHELL — the content column scrolls, the page does not
+
+           Signed in, <body> is locked to the viewport height and the ONLY thing
+           that moves is <main>. That is what makes the nav rail and the footer
+           hold still while a long register or result grid scrolls past them. On
+           the previous layout the whole window scrolled, so the rail slid up out
+           of view and the footer was wherever the page happened to end.
+
+           `100dvh`, not `100vh`: on a phone 100vh is measured against the LARGEST
+           viewport, so the footer would sit behind the address bar and be cut
+           off. dvh tracks the height that is actually visible.
+
+           Signed OUT there is no shell. Marketing pages and the public
+           application form scroll normally — that is what a document should do.
+           ═══════════════════════════════════════════════════════════════════ */
+        body.app-shell { height: 100vh; overflow: hidden; }
+        @supports (height: 100dvh) { body.app-shell { height: 100dvh; } }
+
+        /* The scroll column reaches BEHIND both bars: the negative margins grow
+           its box by one bar height at each end, and the matching padding puts
+           the content back where it belongs. Net effect — the scroll port is the
+           whole window, but the first row still starts below the header and the
+           last row still ends above the footer.
+
+           `main.app-scroll` (element + class) is deliberate: it has to beat the
+           `.py-4` / `.sm:py-6` utilities on the same element, and Tailwind's
+           stylesheet is injected after this one.
+
+           ⚠️ `--footer-height` must track the footer's real height
+           (pt-6 + the 44px brand row + pb-2 = 4.75rem). Give the footer more
+           padding and update the variable with it, or the last row of every page
+           will tuck under the bar by exactly that difference. */
+        main.app-scroll {
+            margin-top: calc(-1 * var(--app-header-height));
+            margin-bottom: calc(-1 * var(--footer-height));
+            padding-top: calc(var(--app-header-height) + 1rem);
+            padding-bottom: calc(var(--footer-height) + 1rem);
+        }
+        @media (min-width: 640px) {
+            main.app-scroll {
+                padding-top: calc(var(--app-header-height) + 1.5rem);
+                padding-bottom: calc(var(--footer-height) + 1.5rem);
+            }
+        }
+
+        /* Errors say what to do, not just what went wrong. */
+        .field-error { color: #B91C1C; font-size: .8125rem; margin-top: .25rem; }
+
+        /* The open drawer needs a way back out: dim what is behind it and make
+           that dimmed area tappable to close. */
+        #sidebar-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 35;
+            background: rgba(17, 24, 39, .55);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease-in-out;
+        }
+        #sidebar-backdrop.is-open { opacity: 1; pointer-events: auto; }
+
+        /* Notched phones: keep the last row of the rail clear of the home indicator.
+           This lives on the rail's FOOTER, not on the aside — the aside is a flex
+           column, so padding on it would sit *below* the footer's own border and
+           the divider would float above the safe area instead of hugging it. */
+        #sidebar-footer { padding-bottom: calc(0.75rem + env(safe-area-inset-bottom)); }
+
+        /* The rail is a dark surface, so the default focus ring is invisible on it.
+           A keyboard user must still be able to see where they are. */
+        #sidebar a:focus-visible { outline: none; }
         
         /* Print Hiding */
         @media print {
+            /* The locked shell would clip a multi-page report to the first
+               screen — a print sheet must lay itself out and paginate. */
+            body.app-shell { height: auto !important; overflow: visible !important; }
+            /* No glass on paper — the bars must print as plain black-on-white. */
+            .app-glass {
+                background: #fff !important;
+                -webkit-backdrop-filter: none !important;
+                backdrop-filter: none !important;
+            }
             #sidebar, #sidebar-toggle { display: none !important; }
-            main { margin: 0 !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; }
+            main { margin: 0 !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; overflow: visible !important; }
         }
     </style>
 
     {% block stylesheets %}{% endblock %}
     {% block javascripts %}{% endblock %}
 </head>
-<body class="flex min-h-screen">
-    
-    {# === ONLY SHOW SIDEBAR IF LOGGED IN === #}
-    {% if app.user %}
-        
-        {# Mobile Toggle Button #}
-        <button id="sidebar-toggle" class="md:hidden fixed top-4 left-4 z-50 p-2 bg-gray-800 text-white rounded shadow-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
-            </svg>
-        </button>
+{% set public_site = public_site|default(false) %}
+{# A public page (a school's own website) must never be wrapped in the app shell,
+   even when the visitor happens to be signed in. `public_site` opts out. #}
+<body class="flex flex-col bg-ink-50 {{ app.user and not public_site ? 'app-shell' : 'min-h-screen' }}">
 
-        {# SIDEBAR #}
-        <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-gray-900 text-white flex flex-col p-4 shadow-lg 
-                                transform -translate-x-full md:translate-x-0 md:relative md:flex-shrink-0 border-r border-gray-800">
-            
-        <div class="mb-6 border-b border-gray-700 pb-4">
-                {# ========================================== #}
-                {# 👑 IDENTITY SECTION                        #}
-                {# ========================================== #}
-                
-                {# 1. SUPER ADMIN #}
-                {% if is_granted('ROLE_SUPER_ADMIN') %}
-                    <div class="flex items-center text-2xl font-black text-white">
-                        <span class="mr-2">🏢</span> Edus Admin
-                    </div>
-                    <p class="text-xs text-gray-400 uppercase tracking-widest mt-1">Super User</p>
-                
-                {# 🟢 2. AGENT #}
-                {% elseif is_granted('ROLE_AGENT') %}
-                    <div class="flex items-center gap-3">
-                        <div class="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center text-xl text-white shadow-md">🕵️</div>
-                        <div>
-                            <h2 class="text-sm font-bold text-white uppercase tracking-wide">Partner Portal</h2>
-                            <p class="text-xs text-gray-400">Agent Access</p>
-                        </div>
-                    </div>
+    {# One icon set for the whole shell — sidebar and tab bar both draw from it, so
+       a glyph can never drift between the two navs. See templates/_nav_icons.html.twig. #}
+    {% import '_nav_icons.html.twig' as nav %}
 
-                {# 3. TENANT (SCHOOL) #}
-                {% else %}
-                    {# 🛡️ SAFETY CHECK: Ensure tenant exists #}
-                    {% if app.user.tenant is defined and app.user.tenant %}
-                        <div class="flex items-center gap-3">
-                            {# A. LOGO #}
-                            {% if app.user.tenant.logoFilename %}
-                                <img src="{{ asset('uploads/logos/' ~ app.user.tenant.logoFilename) }}" 
-                                    class="h-10 w-10 rounded-full bg-white p-1 object-contain shadow-sm" 
-                                    alt="School Logo">
-                            {% else %}
-                                <div class="h-10 w-10 rounded-full bg-gray-700 flex items-center justify-center text-xl text-white">
-                                    🏫
-                                </div>
-                            {% endif %}
-                            
-                            {# B. SCHOOL NAME #}
-                            <div class="overflow-hidden">
-                                <h2 class="text-sm font-bold text-white uppercase leading-tight truncate w-40">
-                                    {{ app.user.tenant.name }}
-                                </h2>
-                                <p class="text-xs text-gray-400 truncate w-40">
-                                    {{ app.user.tenant.motto|default('Portal') }}
-                                </p>
-                            </div>
-                        </div>
-                    {% else %}
-                        {# Fallback #}
-                         <div class="flex items-center gap-3">
-                            <div class="h-10 w-10 rounded-full bg-gray-700 flex items-center justify-center text-xl text-white">👤</div>
-                            <h2 class="text-sm font-bold text-white">User Portal</h2>
-                        </div>
-                    {% endif %}
+    {% if app.user and not public_site %}
+        {#
+            ═══ STICKY APP HEADER ═══
+            Menu button (staff) · brand · role badge · sign out.
+
+            The drawer button lives here instead of floating over the page, so a
+            heading can no longer end up underneath it — which is exactly what the
+            old `pt-16` on <main> was compensating for.
+        #}
+        <header class="app-glass sticky top-0 z-30 flex h-14 shrink-0 items-center gap-1 border-b border-ink-200 px-2 sm:gap-2 sm:px-4"
+                style="padding-top: env(safe-area-inset-top);">
+
+            {# Parents navigate with the bottom tab bar, so they get no drawer. #}
+            {% if not is_granted('ROLE_PARENT') %}
+                <button id="sidebar-toggle" type="button" aria-label="Open navigation menu"
+                        aria-controls="sidebar" aria-expanded="false"
+                        class="md:hidden flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-ink-600 hover:bg-ink-100 active:bg-ink-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            {% endif %}
+
+            {# ⚠️ NOT `brand`. The public marketing layouts (`tenant/home/layout.html.twig`,
+               `tenant/apply/layout.html.twig`) set `brand` to the school's PRIMARY
+               COLOUR — and they extend this template, so their content renders
+               AFTER this block and would inherit whatever we set here. Naming this
+               `brand` handed them the School entity instead of "#1e40af" and the
+               page died with "Object of class School could not be converted to
+               string" — but only for a signed-in user, because the whole header is
+               inside `{% if app.user %}`. Hence `shell_school`. #}
+            {% set shell_school = (app.user.tenant is defined and app.user.tenant) ? app.user.tenant : tenant_school() %}
+
+            {# HEADER — the SCHOOL's identity, and only the school's.
+               The brand lives in the footer (UI-SPEC §4.1.1). A parent is dealing
+               with their child's school; a second logo up here competes with it, and
+               two marks in one viewport is not a lockup, it is clutter.
+
+               flex-1 on this block is what pushes the badge and sign-out to the far
+               right. Putting ml-auto on the badge instead fails on phones: the badge
+               is hidden below sm, so nothing absorbs the space and the sign-out
+               button drifts to the middle. #}
+            <a href="{{ is_granted('ROLE_PARENT') ? path('app_parent_dashboard') : path('app_tenant_dashboard') }}"
+               class="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-1 py-2">
+                {% if shell_school and shell_school.logoFilename %}
+                    <img src="{{ asset('uploads/logos/' ~ shell_school.logoFilename) }}" alt=""
+                         class="h-8 w-8 shrink-0 rounded-lg object-contain">
+                {% elseif shell_school %}
+                    {# No uploaded logo yet — a letter tile beats a broken image, and it
+                       is generated from the school's own name, not from our brand. #}
+                    <span class="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-accent-600 text-sm font-bold text-white" aria-hidden="true">{{ shell_school.name|slice(0, 1)|upper }}</span>
                 {% endif %}
-            </div>
-            
-            <nav class="space-y-1 overflow-y-auto flex-1 text-sm pr-2">
-                
+
+                <span class="min-w-0">
+                    <span class="block truncate text-sm font-semibold leading-tight text-ink-900">
+                        {{ shell_school ? shell_school.name : 'Edus' }}
+                    </span>
+                </span>
+            </a>
+
+            <span class="hidden shrink-0 items-center rounded-full border border-ink-200 bg-ink-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-ink-600 sm:inline-flex">
+                {{- is_granted('ROLE_PARENT') ? 'Parent'
+                    : (is_granted('ROLE_ADMIN') ? 'Admin'
+                    : (is_granted('ROLE_BURSAR') ? 'Bursar'
+                    : (is_granted('ROLE_TEACHER') ? 'Teacher' : 'Staff'))) -}}
+            </span>
+
+            {# Contextual help. The manual lives on the platform domain, not this
+               school's subdomain, so the URL comes from ManualExtension — which
+               also decides WHICH chapter this screen belongs to. A screen with no
+               chapter shows no icon rather than a link to the manual's front page. #}
+            {% set manual = manual_help(app.request.attributes.get('_route')) %}
+            {% if manual %}
+                <a href="{{ manual.url }}" target="_blank" rel="noopener"
+                   aria-label="Open the user manual" title="User manual — opens in a new tab"
+                   class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-ink-500 hover:bg-ink-100 hover:text-ink-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </a>
+            {% endif %}
+
+            <a href="{{ path('app_logout') }}" aria-label="Sign out" title="Sign out"
+               class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-ink-500 hover:bg-ink-100 hover:text-ink-800">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+            </a>
+        </header>
+    {% endif %}
+
+    {# The sidebar (md and up) sits beside the content, below the header.
+       ⚠️ No `overflow-hidden` here. Two of the shell's mechanisms fight if it is
+       set: the row must not grow (that is `min-h-0` + the locked <body>), but
+       `main` has to be able to reach OUT of the row and behind the glass bars.
+       Clipping here silently caps the scroll port at the bars' edges again. #}
+    <div class="flex min-h-0 flex-1">
+
+    {# === ONLY SHOW SIDEBAR IF LOGGED IN — and never on a public page === #}
+    {% if app.user and not public_site %}
+
+        {# Tapping this dimmed area closes the drawer (mobile only). #}
+        <div id="sidebar-backdrop" class="md:hidden"></div>
+
+        {#
+            ═══════════════════════════════════════════════════════════════════════
+            🧭 THE RAIL — staff navigation (drawer below md, static rail from md up)
+
+            Parents never see this. They navigate with the bottom tab bar, which puts
+            four places under the thumb; staff get the full menu. Same idea, two
+            shapes, because a bursar on a laptop and a parent on a bus are not
+            doing the same thing.
+
+            WHAT WAS WRONG WITH THE VERSION THIS REPLACED — and it is all one
+            mistake wearing three hats, decoration standing in for meaning:
+
+            1. **Emoji as icons.** An emoji is drawn by the *operating system's*
+               font, so 📊 on Android is not 📊 on Windows is not 📊 on a cheap
+               handset, where it may be an empty box. And its colours are arbitrary,
+               which quietly breaks "colour is meaning, never decoration"
+               (UI-SPEC §1) — a green 📈 beside a blue 💳 competes with the three
+               colours in this product that ARE allowed to mean something.
+            2. **Three greys and three different "active" colours.** `gray-*`,
+               `indigo-900`, `blue-900` — one concept, three treatments, none of
+               them the token that actually means *interactive*: `accent-600`.
+            3. **A duplicated identity block.** The sticky header directly above
+               already shows the school, its logo and the role. Repeating all three
+               here cost ~100px of a column that has to scroll, and it is the same
+               "say each thing once" failure the footer had. The rail is now pure
+               navigation: identity is the header's job, and the one thing the
+               header does NOT say — *which account is signed in* — is at the
+               bottom of the rail, where a colophon of the self belongs.
+
+            Row heights, and why they differ: 44px in the drawer (below md a thumb
+            operates it — MOBILE-FIRST), 40px in the static rail (from md up an eye
+            scans it). This menu runs to 40 items; at 44px throughout that is
+            1,760px of scrolling for no benefit. See templates/_nav_icons.html.twig.
+            ═══════════════════════════════════════════════════════════════════════
+        #}
+        <aside id="sidebar"
+               x-data="{
+                   q: '',
+                   items: [],
+                   init() {
+                       this.items = Array.from(this.$el.querySelectorAll('a[data-label]'))
+                                        .map(a => a.dataset.label);
+                   },
+                   matches(label) {
+                       const s = this.q.trim().toLowerCase();
+                       return !s || String(label || '').includes(s);
+                   },
+                   get anyHit() { return this.items.some(l => this.matches(l)); }
+               }"
+               class="fixed inset-y-0 left-0 z-40 flex w-64 max-w-[85vw] -translate-x-full flex-col border-r border-white/10 shadow-xl md:relative md:translate-x-0 md:flex-shrink-0 lg:w-72">
+
+            <nav class="flex-1 space-y-0.5 overflow-y-auto overscroll-contain px-3 pb-3" aria-label="Main navigation">
+                {# ═══ FILTER ═══
+                   This menu is 40 rows and about 1,600px tall in a window that is
+                   often only 600px — you could see a third of your own navigation
+                   and there was nothing on screen saying the rest existed. Type
+                   "res" and the three result screens are all that is left.
+
+                   Faster than scrolling, and it gives the same answer in every
+                   role's menu. Sticky, so it stays reachable after you have
+                   scrolled a thousand pixels down the rail.
+
+                   `h-11` (44px) at every width, not just on phones: it keeps the
+                   field thumb-sized AND makes the sticky offset below (top-16) a
+                   single fixed number instead of a media query to keep in sync. #}
+                <div class="sticky top-0 z-20 -mx-3 bg-black/20 px-3 pb-2 pt-3 backdrop-blur-md">
+                    <div class="relative">
+                        <span class="pointer-events-none absolute inset-y-0 left-0 grid w-9 place-items-center text-ink-400">
+                            {{ nav.icon('search', 'h-4 w-4') }}
+                        </span>
+                        <input type="search" x-model="q" placeholder="Find a page…"
+                               aria-label="Filter navigation" autocapitalize="off" autocomplete="off"
+                               class="h-11 w-full rounded-lg border border-white/15 bg-white/10 pl-9 pr-3 text-sm text-white placeholder:text-ink-400 focus:border-accent-400 focus:bg-white/15 focus:outline-none focus:ring-2 focus:ring-accent-400">
+                    </div>
+                </div>
+
                 {% set route = app.request.attributes.get('_route') %}
                 
-                {# ========================================== #}
-                {# 🏢 PART A: LANDLORD MENU (Super Admin)     #}
-                {# ========================================== #}
+                {# ── PART A · LANDLORD (Edus Super Admin) ─────────────────────────────────
+                   Each row is one macro call. The old markup repeated a two-line
+                   class attribute 40 times, which is how the three menus drifted
+                   into using different highlight colours for the same state: there
+                   was nowhere for the state to be defined once. #}
                 {% if is_granted('ROLE_SUPER_ADMIN') %}
-                                
-                    {# === SECTION 1: OVERVIEW === #}
-                    <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-2 tracking-wider">Overview</div>
-                    
-                    <a href="{{ path('app_landlord_dashboard') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                        {% if route == 'app_landlord_dashboard' %}bg-gray-800 text-white shadow-sm ring-1 ring-gray-700{% endif %}">
-                        <span class="text-xl mr-3 opacity-80">📊</span>
-                        <span class="font-medium">Dashboard</span>
-                    </a>
+                    {{ nav.section('Overview') }}
+                    {{ nav.item(path('app_landlord_dashboard'), 'chart-bar', 'Dashboard',
+                                (route == 'app_landlord_dashboard')) }}
 
-                    {# === SECTION 2: OPERATIONS === #}
-                    <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-4 tracking-wider">Operations</div>
+                    {{ nav.section('Operations') }}
+                    {{ nav.item(path('landlord_agent_index'), 'users', 'Agents',
+                                ('agent' in route)) }}
+                    {{ nav.item(path('landlord_school_index'), 'building-office', 'Schools',
+                                ('school' in route)) }}
 
-                    {# AGENTS #}
-                    <a href="{{ path('landlord_agent_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                        {% if 'agent' in route %}bg-gray-800 text-white shadow-sm ring-1 ring-gray-700{% endif %}">
-                        <span class="text-xl mr-3 opacity-80">🕵️</span>
-                        <span class="font-medium">Agents</span>
-                    </a>
+                    {{ nav.section('Billing & Revenue') }}
+                    {{ nav.item(path('landlord_subscription_pending'), 'banknotes', 'Verify Payments',
+                                ('subscription_pending' in route)) }}
+                    {{ nav.item(path('landlord_subscription_invoices'), 'receipt-percent', 'Invoices',
+                                ('subscription_invoices' in route)) }}
+                    {{ nav.item(path('landlord_subscription_active'), 'receipt-percent', 'Active Subscriptions',
+                                ('subscription_active' in route or 'generate_slip' in route)) }}
+                    {{ nav.item(path('landlord_subscription_registrations'), 'clipboard-list', 'Term Registrations',
+                                ('subscription_registrations' in route)) }}
+                    {{ nav.item(path('landlord_credit_request_index'), 'credit-card', 'Credit Requests',
+                                ('credit_request' in route)) }}
+                    {{ nav.item(path('landlord_plan_index'), 'ticket', 'Pricing Plans',
+                                ('plan' in route)) }}
 
-                    {# SCHOOLS #}
-                    <a href="{{ path('landlord_school_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                        {% if 'school' in route %}bg-gray-800 text-white shadow-sm ring-1 ring-gray-700{% endif %}">
-                        <span class="text-xl mr-3 opacity-80">🏫</span>
-                        <span class="font-medium">Schools</span>
-                    </a>
-
-                    {# === SECTION 3: BILLING & REVENUE (New Section) === #}
-                    <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-4 tracking-wider">Billing & Revenue</div>
-
-                    {# 1. VERIFY PAYMENTS #}
-                    <a href="{{ path('landlord_subscription_pending') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                        {% if 'subscription_pending' in route %}bg-gray-800 text-white shadow-sm ring-1 ring-gray-700{% endif %}">
-                        <span class="text-xl mr-3 opacity-80">💰</span>
-                        <span class="font-medium">Verify Payments</span>
-                    </a>
-
-                    {# 2. ACTIVE SUBSCRIPTIONS (🟢 NEW) #}
-                    <a href="{{ path('landlord_subscription_active') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                        {% if 'subscription_active' in route or 'generate_slip' in route %}bg-gray-800 text-white shadow-sm ring-1 ring-gray-700{% endif %}">
-                        <span class="text-xl mr-3 opacity-80">📡</span>
-                        <span class="font-medium">Active Subscriptions</span>
-                    </a>
-
-                    <a href="{{ path('landlord_credit_request_index') }}" class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">
-                        <span class="mr-3 text-lg">💰</span>
-                        Credit Requests
-                    </a>
-
-                    {# 3. PLANS #}
-                    <a href="{{ path('landlord_plan_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                        {% if 'plan' in route %}bg-gray-800 text-white shadow-sm ring-1 ring-gray-700{% endif %}">
-                        <span class="text-xl mr-3 opacity-80">💳</span>
-                        <span class="font-medium">Pricing Plans</span>
-                    </a>
-
-                
-
-
-
-                {# ========================================== #}
-                {# 🟢 PART B: AGENT MENU (Partner)            #}
-                {# ========================================== #}
+                {# ── PART B · AGENT (sales partner) ─────────────────────────────────── #}
                 {% elseif is_granted('ROLE_AGENT') %}
-                    
-                    <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-2 tracking-wider">Agency</div>
-                    
-                    <a href="{{ path('app_agent_dashboard') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                        {% if route == 'app_agent_dashboard' %}bg-indigo-900 text-white shadow-sm{% endif %}">
-                        <span class="text-xl mr-3 opacity-80">📊</span>
-                        <span class="font-medium">Dashboard</span>
-                    </a>
+                    {{ nav.section('Agency') }}
+                    {{ nav.item(path('app_agent_dashboard'), 'chart-bar', 'Dashboard',
+                                (route == 'app_agent_dashboard')) }}
 
-                    <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-4 tracking-wider">Clients</div>
+                    {{ nav.section('Clients') }}
+                    {{ nav.item(path('app_agent_school_index'), 'building-office', 'My Schools',
+                                ('school_index' in route or 'school_show' in route)) }}
+                    {{ nav.item(path('app_agent_school_new'), 'plus-circle', 'Enroll New School',
+                                (route == 'app_agent_school_new')) }}
 
-                    {# MY SCHOOLS LIST #}
-                    <a href="{{ path('app_agent_school_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                        {% if 'school_index' in route or 'school_show' in route %}bg-indigo-900 text-white shadow-sm{% endif %}">
-                        <span class="text-xl mr-3 opacity-80">📋</span>
-                        <span class="font-medium">My Schools</span>
-                    </a>
+                    {{ nav.section('Finance') }}
+                    {# ⚠️ Still a dead `#`: `landlord_agent_earnings` does not exist yet.
+                       Kept so the item is not silently lost, but it must get a route
+                       before the agent portal is demoed — a nav row that goes nowhere
+                       is the single most obvious "unfinished" tell in a live demo. #}
+                    {{ nav.item('#', 'banknotes', 'My Earnings', false) }}
 
-                    {# ENROLL NEW #}
-                    <a href="{{ path('app_agent_school_new') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                        {% if route == 'app_agent_school_new' %}bg-indigo-900 text-white shadow-sm{% endif %}">
-                        <span class="text-xl mr-3 opacity-80">➕</span>
-                        <span class="font-medium">Enroll New School</span>
-                    </a>
-                    
-                    <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-4 tracking-wider">Finance</div>
-                    
-                    {# EARNINGS #}
-                    <a href="#" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors">
-                        <span class="text-xl mr-3 opacity-80">💰</span>
-                        <span class="font-medium">My Earnings</span>
-                    </a>
-
-                {# ========================================== #}
-                {# 👨‍👩‍👧 PART C: PARENT MENU                     #}
-                {# ========================================== #}
+                {# ── PART C · PARENT ──────────────────────────────────────────────────
+                   A parent only reaches this rail on a desktop; on a phone they get
+                   the tab bar. The two must agree — "Fees & Payments" was in the tab
+                   bar and missing from the rail, so the same parent on a laptop had
+                   no way to reach the fees screen at all. Same four places, both
+                   navs, always. #}
                 {% elseif is_granted('ROLE_PARENT') %}
-
-                    <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-2 tracking-wider">Parent Portal</div>
-                    
-                    <a href="{{ path('app_parent_dashboard') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                        {% if 'parent' in route %}bg-blue-900 text-white shadow-sm ring-1 ring-blue-700{% endif %}">
-                        <span class="text-xl mr-3 opacity-80">🏠</span>
-                        <span class="font-medium">My Dashboard</span>
-                    </a>
-
-                    <a href="{{ path('app_tenant_report_student') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                        {% if 'report_student' in route %}bg-blue-900 text-white shadow-sm ring-1 ring-blue-700{% endif %}">
-                        <span class="text-xl mr-3 opacity-80">🎓</span>
-                        <span class="font-medium">My Results</span>
-                    </a>
-                    
-                {# ========================================== #}
-                {# 🏫 PART D: TENANT MENU (School Staff)      #}
-                {# ========================================== #}
+                    {{ nav.section('Parent Portal') }}
+                    {{ nav.item(path('app_parent_dashboard'), 'home', 'My Dashboard',
+                                (route == 'app_parent_dashboard')) }}
+                    {{ nav.item(path('app_parent_applications_index'), 'document-text', 'Admission Applications',
+                                ('app_parent_applications' in route)) }}
+                    {{ nav.item(path('app_tenant_report_student'), 'academic-cap', 'My Results',
+                                ('report_student' in route)) }}
+                    {{ nav.item(path('app_parent_fees_index'), 'credit-card', 'Fees & Payments',
+                                ('app_parent_fees_index' in route or 'app_parent_finance_view' in route
+                                 or 'app_parent_payment_status' in route or 'app_parent_payment_start' in route)) }}
+                {# ── PART D · SCHOOL STAFF ────────────────────────────────────────────
+                   Roles are gated exactly as they were — the grouping changed, the
+                   permissions did not, and `route` still drives the highlight with
+                   the same substring tests. #}
                 {% else %}
-                    
-                    {# === 1. OVERVIEW === #}
-                    <a href="{{ path('app_tenant_dashboard') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                        {% if route == 'app_tenant_dashboard' %}bg-gray-800 text-white shadow-sm{% endif %}">
-                        <span class="text-xl mr-3 opacity-80">📊</span>
-                        <span class="font-medium">Dashboard</span>
-                    </a>
+                    {{ nav.item(path('app_tenant_dashboard'), 'home', 'Dashboard',
+                                (route == 'app_tenant_dashboard')) }}
 
-                    {# === 2. ADMISSIONS & STUDENTS (Bursar + Admin) === #}
                     {% if is_granted('ROLE_BURSAR') or is_granted('ROLE_ADMIN') %}
-                        <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-4 tracking-wider">Admissions</div>
-
-                        <a href="{{ path('app_tenant_admission_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'admission' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">📝</span>
-                            <span class="font-medium">New Admission</span>
-                        </a>
-                        <a href="{{ path('app_tenant_quick_enroll') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'quick_enroll' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">🚀</span>
-                            <span class="font-medium">Bulk Import</span>
-                        </a>
-                        <a href="{{ path('app_tenant_student_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'student' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">🎓</span>
-                            <span class="font-medium">Students</span>
-                        </a>
-
-                        <a href="{{ path('app_tenant_enrollment_promote') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'promote' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">📈</span>
-                            <span class="font-medium">Promote Students</span>
-                        </a>
+                        {{ nav.section('Admissions') }}
+                        {{ nav.item(path('app_tenant_application_index'), 'document-text', 'Applications',
+                                    ('app_tenant_application_' in route)) }}
+                        {{ nav.item(path('app_tenant_admission_index'), 'user-plus', 'New Admission',
+                                    ('admission' in route)) }}
+                        {{ nav.item(path('app_tenant_quick_enroll'), 'upload', 'Bulk Import',
+                                    ('quick_enroll' in route)) }}
+                        {{ nav.item(path('app_tenant_student_index'), 'academic-cap', learner.pluralCapital,
+                                    ('student' in route)) }}
+                        {{ nav.item(path('app_tenant_enrollment_promote'), 'trending-up', 'Promote ' ~ learner.pluralCapital,
+                                    ('promote' in route)) }}
                     {% endif %}
 
-                    {# === 2b. ADMINISTRATION (Academic Setup, Staff & Assignments) === #}
                     {% if is_granted('ROLE_ADMIN') %}
-                        <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-4 tracking-wider">Administration</div>
-
-                        {# Academic setup (Principal only) #}
-                        <a href="{{ path('app_tenant_academic_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'academic' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">🗓️</span>
-                            <span class="font-medium">Sessions & Terms</span>
-                        </a>
-
-                        {# 📅 SCHOOL CALENDAR #}
-                        <a href="{{ path('app_tenant_event_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'event' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">📅</span>
-                            <span class="font-medium">School Calendar</span>
-                        </a>
-
-                        <a href="{{ path('app_tenant_classroom_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'classroom' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">📚</span>
-                            <span class="font-medium">Classes</span>
-                        </a>
-
-                        <a href="{{ path('app_tenant_staff_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'staff' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">👥</span>
-                            <span class="font-medium">Staff</span>
-                        </a>
-                        <a href="{{ path('app_tenant_parent_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if route == 'app_tenant_parent_index' %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">👨‍👩‍👧</span>
-                            <span class="font-medium">Parents</span>
-                        </a>
-                        <a href="{{ path('app_tenant_department_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'department' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">🏛️</span>
-                            <span class="font-medium">Departments</span>
-                        </a>
-                        <a href="{{ path('app_tenant_subject_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if route in ['app_tenant_subject_index', 'app_tenant_subject_delete'] %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">📚</span>
-                            <span class="font-medium">Subjects</span>
-                        </a>
-                        <a href="{{ path('app_tenant_grading_scale_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'grading_scale' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">🏅</span>
-                            <span class="font-medium">Grading Scale</span>
-                        </a>
-                        <a href="{{ path('app_tenant_class_subject_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'class_subject' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">🗂️</span>
-                            <span class="font-medium">Class Subjects</span>
-                        </a>
-                        <a href="{{ path('app_tenant_subject_teacher') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'subject_teacher' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">📖</span>
-                            <span class="font-medium">Subject Teachers</span>
-                        </a>
-                        <a href="{{ path('app_tenant_year_group_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'year_group' in route and 'master' not in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">📂</span>
-                            <span class="font-medium">Year Groups</span>
-                        </a>
-                        <a href="{{ path('app_tenant_form_teacher') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'form_teacher' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">🧑‍🏫</span>
-                            <span class="font-medium">Form Teacher</span>
-                        </a>
-                        <a href="{{ path('app_tenant_hod') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if route in ['app_tenant_hod', 'app_tenant_hod_remove'] %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">🧑‍💼</span>
-                            <span class="font-medium">HOD (Dept Head)</span>
-                        </a>
-                        <a href="{{ path('app_tenant_year_group_master') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'year_group_master' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">🎓</span>
-                            <span class="font-medium">Year Group Master</span>
-                        </a>
+                        {{ nav.section('Administration') }}
+                        {{ nav.item(path('app_tenant_academic_index'), 'calendar', 'Sessions & Terms',
+                                    ('academic' in route)) }}
+                        {{ nav.item(path('app_tenant_event_index'), 'clock', 'School Calendar',
+                                    ('event' in route)) }}
+                        {{ nav.item(path('app_tenant_classroom_index'), 'book-open', 'Classes',
+                                    ('classroom' in route)) }}
+                        {{ nav.item(path('app_tenant_staff_index'), 'identification', 'Staff',
+                                    ('staff' in route)) }}
+                        {{ nav.item(path('app_tenant_parent_index'), 'users', 'Parents',
+                                    (route == 'app_tenant_parent_index')) }}
+                        {{ nav.item(path('app_tenant_department_index'), 'building-office', 'Departments',
+                                    ('department' in route)) }}
+                        {{ nav.item(path('app_tenant_subject_index'), 'squares-2x2', 'Subjects',
+                                    (route in ['app_tenant_subject_index', 'app_tenant_subject_delete'])) }}
+                        {{ nav.item(path('app_tenant_grading_scale_index'), 'chart-bar', 'Grading Scale',
+                                    ('grading_scale' in route)) }}
+                        {{ nav.item(path('app_tenant_behaviour_trait_index'), 'check-badge', 'Behaviour Traits',
+                                    ('behaviour_trait' in route)) }}
+                        {{ nav.item(path('app_tenant_class_subject_index'), 'clipboard-list', 'Class Subjects',
+                                    ('class_subject' in route)) }}
+                        {{ nav.item(path('app_tenant_subject_teacher'), 'book-open', 'Subject Teachers',
+                                    ('subject_teacher' in route)) }}
+                        {{ nav.item(path('app_tenant_year_group_index'), 'folder', 'Year Groups',
+                                    ('year_group' in route and 'master' not in route)) }}
+                        {# These three share one glyph deliberately — they are all "assign
+                           a role to a person", and reading them as a set is the point. #}
+                        {{ nav.item(path('app_tenant_form_teacher'), 'check-badge', 'Form Teacher',
+                                    ('form_teacher' in route)) }}
+                        {{ nav.item(path('app_tenant_hod'), 'check-badge', 'HOD (Dept Head)',
+                                    (route in ['app_tenant_hod', 'app_tenant_hod_remove'])) }}
+                        {{ nav.item(path('app_tenant_year_group_master'), 'check-badge', 'Year Group Master',
+                                    ('year_group_master' in route)) }}
                     {% endif %}
 
-                    {# === 2c. TEACHER ACADEMIC (Result Entry) === #}
                     {% if is_granted('ROLE_TEACHER') %}
-                        <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-4 tracking-wider">Teaching</div>
-                        <a href="{{ path('tenant_result_entry_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'result_entry' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">📝</span>
-                            <span class="font-medium">Result Entry</span>
-                        </a>
+                        {{ nav.section('Teaching') }}
+                        {{ nav.item(path('app_tenant_my_class'), 'identification', 'My Class',
+                                    ('my_class' in route)) }}
+                        {{ nav.item(path('tenant_result_entry_index'), 'pencil-square', 'Result Entry',
+                                    ('result_entry' in route)) }}
                         {% if is_granted('ROLE_ADMIN') or has_approval_assignment() %}
-                        <a href="{{ path('tenant_approval_hub') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'approval' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">✅</span>
-                            <span class="font-medium">Result Approvals</span>
-                        </a>
+                            {{ nav.item(path('tenant_approval_hub'), 'check-circle', 'Result Approvals',
+                                        ('approval' in route)) }}
                         {% endif %}
-                        <a href="{{ path('app_tenant_reports_hub') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'report' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">📊</span>
-                            <span class="font-medium">Reports</span>
-                        </a>
+                        {{ nav.item(path('app_tenant_reports_hub'), 'chart-pie', 'Reports',
+                                    ('report' in route)) }}
                     {% endif %}
-                    
-                   {# === 3. FINANCE OPERATIONS === #}
+
                     {% if is_granted('ROLE_BURSAR') or is_granted('ROLE_ADMIN') %}
-                        <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-4 tracking-wider">Finance</div>
-                        
-                        <a href="{{ path('app_tenant_fee_schedule') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'fee_schedule' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">📋</span>
-                            <span class="font-medium">Fee Schedule</span>
-                        </a>
+                        {{ nav.section('Finance') }}
+                        {{ nav.item(path('app_tenant_fee_schedule'), 'clipboard-list', 'Fee Schedule',
+                                    ('fee_schedule' in route)) }}
+                        {{ nav.item(path('app_tenant_invoice_index'), 'receipt-percent', 'Invoices',
+                                    (route == 'app_tenant_invoice_index' or 'academic_invoice' in route)) }}
+                        {{ nav.item(path('app_tenant_payment_index'), 'clock', 'Payment Terminal',
+                                    ('payment' in route)) }}
+                        {# Was the one row in the menu with a two-line label and a help
+                           caption under it — it looked like a section heading that had
+                           accidentally become a link. It is a row like every other row. #}
+                        {{ nav.item(path('app_tenant_discount_assign'), 'ticket', 'Discounts',
+                                    ('discount' in route)) }}
+                        {{ nav.item(path('app_tenant_expense_index'), 'banknotes', 'Expenses',
+                                    ('expense' in route)) }}
+                        {# A school is not a business: it does not make a profit, it
+                           balances income against expenditure. The page and its title
+                           say the same thing as this row. #}
+                        {{ nav.item(path('app_tenant_report_profit_loss'), 'trending-up', 'Income & Expenditure',
+                                    ('report' in route)) }}
+                        {# The school's own Edus bill: plan, roll, invoices, renewal. #}
+                        {{ nav.item(path('tenant_subscription_index'), 'receipt-percent', 'Subscription',
+                                    ('subscription' in route)) }}
 
-                        {# 🟢 1. DEDICATED ACADEMIC LEDGER #}
-                        <a href="{{ path('app_tenant_invoice_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if route == 'app_tenant_invoice_index' or 'academic_invoice' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">🎓</span>
-                            <span class="font-medium">Academic Fees</span>
-                        </a>
-                        
-                        <a href="{{ path('app_tenant_payment_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'payment' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">🏦</span>
-                            <span class="font-medium">Payment History</span>
-                        </a>
-
-                        <a href="{{ path('app_tenant_discount_assign') }}" 
-                        class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors mb-1
-                            {% if 'discount' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3">🎖️</span> {# Medal Icon for Scholarship #}
-                            <div>
-                                <span class="block font-bold text-sm">Scholarships</span>
-                                <span class="block text-[10px] text-gray-500 uppercase tracking-wider">Assign Discounts</span>
-                            </div>
-                        </a>
-
-                        {# === EXPENSES & REPORTS === #}
-                        <a href="{{ path('app_tenant_expense_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'expense' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">💸</span>
-                            <span class="font-medium">Expenses</span>
-                        </a>
-
-                        <a href="{{ path('app_tenant_report_profit_loss') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'report' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">📈</span>
-                            <span class="font-medium">Profit & Loss</span>
-                        </a>
+                        {{ nav.section('Reports') }}
+                        {{ nav.item(path('app_tenant_report_fees'), 'chart-pie', 'Fee Reports',
+                                    (route == 'app_tenant_report_fees')) }}
+                        {{ nav.item(path('app_tenant_report_collections'), 'banknotes', 'Daily Collections',
+                                    (route == 'app_tenant_report_collections')) }}
+                        {{ nav.item(path('app_tenant_report_classes'), 'building-office', 'Collections by Class',
+                                    (route == 'app_tenant_report_classes')) }}
+                        {{ nav.item(path('app_tenant_report_debtors'), 'users', 'Outstanding Fees',
+                                    (route in ['app_tenant_report_debtors', 'app_tenant_report_statement'])) }}
+                        {{ nav.item(path('app_tenant_report_payments'), 'banknotes', 'Payment Register',
+                                    (route in ['app_tenant_report_payments', 'app_tenant_report_payments_csv'])) }}
+                        {{ nav.item(path('app_tenant_report_reconciliation'), 'check-circle', 'Reconciliation',
+                                    (route == 'app_tenant_report_reconciliation')) }}
+                        {{ nav.item(path('app_tenant_report_matrix'), 'clipboard-list', 'Class Fee Status',
+                                    (route == 'app_tenant_report_matrix')) }}
+                        {{ nav.item(path('app_tenant_report_expenses'), 'receipt-percent', 'Expense Register',
+                                    (route in ['app_tenant_report_expenses', 'app_tenant_report_expenses_csv'])) }}
+                        {{ nav.item(path('app_tenant_report_income'), 'trending-up', 'Income Statement',
+                                    (route == 'app_tenant_report_income')) }}
+                        {{ nav.item(path('app_tenant_report_discounts'), 'ticket', 'Discount Report',
+                                    (route == 'app_tenant_report_discounts')) }}
+                        {{ nav.item(path('app_tenant_report_application_fees'), 'document-text', 'Application Fees',
+                                    (route == 'app_tenant_report_application_fees')) }}
                     {% endif %}
 
-                    {# === 3b. STORE OPERATIONS (Store Keeper) === #}
                     {% if is_granted('ROLE_STORE') %}
-                        <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-4 tracking-wider">Store</div>
-
-                        <a href="{{ path('app_tenant_product_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'product' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">📦</span>
-                            <span class="font-medium">Store Inventory</span>
-                        </a>
-
-                        <a href="{{ path('app_tenant_store_search') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'store_search' in route or 'cart_sale' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">🛒</span>
-                            <span class="font-medium">Store POS</span>
-                        </a>
-
-                        <a href="{{ path('app_tenant_invoice_store') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if route == 'app_tenant_invoice_store' or 'store_invoice' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">🏪</span>
-                            <span class="font-medium">Store Sales</span>
-                        </a>
+                        {{ nav.section('Store') }}
+                        {{ nav.item(path('app_tenant_product_index'), 'squares-2x2', 'Store Inventory',
+                                    ('product' in route)) }}
+                        {{ nav.item(path('app_tenant_store_search'), 'shopping-cart', 'Store POS',
+                                    ('store_search' in route or 'cart_sale' in route)) }}
+                        {{ nav.item(path('app_tenant_invoice_store'), 'banknotes', 'Store Sales',
+                                    (route == 'app_tenant_invoice_store' or 'store_invoice' in route)) }}
                     {% endif %}
 
-                    {# === 4. CONFIGURATION === #}
                     {% if is_granted('ROLE_ADMIN') %}
-
-                     <div class="px-3 py-2 text-xs uppercase text-gray-500 font-bold mt-4 tracking-wider">System</div>
-                        
-                         <a href="{{ path('tenant_wallet_index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'wallet' in app.request.get('_route') %}bg-gray-800 text-white shadow-sm ring-1 ring-gray-700{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">💳</span>
-                            <span class="font-medium">My Wallet</span>
-                        </a>
-
-                         <a href="{{ path('app_tenant_settings_general') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-800 text-gray-300 hover:text-white transition-colors
-                            {% if 'settings' in route %}bg-gray-800 text-white shadow-sm{% endif %}">
-                            <span class="text-xl mr-3 opacity-80">🔧</span>
-                            <span class="font-medium">Settings</span>
-                        </a>
+                        {{ nav.section('System') }}
+                        {{ nav.item(path('tenant_wallet_index'), 'credit-card', 'My Wallet',
+                                    ('wallet' in route)) }}
+                        {{ nav.item(path('app_tenant_settings_general'), 'adjustments', 'Settings',
+                                    ('settings' in route)) }}
                     {% endif %}
 
                 {% endif %}
-                
-            </nav>
-            
-            {# USER FOOTER #}
-            <div class="mt-auto pt-4 border-t border-gray-700 flex-shrink-0">
-                
-                {# 1. ADMIN LOGOUT #}
-                {% if is_granted('ROLE_SUPER_ADMIN') %}
-                    <div class="mb-3">
-                        <p class="text-xs text-gray-400 uppercase font-bold">Logged in as</p>
-                        <p class="text-sm font-bold text-white truncate">{{ app.user.email }}</p>
-                    </div>
-                    <a href="{{ path('app_landlord_logout') }}" class="flex items-center justify-center w-full p-2 bg-red-900/50 hover:bg-red-800 text-red-200 rounded text-sm transition-colors">
-                        🚪 Logout Admin
-                    </a>
-                
-                {# 🟢 2. AGENT LOGOUT (New) #}
-                {% elseif is_granted('ROLE_AGENT') %}
-                    <div class="mb-3">
-                        <p class="text-xs text-gray-400 uppercase font-bold">Logged in as</p>
-                        <p class="text-sm font-bold text-white truncate">{{ app.user.fullName }}</p>
-                         <span class="text-xs bg-indigo-800 text-indigo-200 px-2 py-0.5 rounded">Sales Partner</span>
-                    </div>
-                    <a href="{{ path('app_agent_logout') }}" class="flex items-center justify-center w-full p-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded text-sm transition-colors">
-                        🚪 Logout Agent
-                    </a>
 
-                {# 3. REGULAR USER LOGOUT #}
-                {% else %}
-                    <div class="mb-3">
-                        <p class="text-xs text-gray-400 uppercase font-bold">Current User</p>
-                        <p class="text-sm font-bold text-white truncate">{{ app.user.fullName|default(app.user.email) }}</p>
-                    </div>
-                    <a href="{{ path('app_logout') }}" class="flex items-center justify-center w-full p-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded text-sm transition-colors">
-                        🚪 Logout
+                {# An empty rail looks broken; say what happened and what to type
+                   instead. `x-cloak` keeps it hidden until Alpine is running, so it
+                   cannot flash on screen before the filter exists. #}
+                <p x-cloak x-show="q.trim() !== '' && !anyHit"
+                   class="px-3 py-8 text-center text-sm leading-relaxed text-ink-400">
+                    No page matches
+                    <span class="font-semibold text-ink-200">&ldquo;<span x-text="q"></span>&rdquo;</span>.
+                </p>
+
+            </nav>
+
+            {#
+                ═══ RAIL FOOTER ═══
+                The one fact the header does NOT carry: **which account is signed in**.
+                The header shows the school and the role; the footer shows the person.
+                That is why there is a name and an email here and no school name and no
+                role badge — repeating either would be the same "say each thing once"
+                failure the page footer just had fixed.
+
+                Sign-out sits here and is `md:hidden`. Above md the header's sign-out
+                is always on screen, so a second one is pure duplication. Below md the
+                drawer's backdrop (z-35) covers the header (z-30), so while the drawer
+                is open the header's copy is genuinely unreachable — and a drawer with
+                no way out of the account is a trap. One sign-out per viewport, and it
+                is always the one you can actually reach.
+            #}
+            {% set user_name = (app.user.fullName is defined and app.user.fullName) ? app.user.fullName : app.user.email %}
+            {% set logout_route = is_granted('ROLE_SUPER_ADMIN') ? 'app_landlord_logout'
+                                : (is_granted('ROLE_AGENT') ? 'app_agent_logout' : 'app_logout') %}
+            <div id="sidebar-footer" class="shrink-0 border-t border-white/10 px-3 pt-3">
+                <div class="flex items-center gap-2.5">
+                    <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/10 text-xs font-bold uppercase text-ink-200 ring-1 ring-white/15"
+                          aria-hidden="true">{{ user_name|slice(0, 1)|upper }}</span>
+                    <span class="min-w-0 flex-1">
+                        <span class="block truncate text-sm font-semibold leading-tight text-white">{{ user_name }}</span>
+                        {# Email, not role: the role badge is already in the header. #}
+                        <span class="block truncate text-xs leading-tight text-ink-400">{{ app.user.email }}</span>
+                    </span>
+                    <a href="{{ path(logout_route) }}" aria-label="Sign out" title="Sign out"
+                       class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-ink-400 hover:bg-white/10 hover:text-white md:hidden">
+                        {{ nav.icon('logout') }}
                     </a>
-                {% endif %}
+                </div>
             </div>
         </aside>
 
     {% endif %} {# End if app.user #}
 
     {# === MAIN CONTENT === #}
-    <main class="flex-1 p-6 {% if app.user %}md:ml-0{% else %}w-full max-w-7xl mx-auto{% endif %} overflow-x-hidden">
+    {# 📱 The gutter is MOBILE ONLY. On a full screen the content column runs edge
+            to edge — a desktop is not short of horizontal room, so a 24px side
+            margin plus a `max-w-4xl mx-auto` wrapper left a 208px dead strip on
+            each side of a 1600px screen and every table sat in the middle of it.
+            Pages still own the gutter (`px-4 sm:px-0`); <main> adds none, so the
+            old double-padding bug cannot come back. #}
+    {% set main_padding = 'py-4 sm:py-6' %}
+    {# 📱 THE SCROLL CONTAINER. `overflow-y-auto` here, plus `overflow-hidden` on
+            the row and a locked <body>, is the whole trick: the rail and the footer
+            are laid out once and never move, and only this column scrolls. When the
+            window was the scroll container, a long page carried the navigation and
+            the footer off the top of the screen with it.
+            `overscroll-contain` stops a flick at the end of the list from propagating
+            to the page behind it (pull-to-refresh, rubber-banding). #}
+    {% if public_site %}
+    {#
+        A public page brings its own <main>: the school website, the login page
+        and the application form are standalone documents (UI-SPEC: "public pages
+        get no shell"). Wrapping them in the app's scroll container gave every
+        public page a second <main>, a nested scroll area and a max-w-7xl cap it
+        never asked for — so the wrapper is a plain div with no classes here.
+    #}
+    <div class="flex-1 w-full">
+    {% else %}
+    <main class="flex-1 {{ main_padding }} {% if app.user %}app-scroll md:ml-0{% else %}w-full max-w-7xl mx-auto{% endif %} overflow-y-auto overflow-x-hidden overscroll-contain">
+    {% endif %}
         
         {# FLASH MESSAGES #}
         {% for category, messages in app.flashes %}
@@ -524,8 +764,131 @@
             {% endfor %}
         {% endfor %}
 
+        {# A lapsed school can still read and export; writes are refused by
+           SubscriptionReadOnlyListener. This banner explains why. #}
+        {% if app.request.attributes.get('subscription_expired') %}
+            <div class="mx-4 mt-4 rounded-lg border border-pending/30 bg-pending/5 p-4" role="status">
+                <p class="text-sm font-semibold text-ink-900">Your subscription has ended — this account is read-only.</p>
+                <p class="mt-1 text-sm text-ink-700">You can still view and export your data. Register a term to restore full access.</p>
+                <a href="{{ path('tenant_subscription_index') }}"
+                   class="mt-2 inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 underline">
+                    Go to Subscription
+                </a>
+            </div>
+        {% endif %}
+
         {% block body %}{% endblock %}
+    {% if public_site %}
+    </div>
+    {% else %}
     </main>
+    {% endif %}
+    </div>{# / sidebar + content row #}
+
+    {% if app.user and not public_site %}
+        {#
+            ═══════════════════════════════════════════════════════════════════════
+            APP FOOTER — full screen width, under BOTH columns
+
+            It is a sibling of the sidebar + content row, not a child of <main>,
+            and that placement is the point. The footer is a band across the bottom
+            of the application in the same way the header is a band across the top.
+
+            Inside <main> it could only ever be as wide as the content column, so
+            on a desktop its top rule stopped 24px short of the edges while every
+            other rule on the screen ran edge to edge — the one band that did not
+            line up. And because <main> contributes no horizontal gutter on a
+            phone, the footer had none either: the brand mark sat hard against
+            x = 0 while the page content beside it was inset 16px.
+
+            ⚠️ The consequence, and it is intended: the nav rail now ends where the
+            footer begins, so the dark rail does not run off the bottom of the
+            screen. That is what makes the footer's rule span the full width.
+
+            It owns its own gutter (`px-4 sm:px-6`) for the same reason every page
+            does. It has no `mt-`: <main> is the scroll container and its own bottom
+            padding is the breathing room, so the content column runs all the way to
+            the footer's rule instead of stopping 48px short of it.
+
+            The BRAND lives here, not in the header (UI-SPEC §4.1.1), and the order
+            is deliberate and never reversed: the school is the subject of the page,
+            Edus is the engine underneath it.
+            ═══════════════════════════════════════════════════════════════════════
+        #}
+        <footer class="app-glass relative z-30 shrink-0 border-t border-ink-200 px-4 pt-6 pb-2 sm:px-6">
+            {#
+                The BRAND only — and that is the whole point.
+
+                The sticky header already names the school on every screen, so
+                repeating it down here (and again in a © line) was three mentions
+                of the same thing. This block is the single brand credit: because
+                it says who we are and links out, there is no "Powered by edus.ng"
+                row to duplicate it either.
+            #}
+            {# One row on a phone — never two cramped stacked lines. The © is
+               shortened to "© 2026" on small screens so it sits beside the brand
+               block without crowding it; the full sentence returns from sm up.
+               `flex-wrap` + gap-y means that if it genuinely cannot fit, it
+               wraps with breathing room rather than colliding. #}
+            <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                {% import '_brand.html.twig' as brand %}
+                <a href="https://edus.ng" target="_blank" rel="noopener"
+                   class="inline-flex min-h-[44px] items-center rounded-lg hover:opacity-80">
+                    {{ brand.lockup('dark') }}
+                </a>
+
+                <p class="text-xs text-ink-500">
+                    &copy; {{ "now"|date("Y") }}<span class="hidden sm:inline"> &middot; All rights reserved</span>
+                </p>
+            </div>
+        </footer>
+    {% endif %}
+
+    {% if app.user and not public_site and is_granted('ROLE_PARENT') %}
+        {# ═══ BOTTOM TAB BAR — phones only ═══
+           The bar lists PLACES — things you go and look at. Verbs live elsewhere.
+           Exactly four: a fifth wraps onto a second row, which grows the bar past
+           its own height and eats the bottom of every page.
+
+           It is a normal flex item at the bottom of the locked shell, NOT
+           `position: fixed`. In a shell that never scrolls there is nothing to fix
+           it against — and being in flow means it can never sit on top of the
+           footer, so the old `tabbar-space` padding hack that reserved room for it
+           is gone. One fewer number to keep in sync. #}
+        {% set current = app.request.attributes.get('_route') %}
+        {# Icon names come from templates/_nav_icons.html.twig. The rail uses these
+           same four glyphs for a parent's desktop menu — a person must not get a
+           different-looking "Results" on a phone than on a laptop. #}
+        {% set tabs = [
+            { label: 'Home',         icon: 'home',          route: 'app_parent_dashboard',
+              match: ['app_parent_dashboard'] },
+            { label: 'Applications', icon: 'document-text', route: 'app_parent_applications_index',
+              match: ['app_parent_applications_index', 'app_parent_applications_new',
+                      'app_parent_applications_edit', 'app_parent_applications_show'] },
+            { label: 'Results',      icon: 'academic-cap',  route: 'app_tenant_report_student',
+              match: ['app_tenant_report_student'] },
+            { label: 'Fees',         icon: 'credit-card',   route: 'app_parent_fees_index',
+              match: ['app_parent_fees_index', 'app_parent_finance_view',
+                      'app_parent_payment_status', 'app_parent_payment_start'] },
+        ] %}
+        <nav class="shrink-0 border-t border-ink-200 bg-white md:hidden"
+             style="padding-bottom: env(safe-area-inset-bottom);"
+             aria-label="Primary">
+            <div class="grid grid-cols-4">
+                {% for tab in tabs %}
+                    {% set active = current in tab.match %}
+                    <a href="{{ path(tab.route) }}" {% if active %}aria-current="page"{% endif %}
+                       class="relative flex min-h-[3.75rem] flex-col items-center justify-center gap-0.5 text-[11px] font-semibold {{ active ? 'text-accent-600' : 'text-ink-500' }}">
+                        {% if active %}
+                            <span class="absolute inset-x-6 top-0 h-0.5 rounded-full bg-accent-600" aria-hidden="true"></span>
+                        {% endif %}
+                        {{ nav.icon(tab.icon, 'h-6 w-6') }}
+                        <span class="truncate">{{ tab.label }}</span>
+                    </a>
+                {% endfor %}
+            </div>
+        </nav>
+    {% endif %}
 
     {# 🛡️ SCRIPTS BLOCK #}
     {% if app.user %}
@@ -549,24 +912,45 @@
             };
         }
 
-        // Sidebar Toggle Logic
+        // 📱 Sidebar drawer (mobile-first). Opens over the content with a scrim, and
+        // closes via the toggle, the scrim, a menu tap, Esc, or a width change.
         const sidebar = document.getElementById('sidebar');
         const sidebarToggle = document.getElementById('sidebar-toggle');
-        
+        const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+
         if (sidebarToggle && sidebar) {
-            sidebarToggle.addEventListener('click', () => {
-                sidebar.classList.toggle('-translate-x-full');
-            });
-            // Hide on mobile when clicking links
+            const isOpen = () => !sidebar.classList.contains('-translate-x-full');
+
+            const openSidebar = () => {
+                sidebar.classList.remove('-translate-x-full');
+                if (sidebarBackdrop) sidebarBackdrop.classList.add('is-open');
+                sidebarToggle.setAttribute('aria-expanded', 'true');
+                document.body.style.overflow = 'hidden'; // don't scroll the page behind the drawer
+            };
+
+            const closeSidebar = () => {
+                sidebar.classList.add('-translate-x-full');
+                if (sidebarBackdrop) sidebarBackdrop.classList.remove('is-open');
+                sidebarToggle.setAttribute('aria-expanded', 'false');
+                document.body.style.overflow = '';
+            };
+
+            sidebarToggle.addEventListener('click', () => isOpen() ? closeSidebar() : openSidebar());
+
+            if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeSidebar);
+
             document.querySelectorAll('aside a').forEach(link => {
                 link.addEventListener('click', () => {
-                    if (window.innerWidth < 768) {
-                        sidebar.classList.add('-translate-x-full');
-                    }
+                    if (window.innerWidth < 768) closeSidebar();
                 });
             });
-             window.addEventListener('resize', () => {
-                if (window.innerWidth >= 768) sidebar.classList.remove('-translate-x-full');
+
+            document.addEventListener('keydown', event => {
+                if (event.key === 'Escape') closeSidebar();
+            });
+
+            window.addEventListener('resize', () => {
+                if (window.innerWidth >= 768) closeSidebar();
             });
         }
 

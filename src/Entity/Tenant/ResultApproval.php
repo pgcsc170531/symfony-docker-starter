@@ -47,6 +47,15 @@ class ResultApproval
     #[ORM\Column(name: 'hod_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $hodAt = null;
 
+    /**
+     * Why the HOD sent the sheet back.
+     *
+     * A rejection without a reason is a dead end: the teacher is told their
+     * sheet was unlocked but not what to fix, and re-submits the same mistake.
+     */
+    #[ORM\Column(name: 'hod_reason', length: 255, nullable: true)]
+    private ?string $hodReason = null;
+
     #[ORM\Column(name: 'year_group_status', length: 20)]
     private string $yearGroupStatus = self::STATUS_PENDING;
 
@@ -58,6 +67,9 @@ class ResultApproval
     private ?\DateTimeImmutable $yearGroupAt = null;
 
     public function getId(): ?int { return $this->id; }
+
+    public function getHodReason(): ?string { return $this->hodReason; }
+    public function setHodReason(?string $hodReason): static { $this->hodReason = $hodReason; return $this; }
 
     public function getClassSubject(): ?ClassSubject { return $this->classSubject; }
     public function setClassSubject(ClassSubject $classSubject): static { $this->classSubject = $classSubject; return $this; }

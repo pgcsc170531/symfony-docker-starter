@@ -1,0 +1,197 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}My Class{% endblock %}
+
+{% block body %}
+<div class="px-4">
+
+    {# ── Header ─────────────────────────────────────────────────────── #}
+    <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div class="min-w-0">
+            <h1 class="text-2xl font-bold text-ink-900">My Class</h1>
+            <p class="mt-1 break-words text-sm text-ink-500">
+                {{ classroom.name }} · {{ term.name }}
+                {% if term.session %} · {{ term.session.name }}{% endif %}
+                · {{ pupilCount }} {{ pupilCount == 1 ? learner : learner.plural }}
+            </p>
+        </div>
+
+        {% if classes|length > 1 %}
+            <label class="w-full sm:w-64">
+                <span class="mb-1 block text-sm font-medium text-ink-700">Class</span>
+                <select onchange="if (this.value) window.location = this.value"
+                        class="w-full rounded-lg border border-ink-300 p-2.5 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500">
+                    {% for option in classes %}
+                        <option value="{{ path('app_tenant_my_class', {classroom: option.id}) }}"
+                                {{ option.id == classroom.id ? 'selected' }}>
+                            {{ option.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </label>
+        {% endif %}
+
+        <a href="{{ path('app_tenant_report_class_print', {classroom: classroom.id, term: term.id}) }}"
+           class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-ink-300 bg-white px-5 text-sm font-semibold text-ink-700 hover:border-accent-400 hover:text-accent-700">
+            Print class reports
+        </a>
+    </div>
+
+    {# ── Term state ─────────────────────────────────────────────────── #}
+    {% if released %}
+        <div class="mb-5 rounded-xl border border-paid/30 bg-paid/10 p-4">
+            <p class="text-sm font-semibold text-paid">This term's record is released</p>
+            <p class="mt-1 text-sm text-ink-700">
+                Results are final-approved, so attendance and behaviour are read-only.
+                An administrator can reopen a specific day if something must change.
+            </p>
+        </div>
+    {% elseif outstandingSubjects > 0 %}
+        <div class="mb-5 rounded-xl border border-ink-200 bg-white p-4">
+            <p class="text-sm font-semibold text-ink-800">Still open for editing</p>
+            <p class="mt-1 text-sm text-ink-500">
+                {{ outstandingSubjects }} {{ outstandingSubjects == 1 ? 'subject is' : 'subjects are' }}
+                still awaiting final approval. Once the last one is approved this page becomes read-only.
+            </p>
+        </div>
+    {% endif %}
+
+    {# ── The two duties ─────────────────────────────────────────────── #}
+    {% set attendanceDone = schoolDayCount > 0 and registersTaken >= schoolDayCount %}
+    {% set behaviourDone = pupilCount > 0 and ratedPupils >= pupilCount %}
+
+    <div class="grid gap-4 lg:grid-cols-3">
+
+        {# Attendance #}
+        <section class="rounded-xl border border-ink-200 bg-white p-5 shadow-card">
+            <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <h2 class="text-base font-bold text-ink-900">Attendance</h2>
+                    <p class="mt-0.5 text-sm text-ink-500">Take the daily register</p>
+                </div>
+                <span class="shrink-0 rounded px-2 py-0.5 text-[11px] font-semibold {{ attendanceDone ? 'bg-paid/10 text-paid' : 'bg-pending/10 text-pending' }}">
+                    {{ attendanceDone ? 'Complete' : 'In progress' }}
+                </span>
+            </div>
+
+            <dl class="mt-4 grid grid-cols-2 gap-y-2 text-sm">
+                <dt class="text-ink-500">Registers taken</dt>
+                <dd class="text-right font-bold text-ink-900 tabular">{{ registersTaken }} / {{ schoolDayCount }}</dd>
+                <dt class="text-ink-500">Missing</dt>
+                <dd class="text-right font-bold {{ missingRegisters > 0 ? 'text-pending' : 'text-ink-900' }} tabular">{{ missingRegisters }}</dd>
+            </dl>
+
+            {% if schoolDayCount > 0 %}
+                <div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-ink-100" role="img"
+                     aria-label="{{ registersTaken }} of {{ schoolDayCount }} registers taken">
+                    <div class="h-full rounded-full bg-accent-600"
+                         style="width: {{ min(100, (registersTaken / schoolDayCount * 100)|round) }}%"></div>
+                </div>
+            {% endif %}
+
+            <div class="mt-4 flex flex-col gap-2 sm:flex-row">
+                {% if today %}
+                    <a href="{{ path('app_tenant_my_class_register', {date: today|date('Y-m-d'), classroom: classroom.id}) }}"
+                       class="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-accent-600 px-4 font-semibold text-white transition hover:bg-accent-700 sm:flex-1">
+                        Take today's register
+                    </a>
+                {% else %}
+                    <span class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-ink-200 px-4 text-sm text-ink-500 sm:flex-1">
+                        No school day has started yet
+                    </span>
+                {% endif %}
+                <a href="{{ path('app_tenant_my_class_attendance', {classroom: classroom.id}) }}"
+                   class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-ink-300 px-4 text-sm font-semibold text-ink-700 transition hover:border-accent-400 hover:text-accent-700 sm:flex-1">
+                    All days
+                </a>
+            </div>
+        </section>
+
+        {# Behaviour #}
+        <section class="rounded-xl border border-ink-200 bg-white p-5 shadow-card">
+            <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <h2 class="text-base font-bold text-ink-900">Behaviour</h2>
+                    <p class="mt-0.5 text-sm text-ink-500">Affective &amp; psychomotor domains</p>
+                </div>
+                <span class="shrink-0 rounded px-2 py-0.5 text-[11px] font-semibold {{ behaviourDone ? 'bg-paid/10 text-paid' : 'bg-pending/10 text-pending' }}">
+                    {{ behaviourDone ? 'Complete' : 'In progress' }}
+                </span>
+            </div>
+
+            <dl class="mt-4 grid grid-cols-2 gap-y-2 text-sm">
+                <dt class="text-ink-500">{{ learner.pluralCapital }} rated</dt>
+                <dd class="text-right font-bold text-ink-900 tabular">{{ ratedPupils }} / {{ pupilCount }}</dd>
+                <dt class="text-ink-500">Traits per {{ learner }}</dt>
+                <dd class="text-right font-bold text-ink-900 tabular">{{ traitCount }}</dd>
+            </dl>
+
+            {% if pupilCount > 0 %}
+                <div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-ink-100" role="img"
+                     aria-label="{{ ratedPupils }} of {{ pupilCount }} {{ learner.plural }} fully rated">
+                    <div class="h-full rounded-full bg-accent-600"
+                         style="width: {{ min(100, (ratedPupils / pupilCount * 100)|round) }}%"></div>
+                </div>
+            {% endif %}
+
+            <div class="mt-4">
+                <a href="{{ path('app_tenant_my_class_behaviour', {classroom: classroom.id}) }}"
+                   class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-accent-600 px-4 font-semibold text-white transition hover:bg-accent-700">
+                    {{ ratedPupils >= pupilCount and pupilCount > 0 ? 'Review ratings' : 'Continue rating' }}
+                </a>
+            </div>
+        </section>
+
+        {# Form teacher's remark #}
+        {% set remarksDone = pupilCount > 0 and remarksWritten >= pupilCount %}
+        <section class="rounded-xl border border-ink-200 bg-white p-5 shadow-card">
+            <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <h2 class="text-base font-bold text-ink-900">Remarks</h2>
+                    <p class="mt-0.5 text-sm text-ink-500">The form teacher's paragraph</p>
+                </div>
+                <span class="shrink-0 rounded px-2 py-0.5 text-[11px] font-semibold {{ remarksDone ? 'bg-paid/10 text-paid' : 'bg-pending/10 text-pending' }}">
+                    {{ remarksDone ? 'Complete' : 'In progress' }}
+                </span>
+            </div>
+
+            <dl class="mt-4 grid grid-cols-2 gap-y-2 text-sm">
+                <dt class="text-ink-500">Remarks written</dt>
+                <dd class="text-right font-bold text-ink-900 tabular">{{ remarksWritten }} / {{ pupilCount }}</dd>
+                <dt class="text-ink-500">Still to write</dt>
+                <dd class="text-right font-bold {{ pupilCount - remarksWritten > 0 ? 'text-pending' : 'text-ink-900' }} tabular">{{ max(0, pupilCount - remarksWritten) }}</dd>
+            </dl>
+
+            {% if pupilCount > 0 %}
+                <div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-ink-100" role="img"
+                     aria-label="{{ remarksWritten }} of {{ pupilCount }} remarks written">
+                    <div class="h-full rounded-full bg-accent-600"
+                         style="width: {{ min(100, (remarksWritten / pupilCount * 100)|round) }}%"></div>
+                </div>
+            {% endif %}
+
+            <div class="mt-4">
+                <a href="{{ path('app_tenant_my_class_remarks', {classroom: classroom.id}) }}"
+                   class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-accent-600 px-4 font-semibold text-white transition hover:bg-accent-700">
+                    {{ remarksDone ? 'Review remarks' : 'Write remarks' }}
+                </a>
+            </div>
+        </section>
+    </div>
+
+    {% if pupilCount == 0 %}
+        <div class="mt-4 rounded-xl border border-dashed border-ink-300 bg-white px-6 py-10 text-center">
+            <p class="text-lg font-semibold text-ink-700">No {{ learner.plural }} in {{ classroom.name }} yet</p>
+            <p class="mx-auto mt-1 max-w-md text-sm text-ink-500">
+                Enrol {{ learner.plural }} into this class (Admissions → {{ learner.pluralCapital }}, or Bulk Import) and they
+                will appear here, ready to be marked.
+            </p>
+        </div>
+    {% endif %}
+
+    <p class="mt-6 text-xs text-ink-400">
+        Attendance, behaviour and remarks lock automatically when the class's results are final-approved.
+        A missing register is never counted as present — the card shows how many were actually taken.
+    </p>
+</div>
+{% endblock %}

@@ -1,0 +1,418 @@
+{% extends 'base.html.twig' %}
+
+{% import _self as ui %}
+
+{% block title %}{{ isNew ? 'New Application' : 'Edit Application' }}{% endblock %}
+
+{#
+    The five-step child application wizard — docs/parent-application/DESIGN.md §8 item 5.
+
+    Alpine owns the step navigation, tabs and progress bar. Nothing is removed from the DOM
+    between steps (the panels are merely hidden with :style, not x-if), so every field is
+    submitted regardless of which tab is on screen.
+
+    NOTE on :style instead of x-show — in this environment (Alpine 3.x from the floating
+    cdn.jsdelivr.net/npm/alpinejs@3.x.x build) the x-show directive's effect ran once at init
+    and never re-ran on state change, so panels stayed frozen on step 1 while x-text, :style
+    and :value all updated normally. Explicit :style bindings are demonstrably reactive here.
+    Worth revisiting when the floating Alpine CDN is pinned to a specific version.
+
+    A draft can be saved at any point: "Save & finish later" persists without validation,
+    while "Submit application" validates the whole form.
+#}
+
+{% macro field(field, help, attrs, vars) %}
+    <div>
+        {{ form_label(field, null, {'label_attr': {'class': 'block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5'}}) }}
+        {#
+            Two subtleties, both learned the hard way:
+            1. form_widget() with an `attr` key REPLACES the whole attribute array, so merge with
+               field.vars.attr or the type-level classes vanish.
+            2. An `id` passed inside `attr` is ignored by the form theme (it renders vars.id first and
+               the duplicate is dropped by the parser). Pass ids as a render variable instead.
+        #}
+        {{ form_widget(field, (vars|default({}))|merge({'attr': field.vars.attr|merge(attrs|default({}))})) }}
+        {% if help is not empty and help is not same as(false) %}
+            <p class="text-[11px] text-gray-400 mt-1">{{ help }}</p>
+        {% endif %}
+        {% if field.vars.errors|length %}
+            <p class="text-xs text-red-600 font-medium mt-1">{{ field.vars.errors|first.message }}</p>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+{% macro upload(name, label, help, existing, accept) %}
+    <div>
+        <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">{{ label }}</label>
+        <input type="file" name="{{ name }}" accept="{{ accept }}"
+               class="w-full text-xs text-gray-600 border border-gray-300 rounded-lg p-2.5 bg-white
+                      file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0
+                      file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+        <p class="text-[11px] text-gray-400 mt-1">{{ help }}</p>
+        {% if existing %}
+            <p class="text-[11px] text-emerald-600 font-medium mt-1">✓ Already uploaded: {{ existing }}</p>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+{% block body %}
+<div class="mt-6 px-4 pb-16">
+
+    {# ── HEADER ─────────────────────────────────────────────────────────── #}
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-gray-200 pb-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">
+                {{ isNew ? 'Apply for a child' : 'Continue your application' }}
+            </h1>
+            <p class="text-gray-500 text-sm mt-1">
+                {% if application.reference %}
+                    {{ application.fullName ?: 'This application' }} · Reference
+                    <span class="font-mono font-bold text-gray-700">{{ application.reference }}</span>
+                {% else %}
+                    Your answers are saved as you go — you can stop and come back at any time.
+                {% endif %}
+            </p>
+        </div>
+        <a href="{{ path('app_parent_applications_index') }}"
+           class="shrink-0 inline-block py-3.5 text-xs font-bold text-gray-500 hover:text-indigo-600">← My applications</a>
+    </div>
+
+    {% if wizardErrors is not empty %}
+        <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+            {% for error in wizardErrors %}
+                <p class="text-sm font-bold text-red-800">{{ error }}</p>
+            {% endfor %}
+            <p class="text-xs text-red-700 mt-1">We jumped to the step that needs a correction — anything highlighted in red below.</p>
+        </div>
+    {% endif %}
+
+    {% if application.status == 'needs_info' and application.infoRequestedNote %}
+        <div class="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-6">
+            <p class="text-xs font-bold text-orange-800 uppercase tracking-wide">The school asked for more information</p>
+            <p class="text-sm text-orange-900 mt-1">{{ application.infoRequestedNote }}</p>
+        </div>
+    {% endif %}
+
+    <style>
+        [x-cloak] { display: none !important; }
+        #{{ form.gender.vars.id }} { display: flex; gap: 1.5rem; }
+        #{{ form.gender.vars.id }} > div { display: flex; align-items: center; gap: .5rem; }
+        #{{ form.gender.vars.id }} input[type=radio] { width: 1rem; height: 1rem; color: #4f46e5; }
+    </style>
+
+    {% set inputClass = 'w-full rounded-lg border-gray-300 p-3 shadow-sm focus:ring-indigo-500 focus:border-indigo-500' %}
+    {% set lockedClass = inputClass ~ ' bg-gray-100 text-gray-600 cursor-not-allowed' %}
+    {% set stepNames = ['The child', 'Origin & health', 'Previous school', 'Guardian', 'Review & submit'] %}
+
+    <div x-data="{
+            step: {{ initialStep }},
+            total: {{ totalSteps }},
+            vals: { first: '', last: '', dob: '', className: '' },
+            names: {{ stepNames|json_encode|e('html_attr') }},
+            next() { if (this.step < this.total) { this.step++; this.toTop(); } },
+            prev() { if (this.step > 1) { this.step--; this.toTop(); } },
+            goTo(n) { this.step = n; this.toTop(); },
+            {# Signed in, the app shell scrolls <main> and the window never moves
+               (base.html.twig, APP SHELL) — so `window.scrollTo` alone silently
+               did nothing here and every step change left you at the bottom of
+               the new step. Scroll both: one of them is the scroll container in
+               this context, and the other is a no-op. #}
+            toTop() {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                const scroller = document.querySelector('main');
+                if (scroller) { scroller.scrollTo({ top: 0, behavior: 'smooth' }); }
+            }
+         }"
+         x-cloak>
+
+        {# ── PROGRESS + TABS ────────────────────────────────────────────── #}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-6">
+            <div class="flex items-center justify-between mb-3">
+                <p class="text-xs font-bold text-indigo-600 uppercase tracking-wider">
+                    Step <span x-text="step"></span> of <span x-text="total"></span>
+                </p>
+                <p class="text-xs font-bold text-gray-700" x-text="names[step - 1]"></p>
+            </div>
+
+            <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div class="h-full bg-indigo-600 rounded-full transition-all duration-300"
+                     :style="`width: ${(step / total) * 100}%`"></div>
+            </div>
+
+            <div class="hidden sm:flex flex-wrap gap-2 mt-4">
+                <template x-for="n in total" :key="n">
+                    <button type="button" @click="goTo(n)"
+                            class="text-[11px] font-bold px-3 py-1.5 rounded-full border transition-colors"
+                            :class="n === step
+                                ? 'bg-indigo-600 text-white border-indigo-600'
+                                : 'bg-white text-gray-500 border-gray-200 hover:border-indigo-400 hover:text-indigo-600'"
+                            x-text="`${n}. ${names[n - 1]}`"></button>
+                </template>
+            </div>
+        </div>
+
+        {# ── THE FORM ───────────────────────────────────────────────────── #}
+        {#
+            novalidate on purpose: native HTML5 validation cannot report on a field inside a
+            hidden step ("An invalid form control with name='…' is not focusable" — the browser
+            silently refuses to submit). The server validates instead and the controller jumps
+            the wizard to the first step containing an error.
+        #}
+        {{ form_start(form, {'attr': {'enctype': 'multipart/form-data', 'novalidate': 'novalidate'}}) }}
+        <input type="hidden" name="current_step" :value="step">
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sm:p-8">
+
+            {# ═══ STEP 1 — THE CHILD ═══════════════════════════════════════ #}
+            {# Panels use :style, not x-show — see the note in the wizard header comment. #}
+            <div :style="step === 1 ? '' : 'display: none'" class="space-y-5">
+                <h2 class="text-lg font-bold text-gray-800">Tell us about your child</h2>
+
+                <div class="grid sm:grid-cols-3 gap-4">
+                    {{ ui.field(form.firstName, 'As written on the birth certificate', {'class': inputClass, 'x-model': 'vals.first'}) }}
+                    {{ ui.field(form.middleName, false, {'class': inputClass}) }}
+                    {{ ui.field(form.lastName, false, {'class': inputClass, 'x-model': 'vals.last'}) }}
+                </div>
+
+                <div class="grid sm:grid-cols-3 gap-4">
+                    {{ ui.field(form.dateOfBirth, 'The school uses this to place your child in the right class.', {'class': inputClass, 'x-model': 'vals.dob'}) }}
+                    <div>
+                        {{ form_label(form.gender, null, {'label_attr': {'class': 'block text-xs font-bold text-gray-600 uppercase tracking-wide mb-2.5'}}) }}
+                        {{ form_widget(form.gender) }}
+                        {% if form.gender.vars.errors|length %}
+                            <p class="text-xs text-red-600 font-medium mt-1">{{ form.gender.vars.errors|first.message }}</p>
+                        {% endif %}
+                    </div>
+                    {{ ui.field(form.religion, false, {'class': inputClass}) }}
+                </div>
+
+                {{ ui.field(form.requestedClassroom, 'Choose the class you are applying for. The school may change it after review.', {'class': inputClass, '@change': "vals.className = $event.target.options[$event.target.selectedIndex].text"}) }}
+
+                {{ ui.upload('passportPhoto', "Child's passport photograph", 'JPG, PNG or PDF · up to 4 MB. You can add this later.', application.passportPhotoFilename, 'image/*,application/pdf') }}
+            </div>
+
+            {# ═══ STEP 2 — ORIGIN & HEALTH ═════════════════════════════════ #}
+            <div :style="step === 2 ? '' : 'display: none'" class="space-y-5">
+                <h2 class="text-lg font-bold text-gray-800">Origin & health</h2>
+
+                <div class="grid sm:grid-cols-3 gap-4">
+                    {{ ui.field(form.nationality, false, {'class': inputClass}) }}
+                    {{ ui.field(form.stateOfOrigin, 'Choosing a state loads its local government areas.', {'class': inputClass}, {'id': 'select-state'}) }}
+                    {{ ui.field(form.lga, false, {'class': inputClass}, {'id': 'select-lga'}) }}
+                </div>
+
+                <div class="grid sm:grid-cols-3 gap-4">
+                    {{ ui.field(form.homeTown, false, {'class': inputClass}) }}
+                    {{ ui.field(form.bloodGroup, false, {'class': inputClass}) }}
+                    {{ ui.field(form.genotype, false, {'class': inputClass}) }}
+                </div>
+
+                {{ ui.field(form.medicalConditions, 'Anything the school nurse should know about.', {'class': inputClass}) }}
+
+                {{ ui.upload('birthCertificate', 'Birth certificate', 'JPG, PNG or PDF · up to 4 MB.', application.birthCertificateFilename, 'image/*,application/pdf') }}
+            </div>
+
+            {# ═══ STEP 3 — PREVIOUS SCHOOL ═════════════════════════════════ #}
+            <div :style="step === 3 ? '' : 'display: none'" class="space-y-5">
+                <h2 class="text-lg font-bold text-gray-800">Previous school</h2>
+                <p class="text-sm text-gray-500">
+                    Skip this if your child has never been to school — for example, a first-time {{ learner }}.
+                </p>
+
+                <div class="grid sm:grid-cols-2 gap-4">
+                    {{ ui.field(form.previousSchool, false, {'class': inputClass}) }}
+                    {{ ui.field(form.previousClass, 'e.g. Primary 5, or Nursery 2', {'class': inputClass}) }}
+                </div>
+
+                {{ ui.upload('previousResult', "Last result / testimonial", 'Helps the school place your child correctly. Optional.', application.previousResultFilename, 'image/*,application/pdf') }}
+            </div>
+
+            {# ═══ STEP 4 — GUARDIAN ════════════════════════════════════════ #}
+            <div :style="step === 4 ? '' : 'display: none'" class="space-y-5">
+                <h2 class="text-lg font-bold text-gray-800">Your details</h2>
+                <p class="text-sm text-gray-500">
+                    These come from your verified parent account. To change your name, phone number or email,
+                    please contact the school office.
+                </p>
+
+                <div class="grid sm:grid-cols-2 gap-4">
+                    {{ ui.field(form.guardianName, false, {'class': lockedClass, 'readonly': true}) }}
+                    {{ ui.field(form.relationshipToStudent, false, {'class': lockedClass, 'readonly': true}) }}
+                    {{ ui.field(form.guardianPhone, 'Used for school SMS about this application.', {'class': lockedClass, 'readonly': true}) }}
+                    {{ ui.field(form.guardianEmail, false, {'class': lockedClass, 'readonly': true}) }}
+                </div>
+
+                <div class="border-t border-gray-100 pt-5 grid sm:grid-cols-2 gap-4">
+                    {{ ui.field(form.guardianAlternatePhone, 'Optional second number.', {'class': inputClass}) }}
+                    {{ ui.field(form.guardianOccupation, false, {'class': inputClass}) }}
+                </div>
+
+                <div class="grid sm:grid-cols-2 gap-4">
+                    {{ ui.field(form.guardianAddress, false, {'class': inputClass}) }}
+                    {{ ui.field(form.guardianOfficeAddress, false, {'class': inputClass}) }}
+                </div>
+            </div>
+
+            {# ═══ STEP 5 — REVIEW & SUBMIT ═════════════════════════════════ #}
+            <div :style="step === 5 ? '' : 'display: none'" class="space-y-5">
+                <h2 class="text-lg font-bold text-gray-800">Review & submit</h2>
+                <p class="text-sm text-gray-500">
+                    Check the summary below, then tick the declaration to send this application to the school.
+                </p>
+
+                <div class="bg-gray-50 border border-gray-200 rounded-xl divide-y divide-gray-200">
+                    <div class="flex items-center justify-between gap-4 p-4">
+                        <div>
+                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Child</p>
+                            <p class="text-sm font-bold text-gray-800"
+                               x-text="(vals.first + ' ' + vals.last).trim() || '—'"></p>
+                        </div>
+                        <button type="button" @click="goTo(1)" class="text-[11px] font-bold text-indigo-600 hover:underline">Change</button>
+                    </div>
+                    <div class="flex items-center justify-between gap-4 p-4">
+                        <div>
+                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Date of birth</p>
+                            <p class="text-sm font-bold text-gray-800" x-text="vals.dob || '—'"></p>
+                        </div>
+                        <button type="button" @click="goTo(1)" class="text-[11px] font-bold text-indigo-600 hover:underline">Change</button>
+                    </div>
+                    <div class="flex items-center justify-between gap-4 p-4">
+                        <div>
+                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Class applied for</p>
+                            <p class="text-sm font-bold text-gray-800" x-text="vals.className || 'Not chosen yet'"></p>
+                        </div>
+                        <button type="button" @click="goTo(1)" class="text-[11px] font-bold text-indigo-600 hover:underline">Change</button>
+                    </div>
+                    <div class="flex items-center justify-between gap-4 p-4">
+                        <div>
+                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Applying as</p>
+                            <p class="text-sm font-bold text-gray-800">
+                                {{ application.guardianName }} · {{ application.guardianPhone }}
+                            </p>
+                        </div>
+                        <button type="button" @click="goTo(4)" class="text-[11px] font-bold text-indigo-600 hover:underline">Change</button>
+                    </div>
+                </div>
+
+                <label class="flex items-start gap-3 p-4 rounded-xl border border-gray-200 bg-white cursor-pointer hover:border-indigo-300 transition-colors">
+                    {{ form_widget(form.declaration, {'attr': {'class': 'mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500', 'x-ref': 'declaration'}}) }}
+                    <span class="text-sm text-gray-700">
+                        {{ form.declaration.vars.label }}
+                    </span>
+                </label>
+                {% if form.declaration.vars.errors|length %}
+                    <p class="text-xs text-red-600 font-medium">{{ form.declaration.vars.errors|first.message }}</p>
+                {% endif %}
+
+                {% if school and school.applicationFeeAmount and school.applicationFeeAmount > 0 %}
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-900">
+                        <strong class="font-bold">Application fee: {{ school.applicationFeeAmount }}</strong>
+                        <p class="text-xs mt-1">
+                            This school charges a form fee. Your application is received immediately, but review
+                            starts once the fee is {{ school.acceptsOfflinePayment ? 'confirmed' : 'paid' }} — you will
+                            see how to pay on the next screen.
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+
+        </div>
+
+        {# ── FOOTER NAVIGATION ──────────────────────────────────────────── #}
+        {# 📱 On a phone these stack full-width in thumb order: the primary action is
+           first (closest to the thumb after scrolling), then Back, then Save. The
+           order-* utilities restore the desktop left-to-right arrangement. #}
+        <div class="flex flex-col sm:flex-row sm:items-center gap-3 mt-6">
+            <button type="button" :style="step < total ? '' : 'display: none'" @click="next()"
+                    class="order-1 sm:order-3 w-full sm:w-auto justify-center inline-flex items-center gap-2
+                           bg-indigo-600 text-white font-bold text-base sm:text-sm px-6 py-3.5 rounded-xl
+                           shadow hover:bg-indigo-700 active:bg-indigo-800 transition-colors">
+                Continue →
+            </button>
+
+            <button type="submit" name="wizard_action" value="submit" :style="step === total ? '' : 'display: none'"
+                    class="order-1 sm:order-3 w-full sm:w-auto justify-center inline-flex items-center gap-2
+                           bg-emerald-600 text-white font-bold text-base sm:text-sm px-6 py-3.5 rounded-xl
+                           shadow hover:bg-emerald-700 active:bg-emerald-800 transition-colors">
+                ✅ Submit application
+            </button>
+
+            <button type="button" :style="step > 1 ? '' : 'display: none'" @click="prev()"
+                    class="order-2 sm:order-1 sm:mr-auto w-full sm:w-auto justify-center inline-flex items-center gap-2
+                           text-base sm:text-sm font-bold text-gray-600 hover:text-gray-900 px-4 py-3.5">
+                ← Back
+            </button>
+
+            <button type="submit" name="wizard_action" value="draft"
+                    class="order-3 sm:order-2 w-full sm:w-auto justify-center inline-flex items-center gap-2
+                           bg-white border border-gray-300 text-gray-700 font-bold text-base sm:text-sm px-5 py-3.5
+                           rounded-xl hover:border-indigo-500 hover:text-indigo-600 transition-colors">
+                Save &amp; finish later
+            </button>
+        </div>
+
+        {{ form_end(form) }}
+
+        <p class="text-center text-[11px] text-gray-400 mt-6">
+            🔒 Your answers belong to you. The school only sees them to process this admission.
+        </p>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // State → LGA cascade, reusing the existing JSON endpoint
+            // (app_tenant_api_lgas) exactly as the staff admission form does.
+            const stateSelect = document.getElementById('select-state') || document.querySelector('[name*="stateOfOrigin"]');
+            const lgaSelect = document.getElementById('select-lga') || document.querySelector('[name*="lga"]');
+
+            if (!stateSelect || !lgaSelect) {
+                return;
+            }
+
+            const lgaApiUrl = "{{ path('app_parent_applications_api_lgas', {id: 0}) }}".slice(0, -1);
+            const lgaHelp = lgaSelect.parentElement ? lgaSelect.parentElement.querySelector('p') : null;
+
+            stateSelect.addEventListener('change', function () {
+                const stateId = this.value;
+                if (!stateId) { return; }
+
+                lgaSelect.disabled = true;
+
+                fetch(lgaApiUrl + stateId, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(response => {
+                        if (!response.ok) { throw new Error('HTTP ' + response.status); }
+                        return response.json();
+                    })
+                    .then(data => {
+                        lgaSelect.innerHTML = '';
+                        const placeholder = document.createElement('option');
+                        placeholder.value = '';
+                        placeholder.textContent = data.length ? 'Select LGA' : 'No LGAs found';
+                        lgaSelect.appendChild(placeholder);
+
+                        data.forEach(lga => {
+                            const option = document.createElement('option');
+                            option.value = lga.id;
+                            option.textContent = lga.name;
+                            lgaSelect.appendChild(option);
+                        });
+                        lgaSelect.disabled = false;
+                    })
+                    .catch(() => {
+                        // Offline, or the request failed: keep the full list rather than
+                        // trapping the parent, and tell them why the list is long.
+                        lgaSelect.disabled = false;
+                        if (lgaHelp) {
+                            lgaHelp.textContent = 'Could not load the LGA list — pick your LGA from the full list below.';
+                            lgaHelp.className = 'text-[11px] text-amber-600 mt-1';
+                        }
+                    });
+            });
+        });
+    </script>
+{% endblock %}

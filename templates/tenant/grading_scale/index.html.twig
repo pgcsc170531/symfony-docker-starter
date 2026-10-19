@@ -3,8 +3,10 @@
 {% block title %}Grading Scale{% endblock %}
 
 {% block body %}
-<div class="p-6 max-w-4xl mx-auto">
-    <h1 class="text-2xl font-bold mb-6">🏅 Grading Scale</h1>
+{# Padding on a phone and a small gutter on a desktop, never a centred column:
+   the old `max-w-4xl` shrank the table into the middle of the screen. #}
+<div class="px-4">
+    <h1 class="mb-6 text-2xl font-bold">Grading Scale</h1>
 
     {# Create form #}
     <div class="bg-white rounded-lg shadow p-6 mb-6">
@@ -40,9 +42,13 @@
     </div>
 
     {# List #}
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-        <table class="w-full text-sm">
-            <thead class="bg-gray-100 text-left text-gray-500">
+    {# ⚠️ `overflow-hidden` here was CLIPPING the table, not containing it: six
+       columns cannot compress below ~372px, so on a 360px screen the last two
+       were simply cut off and unreachable. `overflow-x-auto` + a `min-w` floor on
+       the table makes it scroll instead of disappearing. #}
+    <div class="overflow-x-auto rounded-lg bg-white shadow">
+        <table class="w-full min-w-[640px] text-sm">
+            <thead class="bg-ink-100 text-left text-ink-500">
                 <tr>
                     <th class="p-3">Grade</th>
                     <th class="p-3">Min</th>

@@ -7,6 +7,7 @@ use App\Entity\Tenant\StudentDiscount;
 use App\Entity\Tenant\Student;
 use App\Form\DiscountTypeForm;
 use App\Form\StudentDiscountAssignmentType;
+use App\Service\Finance\DiscountRepricer;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -18,6 +19,10 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_BURSAR')]
 class DiscountController extends AbstractController
 {
+    public function __construct(
+        private readonly DiscountRepricer $repricer,
+    ) {
+    }
     // 1. Manage Rules (e.g. Create "Staff Child")
     #[Route('/types', name: 'app_tenant_discount_types', methods: ['GET', 'POST'])]
     public function types(Request $request, EntityManagerInterface $em): Response
@@ -85,7 +90,8 @@ class DiscountController extends AbstractController
                     } else {
                         $em->persist($assignment);
                         $em->flush();
-                        $this->addFlash('success', "Scholarship assigned to {$selectedStudent->getFirstName()}!");
+                        $this->addFlash('success', "Discount assigned to {$selectedStudent->getFirstName()}.");
+                        $this->flashReprice($this->repricer->repriceOpenInvoices($selectedStudent), 'assign');
                     }
                     // Clear selection after saving
                     return $this->redirectToRoute('app_tenant_discount_assign');
@@ -96,12 +102,23 @@ class DiscountController extends AbstractController
         // C. List Active Scholarships (Always visible)
         $activeDiscounts = $em->getRepository(StudentDiscount::class)->findAll();
 
+        // Every row carries the pupil's actual bill, because a rule that never
+        // reached the invoice looks identical to one that did.
+        $effects = [];
+        foreach ($activeDiscounts as $activeDiscount) {
+            $discountedStudent = $activeDiscount->getStudent();
+            $effects[$activeDiscount->getId()] = $discountedStudent
+                ? $this->repricer->summary($discountedStudent)
+                : null;
+        }
+
         return $this->render('tenant/discount/assign.html.twig', [
             'form' => $form ? $form->createView() : null, // Only pass form if student selected
             'searchResults' => $searchResults,
             'searchQuery' => $searchQuery,
             'selectedStudent' => $selectedStudent,
-            'activeDiscounts' => $activeDiscounts
+            'activeDiscounts' => $activeDiscounts,
+            'effects' => $effects,
         ]);
     }
 
@@ -109,9 +126,53 @@ class DiscountController extends AbstractController
     #[Route('/remove/{id}', name: 'app_tenant_discount_remove', methods: ['POST'])]
     public function remove(StudentDiscount $discount, EntityManagerInterface $em): Response
     {
+        $student = $discount->getStudent();
+
         $em->remove($discount);
         $em->flush();
         $this->addFlash('success', 'Discount removed from student.');
+
+        // The rule is gone, so anything still open goes back to the gross bill.
+        if ($student) {
+            $this->flashReprice($this->repricer->repriceOpenInvoices($student), 'remove');
+        }
+
         return $this->redirectToRoute('app_tenant_discount_assign');
+    }
+
+    /**
+     * Tell the bursar what the assignment actually did to the money.
+     *
+     * Silence here was the bug: the rule was saved, the bill did not move, and
+     * nothing on screen said why. Saying "no open bill was changed" is just as
+     * important as reporting the new total.
+     *
+     * @param list<array{number: string, from: float, to: float, discount: float}> $changes
+     */
+    private function flashReprice(array $changes, string $action): void
+    {
+        if ($changes === []) {
+            $this->addFlash('info', $action === 'remove'
+                ? 'No open bill needed changing — the pupil was already billed the full amount.'
+                : 'No open bill was changed — the rule will apply to bills generated from now on.');
+            return;
+        }
+
+        foreach ($changes as $change) {
+            $this->addFlash('success', $action === 'remove'
+                ? sprintf(
+                    'Bill %s put back to ₦%s (it was ₦%s with the scholarship).',
+                    $change['number'],
+                    number_format($change['to'], 2),
+                    number_format($change['from'], 2),
+                )
+                : sprintf(
+                    'Bill %s re-priced: ₦%s → ₦%s (₦%s discount).',
+                    $change['number'],
+                    number_format($change['from'], 2),
+                    number_format($change['to'], 2),
+                    number_format($change['discount'], 2),
+                ));
+        }
     }
 }

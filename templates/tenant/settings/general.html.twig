@@ -3,7 +3,7 @@
 {% block title %}School Settings{% endblock %}
 
 {% block body %}
-<div class="w-full max-w-7xl mx-auto">
+<div class="w-full px-4">
     
     <div class="mb-6">
         <h1 class="text-2xl font-bold text-gray-800">General Settings</h1>
@@ -25,6 +25,15 @@
                 {{ form_errors(form.name) }}
             </div>
 
+            <div class="mb-4">
+                {{ form_label(form.institutionType, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                {{ form_widget(form.institutionType, {'attr': {'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'}}) }}
+                {% if form.institutionType.vars.help %}
+                    <p class="mt-1 text-xs text-gray-500">{{ form.institutionType.vars.help }}</p>
+                {% endif %}
+                {{ form_errors(form.institutionType) }}
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                     {{ form_label(form.email, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
@@ -34,7 +43,52 @@
                     {{ form_label(form.phoneNumber, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
                     {{ form_widget(form.phoneNumber, {'attr': {'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'}}) }}
                 </div>
+                <div>
+                    {{ form_label(form.whatsappNumber, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                    {{ form_widget(form.whatsappNumber, {'attr': {'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'}}) }}
+                </div>
             </div>
+
+            <div class="mb-4">
+                {{ form_label(form.feesSummary, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                {{ form_widget(form.feesSummary, {'attr': {'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500', 'rows': 4}}) }}
+                {% if form.feesSummary.vars.help %}
+                    <p class="mt-1 text-xs text-gray-500">{{ form.feesSummary.vars.help }}</p>
+                {% endif %}
+                {{ form_errors(form.feesSummary) }}
+            </div>
+
+            <div class="mb-4">
+                {{ form_label(form.foundedYear, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                {{ form_widget(form.foundedYear, {'attr': {'class': 'mt-1 block w-32 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500', 'inputmode': 'numeric'}}) }}
+                {% if form.foundedYear.vars.help %}
+                    <p class="mt-1 text-xs text-gray-500">{{ form.foundedYear.vars.help }}</p>
+                {% endif %}
+                {{ form_errors(form.foundedYear) }}
+            </div>
+
+            <div class="mb-4">
+                {{ form_label(form.facilities, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                {{ form_widget(form.facilities, {'attr': {'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500', 'rows': 4}}) }}
+                {% if form.facilities.vars.help %}
+                    <p class="mt-1 text-xs text-gray-500">{{ form.facilities.vars.help }}</p>
+                {% endif %}
+                {{ form_errors(form.facilities) }}
+            </div>
+
+            <div class="mb-4">
+                {{ form_label(form.coreValues, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                {{ form_widget(form.coreValues, {'attr': {'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500', 'rows': 5}}) }}
+                {% if form.coreValues.vars.help %}
+                    <p class="mt-1 text-xs text-gray-500">{{ form.coreValues.vars.help }}</p>
+                {% endif %}
+                {{ form_errors(form.coreValues) }}
+            </div>
+
+            <label class="mb-6 flex items-start gap-3 rounded-lg border border-gray-200 p-3">
+                {{ form_widget(form.showStudentCount, {'attr': {'class': 'mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500'}}) }}
+                <span class="block text-sm font-medium text-gray-800">{{ form.showStudentCount.vars.label }}</span>
+            </label>
 
             <div class="mb-6">
                 {{ form_label(form.address, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
@@ -66,10 +120,53 @@
                 </div>
                 <div>
                     {{ form_label(form.logoFile, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
-                    {{ form_widget(form.logoFile, {'attr': {'class': 'mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100'}}) }}
+                    {{ form_widget(form.logoFile, {'attr': {'class': 'mt-1 block w-full text-base text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100'}}) }}
+                    {% if form.logoFile.vars.help %}
+                        <p class="mt-1 text-xs text-gray-500">{{ form.logoFile.vars.help }}</p>
+                    {% endif %}
+                    {{ form_errors(form.logoFile) }}
                 </div>
             </div>
             {# ... (Your existing Visuals/Logo Section) ... #}
+
+            {# === 2b. REPORT CARD SIGNATURES & RELEASE === #}
+            <h2 class="text-lg font-semibold text-gray-700 border-b pb-2 mb-4 mt-8">
+                Report Cards — Signatures &amp; Release
+            </h2>
+            <p class="text-sm text-gray-500 mb-4">
+                These details appear on the report card and its PDF. The form teacher and HOD
+                sign with their own names; this is the principal's line.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    {{ form_label(form.principalName, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                    {{ form_widget(form.principalName, {'attr': {'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accent-500 focus:ring-accent-500', 'placeholder': 'e.g. Mallam Adamu Bello'}}) }}
+                    {% if form.principalName.vars.help %}<p class="mt-1 text-xs text-gray-500">{{ form.principalName.vars.help }}</p>{% endif %}
+                </div>
+                <div>
+                    {{ form_label(form.principalTitle, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                    {{ form_widget(form.principalTitle, {'attr': {'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accent-500 focus:ring-accent-500', 'placeholder': 'Principal'}}) }}
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 items-start">
+                <div>
+                    {{ form_label(form.principalSignatureFile, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                    {{ form_widget(form.principalSignatureFile, {'attr': {'class': 'mt-1 block w-full text-base text-gray-600'}}) }}
+                    {% if form.principalSignatureFile.vars.help %}<p class="mt-1 text-xs text-gray-500">{{ form.principalSignatureFile.vars.help }}</p>{% endif %}
+                    {% if tenant.principalSignatureFilename %}
+                        <p class="mt-2 text-xs text-gray-500">Current signature is on file.</p>
+                    {% endif %}
+                </div>
+                <label class="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                    {{ form_widget(form.reportFeeGateEnabled, {'attr': {'class': 'mt-0.5 h-4 w-4 rounded border-gray-300 text-accent-600 focus:ring-accent-500'}}) }}
+                    <span>
+                        <span class="block text-sm font-medium text-gray-800">{{ form.reportFeeGateEnabled.vars.label }}</span>
+                        {% if form.reportFeeGateEnabled.vars.help %}<span class="block text-xs text-gray-500">{{ form.reportFeeGateEnabled.vars.help }}</span>{% endif %}
+                    </span>
+                </label>
+            </div>
 
             {# === NEW: BANKING DETAILS SECTION === #}
             <h2 class="text-lg font-semibold text-gray-700 border-b pb-2 mb-4 mt-8">
@@ -94,8 +191,7 @@
                 </div>
             </div>
 
-           <h2 class="text-lg font-semibold text-gray-700 border-b pb-2 mb-4 mt-8">
-    <h2 class="text-lg font-semibold text-gray-700 border-b pb-2 mb-4 mt-8">
+                <h2 class="text-lg font-semibold text-gray-700 border-b pb-2 mb-4 mt-8">
                     📱 Notification Settings <span class="text-xs font-normal text-gray-500">(SMS Toggles)</span>
                 </h2>
 
@@ -141,11 +237,88 @@
                 </div>
 
             
+            {# --- SECTION 4b: EMAIL NOTIFICATIONS --- #}
+            <h2 class="text-lg font-semibold text-gray-700 border-b pb-2 mb-4 mt-8">
+                📧 Email Notifications <span class="text-xs font-normal text-gray-500">(parents need an email address on file)</span>
+            </h2>
+            <p class="text-sm text-gray-500 mb-4">
+                Every email is independent — leave on only what you want to send.
+                Turning the master switch off stops all of them at once.
+            </p>
+
+            <div class="space-y-2 mb-5">
+                {% for field in ['emailNotificationsEnabled', 'emailOnApplicationSubmitted', 'emailOnAdmissionDecision', 'emailOnInvoiceIssued', 'emailOnPaymentReceipt', 'emailOnResultPublished'] %}
+                    <label class="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                        {{ form_widget(form[field], {'attr': {'class': 'mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500'}}) }}
+                        <span>
+                            <span class="block text-sm font-medium text-gray-800">{{ form[field].vars.label }}</span>
+                            {% if form[field].vars.help %}
+                                <span class="block text-xs text-gray-500">{{ form[field].vars.help }}</span>
+                            {% endif %}
+                        </span>
+                    </label>
+                {% endfor %}
+            </div>
+
             {# --- SAVE BUTTON (Situated below everything) --- #}
             <div class="pt-4 border-t">
                 <button type="submit" class="w-full md:w-auto md:px-8 bg-indigo-600 text-white font-bold py-3 rounded hover:bg-indigo-700 transition-colors shadow-sm">
                     💾 Save School Settings
                 </button>
+            </div>
+
+            {# --- SECTION 5: APPLICATION MODE --- #}
+            <h2 class="text-lg font-semibold text-gray-700 border-b pb-2 mb-4 mt-8">Application Mode — Online Applications</h2>
+            <p class="text-sm text-gray-500 mb-4">
+                Let parents create their own parent-portal account and apply for a child from your public website.
+                Parents start at <code class="bg-gray-100 px-1 rounded">/apply</code> and their applications appear in
+                <em>Admissions &rsaquo; Applications</em> for your bursar.
+            </p>
+
+            <div class="space-y-2 mb-5">
+                {% for field in ['applicationsOpen', 'applicationRequireApproval', 'notifyBursarOnApplication', 'smsOnApplication'] %}
+                    <label class="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                        {{ form_widget(form[field], {'attr': {'class': 'mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500'}}) }}
+                        <span>
+                            <span class="block text-sm font-medium text-gray-800">{{ form[field].vars.label }}</span>
+                            {% if form[field].vars.help %}
+                                <span class="block text-xs text-gray-500">{{ form[field].vars.help }}</span>
+                            {% endif %}
+                        </span>
+                    </label>
+                {% endfor %}
+            </div>
+
+            {% if platformOnlinePayments is defined and not platformOnlinePayments %}
+                <div class="mb-4 rounded-lg border border-pending/40 bg-pending/5 p-3 text-sm" role="alert">
+                    <p class="font-bold text-pending">Online payment is switched off by the platform</p>
+                    <p class="mt-1 text-ink-700">
+                        Your own choice below still stands, but no parent can pay online until the operator
+                        turns online collection back on. Transfers with proof of payment keep working.
+                    </p>
+                </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                {% for field in ['admissionNumberPattern', 'paymentMethod', 'applicationFeeAmount', 'applicationsOpenAt', 'applicationsCloseAt', 'bursarNotificationPhone', 'applicationClassesNote'] %}
+                    <div>
+                        {{ form_label(form[field], null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                        {{ form_widget(form[field], {'attr': {'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'}}) }}
+                        {% if form[field].vars.help %}
+                            <p class="mt-1 text-xs text-gray-500">{{ form[field].vars.help }}</p>
+                        {% endif %}
+                        {{ form_errors(form[field]) }}
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-6">
+                {{ form_label(form.applicationInstructions, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                {{ form_widget(form.applicationInstructions, {'attr': {'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500', 'rows': 5}}) }}
+                {% if form.applicationInstructions.vars.help %}
+                    <p class="mt-1 text-xs text-gray-500">{{ form.applicationInstructions.vars.help }}</p>
+                {% endif %}
+                {{ form_errors(form.applicationInstructions) }}
             </div>
 
             {{ form_end(form) }}
@@ -161,9 +334,10 @@
                     <p class="text-xs text-gray-400 mb-2">School Logo</p>
                     {% if tenant.logoFilename %}
                         <img src="{{ asset('uploads/logos/' ~ tenant.logoFilename) }}" alt="Logo" class="mx-auto max-h-24 object-contain">
+                        <p class="mt-2 break-all text-[11px] text-gray-400">{{ tenant.logoFilename }}</p>
                     {% else %}
                         <div class="text-4xl text-gray-300">🏫</div>
-                        <p class="text-xs text-gray-400 mt-1">No logo uploaded</p>
+                        <p class="text-xs text-gray-400 mt-1">No logo uploaded — reports show “{{ tenant.name|slice(0, 1)|upper }}” until you add one.</p>
                     {% endif %}
                 </div>
 

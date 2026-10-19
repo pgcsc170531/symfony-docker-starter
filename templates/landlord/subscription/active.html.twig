@@ -3,7 +3,7 @@
 {% block title %}Active Subscriptions{% endblock %}
 
 {% block body %}
-<div class="max-w-7xl mx-auto mt-10 px-6">
+<div class="mt-10 px-4">
     <div class="flex justify-between items-center mb-6">
         <div>
             <h1 class="text-3xl font-black text-gray-900">📡 Subscription Monitor</h1>
@@ -52,12 +52,23 @@
                         
                         {# 1. REMIND BUTTON #}
                         {% if sub.isValid and days < 14 %}
-                            <a href="{{ path('landlord_subscription_remind', {id: sub.id}) }}" class="bg-yellow-100 text-yellow-700 px-3 py-2 rounded-lg text-xs font-bold hover:bg-yellow-200 flex items-center gap-1">
-                                🔔 Poke
-                            </a>
+                            <form method="post" action="{{ path('landlord_subscription_expiry_remind', {id: sub.id}) }}" class="inline">
+                                <input type="hidden" name="_token" value="{{ csrf_token('remind_subscription' ~ sub.id) }}">
+                                <button class="bg-yellow-100 text-yellow-700 px-3 py-2 rounded-lg text-xs font-bold hover:bg-yellow-200 flex items-center gap-1">
+                                    🔔 Poke
+                                </button>
+                            </form>
                         {% endif %}
 
-                        {# 2. GENERATE SLIP BUTTON #}
+                        {# 2. INVITE TO REGISTER #}
+                        <form method="post" action="{{ path('landlord_subscription_invite', {id: sub.school.id}) }}" class="inline">
+                            <input type="hidden" name="_token" value="{{ csrf_token('invite' ~ sub.school.id) }}">
+                            <button class="bg-accent-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-accent-700 flex items-center gap-1">
+                                ✉️ Invite to register
+                            </button>
+                        </form>
+
+                        {# 3. GENERATE SLIP BUTTON #}
                         <a href="{{ path('landlord_subscription_generate_slip', {schoolId: sub.school.id}) }}" class="bg-indigo-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-indigo-700 flex items-center gap-1">
                             🧾 Create Invoice
                         </a>

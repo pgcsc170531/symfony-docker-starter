@@ -1,0 +1,176 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Term Registrations{% endblock %}
+
+{% block body %}
+<div class="px-4 py-4 sm:py-6">
+
+    <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+            <h1 class="text-xl font-bold text-ink-900 sm:text-2xl">Term registrations</h1>
+            <p class="mt-1 text-sm text-ink-700">
+                What each school declared, what was counted in week one, and the difference.
+            </p>
+        </div>
+        <a href="{{ path('landlord_subscription_pending') }}"
+           class="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-lg border border-ink-300 px-4 text-sm font-semibold text-ink-900 hover:bg-ink-50 sm:mt-0 sm:w-auto">
+            Pending payments
+        </a>
+    </div>
+
+    {% if registrations|length == 0 %}
+        <div class="mt-6 rounded-xl border border-ink-200 bg-white p-8 text-center">
+            <p class="text-base font-semibold text-ink-900">No term registrations yet</p>
+            <p class="mt-1 text-sm text-ink-700">
+                They appear here when a school declares its roll from
+                <span class="font-medium">Subscription → Register this term</span>.
+            </p>
+        </div>
+    {% else %}
+
+        {# Phones: one card per registration #}
+        <div class="mt-4 space-y-3 md:hidden">
+            {% for registration in registrations %}
+                <article class="rounded-xl border border-ink-200 bg-white p-4 shadow-card">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <h2 class="text-sm font-bold text-ink-900">{{ registration.school.name }}</h2>
+                            <p class="text-xs text-ink-600">{{ registration.sessionName }} · {{ registration.termName }}</p>
+                        </div>
+                        <span class="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold
+                                     {{ registration.status == 'PAID' or registration.status == 'VERIFIED' ? 'bg-paid/10 text-paid'
+                                        : (registration.status == 'CANCELLED' ? 'bg-ink-100 text-ink-600' : 'bg-pending/10 text-pending') }}">
+                            {{ registration.status|capitalize }}
+                        </span>
+                    </div>
+
+                    <dl class="mt-3 space-y-1.5 text-sm">
+                        <div class="flex justify-between gap-3">
+                            <dt class="text-ink-700">Declared</dt>
+                            <dd class="font-semibold text-ink-900">{{ registration.declaredStudents|number_format(0) }} pupils</dd>
+                        </div>
+                        <div class="flex justify-between gap-3">
+                            <dt class="text-ink-700">Counted</dt>
+                            <dd class="font-semibold text-ink-900">
+                                {{ registration.verifiedStudents is null ? '—' : registration.verifiedStudents|number_format(0) ~ ' pupils' }}
+                            </dd>
+                        </div>
+                        <div class="flex justify-between gap-3">
+                            <dt class="text-ink-700">Billing</dt>
+                            <dd class="text-ink-900">{{ registration.billingCycle == 'annual' ? 'Annual prepay' : 'Termly' }}</dd>
+                        </div>
+                        <div class="flex justify-between gap-3">
+                            <dt class="text-ink-700">Invoice</dt>
+                            <dd class="font-bold text-ink-900">₦{{ registration.total|number_format(0) }}</dd>
+                        </div>
+                    </dl>
+
+                    <form method="post" action="{{ path('landlord_subscription_verify_roll', {'id': registration.id}) }}"
+                          class="mt-3 flex items-end gap-2">
+                        <input type="hidden" name="_token" value="{{ csrf_token('verify_roll' ~ registration.id) }}">
+                        <label class="flex-1">
+                            <span class="block text-xs font-semibold text-ink-700">Pupils counted</span>
+                            <input type="number" name="verified_students" min="0" step="1"
+                                   value="{{ registration.verifiedStudents ?? registration.declaredStudents }}"
+                                   class="mt-1 min-h-[44px] w-full rounded-lg border border-ink-300 px-3 text-base text-ink-900 focus:border-accent-600 focus:outline-none focus:ring-2 focus:ring-accent-200">
+                        </label>
+                        <button class="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white hover:bg-accent-700">
+                            Save
+                        </button>
+                    </form>
+
+                    {% if registration.verifiedStudents is not null and not registration.isWithinVariance %}
+                        <p class="mt-2 rounded-lg bg-pending/10 p-2 text-xs font-semibold text-pending">
+                            Outside tolerance — bill the difference next term.
+                        </p>
+                        {% if registration.track == 'standard' and registration.variance > 0 %}
+                            <form method="post" action="{{ path('landlord_subscription_supplementary', {'id': registration.id}) }}" class="mt-2">
+                                <input type="hidden" name="_token" value="{{ csrf_token('supplementary' ~ registration.id) }}">
+                                <button class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white hover:bg-accent-700">
+                                    Bill {{ registration.variance }} extra pupils · ₦{{ (registration.variance * registration.unitPrice)|number_format(0) }}
+                                </button>
+                            </form>
+                        {% endif %}
+                    {% endif %}
+                </article>
+            {% endfor %}
+        </div>
+
+        {# Desktop: table #}
+        <div class="mt-4 hidden overflow-x-auto rounded-xl border border-ink-200 md:block">
+            <table class="w-full min-w-[900px] text-left text-sm">
+                <thead class="bg-ink-50 text-xs font-bold uppercase tracking-wide text-ink-600">
+                    <tr>
+                        <th scope="col" class="px-4 py-3">School</th>
+                        <th scope="col" class="px-4 py-3">Period</th>
+                        <th scope="col" class="px-4 py-3">Declared</th>
+                        <th scope="col" class="px-4 py-3">Counted</th>
+                        <th scope="col" class="px-4 py-3">Variance</th>
+                        <th scope="col" class="px-4 py-3">Invoice</th>
+                        <th scope="col" class="px-4 py-3">Status</th>
+                        <th scope="col" class="px-4 py-3 text-right">Verify roll</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-ink-100">
+                    {% for registration in registrations %}
+                        {% set variance = registration.variance %}
+                        <tr class="align-middle">
+                            <td class="px-4 py-3">
+                                <p class="font-semibold text-ink-900">{{ registration.school.name }}</p>
+                                <p class="text-xs text-ink-600">{{ registration.billingCycle == 'annual' ? 'Annual prepay' : 'Termly' }}</p>
+                            </td>
+                            <td class="px-4 py-3 text-ink-700">
+                                {{ registration.sessionName }}<br>
+                                <span class="text-xs text-ink-600">{{ registration.termName }}</span>
+                            </td>
+                            <td class="px-4 py-3 font-semibold text-ink-900">{{ registration.declaredStudents|number_format(0) }}</td>
+                            <td class="px-4 py-3 text-ink-900">{{ registration.verifiedStudents is null ? '—' : registration.verifiedStudents|number_format(0) }}</td>
+                            <td class="px-4 py-3">
+                                {% if variance is null %}
+                                    <span class="text-ink-500">—</span>
+                                {% elseif variance == 0 %}
+                                    <span class="text-ink-600">0</span>
+                                {% else %}
+                                    <span class="font-semibold {{ registration.isWithinVariance ? 'text-ink-900' : 'text-pending' }}">
+                                        {{ variance > 0 ? '+' }}{{ variance|number_format(0) }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 font-bold text-ink-900">₦{{ registration.total|number_format(0) }}</td>
+                            <td class="px-4 py-3">
+                                <span class="rounded-full px-2.5 py-0.5 text-xs font-bold
+                                             {{ registration.status == 'PAID' or registration.status == 'VERIFIED' ? 'bg-paid/10 text-paid'
+                                                : (registration.status == 'CANCELLED' ? 'bg-ink-100 text-ink-600' : 'bg-pending/10 text-pending') }}">
+                                    {{ registration.status|capitalize }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <form method="post" action="{{ path('landlord_subscription_verify_roll', {'id': registration.id}) }}"
+                                      class="flex items-center justify-end gap-2">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('verify_roll' ~ registration.id) }}">
+                                    <input type="number" name="verified_students" min="0" step="1"
+                                           value="{{ registration.verifiedStudents ?? registration.declaredStudents }}"
+                                           aria-label="Pupils counted for {{ registration.school.name }}"
+                                           class="min-h-[44px] w-24 rounded-lg border border-ink-300 px-2 text-base text-ink-900 focus:border-accent-600 focus:outline-none focus:ring-2 focus:ring-accent-200">
+                                    <button class="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-accent-600 px-3 text-xs font-semibold text-white hover:bg-accent-700">
+                                        Save
+                                    </button>
+                                </form>
+                                {% if registration.verifiedStudents is not null and not registration.isWithinVariance
+                                      and registration.track == 'standard' and registration.variance > 0 %}
+                                    <form method="post" action="{{ path('landlord_subscription_supplementary', {'id': registration.id}) }}" class="mt-1 flex justify-end">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('supplementary' ~ registration.id) }}">
+                                        <button class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-accent-300 px-3 text-xs font-semibold text-accent-700 hover:bg-accent-50">
+                                            Bill {{ registration.variance }} extra · ₦{{ (registration.variance * registration.unitPrice)|number_format(0) }}
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

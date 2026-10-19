@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# The app and the two admin portals are behind a login; crawling them only
+# wastes budget and invites bots to poke at the firewalls.
+Disallow: /admin
+Disallow: /agent
+Disallow: /login
+Disallow: /dashboard
+
+Sitemap: {{ sitemap }}

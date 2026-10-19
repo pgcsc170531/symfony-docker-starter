@@ -1,0 +1,40 @@
+{% extends 'emails/layout.html.twig' %}
+{% import 'emails/_components.html.twig' as ui %}
+
+{% block content %}
+    <p style="margin:0 0 16px;font-size:34px;line-height:1;">⏳</p>
+
+    <h1 style="margin:0 0 16px;font-size:20px;line-height:1.3;color:#111827;">{{ headline }}</h1>
+
+    <p style="margin:0 0 12px;">Hello{% if guardian_name is defined and guardian_name %} {{ guardian_name }}{% endif %},</p>
+    <p style="margin:0 0 20px;">{{ intro }}</p>
+
+    {{ ui.amountBox('Outstanding this term', '₦' ~ outstanding|number_format(2), brand) }}
+
+    {{ ui.rows({
+        'Term'         : period,
+        'Families owing': families_count,
+        'Unverified'   : '₦' ~ pending|number_format(2),
+    }) }}
+
+    {% if families is not empty %}
+        <table style="width:100%;border-collapse:collapse;margin:0 0 20px;font-size:13px;">
+            <thead>
+                <tr>
+                    <th style="text-align:left;padding:6px 0;border-bottom:1px solid #e5e7eb;color:#6b7280;">Guardian</th>
+                    <th style="text-align:right;padding:6px 0;border-bottom:1px solid #e5e7eb;color:#6b7280;">Owing</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for family in families %}
+                    <tr>
+                        <td style="padding:6px 0;border-bottom:1px solid #f3f4f6;color:#111827;">{{ family.guardian }}</td>
+                        <td style="text-align:right;padding:6px 0;border-bottom:1px solid #f3f4f6;color:#b91c1c;font-weight:600;">₦{{ family.outstanding|number_format(2) }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+
+    {{ ui.button(button_label, url, brand) }}
+{% endblock %}

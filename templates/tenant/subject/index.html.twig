@@ -3,7 +3,7 @@
 {% block title %}Subjects{% endblock %}
 
 {% block body %}
-<div class="p-6 max-w-4xl mx-auto">
+<div class="px-4">
     <h1 class="text-2xl font-bold mb-6">📚 Subjects</h1>
 
     {# Create form #}
@@ -49,7 +49,22 @@
                     <tr class="border-t">
                         <td class="p-3 font-medium">{{ s.name }}</td>
                         <td class="p-3">{{ s.code|default('—') }}</td>
-                        <td class="p-3">{{ s.department ? s.department.name : '—' }}</td>
+                        <td class="p-3">
+                            {# The department decides which HOD sees this subject,
+                               so it has to be correctable. #}
+                            <form method="post" action="{{ path('app_tenant_subject_move', {id: s.id}) }}"
+                                  class="flex flex-wrap items-center gap-2">
+                                <input type="hidden" name="_token" value="{{ csrf_token('subject' ~ s.id) }}">
+                                <label class="sr-only" for="dept-{{ s.id }}">Department for {{ s.name }}</label>
+                                <select id="dept-{{ s.id }}" name="department" class="min-h-[44px] border rounded p-2 text-sm">
+                                    <option value="">— No Department —</option>
+                                    {% for d in departments %}
+                                        <option value="{{ d.id }}" {{ s.department and s.department.id == d.id ? 'selected' : '' }}>{{ d.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button class="min-h-[44px] rounded border px-3 text-sm font-bold">Save</button>
+                            </form>
+                        </td>
                         <td class="p-3 text-right">
                             <form method="post" action="{{ path('app_tenant_subject_delete', {id: s.id}) }}"
                                   onsubmit="return confirm('Delete this subject?');">

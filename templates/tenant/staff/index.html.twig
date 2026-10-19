@@ -3,17 +3,21 @@
 {% block title %}Staff Directory{% endblock %}
 
 {% block body %}
-    <div class="flex justify-between items-center mb-6">
+    {# <main> deliberately adds no horizontal gutter (UI-SPEC §4.1) — the page
+       owns its own. This one had none, so on a phone the heading and the card
+       ran edge to edge. `flex-wrap` too: the title and "Add New Staff" do not
+       fit on one 320px line and were colliding. #}
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-3 px-4">
         <div>
             <h1 class="text-2xl font-bold text-gray-800">Staff Directory</h1>
             <p class="text-gray-500">Manage user access and roles.</p>
         </div>
-        <a href="{{ path('app_tenant_staff_new') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow flex items-center">
+        <a href="{{ path('app_tenant_staff_new') }}" class="flex min-h-[44px] items-center rounded bg-blue-600 px-4 py-2 font-bold text-white shadow hover:bg-blue-700">
             <span class="mr-2">+</span> Add New Staff
         </a>
     </div>
 
-    <div class="bg-white shadow rounded-lg overflow-hidden border border-gray-200">
+    <div class="mx-4 overflow-hidden rounded-lg border border-gray-200 bg-white shadow">
         <table class="w-full text-left text-sm">
             <thead class="bg-gray-50 border-b">
                 <tr>

@@ -24,6 +24,28 @@
 {% endmacro %}
 
 {% block title %}Edus 2.0 — The School Operating System for Nigerian Schools{% endblock %}
+{% block title_suffix %}{% endblock %}
+{% block meta_description %}Edus runs the whole school: admissions, fees and invoices, results and report cards, staff records, the store and the parent portal — built for Nigerian private schools.{% endblock %}
+
+{% block structured_data %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Edus",
+    "url": "{{ app.request.schemeAndHttpHost }}",
+    "logo": "{{ absolute_url(asset('images/brand/edus-favicon.svg')) }}",
+    "description": "The school operating system for Nigerian schools.",
+    "areaServed": "NG",
+    "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "sales",
+        "telephone": "+2348032714999",
+        "availableLanguage": "English"
+    }
+}
+</script>
+{% endblock %}
 
 {% block body %}
 <style>
@@ -49,51 +71,11 @@
 <div class="bg-blue-600 text-white text-center text-sm px-4 py-2.5">
     <span class="font-bold">🚀 Edus 2.0 is live</span>
     <span class="hidden sm:inline text-blue-100">— our biggest upgrade yet: 6-step onboarding wizard, bulk CSV enrolment, mass promotion and an SMS wallet.</span>
-    <a href="#upgrade" class="underline decoration-blue-300 hover:decoration-white font-semibold ml-1">See what's new →</a>
+    <a href="#upgrade" class="inline-flex min-h-[44px] items-center underline decoration-blue-300 hover:decoration-white font-semibold ml-1">See what's new →</a>
 </div>
 
 {# --- 0. NAVIGATION BAR --- #}
-<div x-data="{ open: false }" class="sticky top-0 z-[60] bg-slate-950/90 backdrop-blur-md border-b border-white/10">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center py-3.5">
-            <a href="{{ path('app_home') }}" class="text-3xl font-black tracking-tighter text-white no-underline">
-                Edus<span class="text-blue-500">.</span>
-            </a>
-
-            <nav class="hidden md:flex items-center gap-8">
-                <a href="{{ path('app_features') }}" class="text-sm font-medium text-gray-300 hover:text-white transition">Features</a>
-                <a href="#upgrade" class="text-sm font-medium text-gray-300 hover:text-white transition">What's New</a>
-                <a href="#tour" class="text-sm font-medium text-gray-300 hover:text-white transition">Screenshots</a>
-                <a href="{{ path('app_partners') }}" class="text-sm font-medium text-gray-300 hover:text-white transition">Partners</a>
-                <a href="{{ path('app_manual') }}" class="text-sm font-medium text-gray-300 hover:text-white transition">User Manual</a>
-                <a href="{{ path('app_login') }}" class="text-sm font-semibold text-white hover:text-blue-300 transition">Sign In</a>
-                <a href="https://wa.me/2348032714999?text=Hello!%20I%20am%20a%20school%20proprietor%20interested%20in%20setting%20up%20a%20Free%20Trial%20for%20EDUS."
-                   target="_blank" rel="noopener noreferrer"
-                   class="inline-flex items-center px-5 py-2.5 rounded-lg text-sm font-semibold text-slate-950 bg-white hover:bg-blue-50 transition shadow-lg">
-                    Start Free Trial
-                </a>
-            </nav>
-
-            <button @click="open = !open" class="md:hidden text-white p-2" aria-label="Toggle menu">
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-            </button>
-        </div>
-
-        <div x-show="open" x-cloak class="md:hidden pb-4 space-y-1 border-t border-white/10 pt-3">
-            <a href="{{ path('app_features') }}" class="block px-2 py-2.5 text-gray-200 hover:text-white text-sm">Features</a>
-            <a href="#upgrade" @click="open = false" class="block px-2 py-2.5 text-gray-200 hover:text-white text-sm">What's New in Edus 2.0</a>
-            <a href="#tour" @click="open = false" class="block px-2 py-2.5 text-gray-200 hover:text-white text-sm">Screenshots</a>
-            <a href="{{ path('app_partners') }}" class="block px-2 py-2.5 text-gray-200 hover:text-white text-sm">Partners</a>
-            <a href="{{ path('app_manual') }}" class="block px-2 py-2.5 text-gray-200 hover:text-white text-sm">User Manual</a>
-            <a href="{{ path('app_login') }}" class="block px-2 py-2.5 text-gray-200 hover:text-white text-sm">Sign In</a>
-            <a href="https://wa.me/2348032714999?text=Hello!%20I%20am%20a%20school%20proprietor%20interested%20in%20setting%20up%20a%20Free%20Trial%20for%20EDUS."
-               target="_blank" rel="noopener noreferrer"
-               class="block mt-2 text-center px-5 py-3 rounded-lg text-sm font-semibold text-slate-950 bg-white">
-                Start Free Trial
-            </a>
-        </div>
-    </div>
-</div>
+{% include 'landlord/home/_nav.html.twig' with { current: 'home' } %}
 
 {# --- 1. HERO SECTION --- #}
 <div class="relative bg-slate-950 overflow-hidden">
@@ -115,10 +97,9 @@
                 </h1>
 
                 <p class="mt-6 text-lg text-gray-300 max-w-xl">
-                    Edus is a <strong class="text-white">complete multi-tenant school management platform</strong> that
-                    Nigerian schools have relied on for years — now rebuilt and upgraded. Admissions, academics,
-                    results &amp; approvals, finance, store, SMS and a parent portal: all in one place, and every
-                    school isolated in its own private database.
+                    Admissions, fees, results, the store and the parent portal — one private portal per school.
+                    Edus was built inside a real Nigerian school bursary, then rebuilt for the way schools
+                    actually work: <strong class="text-white">one school, one database, no shared records.</strong>
                 </p>
 
                 <div class="mt-8 flex flex-col sm:flex-row gap-3">
@@ -136,6 +117,10 @@
                         All features →
                     </a>
                 </div>
+
+                <p class="mt-5 text-sm text-gray-400">
+                    Free trial · No card required · We import your first students · Support on WhatsApp
+                </p>
 
                 <dl class="mt-10 grid grid-cols-3 gap-6 max-w-md">
                     <div>
@@ -179,7 +164,7 @@
 {# --- 2. MODULE MARQUEE STRIP --- #}
 <div class="bg-blue-600 py-4 overflow-hidden">
     <div class="marquee gap-10 text-white/95 text-sm font-semibold uppercase tracking-wider">
-        {% set modules = ['Smart Dashboard','6-Step Onboarding','Student Registry','Admissions','Bulk Enrolment','Mass Promotion','Sessions & Terms','Smart Class Creator','Year Groups','Departments','Subjects','Grading Scale','Staff & Roles','Result Entry','4-Stage Approvals','Broadsheets','Payments & Receipts','Invoicing','Fee Schedule','Scholarships','Expenses','Profit & Loss','SMS Wallet','Store POS','Inventory','School Calendar','Public Website','Parent Portal','Bank Transfer Slips','ID Cards'] %}
+        {% set modules = ['Smart Dashboard','6-Step Onboarding','Student Registry','Admissions','Bulk Enrolment','Mass Promotion','Sessions & Terms','Smart Class Creator','Year Groups','Departments','Subjects','Grading Scale','Staff & Roles','Result Entry','4-Stage Approvals','Broadsheets','Payments & Receipts','Invoicing','Fee Schedule','Scholarships','Expenses','Income & Expenditure','SMS Wallet','Store POS','Inventory','School Calendar','Public Website','Parent Portal','Bank Transfer Slips','ID Cards'] %}
         {% for i in 1..2 %}
             <div class="flex gap-10 shrink-0">
                 {% for m in modules %}
@@ -243,7 +228,7 @@
                 { 'icon': '📈', 'title': 'Mass Promotion', 'text': 'End-of-session promotion in a few clicks: promote students, mark repeaters and auto-bill everyone for the new session.' },
                 { 'icon': '✅', 'title': 'Multi-Stage Result Approvals', 'text': 'Teacher → Form Teacher → HOD → Year Group Master. Rejections unlock results for rework automatically; authorised users can unlock at any time.' },
                 { 'icon': '💳', 'title': 'SMS Wallet & Top-ups', 'text': 'Prepaid messaging credits, transaction history and proof-of-payment submission for approval — SMS is automatic when you confirm a payment.' },
-                { 'icon': '📊', 'title': 'Profit & Loss Reporting', 'text': "Date-range reports that split academic fees from store income and subtract expenses, so you see your school's true net position." },
+                { 'icon': '📊', 'title': 'Income & Expenditure Reporting', 'text': "Date-range reports that split academic fees from store income and subtract expenses, so you see your school's true net position." },
                 { 'icon': '🏅', 'title': 'Custom Grading Scales', 'text': 'A1–F9, WAEC, NECO or your own custom scale with score ranges, points and remarks — applied consistently across entry, reports and analytics.' },
                 { 'icon': '🔎', 'title': 'Smart Dashboards & Filters', 'text': 'Outstanding debt, low-stock alerts, unpaid invoices, debtor/cleared filters and split academic-vs-store debt badges.' },
                 { 'icon': '🌐', 'title': 'Public School Website', 'text': 'Every school gets a public website on its own subdomain, rendered automatically from your branding and content.' }
@@ -434,7 +419,7 @@
                 <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {{ _self.browser('screencapture-gobarau-localhost-8082-finance-payment-terminal-10-2026-04-21-15_29_26.png', 'Payment terminal', 'h-48') }}
                     {{ _self.browser('screencapture-gobarau-localhost-8082-finance-payment-verify-2026-04-21-17_56_45.png', 'Verifying a bank transfer payment', 'h-48') }}
-                    {{ _self.browser('screencapture-gobarau-localhost-8082-finance-report-profit-loss-2026-04-21-21_29_53.png', 'Profit and loss report', 'h-48') }}
+                    {{ _self.browser('screencapture-gobarau-localhost-8082-finance-report-profit-loss-2026-04-21-21_29_53.png', 'Income and expenditure report', 'h-48') }}
                 </div>
 
                 <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -445,7 +430,7 @@
                         { 'icon': '📋', 'title': 'Fee Items & Structures', 'text': 'Tuition, books, uniform — priced per class and term.' },
                         { 'icon': '🎖️', 'title': 'Scholarships & Discounts', 'text': 'Rules like "Staff Child", assigned with duplicate protection and auto-applied.' },
                         { 'icon': '💸', 'title': 'Expenses', 'text': 'Day-to-day costs with categories and instant totals.' },
-                        { 'icon': '📈', 'title': 'Profit & Loss', 'text': 'Academic vs. store income, minus expenses, over any date range.' },
+                        { 'icon': '📈', 'title': 'Income & Expenditure', 'text': 'Academic vs. store income, minus expenses, over any date range.' },
                         { 'icon': '📲', 'title': 'SMS Wallet', 'text': 'Prepaid credits, transaction history and proof-of-payment approval.' }
                     ] %}
                     {% for f in finance %}
@@ -597,6 +582,43 @@
     </div>
 </div>
 
+{# --- 7b. COMMON QUESTIONS (conversion) --- #}
+<div class="bg-white py-20">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center">
+            <p class="text-base font-semibold text-accent-600 uppercase tracking-wide">Before you ask</p>
+            <h2 class="mt-2 text-3xl sm:text-4xl font-extrabold text-ink-900">The questions schools actually ask</h2>
+        </div>
+
+        {% set faqs = [
+            { 'q': 'How much does Edus cost?',
+              'a': 'Standard is ₦750 per pupil per term, or ₦500 per pupil per term if the year is paid up front. Larger schools can choose an Enterprise licence. Every figure, including the break-even at your roll, is on the Pricing page — no sales call needed.' },
+            { 'q': 'Do we have to enter all our students again?',
+              'a': 'No. Upload a 12-column CSV using the template we provide, or use the manual grid. Classes are matched automatically, parent logins are created, and invoices can be generated in the same pass. A few hundred pupils take minutes, not weeks.' },
+            { 'q': 'Does it work on a phone and a poor network?',
+              'a': 'Yes. Every screen is built mobile-first and tested at 360px, because that is what parents and bursars actually use. The portal is light, and receipts, statements and reports print on A4 when you need paper.' },
+            { 'q': "Where does our school’s data live?",
+              'a': "In your school’s own database. No other school can query it, and each staff role only sees the screens it is allowed to use. Parents see only their own children." },
+            { 'q': 'What happens when the free trial ends?',
+              'a': "Nothing is deleted. You choose Standard or Enterprise and keep working. If you decide Edus is not for you, we export your data for you — it is your school’s record, not ours." },
+            { 'q': 'Can parents pay online?',
+              'a': "Yes. Online payments confirm themselves and settle into the school’s bank account, or parents transfer and your bursar verifies each payment. Both methods are supported, and every confirmed payment sends a receipt." }
+        ] %}
+
+        <div class="mt-10 divide-y divide-ink-200 border-y border-ink-200">
+            {% for f in faqs %}
+                <details class="group py-1">
+                    <summary class="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-4 py-3 text-left font-semibold text-ink-900">
+                        <span>{{ f.q }}</span>
+                        <span class="text-xl leading-none text-ink-400 transition group-open:rotate-45" aria-hidden="true">+</span>
+                    </summary>
+                    <p class="pb-4 pr-8 text-sm leading-relaxed text-ink-700">{{ f.a }}</p>
+                </details>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
 {# --- 8. FINAL CTA --- #}
 <div class="relative bg-slate-950 overflow-hidden">
     <div class="absolute inset-0 grid-glow opacity-50"></div>
@@ -620,6 +642,10 @@
                 ▶ View Demo
             </button>
         </div>
+        <p class="mt-6 text-sm text-gray-400">
+            Prefer to talk? <a href="tel:+2348032714999" class="inline-flex min-h-[44px] items-center font-semibold text-white underline underline-offset-2">+234 803 271 4999</a>
+            · WhatsApp works at the same number
+        </p>
     </div>
 </div>
 
@@ -628,7 +654,7 @@
     <div class="max-w-7xl mx-auto py-14 px-4 sm:px-6 lg:px-8">
         <div class="lg:grid lg:grid-cols-4 lg:gap-10">
             <div class="lg:col-span-2">
-                <a href="{{ path('app_home') }}" class="text-3xl font-black tracking-tighter text-white no-underline">
+                <a href="{{ path('app_home') }}" class="inline-flex min-h-[44px] items-center text-3xl font-black tracking-tighter text-white no-underline">
                     Edus<span class="text-blue-500">.</span>
                 </a>
                 <p class="mt-4 text-sm text-gray-400 max-w-sm">
@@ -639,22 +665,23 @@
             <div>
                 <h3 class="text-xs font-bold uppercase tracking-widest text-gray-500">Product</h3>
                 <ul class="mt-4 space-y-2 text-sm">
-                    <li><a href="{{ path('app_features') }}" class="text-gray-400 hover:text-white">Features</a></li>
-                    <li><a href="#upgrade" class="text-gray-400 hover:text-white">What's New in 2.0</a></li>
-                    <li><a href="#tour" class="text-gray-400 hover:text-white">Screenshots</a></li>
-                    <li><a href="{{ path('app_manual') }}" class="text-gray-400 hover:text-white">User Manual</a></li>
-                    <li><a href="{{ path('app_partners') }}" class="text-gray-400 hover:text-white">Partner Program</a></li>
+                    <li><a href="{{ path('app_features') }}" class="flex min-h-[44px] items-center text-gray-400 hover:text-white">Features</a></li>
+                    <li><a href="{{ path('app_pricing') }}" class="flex min-h-[44px] items-center text-gray-400 hover:text-white">Pricing</a></li>
+                    <li><a href="#upgrade" class="flex min-h-[44px] items-center text-gray-400 hover:text-white">What's New in 2.0</a></li>
+                    <li><a href="#tour" class="flex min-h-[44px] items-center text-gray-400 hover:text-white">Screenshots</a></li>
+                    <li><a href="{{ path('app_manual') }}" class="flex min-h-[44px] items-center text-gray-400 hover:text-white">User Manual</a></li>
+                    <li><a href="{{ path('app_partners') }}" class="flex min-h-[44px] items-center text-gray-400 hover:text-white">Partner Program</a></li>
                 </ul>
             </div>
             <div>
                 <h3 class="text-xs font-bold uppercase tracking-widest text-gray-500">Get Started</h3>
                 <ul class="mt-4 space-y-2 text-sm">
-                    <li><a href="{{ path('app_login') }}" class="text-gray-400 hover:text-white">Sign In</a></li>
+                    <li><a href="{{ path('app_login') }}" class="flex min-h-[44px] items-center text-gray-400 hover:text-white">Sign In</a></li>
                     <li>
                         <a href="https://wa.me/2348032714999?text=Hello!%20I%20am%20a%20school%20proprietor%20interested%20in%20setting%20up%20a%20Free%20Trial%20for%20EDUS."
-                           target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white">Talk to us on WhatsApp</a>
+                           target="_blank" rel="noopener noreferrer" class="flex min-h-[44px] items-center text-gray-400 hover:text-white">Talk to us on WhatsApp</a>
                     </li>
-                    <li><a href="#" class="text-gray-400 hover:text-white">Privacy Policy</a></li>
+                    <li><a href="#" class="flex min-h-[44px] items-center text-gray-400 hover:text-white">Privacy Policy</a></li>
                 </ul>
             </div>
         </div>
@@ -679,7 +706,7 @@
                 <div class="space-y-2 font-mono text-sm">
                     <div class="flex justify-between bg-white p-2 rounded border border-blue-100">
                         <span class="text-gray-500">Email:</span>
-                        <span class="font-bold text-gray-900">demo@edus.ng</span>
+                        <span class="font-bold text-gray-900">demo@gmail.com</span>
                     </div>
                     <div class="flex justify-between bg-white p-2 rounded border border-blue-100">
                         <span class="text-gray-500">Password:</span>
@@ -691,7 +718,8 @@
                 <button onclick="copyDemoDetails(this)" class="flex-1 py-2 px-4 border border-gray-200 text-gray-600 font-medium rounded-lg hover:bg-gray-50 transition">
                     Copy Details
                 </button>
-                <a href="https://demo.edus.ng/login" target="_blank" class="flex-1 py-2 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 text-center transition">
+                {# Host-aware: https://demo.edus.ng in production, http://demo.localhost:8082 locally. #}
+                <a href="{{ app.request.schemeAndHttpHost|replace({'://': '://demo.'}) }}/login" target="_blank" rel="noopener" class="flex-1 py-2 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 text-center transition">
                     Go to Login →
                 </a>
             </div>
@@ -713,7 +741,7 @@
     }
 
     function copyDemoDetails(btn) {
-        const textToCopy = "Email: demo@edus.ng\nPassword: demo123";
+        const textToCopy = "Email: demo@gmail.com\nPassword: demo123";
         navigator.clipboard.writeText(textToCopy).then(() => {
             btn.innerText = "Copied! ✓";
             btn.classList.add('text-green-600', 'border-green-300', 'bg-green-50');
@@ -748,4 +776,25 @@
         items.forEach(el => observer.observe(el));
     })();
 </script>
+
+{# ── Sticky mobile conversion bar ──────────────────────────────────────
+   One thumb-sized action on every phone view. Hidden from `sm` upward,
+   where the header CTA is permanently visible. The spacer above the bar
+   keeps the footer reachable — without it the fixed bar covers the last
+   row of the page. Safe-area inset keeps it clear of the home indicator. #}
+<div class="h-20 sm:hidden" aria-hidden="true"></div>
+<div class="fixed inset-x-0 bottom-0 z-50 border-t border-ink-200 bg-white/95 px-4 pt-2 backdrop-blur sm:hidden"
+     style="padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));">
+    <div class="flex gap-2">
+        <a href="https://wa.me/2348032714999?text=Hello!%20I%20am%20a%20school%20proprietor%20interested%20in%20setting%20up%20a%20Free%20Trial%20for%20EDUS."
+           target="_blank" rel="noopener noreferrer"
+           class="flex min-h-[48px] flex-1 items-center justify-center rounded-xl bg-accent-600 px-4 text-sm font-semibold text-white">
+            Start free trial
+        </a>
+        <button type="button" onclick="openDemoModal()"
+                class="flex min-h-[48px] shrink-0 items-center justify-center rounded-xl border border-ink-300 px-4 text-sm font-semibold text-ink-900">
+            Demo
+        </button>
+    </div>
+</div>
 {% endblock %}

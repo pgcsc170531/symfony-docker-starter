@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Report verification</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    {% include '_design_tokens.html.twig' %}
+    <style>body { background-color: #F9FAFB; }</style>
+</head>
+<body class="flex min-h-screen flex-col">
+
+    <main class="flex flex-1 items-center justify-center px-4 py-10">
+        <div class="w-full max-w-md overflow-hidden rounded-xl border border-ink-200 bg-white shadow-card">
+            <div class="px-6 py-5 text-white" style="background-color: {{ school and school.primaryColor ? school.primaryColor : '#16223C' }}">
+                <p class="text-lg font-bold leading-tight">{{ school ? school.name : 'School' }}</p>
+                {% if school and school.motto %}<p class="mt-0.5 text-xs text-white/80">{{ school.motto }}</p>{% endif %}
+            </div>
+
+            <div class="p-6 text-center">
+                <span class="mx-auto grid h-14 w-14 place-items-center rounded-full bg-paid/10 text-paid" aria-hidden="true">
+                    <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                </span>
+
+                <h1 class="mt-4 text-xl font-bold text-ink-900">Genuine report</h1>
+                <p class="mt-2 text-sm leading-relaxed text-ink-600">
+                    This confirms that a {{ term ? term.name : 'term' }} report was issued by
+                    {{ school ? school.name : 'the school' }} for the {{ learner }} below.
+                </p>
+
+                <dl class="mt-5 divide-y divide-ink-100 rounded-lg border border-ink-200 text-left text-sm">
+                    <div class="flex justify-between gap-3 px-4 py-3">
+                        <dt class="text-ink-500">{{ learner.capital }}</dt>
+                        <dd class="break-words text-right font-semibold text-ink-900">{{ student ? student.fullName : '—' }}</dd>
+                    </div>
+                    <div class="flex justify-between gap-3 px-4 py-3">
+                        <dt class="text-ink-500">Admission no</dt>
+                        <dd class="break-words text-right font-semibold text-ink-900">{{ student ? (student.admissionNumber ?? '—') : '—' }}</dd>
+                    </div>
+                    <div class="flex justify-between gap-3 px-4 py-3">
+                        <dt class="text-ink-500">Term</dt>
+                        <dd class="text-right font-semibold text-ink-900">{{ term ? term.name : '—' }}</dd>
+                    </div>
+                    <div class="flex justify-between gap-3 px-4 py-3">
+                        <dt class="text-ink-500">Session</dt>
+                        <dd class="text-right font-semibold text-ink-900">{{ term and term.session ? term.session.name : '—' }}</dd>
+                    </div>
+                    <div class="flex justify-between gap-3 px-4 py-3">
+                        <dt class="text-ink-500">Verification code</dt>
+                        <dd class="text-right font-mono font-semibold text-ink-900">{{ verification.code }}</dd>
+                    </div>
+                </dl>
+
+                <p class="mt-4 text-xs text-ink-400">
+                    No marks or positions are shown on this page. For the full report,
+                    ask the parent to share the signed report link.
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="border-t border-ink-200 bg-white px-4 py-5 text-center">
+        <a href="https://edus.ng" target="_blank" rel="noopener"
+           class="inline-flex min-h-[44px] items-center text-ink-700 hover:text-accent-700">
+            {% import '_brand.html.twig' as brand %}
+            {{ brand.wordmark('sm') }}
+        </a>
+        <p class="mt-1 text-xs text-ink-500">The school operating system</p>
+    </footer>
+
+</body>
+</html>

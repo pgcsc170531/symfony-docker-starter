@@ -1,0 +1,27 @@
+{#
+    Simple server-side pagination. Params are the current filters; `page` is
+    overridden on each link so the back button and bookmarks keep working.
+#}
+{% if pages > 1 %}
+    <nav class="no-print mt-4 flex items-center justify-between gap-2" aria-label="Pagination">
+        {% if page > 1 %}
+            <a href="{{ path(route, params|merge({page: page - 1})) }}"
+               class="inline-flex min-h-[44px] items-center rounded-lg border border-ink-300 px-4 text-sm font-semibold text-ink-700 hover:border-accent-400 hover:text-accent-700">
+                &larr; Previous
+            </a>
+        {% else %}
+            <span></span>
+        {% endif %}
+
+        <span class="text-xs font-medium text-ink-500">Page {{ page }} of {{ pages }}</span>
+
+        {% if page < pages %}
+            <a href="{{ path(route, params|merge({page: page + 1})) }}"
+               class="inline-flex min-h-[44px] items-center rounded-lg border border-ink-300 px-4 text-sm font-semibold text-ink-700 hover:border-accent-400 hover:text-accent-700">
+                Next &rarr;
+            </a>
+        {% else %}
+            <span></span>
+        {% endif %}
+    </nav>
+{% endif %}

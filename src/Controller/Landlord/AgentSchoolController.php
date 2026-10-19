@@ -5,21 +5,14 @@ namespace App\Controller\Landlord;
 use App\Entity\Landlord\School;
 use App\Entity\Landlord\Agent;
 use App\Entity\Landlord\Plan; // 👈 Added
-use App\Entity\Tenant\User;
-use App\Entity\Tenant\Session;
-use App\Entity\Tenant\Term;
-use App\Entity\Tenant\School as TenantSchool;
 use App\Form\SchoolType;
 use App\Service\SubscriptionService; // 👈 Added
-use Doctrine\ORM\ORMSetup;
-use Doctrine\ORM\Tools\SchemaTool;
-use Doctrine\DBAL\DriverManager;
+use App\Service\TenantProvisioner;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/agent/school')]
@@ -70,8 +63,8 @@ class AgentSchoolController extends AbstractController
     public function new(
         Request $request,
         ManagerRegistry $doctrine,
-        UserPasswordHasherInterface $passwordHasher,
-        SubscriptionService $subscriptionService // 👈 INJECT SERVICE
+        SubscriptionService $subscriptionService, // 🟢👈 INJECT SERVICE
+        TenantProvisioner $provisioner
     ): Response
     {
         $school = new School();
@@ -125,17 +118,26 @@ class AgentSchoolController extends AbstractController
             $landlordEm->persist($school);
             $landlordEm->flush();
 
-            // 7. Provision Tenant Database
-            $this->createTenantDatabaseAndSchema(
-                $dbName, 
-                $school->getName(), 
-                $school->getSubdomain(),
-                $pName, 
-                $pEmail, 
-                $pPass, 
-                $passwordHasher,
-                $school->getId()
-            );
+            // 7. Build the tenant database: schema, session, term, grading scale, admin login.
+            try {
+                $this->provisioner->provision(
+                    schoolName: $school->getName(),
+                    subdomain: $school->getSubdomain(),
+                    landlordSchoolId: $school->getId(),
+                    principalName: $pName,
+                    principalEmail: $pEmail,
+                    principalPassword: $pPass,
+                    databaseName: $dbName,
+                );
+            } catch (\Throwable $e) {
+                $this->addFlash('error', sprintf(
+                    "School '%s' was registered but its database could not be built: %s",
+                    $dbName,
+                    $e->getMessage()
+                ));
+
+                return $this->redirectToRoute('app_agent_school_show', ['id' => $school->getId()]);
+            }
 
             $this->addFlash('success', "Success! School '$dbName' has been enrolled with a Free Trial.");
             return $this->redirectToRoute('app_agent_school_index');
@@ -147,89 +149,4 @@ class AgentSchoolController extends AbstractController
         ]);
     }
 
-    // ... (createTenantDatabaseAndSchema remains the same) ...
-    private function createTenantDatabaseAndSchema(
-        string $dbName, 
-        string $schoolName,
-        string $subdomain, // 🟢 3. ADD THIS PARAMETER HERE
-        string $principalName, // 4. This moves to 4th position
-        string $principalEmail,
-        string $principalPassword,
-        UserPasswordHasherInterface $hasher,
-        int $landlordSchoolId
-    ): void
-    {
-        $connectionParams = [
-            'user' => 'root', 'password' => 'root', 'host' => 'database', 'driver' => 'pdo_mysql',
-        ];
-
-        $tmpConnection = DriverManager::getConnection($connectionParams);
-        $schemaManager = $tmpConnection->createSchemaManager();
-
-        if (!in_array($dbName, $schemaManager->listDatabases())) {
-            $schemaManager->createDatabase($dbName);
-        }
-        $tmpConnection->close();
-
-        // Connect to New Database
-        $tenantParams = array_merge($connectionParams, ['dbname' => $dbName]);
-        
-        $config = ORMSetup::createAttributeMetadataConfiguration(
-            paths: [__DIR__ . '/../../Entity/Tenant'],
-            isDevMode: true
-        );
-        
-        $tenantConnection = DriverManager::getConnection($tenantParams, $config);
-        $tenantEntityManager = new \Doctrine\ORM\EntityManager($tenantConnection, $config);
-
-        // Create Tables
-        $metadata = $tenantEntityManager->getMetadataFactory()->getAllMetadata();
-        $schemaTool = new SchemaTool($tenantEntityManager);
-        $schemaTool->updateSchema($metadata, true);
-
-        // Seed Data
-        try {
-            $currentYear = date('Y');
-            $nextYear = $currentYear + 1;
-            
-            $session = new Session();
-            $session->setName("$currentYear/$nextYear");
-            $session->setIsActive(true);
-            $tenantEntityManager->persist($session);
-
-            $term = new Term();
-            $term->setName('First Term');
-            $term->setIsActive(true);
-            $term->setSession($session);
-            $tenantEntityManager->persist($term);
-
-            $tenantSchool = new TenantSchool();
-            $tenantSchool->setName($schoolName);
-            $tenantSchool->setEmail($principalEmail);
-            
-            // 🟢 NOW THIS VARIABLE EXISTS AND WORKS
-            $tenantSchool->setSubdomain($subdomain); 
-            $tenantSchool->setLandlordSchoolId($landlordSchoolId);
-            
-            $tenantSchool->setPrimaryColor('#4f46e5'); 
-            $tenantEntityManager->persist($tenantSchool);
-
-            $user = new User();
-            $user->setEmail($principalEmail);
-            $user->setFullName($principalName);
-            $user->setRoles(['ROLE_ADMIN', 'ROLE_BURSAR']);
-            $user->setSchool($tenantSchool); 
-
-            $hashedPassword = $hasher->hashPassword($user, $principalPassword);
-            $user->setPassword($hashedPassword);
-            
-            $tenantEntityManager->persist($user);
-            $tenantEntityManager->flush();
-            
-        } catch (\Exception $e) {
-            // Log error
-        }
-
-        $tenantConnection->close();
-    }
 }

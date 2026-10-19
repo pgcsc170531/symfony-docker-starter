@@ -3,6 +3,7 @@
 namespace App\Controller\Tenant;
 
 use App\Form\SchoolSettingsType;
+use App\Service\Payments\PlatformPaymentSwitch;
 use App\Entity\Landlord\GlobalSetting;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry; // ✅ Already imported
@@ -23,7 +24,8 @@ class SettingsController extends AbstractController
         Request $request, 
         EntityManagerInterface $em, 
         SluggerInterface $slugger,
-        ManagerRegistry $doctrine // ✅ Added this argument here to fix the error
+        ManagerRegistry $doctrine, // ✅ Added this argument here to fix the error
+        PlatformPaymentSwitch $platformSwitch,
     ): Response {
         /** @var \App\Entity\Tenant\User $user */
         $user = $this->getUser();
@@ -66,6 +68,22 @@ class SettingsController extends AbstractController
                 }
             }
 
+            $signatureFile = $form->get('principalSignatureFile')->getData();
+            if ($signatureFile) {
+                $directory = $this->getParameter('kernel.project_dir').'/public/uploads/signatures';
+                if (!is_dir($directory)) {
+                    mkdir($directory, 0775, true);
+                }
+
+                try {
+                    $newFilename = 'signature-'.uniqid().'.'.$signatureFile->guessExtension();
+                    $signatureFile->move($directory, $newFilename);
+                    $tenant->setPrincipalSignatureFilename($newFilename);
+                } catch (FileException $e) {
+                    $this->addFlash('error', 'Could not upload the signature: '.$e->getMessage());
+                }
+            }
+
             $em->flush();
             $this->addFlash('success', 'School settings updated successfully!');
             return $this->redirectToRoute('app_tenant_settings_general');
@@ -81,7 +99,10 @@ class SettingsController extends AbstractController
         return $this->render('tenant/settings/general.html.twig', [
             'form' => $form->createView(),
             'tenant' => $tenant,
-            'smsPrice' => $realPrice, 
+            'smsPrice' => $realPrice,
+            // So a school is not left wondering why its own "Online" setting
+            // does nothing when the platform has switched collection off.
+            'platformOnlinePayments' => $platformSwitch->isEnabled(),
         ]);
     }
 }

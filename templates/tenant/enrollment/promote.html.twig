@@ -7,7 +7,7 @@
     <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8">
         
         <div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
-            <h1 class="text-xl md:text-2xl font-bold text-gray-800">Student Promotion & Repetition</h1>
+            <h1 class="text-xl md:text-2xl font-bold text-gray-800">{{ learner.capital }} Promotion & Repetition</h1>
             <a href="{{ path('app_tenant_student_index') }}" class="text-sm font-bold text-indigo-600 hover:underline hidden sm:block">
                 &larr; Directory
             </a>
@@ -42,7 +42,7 @@
                     </div>
                     
                     <button type="button" id="btn-fetch" class="mt-2 bg-blue-600 text-white px-4 py-3 rounded-lg text-sm font-bold hover:bg-blue-700 w-full shadow-sm transition">
-                        Load Students &darr;
+                        Load {{ learner.pluralCapital }} &darr;
                     </button>
                 </div>
 
@@ -71,7 +71,7 @@
                     </div>
                     
                     <p class="text-xs sm:text-sm text-blue-700 mt-3 bg-blue-100/50 p-3 rounded">
-                        * Students <strong>NOT selected</strong> below will repeat the Source Class.
+                        * {{ learner.pluralCapital }} <strong>NOT selected</strong> below will repeat the Source Class.
                     </p>
                 </div>
             </div>
@@ -80,7 +80,7 @@
             <div id="student-list-container" class="hidden border-t border-gray-100 pt-8 mt-4">
                 
                 <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
-                    <h3 class="text-base sm:text-lg font-bold text-gray-800">Select Students to Promote</h3>
+                    <h3 class="text-base sm:text-lg font-bold text-gray-800">Select {{ learner.pluralCapital }} to Promote</h3>
                     
                     <div class="flex items-center space-x-3 bg-gray-100 p-1 rounded-lg w-max">
                         <button type="button" onclick="toggleAll(true)" class="px-3 py-1.5 text-xs sm:text-sm font-bold text-blue-600 hover:bg-white rounded shadow-sm transition">Select All</button>

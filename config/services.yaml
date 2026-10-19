@@ -7,12 +7,32 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    # Child application documents (photo, birth certificate, previous result,
+    # fee-proof) — see docs/parent-application/DESIGN.md §8 item 5.
+    applications_directory: '%kernel.project_dir%/public/uploads/applications'
     student_photos_directory: '%kernel.project_dir%/public/uploads/students'
     school_logos_directory: '%kernel.project_dir%/public/uploads/logos'
     proofs_directory: '%kernel.project_dir%/public/uploads/proofs'
     wallet_proofs_directory: '%kernel.project_dir%/public/uploads/wallet_proofs'
+    # Expense receipts — private-ish files referenced by the expense register.
+    receipts_directory: '%kernel.project_dir%/public/uploads/receipts'
     app.base_domain: "%env(default:default_base_domain:BASE_DOMAIN)%"
     default_base_domain: 'localhost'
+
+    # Paystack. Empty by default, which is what keeps the app on the local
+    # payment simulator — see App\Service\Payment\GatewayFactory. Add the real
+    # key to the container environment (compose.yaml / VPS .env) to go live.
+    paystack_secret_key: "%env(default:paystack_secret_key_fallback:PAYSTACK_SECRET_KEY)%"
+    paystack_secret_key_fallback: ''
+
+    # Edus's own collection account, printed on the payment page and on every
+    # invoice PDF. Empty by default ON PURPOSE: the page then says "ask us for
+    # transfer details" instead of printing a placeholder account number that
+    # nobody can actually pay into. Set EDUS_BANK_* in the server environment.
+    app.billing.bank_name: "%env(default:billing_bank_fallback:EDUS_BANK_NAME)%"
+    app.billing.bank_account: "%env(default:billing_bank_fallback:EDUS_BANK_ACCOUNT)%"
+    app.billing.bank_account_name: "%env(default:billing_bank_fallback:EDUS_BANK_ACCOUNT_NAME)%"
+    billing_bank_fallback: ''
 
 services:
     # default configuration for services in *this* file
@@ -27,3 +47,8 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+    # The payment provider is chosen at runtime: Paystack once PAYSTACK_SECRET_KEY
+    # is set, otherwise the local simulator. See App\Service\Payment\GatewayFactory.
+    App\Service\Payment\PaymentGatewayInterface:
+        factory: ['@App\Service\Payment\GatewayFactory', 'create']

@@ -1,0 +1,9 @@
+First Name,Middle Name,Last Name,Gender (M/F),DOB (YYYY-MM-DD),Religion,Blood Group,Genotype,Home Town,Admission Number (Leave blank to auto-generate),Class Name,Parent Name,Parent Phone
+Ibrahim,Musa,Bala,M,2013-04-18,Islam,O+,AA,Kano,,JSS 1A,Musa Bala,08034000001
+Fatima,Sadiq,Yusuf,F,2013-09-02,Islam,B+,AS,Kaduna,,JSS 1A,Sadiq Yusuf,08034000002
+Chidi,Emeka,Okafor,M,2013-01-27,Christianity,O+,AA,Enugu,,JSS 1A,Emeka Okafor,08034000003
+Aisha,,Abdullahi,F,2012-11-11,Islam,A+,AA,Zaria,,JSS 1B,Abdullahi Sani,08034000004
+Tunde,Babatunde,Adeyemi,M,2012-06-30,Christianity,O-,AA,Ibadan,,JSS 1B,Babatunde Adeyemi,08034000005
+Grace,Ngozi,Eze,F,2011-03-15,Christianity,A+,AS,Aba,,JSS 2A,Ngozi Eze,08034000006
+Yusuf,Ali,Mohammed,M,2011-08-21,Islam,B+,AA,Maiduguri,,JSS 2A,Ali Mohammed,08034000007
+Blessing,,Ogunleye,F,2010-12-05,Christianity,O+,AA,Lagos,,JSS 3C,Oluwaseun Ogunleye,08034000008

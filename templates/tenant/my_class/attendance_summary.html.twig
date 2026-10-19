@@ -1,0 +1,72 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Attendance summary — {{ classroom.name }}{% endblock %}
+
+{% block body %}
+<div class="px-4">
+
+    <a href="{{ path('app_tenant_my_class_attendance', {classroom: classroom.id}) }}"
+       class="mb-4 inline-flex min-h-[44px] items-center gap-1 text-sm font-semibold text-ink-600 hover:text-accent-700">
+        <span aria-hidden="true">&larr;</span> Attendance
+    </a>
+
+    <div class="mb-5">
+        <h1 class="text-2xl font-bold text-ink-900">Term summary</h1>
+        <p class="mt-1 text-sm text-ink-500">
+            {{ classroom.name }} · {{ term.name }} ·
+            {{ summary.opened }} {{ summary.opened == 1 ? 'register' : 'registers' }} taken
+        </p>
+    </div>
+
+    {% if summary.rows is empty %}
+        <div class="rounded-xl border border-dashed border-ink-300 bg-white px-6 py-12 text-center">
+            <p class="text-lg font-semibold text-ink-700">No registers yet</p>
+            <p class="mx-auto mt-1 max-w-md text-sm text-ink-500">
+                Take a register and the term totals appear here.
+            </p>
+        </div>
+    {% else %}
+        <div class="overflow-x-auto rounded-xl border border-ink-200 bg-white shadow-card">
+            <table class="w-full min-w-[640px] text-sm">
+                <thead class="bg-ink-100 text-left text-xs uppercase tracking-wide text-ink-500">
+                    <tr>
+                        <th class="px-4 py-3 font-semibold">{{ learner.capital }}</th>
+                        <th class="px-3 py-3 text-right font-semibold">Present</th>
+                        <th class="px-3 py-3 text-right font-semibold">Late</th>
+                        <th class="px-3 py-3 text-right font-semibold">Absent</th>
+                        <th class="px-3 py-3 text-right font-semibold">Excused</th>
+                        <th class="px-3 py-3 text-right font-semibold">Opened</th>
+                        <th class="px-4 py-3 text-right font-semibold">Attendance</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-ink-100">
+                    {% for row in summary.rows %}
+                        <tr class="hover:bg-ink-50">
+                            <td class="px-4 py-3 font-medium text-ink-900">
+                                {{ row.student.firstName }} {{ row.student.lastName }}
+                            </td>
+                            <td class="px-3 py-3 text-right tabular text-ink-700">{{ row.present }}</td>
+                            <td class="px-3 py-3 text-right tabular text-ink-700">{{ row.late }}</td>
+                            <td class="px-3 py-3 text-right tabular {{ row.absent > 0 ? 'font-semibold text-failed' : 'text-ink-700' }}">{{ row.absent }}</td>
+                            <td class="px-3 py-3 text-right tabular text-ink-700">{{ row.excused }}</td>
+                            <td class="px-3 py-3 text-right tabular text-ink-500">
+                                {{ row.opened }}{% if row.unmarked > 0 %}
+                                    <span class="block text-[11px] text-pending">{{ row.unmarked }} unmarked</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-right font-bold tabular text-ink-900">
+                                {{ row.rate is null ? '—' : row.rate ~ '%' }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <p class="mt-3 text-xs text-ink-400">
+            "Opened" counts the registers actually taken, not the length of the term. A {{ learner }} who joined
+            mid-term is measured from their enrolment date, so a late admission is not shown as poor attendance.
+        </p>
+    {% endif %}
+</div>
+{% endblock %}

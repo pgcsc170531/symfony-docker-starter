@@ -3,12 +3,12 @@
 {% block title %}Financial History - {{ student.firstName }}{% endblock %}
 
 {% block body %}
-<div class="max-w-5xl mx-auto mt-8 px-4 pb-12">
+<div class="mt-8 px-4 pb-12">
 
     {# HEADER #}
     <div class="flex items-center justify-between mb-8">
         <div>
-            <a href="{{ path('app_parent_dashboard') }}" class="text-sm font-bold text-gray-500 hover:text-gray-800 mb-2 inline-block">&larr; Back to Dashboard</a>
+            <a href="{{ path('app_parent_dashboard') }}" class="inline-flex items-center min-h-[44px] -my-2 text-sm font-bold text-gray-500 hover:text-gray-800">&larr; Back to Dashboard</a>
             <h1 class="text-2xl font-bold text-gray-800">Financial History</h1>
             <p class="text-gray-500">Records for <span class="font-bold text-gray-700">{{ student.fullName }}</span></p>
         </div>
@@ -17,6 +17,15 @@
             <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Admission No</div>
             <div class="font-mono font-bold text-gray-700 bg-gray-100 px-3 py-1 rounded">{{ student.admissionNumber }}</div>
         </div>
+    </div>
+
+    {# Printable Statement of Account — A4 PDF with a QR that proves the school
+       issued it. Full width on a phone: it is the primary action on this page. #}
+    <div class="mb-6 flex flex-col gap-2 sm:flex-row">
+        <a href="{{ path('app_parent_statement_pdf', {id: student.id, download: 1}) }}"
+           class="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg bg-accent-600 px-5 text-sm font-bold text-white transition-colors hover:bg-accent-700 sm:w-auto">
+            <span aria-hidden="true">⬇</span> Download statement (PDF)
+        </a>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -29,7 +38,9 @@
 
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                 {% if invoices|length > 0 %}
-                    <table class="w-full text-sm text-left">
+                    {# Wide table: it scrolls inside its own box, never the page (MOBILE-FIRST rule 7). #}
+                    <div class="overflow-x-auto">
+                    <table class="w-full min-w-[640px] text-sm text-left">
                         <thead class="bg-gray-50 text-gray-500 font-bold">
                             <tr>
                                 <th class="p-4">Reference</th>
@@ -43,7 +54,7 @@
                             {% for invoice in invoices %}
                                 <tr class="hover:bg-gray-50 transition-colors">
                                     <td class="p-4">
-                                        <div class="font-mono font-bold text-gray-700">#{{ invoice.invoiceNumber }}</div>
+                                        <div class="font-mono font-bold text-gray-700">{{ invoice.invoiceNumber }}</div>
                                         <div class="text-xs text-gray-400">{{ invoice.createdAt|date('d M Y') }}</div>
                                     </td>
                                     <td class="p-4">
@@ -61,19 +72,34 @@
                                     </td>
                                     <td class="p-4 text-right">
                                         <div class="font-bold text-gray-800">₦{{ invoice.totalAmount|number_format }}</div>
+                                        {% if invoice.discountApplied > 0 %}
+                                            <div class="text-xs font-bold text-paid">−₦{{ invoice.discountApplied|number_format }} scholarship</div>
+                                        {% endif %}
                                         {% if invoice.balanceDue > 0 %}
                                             <div class="text-xs text-red-500 font-bold">Due: ₦{{ invoice.balanceDue|number_format }}</div>
                                         {% endif %}
                                     </td>
                                     <td class="p-4 text-right">
-                                        <a href="{{ path('app_tenant_invoice_show', {id: invoice.id}) }}" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs border border-indigo-200 px-3 py-1.5 rounded hover:bg-indigo-50">
-                                            View
-                                        </a>
+                                        <div class="flex items-center justify-end gap-2">
+                                            <a href="{{ path('app_tenant_invoice_show', {id: invoice.id}) }}" class="inline-flex items-center justify-center min-h-[44px] px-3 border border-indigo-200 rounded text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 font-bold text-xs whitespace-nowrap">
+                                                View
+                                            </a>
+                                            {% if invoice.balanceDue > 0 and onlinePaymentAvailable %}
+                                                <form method="post" action="{{ path('app_parent_payment_start', {id: invoice.id}) }}">
+                                                    <input type="hidden" name="_token" value="{{ csrf_token('pay_start_' ~ invoice.id) }}">
+                                                    <button type="submit"
+                                                            class="inline-flex items-center justify-center min-h-[44px] px-4 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-xs rounded whitespace-nowrap">
+                                                        Pay online
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        </div>
                                     </td>
                                 </tr>
                             {% endfor %}
                         </tbody>
                     </table>
+                    </div>
                 {% else %}
                     <div class="p-8 text-center text-gray-400">No invoices found.</div>
                 {% endif %}
@@ -103,7 +129,7 @@
                                         <span class="text-[10px] uppercase font-bold text-yellow-600 block mb-1">Pending</span>
                                     {% endif %}
                                     
-                                    <a href="{{ path('app_tenant_payment_receipt', {id: payment.id}) }}" target="_blank" class="text-indigo-600 hover:text-indigo-900 text-xs font-bold underline">
+                                    <a href="{{ path('app_tenant_payment_receipt', {id: payment.id}) }}" target="_blank" class="inline-flex items-center justify-end min-h-[44px] text-indigo-600 hover:text-indigo-900 text-xs font-bold underline">
                                         Receipt
                                     </a>
                                 </div>

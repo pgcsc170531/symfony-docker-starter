@@ -7,8 +7,8 @@
     <div class="bg-white p-6 rounded shadow border-t-4 border-green-600">
         <h2 class="text-xl font-bold mb-2">Record Payment</h2>
         <p class="text-gray-600 mb-6 text-sm">
-            For Invoice: <strong>#{{ invoice.invoiceNumber }}</strong><br>
-            Student: <strong>{{ invoice.student.fullName }}</strong>
+            For invoice <strong>{{ invoice.invoiceNumber }}</strong><br>
+            {{ learner.capital }}: <strong>{{ invoice.student.fullName }}</strong>
         </p>
 
         {{ form_start(form) }}

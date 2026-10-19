@@ -1,0 +1,106 @@
+{% set trend = sheet.trend %}
+{% set school = sheet.school %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Transcript — {{ sheet.student.fullName }}</title>
+<style>
+    @page { size: A4 portrait; margin: 10mm 9mm 14mm 9mm; }
+    body { margin: 0; font-family: "DejaVu Sans", sans-serif; font-size: 9pt; color: #111827; }
+    .header { width: 100%; border-collapse: collapse; background: {{ school and school.primaryColor ? school.primaryColor : '#16223C' }}; color: #fff; }
+    .header td { padding: 7pt 9pt; vertical-align: middle; }
+    .logo { width: 38pt; height: 38pt; background: #fff; text-align: center; vertical-align: middle; }
+    .logo img { max-width: 32pt; max-height: 32pt; }
+    .school-name { font-family: "DejaVu Serif", serif; font-size: 15pt; font-weight: bold; }
+    .meta { font-size: 7.5pt; color: #E5E7EB; margin-top: 2pt; }
+    .type { text-align: right; font-size: 8pt; text-transform: uppercase; letter-spacing: .5pt; color: #E5E7EB; }
+    .type strong { display: block; font-size: 12pt; color: #fff; }
+    .identity { width: 100%; border-collapse: collapse; margin-top: 6pt; }
+    .identity td { border: .6pt solid #D1D5DB; padding: 3.5pt 5pt; }
+    .label { display: block; font-size: 6.7pt; text-transform: uppercase; letter-spacing: .4pt; color: #6B7280; }
+    .value { font-size: 9pt; font-weight: bold; }
+    h2 { font-size: 8pt; text-transform: uppercase; letter-spacing: .5pt; color: #4B5563; margin: 0; padding: 8pt 0 3pt; }
+    table.grid { width: 100%; border-collapse: collapse; }
+    table.grid th { background: #F3F4F6; border: .6pt solid #D1D5DB; padding: 3pt; font-size: 6.8pt; text-transform: uppercase; color: #374151; }
+    table.grid td { border: .6pt solid #E5E7EB; padding: 3pt; font-size: 8.2pt; }
+    table.grid td.num, table.grid th.num { text-align: right; }
+    .summary { width: 100%; border-collapse: collapse; margin-top: 6pt; }
+    .summary td { border: .6pt solid #D1D5DB; padding: 4pt 6pt; }
+    .footer { margin-top: 12pt; font-size: 7pt; color: #9CA3AF; border-top: .5pt solid #E5E7EB; padding-top: 4pt; }
+    .muted { color: #6B7280; }
+</style>
+</head>
+<body>
+
+<table class="header">
+    <tr>
+        <td style="width: 46pt;"><div class="logo">{% if logo %}<img src="{{ logo }}" alt="">{% endif %}</div></td>
+        <td>
+            <div class="school-name">{{ school ? school.name : 'School' }}</div>
+            {% if school and school.motto %}<div class="meta">{{ school.motto }}</div>{% endif %}
+            {% if school and (school.address or school.phoneNumber) %}
+                <div class="meta">{{ school.address }}{% if school.address and school.phoneNumber %} · {% endif %}{{ school.phoneNumber }}</div>
+            {% endif %}
+        </td>
+        <td class="type" style="width: 110pt;"><strong>Transcript</strong>{{ trend.session ? trend.session.name : '' }}</td>
+    </tr>
+</table>
+
+<table class="identity">
+    <tr>
+        <td style="width: 40%;"><span class="label">Name</span><span class="value">{{ sheet.student.fullName }}</span></td>
+        <td style="width: 28%;"><span class="label">Admission no</span><span class="value">{{ sheet.student.admissionNumber ?? '—' }}</span></td>
+        <td style="width: 32%;"><span class="label">Class</span><span class="value">{{ sheet.classroom.name }}</span></td>
+    </tr>
+    <tr>
+        <td><span class="label">Session</span><span class="value">{{ trend.session ? trend.session.name : '—' }}</span></td>
+        <td><span class="label">Terms</span><span class="value">{{ trend.terms|length }}</span></td>
+        <td><span class="label">Cumulative average</span><span class="value">{{ trend.cumulative.percentage is null ? '—' : trend.cumulative.percentage ~ '%' }}</span></td>
+    </tr>
+</table>
+
+<h2>Results by term</h2>
+<table class="grid">
+    <thead>
+        <tr>
+            <th>Subject</th>
+            {% for termPoint in trend.terms %}<th class="num">{{ termPoint.name }}</th>{% endfor %}
+            <th class="num">Cumulative</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for subject in trend.subjects %}
+            {% set values = [] %}
+            <tr>
+                <td>{{ subject.name }}</td>
+                {% for termPoint in trend.terms %}
+                    {% set point = subject.points[termPoint.id] ?? null %}
+                    <td class="num">
+                        {{ point and point.percentage is not null ? point.percentage ~ '%' : '—' }}
+                        {% if point and point.grade %}<span class="muted">({{ point.grade }})</span>{% endif %}
+                    </td>
+                    {% if point and point.percentage is not null %}{% set values = values|merge([point.percentage]) %}{% endif %}
+                {% endfor %}
+                <td class="num">
+                    {{ values is empty ? '—' : ((values|reduce((carry, v) => carry + v)) / (values|length))|round(1) ~ '%' }}
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<table class="summary">
+    <tr>
+        <td><span class="label">Cumulative obtained</span><strong>{{ trend.cumulative.obtained }} / {{ trend.cumulative.obtainable }}</strong></td>
+        <td><span class="label">Cumulative average</span><strong>{{ trend.cumulative.percentage is null ? '—' : trend.cumulative.percentage ~ '%' }}</strong></td>
+        <td><span class="label">Cumulative grade</span><strong>{{ trend.cumulative.grade ?? '—' }}</strong></td>
+    </tr>
+</table>
+
+<div class="footer">
+    {{ school ? school.name : '' }} · Transcript · {{ trend.session ? trend.session.name : '' }} · Generated by Edus
+</div>
+
+</body>
+</html>

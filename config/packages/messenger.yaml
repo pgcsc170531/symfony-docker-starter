@@ -21,7 +21,16 @@ framework:
             messenger.bus.default: []
 
         routing:
-         #   Symfony\Component\Mailer\Messenger\SendEmailMessage: async
+            # Email goes through the queue, never through the web request.
+            #
+            # A real SMTP relay takes ~7 s per message (measured against Brevo).
+            # Releasing a class notifies 67 families, which is ~8 minutes of
+            # blocking work — far past PHP's 30 s limit, so the release page died
+            # *after* the results had been committed. Queued instead: the release
+            # returns at once and a worker sends the notices at the relay's pace.
+            #
+            # Run the worker:  php bin/console messenger:consume async
+            Symfony\Component\Mailer\Messenger\SendEmailMessage: async
           #  Symfony\Component\Notifier\Message\ChatMessage: async
          #   Symfony\Component\Notifier\Message\SmsMessage: async
 

@@ -1,0 +1,118 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ classSubject.subject.name }} — Results (read-only){% endblock %}
+
+{#
+   A reviewer's view of a class subject: the HOD, the form teacher and the year
+   group master read the same sheet the subject teacher submitted, and none of
+   them can change a mark here. There are no inputs on this page on purpose.
+#}
+{% block body %}
+<div class="px-4 py-6">
+
+    <a href="{{ path('tenant_approval_hub') }}"
+       class="inline-flex min-h-[44px] items-center text-sm font-bold text-accent-700 hover:text-accent-900">
+        &larr; Back to approvals
+    </a>
+
+    <div class="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <h1 class="text-xl font-bold text-ink-900 sm:text-2xl">{{ classSubject.subject.name }}</h1>
+        <span class="text-sm text-ink-500">{{ classSubject.classroom.name }} • {{ term.name }}</span>
+    </div>
+
+    <p class="mt-1 text-xs font-bold uppercase tracking-wide text-ink-500">
+        Read-only — marks can only be changed by the subject teacher
+    </p>
+
+    {% if not submitted %}
+        <div class="mt-4 rounded-lg border border-pending/40 bg-pending/5 p-3 text-sm" role="alert">
+            <span class="font-bold text-pending">Nothing submitted yet.</span>
+            This sheet has no submitted marks, so there is nothing to approve.
+        </div>
+    {% endif %}
+
+    {# The counts an HOD asks for: how many pupils earned a credit. #}
+    <dl class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <div class="rounded-xl border border-ink-200 bg-white p-3">
+            <dt class="text-xs font-bold uppercase tracking-wide text-ink-500">Pupils</dt>
+            <dd class="mt-1 text-xl font-black text-ink-900">{{ roster }}</dd>
+        </div>
+        <div class="rounded-xl border border-ink-200 bg-white p-3">
+            <dt class="text-xs font-bold uppercase tracking-wide text-ink-500">Marked</dt>
+            <dd class="mt-1 text-xl font-black text-ink-900">{{ graded }}</dd>
+        </div>
+        <div class="rounded-xl border border-ink-200 bg-white p-3">
+            <dt class="text-xs font-bold uppercase tracking-wide text-ink-500">Average</dt>
+            <dd class="mt-1 text-xl font-black text-ink-900">{{ average is null ? '—' : average|number_format(1) }}</dd>
+        </div>
+        <div class="rounded-xl border border-paid/40 bg-paid/5 p-3">
+            <dt class="text-xs font-bold uppercase tracking-wide text-paid">Credits</dt>
+            <dd class="mt-1 text-xl font-black text-paid">{{ credits }}</dd>
+        </div>
+        <div class="rounded-xl border border-ink-200 bg-white p-3">
+            <dt class="text-xs font-bold uppercase tracking-wide text-ink-500">Passes</dt>
+            <dd class="mt-1 text-xl font-black text-ink-900">{{ passes }}</dd>
+        </div>
+        <div class="rounded-xl border border-failed/40 bg-failed/5 p-3">
+            <dt class="text-xs font-bold uppercase tracking-wide text-failed">Fails</dt>
+            <dd class="mt-1 text-xl font-black text-failed">{{ fails }}</dd>
+        </div>
+    </dl>
+
+    <p class="mt-2 text-xs text-ink-500">Credits are A1–C6, passes D7–E8, fails F9. Pupils with no marks are not counted.</p>
+
+    <div class="mt-5 overflow-x-auto rounded-xl border border-ink-200 bg-white">
+        <table class="min-w-[640px] w-full text-sm">
+            <thead class="bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-500">
+                <tr>
+                    <th class="p-3">#</th>
+                    <th class="p-3">{{ learner.capital }}</th>
+                    {% for component in components %}
+                        <th class="p-3 text-right">{{ component|upper }}</th>
+                    {% endfor %}
+                    <th class="p-3 text-right">Total</th>
+                    <th class="p-3 text-center">Grade</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-ink-100">
+                {% for row in sheet %}
+                    <tr class="hover:bg-ink-50">
+                        <td class="p-3 text-ink-400">{{ loop.index }}</td>
+                        <td class="p-3 font-medium text-ink-900">
+                            <span class="block break-words">{{ row.student.fullName }}</span>
+                            <span class="text-xs text-ink-500">{{ row.student.admissionNumber }}</span>
+                        </td>
+                        {% for component in components %}
+                            <td class="p-3 text-right font-mono text-ink-700">
+                                {{ row.scores[component] is defined ? row.scores[component]|number_format(0) : '—' }}
+                            </td>
+                        {% endfor %}
+                        <td class="p-3 text-right font-bold text-ink-900">
+                            {{ row.total is null ? '—' : row.total|number_format(0) }}
+                        </td>
+                        <td class="p-3 text-center">
+                            {% if row.grade is null %}
+                                <span class="text-ink-400">—</span>
+                            {% else %}
+                                <span class="font-bold {{ row.grade starts with 'F' ? 'text-failed' : (row.grade in ['D7','E8'] ? 'text-pending' : 'text-paid') }}">
+                                    {{ row.grade }}
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="{{ components|length + 4 }}" class="p-8 text-center text-ink-400">No pupils in this class.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if approval %}
+        <p class="mt-4 text-xs text-ink-500">
+            Form teacher: <strong class="text-ink-700">{{ approval.formTeacherStatus }}</strong> ·
+            HOD: <strong class="text-ink-700">{{ approval.hodStatus }}</strong> ·
+            Year group: <strong class="text-ink-700">{{ approval.yearGroupStatus }}</strong>
+        </p>
+    {% endif %}
+</div>
+{% endblock %}

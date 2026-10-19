@@ -1,0 +1,199 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Remarks — {{ classroom.name }}{% endblock %}
+
+{% block body %}
+<div class="px-4">
+
+    <a href="{{ path('app_tenant_my_class', {classroom: classroom.id}) }}"
+       class="mb-4 inline-flex min-h-[44px] items-center gap-1 text-sm font-semibold text-ink-600 hover:text-accent-700">
+        <span aria-hidden="true">&larr;</span> My Class
+    </a>
+
+    <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div class="min-w-0">
+            <h1 class="text-2xl font-bold text-ink-900">Form teacher's remarks</h1>
+            <p class="mt-1 text-sm text-ink-500">
+                {{ classroom.name }} · {{ term.name }} · {{ written }} of {{ pupilCount }} written
+            </p>
+        </div>
+        {% if locked %}
+            <span class="shrink-0 self-start rounded bg-paid/10 px-2.5 py-1 text-xs font-semibold text-paid">Released — read only</span>
+        {% endif %}
+    </div>
+
+    {% if pupilCount == 0 %}
+        <div class="rounded-xl border border-dashed border-ink-300 bg-white px-6 py-12 text-center">
+            <p class="text-lg font-semibold text-ink-700">No {{ learner.plural }} to write about yet</p>
+            <p class="mx-auto mt-1 max-w-md text-sm text-ink-500">
+                Enrol {{ learner.plural }} into {{ classroom.name }} first. Their remarks appear here once they are on the class list.
+            </p>
+        </div>
+    {% else %}
+
+        <div class="grid gap-4 lg:grid-cols-3">
+
+            {# ── Pupil picker ──────────────────────────────────────── #}
+            <div class="lg:col-span-1">
+                <label class="block lg:hidden">
+                    <span class="mb-1 block text-sm font-medium text-ink-700">{{ learner.capital }}</span>
+                    <select onchange="if (this.value) window.location = this.value"
+                            class="w-full rounded-lg border border-ink-300 p-2.5 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500">
+                        {% for pupil in pupils %}
+                            <option value="{{ path('app_tenant_my_class_remarks', {classroom: classroom.id, student: pupil.id}) }}"
+                                    {{ pupil.id == selectedId ? 'selected' }}>
+                                {{ pupil.name }}{{ pupil.written ? ' ✓' : ' — to write' }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </label>
+
+                <div class="hidden max-h-[70vh] overflow-y-auto rounded-xl border border-ink-200 bg-white lg:block">
+                    <p class="sticky top-0 border-b border-ink-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-ink-500">
+                        {{ pupilCount }} {{ learner.plural }}
+                    </p>
+                    <ul class="divide-y divide-ink-100">
+                        {% for pupil in pupils %}
+                            <li>
+                                <a href="{{ path('app_tenant_my_class_remarks', {classroom: classroom.id, student: pupil.id}) }}"
+                                   class="flex min-h-[44px] items-center justify-between gap-2 px-4 py-2 text-sm transition {{ pupil.id == selectedId ? 'bg-accent-50 font-semibold text-accent-700' : 'text-ink-700 hover:bg-ink-50' }}">
+                                    <span class="min-w-0 break-words">{{ pupil.name }}</span>
+                                    {% if pupil.written %}
+                                        <span class="shrink-0 text-xs font-semibold text-paid">Written</span>
+                                    {% else %}
+                                        <span class="shrink-0 text-xs text-ink-400">To write</span>
+                                    {% endif %}
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            {# ── Remark panel ──────────────────────────────────────── #}
+            <div class="lg:col-span-2">
+                <div x-data="remarkPanel()"
+                     x-init="init($el)"
+                     data-token="{{ csrf }}"
+                     data-save-url="{{ path('app_tenant_my_class_remark_save', {student: selectedId}) }}"
+                     data-next-url="{{ path('app_tenant_my_class_remarks', {classroom: classroom.id, student: nextId}) }}"
+                     data-locked="{{ locked ? '1' : '0' }}"
+                     class="rounded-xl border border-ink-200 bg-white p-4 shadow-card sm:p-5">
+
+                    <div class="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-ink-200 pb-3">
+                        <h2 class="text-lg font-bold text-ink-900">
+                            {{ selectedStudent ? selectedStudent.fullName : 'No ' ~ learner }}
+                        </h2>
+                        <span class="rounded bg-ink-100 px-2 py-1 text-xs font-semibold text-ink-600"
+                              x-text="remaining + ' characters left'"></span>
+                    </div>
+
+                    <div class="mb-3 rounded-lg border border-accent-200 bg-accent-50 p-3">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-accent-700">Suggested opening</p>
+                        {% if suggestion %}
+                            <p class="mt-1 text-sm text-ink-700">{{ suggestion }}</p>
+                            {% if not locked %}
+                                <button type="button" @click="useSuggestion()"
+                                        class="mt-2 inline-flex min-h-[44px] items-center rounded-lg border border-accent-300 px-3 text-sm font-semibold text-accent-700 transition hover:border-accent-500">
+                                    Use this suggestion
+                                </button>
+                            {% endif %}
+                        {% else %}
+                            <p class="mt-1 text-sm text-ink-500">Enter the {{ learner }}'s scores first; a suggestion follows the grade.</p>
+                        {% endif %}
+                    </div>
+
+                    <label class="block">
+                        <span class="mb-1 block text-sm font-medium text-ink-700">Remark</span>
+                        <textarea x-model="text" rows="5" :maxlength="{{ maxLength }}" :disabled="locked"
+                                  placeholder="Write a short paragraph the parent will understand…"
+                                  class="w-full rounded-lg border border-ink-300 p-2.5 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500 disabled:bg-ink-50 disabled:text-ink-500"></textarea>
+                        <p class="mt-1 text-xs text-ink-500">Maximum {{ maxLength }} characters — about two lines on the printed card.</p>
+                    </label>
+
+                    <p x-show="message" :style="message ? '' : 'display:none'"
+                       :class="isError ? 'text-failed' : 'text-paid'"
+                       class="mt-2 text-sm font-medium" x-text="message"></p>
+
+                    {% if not locked %}
+                        <div class="mt-4 flex flex-col gap-2 sm:flex-row">
+                            <button type="button" @click="save()"
+                                    class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-ink-300 px-5 text-sm font-semibold text-ink-700 transition hover:border-accent-400 hover:text-accent-700 sm:flex-1">
+                                Save remark
+                            </button>
+                            <button type="button" @click="save(true)"
+                                    class="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-accent-600 px-5 font-semibold text-white transition hover:bg-accent-700 sm:flex-1">
+                                Save &amp; next {{ learner }}
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <p class="mt-6 text-xs text-ink-400">
+        One paragraph per {{ learner }}. The remark appears on the report card under the form teacher's signature.
+        Remarks lock when the term's results are final-approved.
+    </p>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+    function remarkPanel() {
+        return {
+            text: {{ (remark and remark.text ? remark.text : '')|json_encode|raw }},
+            suggestion: {{ (suggestion ?? '')|json_encode|raw }},
+            maxLength: {{ maxLength }},
+            locked: false,
+            saveUrl: '',
+            nextUrl: '',
+            token: '',
+            message: '',
+            isError: false,
+
+            init(el) {
+                this.locked = el.dataset.locked === '1';
+                this.saveUrl = el.dataset.saveUrl;
+                this.nextUrl = el.dataset.nextUrl;
+                this.token = el.dataset.token;
+            },
+
+            get remaining() {
+                return Math.max(0, this.maxLength - this.text.length);
+            },
+
+            useSuggestion() {
+                this.text = this.suggestion;
+            },
+
+            async save(next = false) {
+                if (this.locked) return;
+                this.message = '';
+                try {
+                    const res = await fetch(this.saveUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text: this.text, _token: this.token })
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.success) {
+                        this.isError = true;
+                        this.message = data.error || 'Could not save that remark.';
+                        return;
+                    }
+                    this.isError = false;
+                    this.message = 'Saved.';
+                    if (next) {
+                        window.location = this.nextUrl;
+                    }
+                } catch (e) {
+                    this.isError = true;
+                    this.message = 'Network problem — your remark was not saved. Try again.';
+                }
+            }
+        };
+    }
+</script>
+{% endblock %}

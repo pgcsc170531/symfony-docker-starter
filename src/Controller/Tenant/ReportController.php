@@ -3,6 +3,7 @@
 namespace App\Controller\Tenant;
 
 use App\Entity\Tenant\Expense;
+use App\Entity\Tenant\Invoice;
 use App\Entity\Tenant\Payment;
 use App\Form\ReportDateRangeType;
 use Doctrine\ORM\EntityManagerInterface;
@@ -40,10 +41,11 @@ class ReportController extends AbstractController
             ->from(Payment::class, 'p')
             ->join('p.invoice', 'i')
             ->where('p.createdAt BETWEEN :start AND :end') // 👈 FIXED: Uses Database Column
-            ->andWhere("p.status = 'CONFIRMED'")           // 👈 SAFETY: Only confirmed money
+            ->andWhere('p.status = :confirmed')            // 👈 SAFETY: Only confirmed money
             ->groupBy('i.type')
             ->setParameter('start', $startDate)
-            ->setParameter('end', $endDate);
+            ->setParameter('end', $endDate)
+            ->setParameter('confirmed', Payment::STATUS_CONFIRMED);
         
         $incomeResults = $qbIncome->getQuery()->getResult();
 
@@ -52,7 +54,7 @@ class ReportController extends AbstractController
         $incomeStore = 0.0;
 
         foreach ($incomeResults as $row) {
-            if ($row['income_type'] === 'ACADEMIC') {
+            if ($row['income_type'] === Invoice::TYPE_ACADEMIC) {
                 $incomeFees = (float) $row['total'];
             } else {
                 $incomeStore += (float) $row['total'];

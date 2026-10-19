@@ -1,137 +1,291 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}My Subscription{% endblock %}
+{% block title %}Subscription{% endblock %}
 
 {% block body %}
-<div class="max-w-6xl mx-auto mt-8 px-6">
+<div class="px-4 py-4 sm:py-6">
 
-    {# 1. CURRENT STATUS DASHBOARD #}
-    <div class="bg-gray-900 rounded-3xl p-8 md:p-12 text-white shadow-2xl mb-16 relative overflow-hidden">
-        <div class="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-indigo-600 rounded-full blur-3xl opacity-30"></div>
-
-        <div class="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
-            <div>
-                <h2 class="text-indigo-300 font-bold text-xs uppercase tracking-widest mb-2">Current Status</h2>
-                
-                {# Check if subscription exists AND has a plan assigned #}
-                {% if subscription and subscription.plan %}
-                    <h1 class="text-4xl md:text-5xl font-black mb-2">{{ subscription.plan.name }}</h1>
-                    
-                    <div class="flex items-center gap-3">
-                        {% if subscription.isValid %}
-                            <span class="bg-green-500 text-black text-xs font-bold px-3 py-1 rounded-full uppercase">Active</span>
-                            <span class="text-gray-400">Expires on <strong class="text-white">{{ subscription.endDate|date('M d, Y') }}</strong></span>
-                        {% else %}
-                            <span class="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase">Expired</span>
-                            <span class="text-red-300">Expired on {{ subscription.endDate|date('M d, Y') }}</span>
-                        {% endif %}
-                    </div>
-                {% else %}
-                    <h1 class="text-4xl font-black mb-2">Free Trial / No Plan</h1>
-                    <span class="bg-yellow-500 text-black text-xs font-bold px-3 py-1 rounded-full uppercase">Trial Mode</span>
-                {% endif %}
-            </div>
-
-            {# Action Button #}
-            <div>
-                {% if subscription and subscription.isValid %}
-                    <div class="text-right">
-                        {# Ensure Subscription entity has getDaysRemaining() #}
-                        <p class="text-4xl font-black">{{ subscription.daysRemaining }}</p>
-                        <p class="text-xs text-gray-400 uppercase tracking-widest">Days Remaining</p>
-                    </div>
-                {% else %}
-                    <a href="#plans" class="bg-white text-gray-900 px-8 py-4 rounded-xl font-bold hover:bg-gray-100 transition-colors shadow-lg">
-                        Upgrade Now
-                    </a>
-                {% endif %}
-            </div>
+    {# ── Header ─────────────────────────────────────────────────────────── #}
+    <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+            <h1 class="text-xl font-bold text-ink-900 sm:text-2xl">Subscription</h1>
+            <p class="mt-1 text-sm text-ink-700">
+                {{ period.session }} · {{ period.term }}
+                · <span class="font-semibold text-ink-900">{{ roll|number_format(0) }} {{ learner.plural }}</span> on roll
+            </p>
         </div>
+        {% if pending_payment %}
+            <a href="{{ path('tenant_subscription_slip', {'id': pending_payment.id}) }}"
+               class="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-accent-600 px-5 text-sm font-semibold text-white hover:bg-accent-700 sm:mt-0 sm:w-auto">
+                View open invoice · ₦{{ pending_payment.amount|number_format(0) }}
+            </a>
+        {% endif %}
     </div>
 
-    {# 2. AVAILABLE PLANS #}
-    <div id="plans" class="text-center mb-12">
-        <h3 class="text-2xl font-bold text-gray-900">Available Plans</h3>
-        <p class="text-gray-500">Choose a plan to extend your access.</p>
+    {# Two quiet links, not a second pair of buttons. The only button on this
+       screen is the open invoice above — two full-width pills here competed
+       with it and pushed the balance below the fold on a phone. Links keep the
+       thumb-sized hit area (44px) without the visual weight. #}
+    <div class="mt-1 flex flex-wrap items-center gap-x-5">
+        <a href="{{ path('tenant_subscription_statement') }}"
+           target="_blank" rel="noopener"
+           class="inline-flex min-h-[44px] items-center gap-1 text-sm font-semibold text-accent-600 transition hover:text-accent-700 hover:underline">
+            Statement (PDF) <span aria-hidden="true">↗</span>
+        </a>
+        <a href="{{ path('tenant_subscription_invoices') }}"
+           class="inline-flex min-h-[44px] items-center gap-1 text-sm font-semibold text-ink-600 transition hover:text-accent-700 hover:underline">
+            Invoice history <span aria-hidden="true">→</span>
+        </a>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-        {% for plan in plans %}
-            <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100 hover:border-indigo-500 transition-all flex flex-col">
-                <div class="p-8 flex-grow">
-                    <h3 class="text-xl font-bold text-gray-900 mb-2">{{ plan.name }}</h3>
-                    
-                    <div class="flex items-baseline mb-6">
-                        {% if plan.price > 0 %}
-                            <span class="text-4xl font-black text-gray-900">₦{{ plan.price|number_format }}</span>
-                            <span class="text-gray-500 ml-2">/ {{ plan.durationMonths }} months</span>
-                        {% else %}
-                            <span class="text-4xl font-black text-gray-900">Free</span>
-                            <span class="text-gray-500 ml-2">/ Trial</span>
+    {# ── Billing summary ────────────────────────────────────────────────── #}
+    <section class="mt-4 rounded-xl border border-ink-200 bg-white p-4 shadow-card sm:p-5">
+        <dl class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div>
+                <dt class="text-xs font-semibold uppercase tracking-wide text-ink-500">Plan</dt>
+                <dd class="mt-1 flex flex-wrap items-center gap-2">
+                    <span class="text-sm font-semibold text-ink-900">
+                        {{ subscription and subscription.plan ? subscription.plan.name : 'Free trial' }}
+                    </span>
+                    {% if subscription and subscription.plan %}
+                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold
+                                     {{ subscription.isValid ? 'bg-paid/10 text-paid' : 'bg-failed/10 text-failed' }}">
+                            {{ subscription.isValid ? 'Active' : 'Expired' }}
+                        </span>
+                    {% else %}
+                        <span class="inline-flex items-center rounded-full bg-pending/10 px-2.5 py-0.5 text-xs font-bold text-pending">Trial</span>
+                    {% endif %}
+                </dd>
+            </div>
+            <div>
+                <dt class="text-xs font-semibold uppercase tracking-wide text-ink-500">Renewal</dt>
+                <dd class="mt-1 text-sm text-ink-700">
+                    {% if subscription and subscription.plan %}
+                        <span class="font-semibold text-ink-900">{{ subscription.endDate|date('j M Y') }}</span>
+                        <span class="text-ink-500">· {{ subscription.isValid ? subscription.daysRemaining ~ ' days left' : 'expired' }}</span>
+                    {% else %}
+                        <span class="text-ink-500">Not set</span>
+                    {% endif %}
+                </dd>
+            </div>
+            <div>
+                <dt class="text-xs font-semibold uppercase tracking-wide text-ink-500">Roll</dt>
+                <dd class="mt-1 text-sm text-ink-700">
+                    <span class="font-semibold text-ink-900">{{ roll|number_format(0) }}</span> {{ learner.plural }}
+                </dd>
+            </div>
+        </dl>
+        {% if subscription and subscription.plan and not subscription.isValid %}
+            <p class="mt-3 rounded-lg bg-failed/5 p-3 text-sm text-ink-700">
+                Ended on <span class="font-semibold text-ink-900">{{ subscription.endDate|date('j M Y') }}</span>.
+                The account is read-only until a term is registered.
+            </p>
+        {% endif %}
+    </section>
+
+    {# ── The two tracks ─────────────────────────────────────────────────── #}
+    <div class="mt-6">
+        <h2 class="text-base font-bold text-ink-900">How you pay</h2>
+        <p class="mt-1 text-sm text-ink-700">
+            Prices are per {{ learner }}, on the roll you declare. Enterprise is a licence and never counts {{ learner.plural }}.
+        </p>
+    </div>
+
+    <div class="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-2">
+
+        {# Standard #}
+        <section class="flex flex-col rounded-xl border border-ink-200 bg-white p-4 shadow-card sm:p-5">
+            <div class="flex items-baseline justify-between gap-3">
+                <h2 class="text-base font-bold text-ink-900">Standard</h2>
+                <span class="text-xs font-semibold text-ink-600">per {{ learner }}</span>
+            </div>
+            <p class="mt-1 text-sm text-ink-700">Billed on the roll you declare each term.</p>
+
+            {% if standard_ready and quote %}
+                {# Billing-cycle toggle: plain links, so it works without JavaScript. #}
+                <div class="mt-4 grid grid-cols-2 gap-1 rounded-lg bg-ink-100 p-1" role="group" aria-label="Billing cycle">
+                    <a href="{{ path('tenant_subscription_index', {'cycle': 'termly'}) }}#standard"
+                       class="inline-flex min-h-[44px] items-center justify-center rounded-md px-3 text-sm font-semibold
+                              {{ cycle == 'termly' ? 'bg-white text-ink-900 shadow-sm' : 'text-ink-600 hover:text-ink-900' }}"
+                       {% if cycle == 'termly' %}aria-current="true"{% endif %}>
+                        Termly
+                    </a>
+                    <a href="{{ path('tenant_subscription_index', {'cycle': 'annual'}) }}#standard"
+                       class="inline-flex min-h-[44px] items-center justify-center gap-1 rounded-md px-3 text-sm font-semibold
+                              {{ cycle == 'annual' ? 'bg-white text-ink-900 shadow-sm' : 'text-ink-600 hover:text-ink-900' }}"
+                       {% if cycle == 'annual' %}aria-current="true"{% endif %}>
+                        Whole year
+                        <span class="rounded bg-accent-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-accent-700">
+                            save {{ annual_quote.savingsPercent }}%
+                        </span>
+                    </a>
+                </div>
+
+                <div id="standard" class="mt-4 rounded-lg border border-ink-200 p-3">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">
+                        {{ cycle == 'annual' ? 'One invoice, covering the year' : 'One invoice, this term' }}
+                    </p>
+                    <p class="mt-1 flex flex-wrap items-baseline gap-x-2">
+                        <span class="text-2xl font-extrabold tracking-tight text-ink-900 sm:text-3xl">₦{{ quote.total|number_format(0) }}</span>
+                        <span class="text-sm text-ink-600">due now</span>
+                    </p>
+
+                    <dl class="mt-3 space-y-1.5 border-t border-ink-100 pt-3 text-sm">
+                        <div class="flex items-baseline justify-between gap-3">
+                            <dt class="text-ink-700">{{ quote.students|number_format(0) }} {{ learner.plural }} × ₦{{ quote.unitPrice|number_format(0) }}</dt>
+                            <dd class="font-medium text-ink-900">₦{{ quote.rawSubtotal|number_format(0) }}</dd>
+                        </div>
+                        {% if quote.minimumApplied %}
+                            <div class="flex items-baseline justify-between gap-3">
+                                <dt class="text-ink-700">Minimum invoice applied</dt>
+                                <dd class="font-medium text-ink-900">₦{{ quote.minimum|number_format(0) }}</dd>
+                            </div>
                         {% endif %}
+                    </dl>
+                </div>
+
+                {# Always compare like with like: a full year, not a term against a year. #}
+                {% if cycle == 'annual' and annual_quote.discount > 0 %}
+                    <div class="mt-3 rounded-lg bg-ink-50 p-3 text-sm">
+                        <p class="text-ink-700">
+                            Three termly invoices would cost
+                            <span class="font-semibold text-ink-900 line-through decoration-failed/60">₦{{ annual_quote.termlyYearCost|number_format(0) }}</span>
+                        </p>
+                        <p class="mt-1 font-semibold text-paid">
+                            You save ₦{{ annual_quote.discount|number_format(0) }} ({{ annual_quote.savingsPercent }}%) by paying for the year.
+                        </p>
                     </div>
+                {% elseif cycle == 'termly' and annual_quote and annual_quote.discount > 0 %}
+                    <div class="mt-3 rounded-lg bg-ink-50 p-3 text-sm">
+                        <p class="text-ink-700">
+                            Termly costs ₦{{ termly_quote.total|number_format(0) }} × 3 =
+                            <span class="font-semibold text-ink-900">₦{{ (termly_quote.total * 3)|number_format(0) }}</span> a year.
+                        </p>
+                        <p class="mt-1">
+                            <span class="font-semibold text-ink-900">Pay the year now: ₦{{ annual_quote.total|number_format(0) }}</span>
+                            <span class="font-semibold text-paid">— save ₦{{ annual_quote.discount|number_format(0) }} ({{ annual_quote.savingsPercent }}%)</span>
+                        </p>
+                        <a href="{{ path('tenant_subscription_index', {'cycle': 'annual'}) }}#standard"
+                           class="mt-2 inline-flex min-h-[44px] items-center font-semibold text-accent-700 underline">
+                            Switch to whole year
+                        </a>
+                    </div>
+                {% endif %}
 
-                    <ul class="space-y-4 mb-8">
-                        {# 1. STUDENT LIMIT (Logic: Null = Unlimited) #}
-                        <li class="flex items-start text-gray-600">
-                            <span class="bg-green-100 text-green-600 rounded-full p-0.5 mr-3 mt-0.5 flex-shrink-0">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                            </span>
-                            <span class="text-sm font-medium">
-                                {% if plan.maxStudents is null %}
-                                    Unlimited Students
-                                {% else %}
-                                    Up to {{ plan.maxStudents }} Students
-                                {% endif %}
-                            </span>
-                        </li>
+                <a href="{{ path('tenant_subscription_register', {'cycle': cycle}) }}"
+                   class="mt-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-accent-600 px-5 text-sm font-semibold text-white hover:bg-accent-700">
+                    {{ cycle == 'annual' ? 'Register the year' : 'Register this term' }}
+                </a>
+                <p class="mt-2 text-xs text-ink-600">Nothing is charged until you confirm the count.</p>
+            {% else %}
+                <p class="mt-4 rounded-lg bg-ink-50 p-3 text-sm text-ink-700">
+                    The per-{{ learner }} plan has not been configured yet. Contact support.
+                </p>
+            {% endif %}
+        </section>
 
-                        {# 2. DURATION #}
-                        <li class="flex items-start text-gray-600">
-                            <span class="bg-green-100 text-green-600 rounded-full p-0.5 mr-3 mt-0.5 flex-shrink-0">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                            </span>
-                            <span class="text-sm">Valid for {{ plan.durationMonths }} Months</span>
-                        </li>
+        {# Enterprise #}
+        <section class="flex flex-col rounded-xl border border-ink-200 bg-white p-4 shadow-card sm:p-5">
+            <div class="flex items-baseline justify-between gap-3">
+                <h2 class="text-base font-bold text-ink-900">Enterprise</h2>
+                <span class="text-xs font-semibold text-ink-600">licence</span>
+            </div>
+            <p class="mt-1 text-sm text-ink-700">For school groups. Your roll is never invoiced.</p>
 
-                        {# 3. FREE CREDITS (Only show if amount > 0) #}
-                        {% if plan.freeCreditAmount > 0 %}
-                        <li class="flex items-start text-indigo-700 font-bold">
-                            <span class="bg-indigo-100 text-indigo-600 rounded-full p-0.5 mr-3 mt-0.5 flex-shrink-0">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                            </span>
-                            <span class="text-sm">Includes ₦{{ plan.freeCreditAmount|number_format }} Credits</span>
-                        </li>
-                        {% endif %}
+            {% if enterprise_summary %}
+                <div class="mt-4 rounded-lg border border-ink-200 p-3">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">Paid once</p>
+                    <dl class="mt-2 space-y-1.5 text-sm">
+                        <div class="flex items-baseline justify-between gap-3">
+                            <dt class="text-ink-700">Licence</dt>
+                            <dd class="font-extrabold text-ink-900">₦{{ enterprise_summary.licenceFee|number_format(0) }}</dd>
+                        </div>
+                        <div class="flex items-baseline justify-between gap-3">
+                            <dt class="text-ink-700">Implementation</dt>
+                            <dd class="font-semibold text-ink-900">₦{{ enterprise_summary.implementationFee|number_format(0) }}</dd>
+                        </div>
+                    </dl>
 
-                        {# 4. GENERIC FEATURES (Applies to all plans) #}
-                        <li class="flex items-start text-gray-600">
-                            <span class="bg-green-100 text-green-600 rounded-full p-0.5 mr-3 mt-0.5 flex-shrink-0">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                            </span>
-                            <span class="text-sm">Full System Access</span>
-                        </li>
-                    </ul>
+                    <div class="mt-3 border-t border-ink-100 pt-3">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">Then, every year</p>
+                        <div class="mt-1 flex items-baseline justify-between gap-3">
+                            <p class="text-sm text-ink-700">
+                                Annual subscription
+                                <span class="block text-xs text-ink-500">Email notifications included</span>
+                            </p>
+                            <p class="text-right">
+                                <span class="text-lg font-extrabold text-ink-900">₦{{ enterprise_summary.annualFee|number_format(0) }}</span>
+                                <span class="text-xs text-ink-600">/year</span>
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="p-6 bg-gray-50 border-t border-gray-100 mt-auto">
-                    <form action="{{ path('tenant_subscription_initiate', {planId: plan.id}) }}" method="POST">
-                        <button type="submit" class="block w-full text-center bg-gray-900 text-white font-bold py-4 rounded-xl hover:bg-black transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all">
-                            {% if subscription and subscription.plan and subscription.plan.id == plan.id %}
-                                Renew {{ plan.name }}
-                            {% else %}
-                                Switch to {{ plan.name }}
-                            {% endif %}
-                        </button>
-                    </form>
-                </div>
+                <p class="mt-3 text-sm text-ink-700">
+                    Year 1: <strong class="text-ink-900">₦{{ enterprise_summary.yearOne|number_format(0) }}</strong>
+                    · then ₦{{ enterprise_summary.annualFee|number_format(0) }} a year.
+                </p>
+            {% else %}
+                <p class="mt-4 rounded-lg bg-ink-50 p-3 text-sm text-ink-700">
+                    Enterprise pricing is not published yet. Contact support.
+                </p>
+            {% endif %}
+
+            <div class="mt-3 rounded-lg bg-accent-50 p-3 text-sm">
+                <p class="font-semibold text-ink-900">
+                    From {{ enterprise_from|number_format(0) }} {{ learner.plural }}, Enterprise is the better value.
+                </p>
+                <p class="mt-1 text-ink-700">
+                    One licence covers every nursery, primary and secondary school under your name —
+                    one consolidated roll, one bill, and no per-{{ learner }} counting.
+                </p>
+                {% if roll >= enterprise_from %}
+                    <p class="mt-2 font-semibold text-accent-700">
+                        Your roll of {{ roll|number_format(0) }} {{ learner.plural }} is already in Enterprise territory.
+                    </p>
+                {% elseif roll < standard_below %}
+                    <p class="mt-2 text-xs text-ink-600">
+                        At {{ roll|number_format(0) }} {{ learner.plural }}, Standard is cheaper for now.
+                    </p>
+                {% endif %}
             </div>
-        {% else %}
-            <div class="col-span-3 text-center py-20 text-gray-400">
-                <p>No paid plans available.</p>
-            </div>
-        {% endfor %}
+
+            <a href="https://wa.me/2348032714999?text=Hello!%20I%20am%20interested%20in%20the%20Enterprise%20licence."
+               target="_blank" rel="noopener noreferrer"
+               class="mt-auto inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-ink-300 px-5 text-sm font-semibold text-ink-900 hover:bg-ink-50">
+                Talk to us about Enterprise
+            </a>
+        </section>
     </div>
 
+    {# ── Recent registrations ───────────────────────────────────────────── #}
+    {% if registrations|length > 0 %}
+        <section class="mt-6 rounded-xl border border-ink-200 bg-white p-4 shadow-card sm:p-5">
+            <h2 class="text-base font-bold text-ink-900">Term registrations</h2>
+            <ul class="mt-3 divide-y divide-ink-100">
+                {% for registration in registrations %}
+                    <li class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 py-3">
+                        <div>
+                            <p class="text-sm font-semibold text-ink-900">
+                                {{ registration.sessionName }} · {{ registration.termName }}
+                            </p>
+                            <p class="text-xs text-ink-600">
+                                {{ registration.declaredStudents|number_format(0) }} {{ learner.plural }}
+                                · {{ registration.billingCycle == 'annual' ? 'Annual prepay' : 'Termly' }}
+                                · {{ registration.reference }}
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-bold text-ink-900">₦{{ registration.total|number_format(0) }}</p>
+                            <p class="text-xs font-semibold
+                                      {{ registration.status == 'PAID' or registration.status == 'VERIFIED' ? 'text-paid' : (registration.status == 'CANCELLED' ? 'text-ink-500' : 'text-pending') }}">
+                                {{ registration.status|capitalize }}
+                            </p>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        </section>
+    {% endif %}
 </div>
 {% endblock %}

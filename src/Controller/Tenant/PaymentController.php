@@ -22,10 +22,20 @@ use Symfony\Component\ExpressionLanguage\Expression;
 use App\Repository\Tenant\PaymentRepository;
 // Updated: Using your custom Notification Service
 use App\Service\NotificationService; 
+use App\Service\Finance\DiscountCalculator;
+use App\Service\Finance\InvoiceNumberGenerator;
+use App\Service\Finance\PaymentReferenceGenerator;
+use App\Service\SchoolMailer;
 
 #[Route('/finance/payment')]
 class PaymentController extends AbstractController
 {
+    public function __construct(
+        private readonly DiscountCalculator $discountCalculator,
+        private readonly InvoiceNumberGenerator $invoiceNumbers,
+        private readonly PaymentReferenceGenerator $paymentReferences,
+    ) {
+    }
     // ==========================================
     // 🟢 ZONE A: THE PAYMENT TERMINAL (BURSAR ONLY)
     // ==========================================
@@ -58,8 +68,9 @@ class PaymentController extends AbstractController
     #[IsGranted('ROLE_BURSAR')]
     public function history(EntityManagerInterface $em): Response
     {
-        $payments = $em->getRepository(Payment::class)->findBy([], ['createdAt' => 'DESC']);
-        return $this->render('tenant/payment/history.html.twig', ['payments' => $payments]);
+        // R5 replaced the old flat, unpaginated list. Keep the URL alive for
+        // bookmarks and the browser back button.
+        return $this->redirectToRoute('app_tenant_report_payments');
     }
 
     #[Route('/terminal/{id}', name: 'app_tenant_payment_terminal')]
@@ -90,7 +101,7 @@ class PaymentController extends AbstractController
             $invoice = $em->getRepository(Invoice::class)->findOneBy([
                 'student' => $student,
                 'term' => $term,
-                'type' => 'ACADEMIC'
+                'type' => Invoice::TYPE_ACADEMIC
             ]);
         }
         // ==========================================
@@ -153,7 +164,7 @@ class PaymentController extends AbstractController
             return $this->redirectToRoute('app_tenant_payment_terminal', ['id' => $studentId]);
         }
 
-        $exists = $em->getRepository(Invoice::class)->findOneBy(['student' => $student, 'term' => $term, 'type' => 'ACADEMIC']);
+        $exists = $em->getRepository(Invoice::class)->findOneBy(['student' => $student, 'term' => $term, 'type' => Invoice::TYPE_ACADEMIC]);
         if ($exists) return $this->redirectToRoute('app_tenant_payment_terminal', ['id' => $studentId]);
 
         $invoice = new Invoice();
@@ -161,9 +172,9 @@ class PaymentController extends AbstractController
         $invoice->setTerm($term);
         $invoice->setSession($term->getSession());
         $invoice->setClassroom($classroom);
-        $invoice->setInvoiceNumber('INV-' . strtoupper(uniqid()));
-        $invoice->setType('ACADEMIC');
-        $invoice->setStatus('UNPAID');
+        $invoice->setInvoiceNumber($this->invoiceNumbers->next($this->invoiceNumbers->yearFor($term->getSession())));
+        $invoice->setType(Invoice::TYPE_ACADEMIC);
+        $invoice->setStatus(Invoice::STATUS_UNPAID);
         $invoice->setPaidAmount('0');
 
         $school = $em->getRepository(School::class)->findOneBy([]);
@@ -189,7 +200,14 @@ class PaymentController extends AbstractController
             $total += $fee->getAmount();
         }
 
-        $invoice->setTotalAmount((string)$total);
+        // The terminal used to ignore scholarships entirely, so a discounted
+        // pupil was billed the full amount from this screen. Use the same
+        // calculator as admissions, and store the total NET of the discount.
+        $discount = $this->discountCalculator->calculateDiscount($student, (float) $total);
+        $invoice->setDiscountApplied((string) $discount);
+        $invoice->setDiscountLabel($this->discountCalculator->describe($student));
+        $invoice->setTotalAmount((string) max(0.0, (float) $total - $discount));
+
         $em->persist($invoice);
         $em->flush();
 
@@ -221,13 +239,14 @@ class PaymentController extends AbstractController
         $payment = new Payment();
         $payment->setInvoice($invoice);
         $payment->setAmount((string)$amount);
-        $payment->setMethod('CASH');
+        $payment->setMethod(Payment::METHOD_CASH);
         
-        // Use our short numeric reference logic (e.g. 260492)
-        $datePrefix = date('ym'); 
-        $payment->setReferenceCode($datePrefix . $invoice->getId());
+        // Unique short numeric reference (e.g. 2610529). Must not be derived from
+        // the invoice id: a cash part payment and a slip for the same invoice both
+        // produced the same code and the second insert hit the unique index.
+        $payment->setReferenceCode($this->paymentReferences->next());
         
-        $payment->setStatus('CONFIRMED');
+        $payment->setStatus(Payment::STATUS_CONFIRMED);
         $payment->setConfirmedAt(new \DateTimeImmutable());
         $payment->setConfirmedBy($this->getUser()->getUserIdentifier());
 
@@ -238,16 +257,16 @@ class PaymentController extends AbstractController
         
         $invoice->setPaidAmount((string)$newPaid);
         $isFullyPaid = ($newPaid >= ($total - 0.01));
-        $invoice->setStatus($isFullyPaid ? 'PAID' : 'PARTIAL');
+        $invoice->setStatus($isFullyPaid ? Invoice::STATUS_PAID : Invoice::STATUS_PARTIAL);
 
         if ($isFullyPaid) {
             $pendingSlips = $em->getRepository(Payment::class)->findBy([
                 'invoice' => $invoice,
-                'status' => 'PENDING'
+                'status' => Payment::STATUS_PENDING
             ]);
 
             foreach ($pendingSlips as $slip) {
-                $slip->setStatus('CANCELLED');
+                $slip->setStatus(Payment::STATUS_CANCELLED);
                 $em->persist($slip);
             }
         }
@@ -276,11 +295,11 @@ class PaymentController extends AbstractController
 
     #[Route('/confirm/{id}', name: 'app_tenant_payment_confirm', methods: ['POST'])]
     #[IsGranted('ROLE_BURSAR')]
-    public function confirm(Payment $payment, Request $request, EntityManagerInterface $em, ManagerRegistry $doctrine, NotificationService $notifier): Response
+    public function confirm(Payment $payment, Request $request, EntityManagerInterface $em, ManagerRegistry $doctrine, NotificationService $notifier, SchoolMailer $mailer): Response
     {
         $invoice = $payment->getInvoice(); // Grab the invoice early so we can use its ID
 
-        if ($payment->getStatus() !== 'PENDING') {
+        if ($payment->getStatus() !== Payment::STATUS_PENDING) {
             $this->addFlash('error', 'Action Failed: This payment slip is ' . $payment->getStatus());
             // 🟢 FIX: Added 'invoice_id' to the redirect
             return $this->redirectToRoute('app_tenant_payment_terminal', [
@@ -289,9 +308,9 @@ class PaymentController extends AbstractController
             ]);
         }
         
-        if ($invoice->getStatus() === 'PAID' || $invoice->getPaidAmount() >= $invoice->getTotalAmount()) {
+        if ($invoice->getStatus() === Invoice::STATUS_PAID || $invoice->getPaidAmount() >= $invoice->getTotalAmount()) {
             $this->addFlash('error', 'Action Blocked: This invoice is already fully paid.');
-            $payment->setStatus('CANCELLED');
+            $payment->setStatus(Payment::STATUS_CANCELLED);
             $em->flush();
             // 🟢 FIX: Added 'invoice_id' to the redirect
             return $this->redirectToRoute('app_tenant_payment_terminal', [
@@ -305,13 +324,13 @@ class PaymentController extends AbstractController
             $payment->setAmount((string)$actualAmount);
         }
 
-        $payment->setStatus('CONFIRMED');
+        $payment->setStatus(Payment::STATUS_CONFIRMED);
         $payment->setConfirmedAt(new \DateTimeImmutable());
         $payment->setConfirmedBy($this->getUser()->getUserIdentifier());
 
         $newPaid = (float)$invoice->getPaidAmount() + (float)$payment->getAmount();
         $invoice->setPaidAmount((string)$newPaid);
-        $invoice->setStatus(($newPaid >= ((float)$invoice->getTotalAmount() - 0.01)) ? 'PAID' : 'PARTIAL');
+        $invoice->setStatus(($newPaid >= ((float)$invoice->getTotalAmount() - 0.01)) ? Invoice::STATUS_PAID : Invoice::STATUS_PARTIAL);
 
         $em->flush();
 
@@ -335,6 +354,10 @@ class PaymentController extends AbstractController
                     '[url]'          => $receiptUrl
                 ]
             );
+
+            // Receipt email — parents keep these as proof of payment. Fails silently
+            // if the school switched the trigger off, or if mail is down.
+            $mailer->paymentReceipt($school, $payment, $receiptUrl);
         }
     
         $this->addFlash('success', 'Payment verified and confirmed.');
@@ -361,8 +384,8 @@ class PaymentController extends AbstractController
 
         $existingPayment = $em->getRepository(Payment::class)->findOneBy([
             'invoice' => $invoice,
-            'status' => 'PENDING',
-            'method' => 'TRANSFER'
+            'status' => Payment::STATUS_PENDING,
+            'method' => Payment::METHOD_TRANSFER
         ]);
 
         if ($existingPayment) {
@@ -370,14 +393,14 @@ class PaymentController extends AbstractController
         }
 
         $amountToPay = (float)$invoice->getTotalAmount() - (float)$invoice->getPaidAmount();
-        $shortRef = date('ym') . $invoice->getId();
+        $shortRef = $this->paymentReferences->next();
 
         $payment = new Payment();
         $payment->setInvoice($invoice);
         $payment->setAmount((string)$amountToPay);
-        $payment->setMethod('TRANSFER');
+        $payment->setMethod(Payment::METHOD_TRANSFER);
         $payment->setReferenceCode($shortRef);
-        $payment->setStatus('PENDING');
+        $payment->setStatus(Payment::STATUS_PENDING);
 
         $em->persist($payment);
         $em->flush();
@@ -406,7 +429,7 @@ class PaymentController extends AbstractController
 
         $this->checkAccess($payment->getInvoice()->getStudent());
 
-        if ($payment->getStatus() !== 'CONFIRMED') {
+        if ($payment->getStatus() !== Payment::STATUS_CONFIRMED) {
             $this->addFlash('error', 'Receipt is not available yet.');
             return $this->redirectToRoute('app_tenant_invoice_show', ['id' => $payment->getInvoice()->getId()]);
         }
@@ -462,7 +485,7 @@ class PaymentController extends AbstractController
         // Only the owner parent (or a bursar/admin) may upload for this payment
         $this->checkAccess($payment->getInvoice()->getStudent());
 
-        if ($payment->getStatus() !== 'PENDING') {
+        if ($payment->getStatus() !== Payment::STATUS_PENDING) {
             $this->addFlash('error', 'This payment is no longer pending, so proof cannot be uploaded.');
             return $this->redirectToRoute('app_tenant_payment_slip', ['id' => $id]);
         }
@@ -538,7 +561,7 @@ class PaymentController extends AbstractController
         $invoice = $payment->getInvoice();
 
         // Security check: Make sure this is actually a Walk-in store invoice
-        if ($invoice->getType() !== 'STORE' || $invoice->getStudent() !== null) {
+        if ($invoice->getType() !== Invoice::TYPE_STORE || $invoice->getStudent() !== null) {
             $this->addFlash('error', 'Invalid walk-in receipt.');
             return $this->redirectToRoute('app_tenant_dashboard');
         }

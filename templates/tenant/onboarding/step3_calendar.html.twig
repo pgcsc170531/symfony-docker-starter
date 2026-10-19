@@ -1,15 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Setup Classes</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>body { font-family: 'Inter', sans-serif; }</style>
-</head>
-<body class="bg-gray-100 min-h-screen py-10 px-4">
-<div class="max-w-3xl mx-auto mt-10">
+{% extends 'base.html.twig' %}
+
+{# ⚠️ The <title> said "Setup Classes" on the CALENDAR step — copy-pasted from
+   step 2. It is the browser tab title, so it was visible. #}
+{% block title %}Academic Calendar{% endblock %}
+
+{% block body %}
+<div class="px-4">
     
     {# PROGRESS BAR #}
     <div class="mb-8">
@@ -25,8 +21,8 @@
     </div>
 
     <div class="bg-white shadow-xl rounded-xl overflow-hidden">
-        <div class="bg-green-600 p-6 text-white">
-            <h1 class="text-2xl font-bold">📅 Set Your Academic Calendar</h1>
+        <div class="bg-ink-900 p-6 text-white">
+            <h1 class="text-2xl font-bold">Set Your Academic Calendar</h1>
             <p class="text-green-100 mt-2">
                 Define the current Session and Term to start admitting students.
             </p>
@@ -68,5 +64,4 @@
         </div>
     </div>
 </div>
-</body>
-</html> 
+{% endblock %} 

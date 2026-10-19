@@ -3,17 +3,20 @@
 {% block title %}Super Admin Dashboard | Edus{% endblock %}
 
 {% block body %}
-<div class="min-h-screen bg-gray-50 pb-10">
+{# No `min-h-screen` here: <main> is now the scroll container and already fills the
+   viewport. A full-height child inside it forced a scrollbar on every page even
+   when the content was short. #}
+<div class="bg-gray-50 pb-10">
     
     {# 1. TOP STATS BAR #}
     <div class="bg-white border-b border-gray-200 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="px-4 py-6">
             <h1 class="text-2xl font-bold text-gray-900">Landlord Overview</h1>
             <p class="text-sm text-gray-500">Monitor system health and revenue.</p>
         </div>
     </div>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="px-4 py-8">
         
         {# 2. METRICS GRID #}
         <dl class="grid grid-cols-1 gap-5 sm:grid-cols-4 mb-8">

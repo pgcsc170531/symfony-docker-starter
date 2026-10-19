@@ -2,7 +2,7 @@
 {% block title %}Fee Schedule Report{% endblock %}
 
 {% block body %}
-<div class="max-w-7xl mx-auto mt-6 px-4 pb-24 print:p-0 print:max-w-none">
+<div class="mt-6 px-4 pb-24 print:max-w-none print:p-0">
     
     {# ================================================================= #}
     {# UNIFIED HEADER: Same Look, Different Buttons                      #}
@@ -108,7 +108,7 @@
                         {# --- PART A: STANDARD BILL --- #}
                         <tr class="bg-gray-100">
                             <td class="px-3 py-2 font-bold text-gray-700 border-r uppercase text-xs tracking-wider" colspan="{{ levels|length + 1 }}">
-                                A. Standard Termly Bill (Returning Students)
+                                A. Standard Termly Bill (Returning {{ learner.pluralCapital }})
                             </td>
                         </tr>
 
@@ -181,7 +181,7 @@
                     <thead class="bg-gray-800 text-white">
                         <tr>
                             <th class="px-4 py-3 text-left font-bold uppercase w-1/3 text-gray-600">Class Level</th>
-                            <th class="px-4 py-3 text-right font-bold uppercase w-1/3 text-blue-800">Returning Student Pays <br><span class="text-xs text-blue-200 opacity-75">(Total A)</span></th>
+                            <th class="px-4 py-3 text-right font-bold uppercase w-1/3 text-blue-800">Returning {{ learner.capital }} Pays <br><span class="text-xs text-blue-200 opacity-75">(Total A)</span></th>
                             <th class="px-4 py-3 text-right font-bold uppercase w-1/3 text-purple-800">New Intake Pays <br><span class="text-xs text-purple-200 opacity-75">(Total A + Total B)</span></th>
                         </tr>
                     </thead>
@@ -223,19 +223,19 @@
             <h3 class="text-2xl font-black text-indigo-900 mb-2">🎉 Fee Setup Complete!</h3>
             <p class="text-gray-600 mb-8 max-w-2xl mx-auto">
                 Your Classes, Term, and Fee Prices are now locked in. 
-                The final step is to <b>Add Your Students</b> so the system can automatically generate their bills based on these prices.
+                The final step is to <b>Add Your {{ learner.pluralCapital }}</b> so the system can automatically generate their bills based on these prices.
             </p>
 
             <form method="POST" action="{{ path('app_tenant_onboarding_summary') }}">
                 <button type="submit" class="bg-indigo-600 text-white text-lg px-10 py-4 rounded-xl font-bold shadow-lg hover:bg-indigo-700 hover:scale-105 transition transform flex items-center justify-center gap-3 mx-auto">
                     <span>🚀</span>
-                    <span>Confirm Fees & Import Students</span>
+                    <span>Confirm Fees & Import {{ learner.pluralCapital }}</span>
                     <svg class="w-5 h-5 text-indigo-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                 </button>
             </form>
             
             <p class="text-xs text-gray-400 mt-4">
-                Clicking this will save your configuration and open the Bulk Student Import tool.
+                Clicking this will save your configuration and open the Bulk {{ learner.capital }} Import tool.
             </p>
         </div>
 

@@ -1,0 +1,106 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Fee Reports{% endblock %}
+
+{% block body %}
+<div class="px-4 py-4 sm:px-6 sm:py-6">
+
+    <div class="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-black tracking-tight text-ink-900 sm:text-3xl">Fee reports</h1>
+            <p class="mt-1 text-sm text-ink-600">What was billed, what came in, and who still owes.</p>
+        </div>
+        {% if terms is not empty %}
+            <div class="flex flex-wrap items-end gap-2 sm:shrink-0">
+                {% include 'tenant/report/fees/_term_filter.html.twig' with {
+                    action: path('app_tenant_report_fees'),
+                    terms: terms,
+                    term: term
+                } only %}
+                {% if term %}
+                    <a href="{{ path('app_tenant_report_summary_pdf', {term: term.id}) }}?download=1"
+                       class="inline-flex min-h-[44px] items-center rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white hover:bg-accent-700">
+                        Term summary PDF
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    {% if terms is empty %}
+        <div class="rounded-xl border border-ink-200 bg-white p-8 text-center">
+            <p class="text-4xl" aria-hidden="true">🗓️</p>
+            <h2 class="mt-3 text-lg font-bold text-ink-900">No academic term yet</h2>
+            <p class="mx-auto mt-1 max-w-md text-sm leading-relaxed text-ink-600">
+                Fee reports are scoped to a term. Create the session and term first, then invoices will appear here.
+            </p>
+            {% if is_granted('ROLE_ADMIN') %}
+                <a href="{{ path('app_tenant_academic_index') }}"
+                   class="mt-5 inline-flex min-h-[44px] items-center rounded-lg bg-accent-600 px-5 text-sm font-semibold text-white">
+                    Set up sessions &amp; terms
+                </a>
+            {% endif %}
+        </div>
+    {% elseif totals is null %}
+        <div class="rounded-xl border border-ink-200 bg-white p-8 text-center text-sm text-ink-600">
+            No data for the selected term.
+        </div>
+    {% else %}
+
+        <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div class="rounded-xl border border-ink-200 bg-white p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">Expected</p>
+                <p class="money mt-1 text-xl font-black text-ink-900">₦{{ totals.netBillable|number_format(2) }}</p>
+            </div>
+            <div class="rounded-xl border border-ink-200 bg-white p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">Collected</p>
+                <p class="money mt-1 text-xl font-black text-paid">₦{{ totals.collected|number_format(2) }}</p>
+            </div>
+            <div class="rounded-xl border border-ink-200 bg-white p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">Outstanding</p>
+                <p class="money mt-1 text-xl font-black text-failed">₦{{ totals.outstanding|number_format(2) }}</p>
+            </div>
+            <div class="rounded-xl border border-ink-200 bg-white p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">Collection rate</p>
+                <p class="mt-1 text-xl font-black text-ink-900">
+                    {{ totals.collectionRate is null ? '—' : totals.collectionRate ~ '%' }}
+                </p>
+            </div>
+        </div>
+
+        {% if totals.pending > 0 %}
+            <p class="mt-3 rounded-lg border border-pending/30 bg-pending/5 px-3 py-2 text-sm text-ink-700">
+                <strong class="font-semibold text-pending">₦{{ totals.pending|number_format(2) }}</strong>
+                in transfer proofs is claimed but not verified. It is not part of “Collected” until confirmed.
+            </p>
+        {% endif %}
+
+        <div class="mt-5 grid gap-3 sm:grid-cols-3">
+            <a href="{{ path('app_tenant_report_collections') }}"
+               class="group rounded-xl border border-ink-200 bg-white p-5 transition hover:border-accent-400 hover:shadow-card">
+                <p class="text-xs font-semibold uppercase tracking-wide text-accent-700">R1</p>
+                <h2 class="mt-1 text-base font-bold text-ink-900">Daily collections</h2>
+                <p class="mt-1 text-sm text-ink-600">The cash book for a day, by method, with unverified proofs shown separately.</p>
+            </a>
+            <a href="{{ path('app_tenant_report_classes', {term: term.id}) }}"
+               class="group rounded-xl border border-ink-200 bg-white p-5 transition hover:border-accent-400 hover:shadow-card">
+                <p class="text-xs font-semibold uppercase tracking-wide text-accent-700">R2</p>
+                <h2 class="mt-1 text-base font-bold text-ink-900">Collection by class</h2>
+                <p class="mt-1 text-sm text-ink-600">Expected vs collected per class, with pupils not yet billed.</p>
+            </a>
+            <a href="{{ path('app_tenant_report_debtors', {term: term.id}) }}"
+               class="group rounded-xl border border-ink-200 bg-white p-5 transition hover:border-accent-400 hover:shadow-card">
+                <p class="text-xs font-semibold uppercase tracking-wide text-accent-700">R3</p>
+                <h2 class="mt-1 text-base font-bold text-ink-900">Outstanding fees</h2>
+                <p class="mt-1 text-sm text-ink-600">Families that still owe, grouped by guardian, with one call per family.</p>
+            </a>
+        </div>
+
+        <div class="mt-4 rounded-xl border border-ink-200 bg-white p-4">
+            <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">Discounts recorded</p>
+            <p class="money mt-1 text-base font-semibold text-ink-900">₦{{ totals.discount|number_format(2) }}</p>
+            <p class="mt-1 text-xs text-ink-500">Scholarships reduce “Expected”; they are not money collected.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

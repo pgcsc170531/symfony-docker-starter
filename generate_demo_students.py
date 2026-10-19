@@ -1,18 +1,34 @@
 #!/usr/bin/env python3
-"""Generate demo_students_360.csv for the Edus bulk-import module.
+"""Generate a bulk-import CSV for the Edus demo tenant — 1,200 pupils, JSS 1–SS 3.
 
-Matches the exact 13-column template of QuickAdmissionController::downloadTemplate():
-First Name, Middle Name, Last Name, Gender (M/F), DOB (YYYY-MM-DD), Religion,
-Blood Group, Genotype, Home Town, Admission Number (leave blank), Class Name,
-Parent Name, Parent Phone.
+Columns match the template exactly (QuickAdmissionController::downloadTemplate):
+First Name, Middle Name, Last Name, Gender (M/F), DOB, Religion, Blood Group,
+Genotype, Home Town, Admission Number (blank = auto), Class Name, Parent Name,
+Parent Phone.
 
-360 students = 40 per class across JSS 1A..JSS 3C.
-The golden-thread student "Arraghibun" is the first data row (JSS 1A).
+Why 1,200 and why JSS 1–SS 3: the product is sold to senior-secondary schools, and a
+demo holding 40 pupils per class never hits a page-size boundary, a slow debtors query
+or a "scroll through 60 families" list. 1,200 across 18 classes is the shape of a real
+customer.
+
+Two things this deliberately does that the old 360-row generator did not:
+
+1. **Siblings share a guardian** — roughly a fifth of families send two children. The
+   debtors report groups by guardian, so a demo with one guardian per pupil proves
+   nothing about the report's main feature.
+2. **The golden-thread family is pinned.** Arraghibun Bello is the first row, in JSS 1A,
+   with phone 7058813998 — the demo parent login (`7058813998@edus.ng`). Re-importing
+   this file keeps the parent-portal walkthrough working.
+
+Usage:
+    python3 generate_demo_students.py                      # 1200 rows
+    python3 generate_demo_students.py --count 360 --out demo_students_360.csv
+    python3 generate_demo_students.py --siblings 0         # no shared guardians
 """
+import argparse
 import csv
 import random
-
-random.seed(2026)
+from collections import OrderedDict
 
 MALE_FIRST = [
     "Ibrahim", "Musa", "Yusuf", "Abdullahi", "Sani", "Umar", "Bashir", "Kabir",
@@ -28,128 +44,144 @@ FEMALE_FIRST = [
 ]
 SURNAMES = [
     "Bello", "Ibrahim", "Musa", "Abdullahi", "Yakubu", "Abubakar", "Mohammed",
-    "Sani", "Okonkwo", "Okafor", "Adeyemi", "Ogunleye", "Nwachukwu", "Eze",
-    "Balogun", "Suleiman", "Tanko", "Umar", "Garba", "Lawal", "Obi", "Adeleke",
-    "Ayodele", "Ekwueme", "Fashola", "Danjuma", "Oyelaran", "Aliyu", "Bashir",
-    "Olayinka",
+    "Okafor", "Adeyemi", "Okonkwo", "Balogun", "Danjuma", "Eze", "Garba",
+    "Hassan", "Isah", "Jibrin", "Lawal", "Mahmud", "Nasir", "Ogunleye", "Sani",
+    "Tanko", "Usman", "Yusuf", "Adamu", "Bala", "Chukwu", "Dauda", "Nwosu",
 ]
+TITLES = ["Mr.", "Mrs.", "Alhaji", "Hajiya", "Dr.", "Engr.", "Mallam"]
 PARENT_FIRST = [
-    "Rasheed", "Kemi", "Ali", "Binta", "Chukwudi", "Adaeze", "Solomon", "Grace",
-    "Tanko", "Sadiya", "Emeka", "Funmilayo", "Yakubu", "Amina", "Femi", "Ngozi",
-    "Usman", "Hauwa", "Olusegun", "Fatima",
+    "Abdullahi", "Hauwa", "Musa", "Aisha", "Ibrahim", "Zainab", "Sani", "Fatima",
+    "Yusuf", "Maryam", "Bello", "Halima", "Ahmed", "Khadija", "Umar", "Amina",
 ]
-RELIGIONS = ["Islam", "Christianity"]
-BLOOD = ["O+", "A+", "B+", "AB+", "O-", "A-"]
-GENOTYPE = ["AA", "AS", "SS", "AC"]
+RELIGIONS = ["Islam", "Islam", "Islam", "Christianity", "Christianity"]
+BLOOD = ["O+", "O+", "O+", "A+", "B+", "AB+", "O-"]
+GENOTYPE = ["AA", "AA", "AA", "AS", "AS", "SS"]
 TOWNS = [
-    "Kano", "Lagos", "Abuja", "Katsina", "Ibadan", "Enugu", "Port Harcourt",
-    "Kaduna", "Sokoto", "Maiduguri", "Jos", "Benin City", "Zaria", "Ilorin",
-    "Abeokuta", "Owerri", "Calabar", "Bauchi", "Gombe", "Minna",
+    "Katsina", "Kano", "Kaduna", "Daura", "Malumfashi", "Funtua", "Zaria",
+    "Sokoto", "Gusau", "Bauchi", "Jos", "Abuja", "Ilorin", "Maiduguri",
 ]
-TITLES = ["Mr.", "Mrs.", "Alh.", "Alhaja"]
 
-CLASSES = [
-    "JSS 1A", "JSS 1B", "JSS 1C",
-    "JSS 2A", "JSS 2B", "JSS 2C",
-    "JSS 3A", "JSS 3B", "JSS 3C",
-]
-PER_CLASS = 40
-
-# Realistic birth years per level
-CLASS_YEARS = {
-    "JSS 1": (2011, 2013),
-    "JSS 2": (2010, 2012),
-    "JSS 3": (2009, 2011),
+# Birth-year window per level — a JSS 1 pupil is not born in 2008.
+BIRTH_YEARS = {
+    "JSS 1": (2013, 2014),
+    "JSS 2": (2012, 2013),
+    "JSS 3": (2011, 2012),
+    "SS 1": (2010, 2011),
+    "SS 2": (2009, 2010),
+    "SS 3": (2008, 2009),
 }
 
 HEADER = [
-    "First Name",
-    "Middle Name",
-    "Last Name",
-    "Gender (M/F)",
-    "DOB (YYYY-MM-DD)",
-    "Religion",
-    "Blood Group",
-    "Genotype",
-    "Home Town",
-    "Admission Number (Leave blank to auto-generate)",
-    "Class Name",
-    "Parent Name",
-    "Parent Phone",
+    "First Name", "Middle Name", "Last Name", "Gender (M/F)", "DOB (YYYY-MM-DD)",
+    "Religion", "Blood Group", "Genotype", "Home Town",
+    "Admission Number (Leave blank to auto-generate)", "Class Name",
+    "Parent Name", "Parent Phone",
 ]
 
-used_phones = set()
+GOLDEN_PHONE = "7058813998"   # the demo parent login: 7058813998@edus.ng
 
 
-def phone():
-    while True:
-        p = random.choice(["70", "80", "81", "90", "91"]) + "".join(
-            random.choice("0123456789") for _ in range(8)
-        )
-        if p not in used_phones:
-            used_phones.add(p)
-            return p
+def level_of(cls: str) -> str:
+    """'JSS 1A' -> 'JSS 1' (longest match, so 'SS 1' never eats 'JSS 1')."""
+    matches = [lvl for lvl in BIRTH_YEARS if cls.startswith(lvl)]
+    if not matches:
+        raise SystemExit(f"No birth-year window for class {cls!r}")
+    return max(matches, key=len)
 
 
-def dob_for(level: str) -> str:
-    lo, hi = CLASS_YEARS[level]
-    y = random.randint(lo, hi)
-    m = random.randint(1, 12)
-    d = random.randint(1, 28)
-    return f"{y:04d}-{m:02d}-{d:02d}"
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Generate a demo pupil import CSV.")
+    parser.add_argument("--count", type=int, default=1200)
+    parser.add_argument("--out", default="demo_students_1200.csv")
+    parser.add_argument("--levels", default="JSS 1,JSS 2,JSS 3,SS 1,SS 2,SS 3")
+    parser.add_argument("--arms", default="A,B,C")
+    parser.add_argument("--siblings", type=float, default=0.18,
+                        help="Chance that the next family sends a second child (0-1).")
+    parser.add_argument("--seed", type=int, default=2026)
+    args = parser.parse_args()
 
+    random.seed(args.seed)
 
-def make_row(first, last, gender, level, cls, index):
-    surname = random.choice(SURNAMES)
-    title = random.choice(TITLES)
-    parent = f"{title} {random.choice(PARENT_FIRST)} {surname}"
-    return [
-        first,
-        "",
-        last,
-        gender,
-        dob_for(level),
-        random.choice(RELIGIONS),
-        random.choice(BLOOD),
-        random.choice(GENOTYPE),
-        random.choice(TOWNS),
-        "",
-        cls,
-        parent,
-        phone(),
-    ]
+    levels = [item.strip() for item in args.levels.split(",") if item.strip()]
+    arms = [arm.strip() for arm in args.arms.split(",") if arm.strip()]
+    classes = [f"{level}{arm}" for level in levels for arm in arms]
+    per_class = max(1, -(-args.count // len(classes)))   # ceil: 1200 / 18 -> 67
 
+    used_phones: set[str] = set()
+    used_phones.add(GOLDEN_PHONE)
 
-rows = []
-# Golden-thread student first (JSS 1A)
-rows.append([
-    "Arraghibun", "", "Bello", "F", "2012-05-14", "Islam", "O+", "AA",
-    "Kano", "", "JSS 1A", "Mrs. Hauwa Bello", phone(),
-])
+    def phone() -> str:
+        while True:
+            candidate = random.choice(["70", "80", "81", "90", "91"]) + "".join(
+                random.choice("0123456789") for _ in range(8))
+            if candidate not in used_phones:
+                used_phones.add(candidate)
+                return candidate
 
-for cls in CLASSES:
-    level = cls[:-1].rstrip()  # "JSS 1A" -> "JSS 1"
-    made = 0
-    for _ in range(PER_CLASS):
-        if cls == "JSS 1A" and made == 0:
-            # Arraghibun already occupies the first JSS 1A slot
-            made += 1
-            continue
+    def guardian() -> tuple[str, str]:
+        surname = random.choice(SURNAMES)
+        return f"{random.choice(TITLES)} {random.choice(PARENT_FIRST)} {surname}", phone()
+
+    def pupil(cls: str, parent: str, parent_phone: str) -> list[str]:
+        lo, hi = BIRTH_YEARS[level_of(cls)]
         gender = random.choice(["M", "F"])
         first = random.choice(MALE_FIRST if gender == "M" else FEMALE_FIRST)
-        last = random.choice(SURNAMES)
-        rows.append(make_row(first, last, gender, level, cls, made))
-        made += 1
+        return [
+            first, "", random.choice(SURNAMES), gender,
+            f"{random.randint(lo, hi)}-{random.randint(1, 12):02d}-{random.randint(1, 28):02d}",
+            random.choice(RELIGIONS), random.choice(BLOOD), random.choice(GENOTYPE),
+            random.choice(TOWNS), "", cls, parent, parent_phone,
+        ]
 
-with open("demo_students_360.csv", "w", newline="", encoding="utf-8") as f:
-    w = csv.writer(f)
-    w.writerow(HEADER)
-    w.writerows(rows)
+    # The golden-thread family, always first: the parent-portal walkthrough depends on it.
+    rows: list[list[str]] = [[
+        "Arraghibun", "", "Bello", "F", "2012-05-14", "Islam", "O+", "AA",
+        "Kano", "", "JSS 1A", "Mrs. Hauwa Bello", GOLDEN_PHONE,
+    ]]
+    class_counts: "OrderedDict[str, int]" = OrderedDict(
+        (cls, 1 if cls == "JSS 1A" else 0) for cls in classes
+    )
 
-total = len(rows)
-by_class = {}
-for r in rows:
-    by_class[r[10]] = by_class.get(r[10], 0) + 1
-print(f"Total data rows: {total}")
-for c in CLASSES:
-    print(f"  {c}: {by_class.get(c, 0)}")
+    def room() -> list[str]:
+        return [cls for cls in classes if class_counts[cls] < per_class]
+
+    while len(rows) < args.count:
+        available = room()
+        if not available:
+            break
+
+        if random.random() < args.siblings and len(rows) + 1 < args.count:
+            first_cls = available[0]
+            others = [cls for cls in available if cls != first_cls]
+            if others:
+                parent, parent_phone = guardian()
+                for cls in (first_cls, random.choice(others)):
+                    rows.append(pupil(cls, parent, parent_phone))
+                    class_counts[cls] += 1
+                continue
+
+        cls = random.choice(available)
+        parent, parent_phone = guardian()
+        rows.append(pupil(cls, parent, parent_phone))
+        class_counts[cls] += 1
+
+    with open(args.out, "w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(HEADER)
+        writer.writerows(rows)
+
+    families: dict[str, int] = {}
+    for row in rows:
+        families[row[12]] = families.get(row[12], 0) + 1
+    multi = sum(1 for count in families.values() if count > 1)
+
+    print(f"Wrote {args.out}")
+    print(f"  pupils   : {len(rows)}")
+    print(f"  classes  : {len(classes)}  ({', '.join(classes)})")
+    print(f"  families : {len(families)}  ({multi} with more than one child)")
+    print(f"  golden   : Arraghibun Bello · JSS 1A · {GOLDEN_PHONE}")
+    print("  per class: " + ", ".join(f"{cls}={class_counts[cls]}" for cls in classes))
+
+
+if __name__ == "__main__":
+    main()

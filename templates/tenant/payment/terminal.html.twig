@@ -2,7 +2,7 @@
 {% block title %}Payment Terminal{% endblock %}
 
 {% block body %}
-<div class="max-w-6xl mx-auto mt-6 px-4 pb-12">
+<div class="mt-6 px-4 pb-12">
     
     {# 🟢 NAVIGATION HEADER #}
     <div class="mb-6 flex justify-between items-center">
@@ -12,8 +12,8 @@
         </a>
 
         {# Optional: Link to Full Profile #}
-        <a href="{{ path('app_tenant_student_profile', {id: student.id}) }}" class="text-sm font-medium text-indigo-600 hover:underline">
-            View Student Profile &rarr;
+        <a href="{{ path('app_tenant_student_profile', {id: student.id}) }}" class="inline-flex items-center min-h-[44px] text-sm font-medium text-accent-600 hover:underline">
+            View {{ learner.capital }} Profile &rarr;
         </a>
     </div>
 
@@ -52,7 +52,7 @@
                 {# SCENARIO A: Invoice Exists #}
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                     <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                        <span class="font-bold text-gray-700">Invoice #{{ invoice.invoiceNumber }}</span>
+                        <span class="font-bold text-gray-700">{{ invoice.invoiceNumber }}</span>
                         <span class="px-3 py-1 rounded-full text-xs font-bold 
                             {% if invoice.status == 'PAID' %}bg-green-100 text-green-800
                             {% elseif invoice.status == 'PARTIAL' %}bg-yellow-100 text-yellow-800
@@ -78,6 +78,18 @@
                                 {% endfor %}
                             </tbody>
                             <tfoot class="border-t-2 border-gray-200">
+                                {% if invoice.discountApplied > 0 %}
+                                <tr>
+                                    <td class="pt-4 text-right text-gray-500">Subtotal (fees):</td>
+                                    <td class="pt-4 text-right font-mono text-gray-500">₦{{ (invoice.totalAmount + invoice.discountApplied)|number_format(2) }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="pt-1 text-right text-paid font-bold">
+                                        {{ invoice.discountLabel ?: 'Scholarship / discount' }}:
+                                    </td>
+                                    <td class="pt-1 text-right font-mono font-bold text-paid">- ₦{{ invoice.discountApplied|number_format(2) }}</td>
+                                </tr>
+                                {% endif %}
                                 <tr>
                                     <td class="pt-4 font-bold text-right">Total Due:</td>
                                     <td class="pt-4 text-right font-bold font-mono text-lg">₦{{ invoice.totalAmount|number_format(2) }}</td>
@@ -141,7 +153,7 @@
                         {% endif %}
                     {% else %}
                         <div class="text-red-600 font-bold mb-4">
-                            ⚠️ Student is not assigned to a class.
+                            ⚠️ {{ learner.capital }} is not assigned to a class.
                         </div>
                         <a href="{{ path('app_tenant_enrollment_promote') }}" class="text-indigo-600 hover:underline">Go to Enrollment Manager</a>
                     {% endif %}

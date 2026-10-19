@@ -9,6 +9,7 @@ use App\Entity\Tenant\Product;
 use App\Entity\Tenant\Student;
 use App\Entity\Tenant\Term;
 use App\Form\StudentSearchType;
+use App\Service\Finance\InvoiceNumberGenerator;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\Tenant\Enrollment;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -21,6 +22,10 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_STORE')]
 class StoreSalesController extends AbstractController
 {
+    public function __construct(private readonly InvoiceNumberGenerator $invoiceNumbers)
+    {
+    }
+
     // ==========================================
     // 1. SEARCH PAGE
     // ==========================================
@@ -124,6 +129,7 @@ class StoreSalesController extends AbstractController
         $invoice->setType('STORE');
         $invoice->setStudent($student);
         $invoice->setStatus('UNPAID');
+        $invoice->setInvoiceNumber($this->invoiceNumbers->next($this->invoiceNumbers->yearFor($activeTerm->getSession())));
         
         $enrollment = $em->getRepository(Enrollment::class)->findOneBy([
             'student' => $student,
@@ -169,6 +175,7 @@ class StoreSalesController extends AbstractController
         $invoice->setType('STORE');
         $invoice->setBuyerName($buyerName);
         $invoice->setStatus('PAID');
+        $invoice->setInvoiceNumber($this->invoiceNumbers->next($this->invoiceNumbers->yearFor($activeTerm->getSession())));
 
         try {
             $totalAmount = $this->processCartAndDeductStock($cartItems, $invoice, $em);

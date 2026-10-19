@@ -1,0 +1,247 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}School performance — {{ term.name }}{% endblock %}
+
+{% block body %}
+{% set s = data.summary %}
+<div class="px-4 py-2">
+
+    {# ── Header & filters ──────────────────────────────────────────── #}
+    <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div class="min-w-0">
+            <h1 class="text-2xl font-bold text-ink-900">School performance</h1>
+            <p class="mt-1 text-sm text-ink-500">
+                {{ term.name }}{% if term.session %} · {{ term.session.name }}{% endif %}
+                {% if yearGroup %} · {{ yearGroup.name }}{% endif %}
+                · {{ data.pupil_count }} {{ learner.plural }}
+            </p>
+        </div>
+
+        <form method="get" class="flex flex-col gap-2 sm:flex-row sm:items-end">
+            <label class="min-w-0">
+                <span class="mb-1 block text-xs font-medium text-ink-600">Term</span>
+                <select name="term" onchange="this.form.submit()"
+                        class="w-full rounded-lg border border-ink-300 p-2.5 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500 sm:w-44">
+                    {% for option in terms %}
+                        <option value="{{ option.id }}" {{ option.id == term.id ? 'selected' }}>{{ option.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="min-w-0">
+                <span class="mb-1 block text-xs font-medium text-ink-600">Year group</span>
+                <select name="year_group" onchange="this.form.submit()"
+                        class="w-full rounded-lg border border-ink-300 p-2.5 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500 sm:w-44">
+                    <option value="">All year groups</option>
+                    {% for option in yearGroups %}
+                        <option value="{{ option.id }}" {{ yearGroup and option.id == yearGroup.id ? 'selected' }}>{{ option.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        </form>
+    </div>
+
+    {% if data.provisional %}
+        <div class="mb-4 rounded-xl border border-pending/30 bg-pending/10 p-4">
+            <p class="text-sm font-semibold text-pending">Provisional figures</p>
+            <p class="mt-1 text-sm text-ink-700">
+                {{ s.entered|number_format }} of {{ s.expected|number_format }} expected subject entries are present
+                {% if s.approval_rate is not null %}({{ s.approval_rate }}% of class subjects final-approved){% endif %}.
+                Treat the headline as a direction, not a final result.
+            </p>
+        </div>
+    {% endif %}
+
+    {# ── Shareable document ────────────────────────────────────────── #}
+    <div class="mb-4 flex flex-col gap-2 sm:flex-row">
+        <a href="{{ path('app_tenant_report_performance_pdf', {term: term.id, year_group: yearGroup ? yearGroup.id : 0, download: 1}) }}"
+           class="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-accent-600 px-5 font-semibold text-white hover:bg-accent-700">
+            Download PDF
+        </a>
+        <form method="post" action="{{ path('app_tenant_report_performance_share') }}" class="sm:inline">
+            <input type="hidden" name="_token" value="{{ csrf_token('performance_share') }}">
+            <input type="hidden" name="term" value="{{ term.id }}">
+            <input type="hidden" name="year_group" value="{{ yearGroup ? yearGroup.id : 0 }}">
+            <button type="submit"
+                    class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-ink-300 bg-white px-5 font-semibold text-ink-700 hover:border-accent-400 hover:text-accent-700 sm:w-auto">
+                Create share link
+            </button>
+        </form>
+    </div>
+
+    {% if share_url %}
+        <div class="mb-4 rounded-xl border border-accent-200 bg-accent-50 p-4">
+            <p class="text-sm font-semibold text-ink-900">Share this report</p>
+            <p class="mt-1 text-sm text-ink-600">
+                A read-only PDF for a proprietor, an inspector, a bank or a parent association.
+                The link expires {{ share_expires ? share_expires|date('j F Y') : 'in 30 days' }}.
+            </p>
+            <div class="mt-2 flex flex-col gap-2 sm:flex-row">
+                <input id="performance-share-url" type="text" readonly value="{{ share_url }}"
+                       class="min-h-[44px] w-full rounded-lg border border-ink-300 bg-white px-3 text-base text-ink-900">
+                <button type="button" id="performance-share-copy"
+                        class="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-lg bg-accent-600 px-5 font-semibold text-white hover:bg-accent-700">
+                    Copy link
+                </button>
+            </div>
+        </div>
+    {% endif %}
+
+    {# ── Headline ──────────────────────────────────────────────────── #}
+    <section class="mb-4 rounded-xl border border-ink-200 bg-white p-4 shadow-card sm:p-5">
+        <p class="text-base leading-relaxed text-ink-800 sm:text-lg">{{ data.headline }}</p>
+        <div class="mt-3 flex flex-wrap gap-2 text-[11px] text-ink-500">
+            <span class="rounded bg-ink-100 px-2 py-1">
+                Pass = {{ data.thresholds.pass_grade }} ({{ data.thresholds.pass }}%)
+            </span>
+            <span class="rounded bg-ink-100 px-2 py-1">
+                Credit = {{ data.thresholds.credit_grade }} ({{ data.thresholds.credit }}%)
+            </span>
+            <span class="rounded bg-ink-100 px-2 py-1">
+                Distinction = {{ data.thresholds.distinction_grade }} ({{ data.thresholds.distinction }}%)
+            </span>
+            <span class="rounded bg-ink-100 px-2 py-1">Generated {{ data.generated_at|date('j M Y H:i') }}</span>
+        </div>
+    </section>
+
+    {# ── KPI tiles ─────────────────────────────────────────────────── #}
+    {% set tiles = [
+        {label: 'Average', value: s.average is null ? '—' : s.average ~ '%', sub: 'mean of ' ~ learner ~ ' percentages'},
+        {label: 'Pass rate', value: s.pass_rate is null ? '—' : s.pass_rate ~ '%', sub: data.thresholds.pass_grade ~ ' or better'},
+        {label: '5+ credits', value: s.five_credit_rate is null ? 'n/a' : s.five_credit_rate ~ '%', sub: 'incl. English & Maths'},
+        {label: 'Distinction', value: s.distinction_rate is null ? '—' : s.distinction_rate ~ '%', sub: data.thresholds.distinction_grade ~ ' or better'},
+        {label: 'Coverage', value: s.coverage is null ? '—' : s.coverage ~ '%', sub: s.entered|number_format ~ ' of ' ~ s.expected|number_format ~ ' entries'},
+        {label: 'Attendance', value: s.attendance is null ? '—' : s.attendance ~ '%', sub: 'present ÷ registers taken'}
+    ] %}
+    <div class="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {% for tile in tiles %}
+            <div class="rounded-xl border border-ink-200 bg-white p-3.5 shadow-card sm:p-4">
+                <p class="text-[11px] font-medium uppercase tracking-wide text-ink-400">{{ tile.label }}</p>
+                <p class="mt-1 text-2xl font-bold tabular text-ink-900">{{ tile.value }}</p>
+                <p class="mt-0.5 text-[11px] text-ink-500">{{ tile.sub }}</p>
+            </div>
+        {% endfor %}
+    </div>
+
+    {# ── Three things that matter ──────────────────────────────────── #}
+    {% if data.findings is not empty %}
+        <section class="mb-4 rounded-xl border border-ink-200 bg-white p-4 shadow-card sm:p-5">
+            <h2 class="mb-3 text-xs font-bold uppercase tracking-wide text-ink-500">Three things that matter</h2>
+            <ul class="space-y-2.5">
+                {% for finding in data.findings %}
+                    {% set tone = finding.tone == 'positive' ? 'paid' : (finding.tone == 'negative' ? 'failed' : 'ink') %}
+                    {% set label = finding.tone == 'positive' ? 'Strength' : (finding.tone == 'negative' ? 'Watch' : 'Context') %}
+                    <li class="flex items-start gap-3">
+                        <span class="mt-0.5 shrink-0 rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide
+                            {{ tone == 'paid' ? 'bg-paid/10 text-paid' : (tone == 'failed' ? 'bg-failed/10 text-failed' : 'bg-ink-100 text-ink-600') }}">
+                            {{ label }}
+                        </span>
+                        <span class="min-w-0 text-sm leading-relaxed text-ink-700">{{ finding.text }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        </section>
+    {% endif %}
+
+    <div class="grid gap-4 lg:grid-cols-2">
+
+        {# ── Grade mix ─────────────────────────────────────────────── #}
+        <section class="rounded-xl border border-ink-200 bg-white p-4 shadow-card sm:p-5">
+            <div class="mb-3 flex items-center justify-between gap-2">
+                <h2 class="text-xs font-bold uppercase tracking-wide text-ink-500">Grade mix</h2>
+                <span class="text-[11px] text-ink-400">{{ data.pupil_count }} {{ learner.plural }}</span>
+            </div>
+            {% if data.grade_distribution is not empty %}
+                {% set bandColours = ['bg-accent-600', 'bg-accent-400', 'bg-accent-200', 'bg-ink-200'] %}
+                <div class="flex h-3 w-full overflow-hidden rounded-full bg-ink-100" role="img"
+                     aria-label="Grade distribution across the school">
+                    {% for band in data.grade_distribution %}
+                        {% if band.percentage > 0 %}
+                            <div class="{{ bandColours[loop.index0] }}" style="width: {{ band.percentage }}%"
+                                 title="{{ band.label }}: {{ band.count }} {{ learner.plural }}"></div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <ul class="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+                    {% for band in data.grade_distribution %}
+                        <li>
+                            <p class="text-[11px] font-semibold uppercase tracking-wide text-ink-500">{{ band.label }}</p>
+                            <p class="font-bold tabular text-ink-900">{{ band.percentage }}%</p>
+                            <p class="text-[11px] text-ink-400">{{ band.count }} {{ learner.plural }}</p>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-sm text-ink-500">No {{ learner }} results for this filter.</p>
+            {% endif %}
+        </section>
+
+        {# ── Class gap ─────────────────────────────────────────────── #}
+        <section class="rounded-xl border border-ink-200 bg-white p-4 shadow-card sm:p-5">
+            <div class="mb-3 flex items-center justify-between gap-2">
+                <h2 class="text-xs font-bold uppercase tracking-wide text-ink-500">Class comparison</h2>
+                <a href="{{ path('app_tenant_report_performance_classes', {term: term.id, year_group: yearGroup ? yearGroup.id : ''}) }}"
+                   class="inline-flex min-h-[44px] items-center text-xs font-semibold text-accent-700 hover:text-accent-800">All classes →</a>
+            </div>
+            {% if data.classes is not empty %}
+                <ul class="divide-y divide-ink-100">
+                    {% for class in data.classes|slice(0, 5) %}
+                        <li class="flex items-center justify-between gap-3 py-2.5">
+                            <div class="min-w-0">
+                                <p class="truncate text-sm font-semibold text-ink-900">{{ class.name }}</p>
+                                <p class="text-[11px] text-ink-400">{{ class.pupils }} {{ learner.plural }}{% if class.year_group %} · {{ class.year_group }}{% endif %}</p>
+                            </div>
+                            <div class="shrink-0 text-right">
+                                <p class="text-sm font-bold tabular text-ink-900">{{ class.average is null ? '—' : class.average ~ '%' }}</p>
+                                <p class="text-[11px] {{ class.average is not null and s.average is not null and class.average >= s.average ? 'text-paid' : 'text-ink-400' }}">
+                                    {% if class.average is not null and s.average is not null %}
+                                        {{ class.average >= s.average ? '+' : '' }}{{ (class.average - s.average)|round(1) }} vs school
+                                    {% else %}no results{% endif %}
+                                </p>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-sm text-ink-500">No class results for this filter.</p>
+            {% endif %}
+        </section>
+    </div>
+
+    <div class="mt-4 flex flex-col gap-2 sm:flex-row">
+        <a href="{{ path('app_tenant_report_performance_subjects', {term: term.id, year_group: yearGroup ? yearGroup.id : ''}) }}"
+           class="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-accent-600 px-5 font-semibold text-white hover:bg-accent-700">
+            Subject detail
+        </a>
+        <a href="{{ path('app_tenant_report_performance_classes', {term: term.id, year_group: yearGroup ? yearGroup.id : ''}) }}"
+           class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-ink-300 bg-white px-5 font-semibold text-ink-700 hover:border-accent-400 hover:text-accent-700">
+            Class detail
+        </a>
+    </div>
+
+    <p class="mt-4 text-[11px] text-ink-400">
+        {{ s.approved }} of {{ s.class_subjects }} class subjects are final-approved.
+        A result counts only when the {{ learner }} has a score for that subject.
+    </p>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const input = document.getElementById('performance-share-url');
+        const button = document.getElementById('performance-share-copy');
+        if (!input || !button) return;
+
+        button.addEventListener('click', async function () {
+            try {
+                await navigator.clipboard.writeText(input.value);
+            } catch (e) {
+                input.select();
+                document.execCommand('copy');
+            }
+            button.textContent = 'Copied';
+            setTimeout(() => { button.textContent = 'Copy link'; }, 2000);
+        });
+    });
+</script>
+{% endblock %}

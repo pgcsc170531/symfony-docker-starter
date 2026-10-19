@@ -1,0 +1,134 @@
+{% extends 'tenant/apply/layout.html.twig' %}
+
+{% block title %}Apply for admission{% endblock %}
+
+{% block content %}
+{# ── Hero ─────────────────────────────────────────────────────────── #}
+<div class="bg-white rounded-2xl shadow-sm ring-1 ring-gray-200 p-6 sm:p-8">
+    {% if open %}
+        <span class="inline-flex items-center gap-2 rounded-full bg-green-50 text-green-700 ring-1 ring-green-200 px-3 py-1 text-xs font-bold uppercase tracking-wide">
+            ● Applications are open
+        </span>
+    {% else %}
+        <span class="inline-flex items-center gap-2 rounded-full bg-gray-100 text-gray-600 ring-1 ring-gray-200 px-3 py-1 text-xs font-bold uppercase tracking-wide">
+            ○ Applications are closed
+        </span>
+    {% endif %}
+
+    <h1 class="mt-4 text-2xl sm:text-3xl font-extrabold text-gray-900">
+        {% if open %}Apply for admission to {{ school ? school.name : 'our school' }}{% else %}Online applications are currently closed{% endif %}
+    </h1>
+
+    <p class="mt-3 text-gray-600 max-w-2xl">
+        {% if open %}
+            Apply from home, at any hour, on any phone. You will create your own parent-portal account
+            first — that same account is where you will later see your child's fees, payments and results.
+        {% else %}
+            Please check back later, or contact the school office for the next admission window.
+        {% endif %}
+    </p>
+
+    {% if not open and (tel_url or whatsapp_url) %}
+        {# A closed portal is not a closed school. Give the parent the two
+           channels they actually use instead of a dead end. #}
+        <div class="mt-4 flex flex-col gap-2 sm:flex-row">
+            {% if tel_url %}
+                <a href="{{ tel_url }}"
+                   class="inline-flex min-h-[44px] items-center justify-center rounded-lg px-5 text-sm font-semibold text-white transition hover:opacity-90"
+                   style="background-color: {{ brand_ink }};">
+                    Call {{ school ? school.phoneNumber : 'the school' }}
+                </a>
+            {% endif %}
+            {% if whatsapp_url %}
+                <a href="{{ whatsapp_url }}" target="_blank" rel="noopener"
+                   class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-gray-300 px-5 text-sm font-semibold text-gray-800 transition hover:bg-gray-50">
+                    Message on WhatsApp
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    {% if school and school.applicationClassesNote %}
+        <p class="mt-4 text-sm font-semibold text-gray-700">📌 {{ school.applicationClassesNote }}</p>
+    {% endif %}
+
+    {% if school and (school.applicationsOpenAt or school.applicationsCloseAt) %}
+        <p class="mt-2 text-sm text-gray-500">
+            {% if school.applicationsOpenAt %}Opens {{ school.applicationsOpenAt|date('j M Y') }}{% endif %}
+            {% if school.applicationsOpenAt and school.applicationsCloseAt %} · {% endif %}
+            {% if school.applicationsCloseAt %}Closes {{ school.applicationsCloseAt|date('j M Y') }}{% endif %}
+        </p>
+    {% endif %}
+
+    <div class="mt-6 flex flex-col sm:flex-row gap-3">
+        {% if open and not user %}
+            <a href="/apply/register"
+               class="inline-flex items-center justify-center rounded-lg px-6 py-3 font-semibold text-white shadow-sm hover:opacity-90 transition"
+               style="background-color: {{ brand }};">
+                Start my application
+            </a>
+        {% elseif user %}
+            <a href="{{ path('app_parent_dashboard') }}"
+               class="inline-flex items-center justify-center rounded-lg px-6 py-3 font-semibold text-white shadow-sm hover:opacity-90 transition"
+               style="background-color: {{ brand }};">
+                Continue in my parent portal
+            </a>
+        {% endif %}
+
+        <a href="{{ path('app_login') }}"
+           class="inline-flex items-center justify-center rounded-lg px-6 py-3 font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">
+            I already have an account
+        </a>
+
+        <a href="/apply/recover"
+           class="inline-flex items-center justify-center rounded-lg px-6 py-3 font-semibold text-gray-500 hover:text-gray-800 transition">
+            Get a sign-in link
+        </a>
+    </div>
+</div>
+
+{# ── How it works ─────────────────────────────────────────────────── #}
+<div class="mt-6 grid gap-4 sm:grid-cols-3">
+    {% set steps = [
+        { 'icon': '👤', 'title': '1. Create your account', 'text': 'Your name, email and phone. This becomes your permanent parent-portal login.' },
+        { 'icon': '📝', 'title': '2. Apply for your child', 'text': 'Fill the application once — you can save it and finish later, even without network.' },
+        { 'icon': '✅', 'title': '3. School reviews it', 'text': 'You are notified by SMS at every step until your child is admitted.' }
+    ] %}
+    {% for s in steps %}
+        <div class="bg-white rounded-xl ring-1 ring-gray-200 p-5">
+            <div class="text-2xl">{{ s.icon }}</div>
+            <h3 class="mt-2 font-bold text-gray-900">{{ s.title }}</h3>
+            <p class="mt-1 text-sm text-gray-600">{{ s.text }}</p>
+        </div>
+    {% endfor %}
+</div>
+
+{# ── What to prepare ──────────────────────────────────────────────── #}
+{% if school and school.applicationInstructions %}
+    <div class="mt-6 bg-white rounded-2xl ring-1 ring-gray-200 p-6">
+        <h2 class="font-bold text-gray-900">What you will need</h2>
+        <ul class="mt-3 space-y-2 text-sm text-gray-700">
+            {% for line in school.applicationInstructions|split('\n') %}
+                {% if line|trim %}
+                    <li class="flex gap-2"><span class="text-green-600 font-bold">✓</span> <span>{{ line|trim }}</span></li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}
+
+{% if school and school.admissionsIntro %}
+    <div class="mt-6 bg-white rounded-2xl ring-1 ring-gray-200 p-6 text-sm text-gray-600 leading-relaxed">
+        {{ school.admissionsIntro|nl2br }}
+    </div>
+{% endif %}
+
+<p class="mt-6 text-center text-xs text-gray-400">
+    Looking for fees, directions or contact details? Visit the
+    {% if subdomain %}
+        <a href="{{ path('app_tenant_admissions', {'subdomain': subdomain}) }}" class="underline hover:text-gray-600">admissions page</a>.
+    {% else %}
+        <a href="{{ path('app_tenant_apply_index') }}" class="underline hover:text-gray-600">application page</a>.
+    {% endif %}
+</p>
+{% endblock %}

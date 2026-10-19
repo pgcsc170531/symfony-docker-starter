@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+{# One sitemap per school subdomain — the base-domain sitemap can never list
+   these URLs, and search engines treat each subdomain as its own site. #}
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+{% for url in urls %}
+    <url>
+        <loc>{{ url }}</loc>
+        <lastmod>{{ lastmod|date('Y-m-d') }}</lastmod>
+    </url>
+{% endfor %}
+</urlset>

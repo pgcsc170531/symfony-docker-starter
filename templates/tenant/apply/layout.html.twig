@@ -1,0 +1,98 @@
+{# Public "Application Mode" shell — standalone (no tenant sidebar) so parents
+   who are logged in still see a clean public page.
+
+   ⚠️ ONE GUTTER, NO MAX-WIDTH (UI-SPEC §4.1.3). Header, main and footer used to
+   be `max-w-5xl mx-auto` — a 1024px column floating in the middle of a desktop,
+   while every other screen in the product now runs to the edge with a 16px
+   gutter. Two shells, two widths, and the seam was visible the moment you moved
+   from the portal into the application form. `px-4` on all three, nothing else. #}
+{% set brand = school and school.primaryColor ? school.primaryColor : '#1e40af' %}
+{# White text on the school's colour — darkened only as far as WCAG AA needs. #}
+{% set brand_ink = brand|brand_on_white %}
+{% set school_name = school ? school.name : 'School Portal' %}
+{# The subdomain attribute only exists on tenant-hosted routes; stay defensive
+   so this public shell can never 500 while generating a link. #}
+{% set subdomain = app.request.attributes.get('subdomain') %}
+{% set home_url = subdomain ? path('app_tenant_home', {'subdomain': subdomain}) : '/' %}
+{# One-tap contact, same rules as the school website: a local 0803… number is
+   rewritten to 234… or wa.me produces a dead link. #}
+{% set phone_digits = school and school.phoneNumber
+    ? school.phoneNumber|replace({' ': '', '-': '', '(': '', ')': '', '.': ''})
+    : null %}
+{% set tel_url = phone_digits ? 'tel:' ~ phone_digits : null %}
+{% set whatsapp_digits = school and school.whatsappNumber
+    ? school.whatsappNumber|replace({' ': '', '-': '', '(': '', ')': '', '+': '', '.': ''})
+    : phone_digits %}
+{% if whatsapp_digits and whatsapp_digits starts with '0' %}
+    {% set whatsapp_digits = '234' ~ whatsapp_digits|slice(1) %}
+{% endif %}
+{% set whatsapp_url = whatsapp_digits ? 'https://wa.me/' ~ whatsapp_digits : null %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Apply Online{% endblock %} · {{ school_name }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    {# Standalone document: it must pull the tokens in itself or `ink-*`
+       produces no CSS at all. #}
+    {% include '_design_tokens.html.twig' %}
+    <link rel="icon" type="image/svg+xml" href="{{ asset('images/brand/edus-favicon.svg') }}">
+</head>
+<body class="min-h-screen bg-gray-50 text-gray-800 flex flex-col">
+
+<header class="bg-white border-b border-gray-200">
+    <div class="flex items-center justify-between gap-4 px-4 py-4">
+        <a href="{{ home_url }}" class="flex items-center gap-3 no-underline">
+            {% if school and school.logoFilename %}
+                <img src="{{ asset('uploads/logos/' ~ school.logoFilename) }}" alt="{{ school_name }}" class="h-10 w-10 rounded-lg object-contain border border-gray-200 bg-white">
+            {% else %}
+                <span class="h-10 w-10 rounded-lg flex items-center justify-center text-white font-bold" style="background-color: {{ brand_ink }};">
+                    {{ school_name|first|upper }}
+                </span>
+            {% endif %}
+            <span class="text-lg font-black tracking-tight text-gray-900">{{ school_name }}</span>
+        </a>
+
+        <span class="rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide text-white" style="background-color: {{ brand_ink }};">
+            Apply Online
+        </span>
+    </div>
+</header>
+
+<main class="w-full flex-1 px-4 py-8">
+    {% for type, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-5 rounded-lg border px-4 py-3 text-sm
+                {{ type == 'success' ? 'bg-green-50 border-green-200 text-green-800'
+                   : (type == 'error' ? 'bg-red-50 border-red-200 text-red-800'
+                   : 'bg-blue-50 border-blue-200 text-blue-800') }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    {% block content %}{% endblock %}
+</main>
+
+<footer class="border-t border-gray-200 bg-white mt-10">
+    <div class="px-4 py-6 text-sm text-gray-500">
+        <p class="font-semibold text-gray-700">{{ school_name }}</p>
+        <p class="mt-1">
+            {% if school and school.address %}{{ school.address }}<br>{% endif %}
+            {% if school and school.phoneNumber %}📞 {{ school.phoneNumber }}{% endif %}
+            {% if school and school.email %} · ✉️ {{ school.email }}{% endif %}
+        </p>
+        {# Colophon: the brand on one side, the company that builds it on the
+           other. "Powered by Edus" credited the product to itself. #}
+        <div class="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-gray-200 pt-4">
+            {% import '_brand.html.twig' as brand_macro %}
+            <a href="https://edus.ng" target="_blank" rel="noopener" class="inline-flex min-h-[44px] items-center hover:opacity-80">
+                {{ brand_macro.wordmark('xs') }}
+            </a>
+            <p class="text-xs text-gray-400">Powered by Mu'ammil Web Services Limited</p>
+        </div>
+    </div>
+</footer>
+</body>
+</html>

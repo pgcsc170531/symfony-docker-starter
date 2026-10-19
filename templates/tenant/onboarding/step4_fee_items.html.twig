@@ -1,25 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Setup Fee Structure</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        .dragging { opacity: 0.5; transform: scale(0.98); }
-    </style>
-</head>
-<body class="bg-gray-50 min-h-screen">
+{% extends 'base.html.twig' %}
 
-<div class="max-w-6xl mx-auto md:py-10">
+{% block title %}Fee Structure{% endblock %}
+
+{% block body %}
+{# The `.dragging` rule was the only page-specific CSS in this document's <head>;
+   it stays, but scoped to this page instead of a whole <head>. #}
+<style>.dragging { opacity: .5; transform: scale(.98); }</style>
+
+<div class="px-4">
     
     {# HEADER #}
-    <div class="bg-indigo-600 p-5 md:p-6 md:rounded-t-xl text-white shadow-lg flex justify-between items-center">
+    <div class="flex items-center justify-between rounded-t-xl bg-accent-600 p-5 text-white shadow-lg md:p-6">
         <div>
-            <h1 class="text-xl md:text-2xl font-bold">⚙️ Fee Structure</h1>
-            <p class="text-indigo-100 text-sm mt-1">Configure standard or custom fees.</p>
+            <h1 class="text-xl font-bold md:text-2xl">Fee Structure</h1>
+            <p class="mt-1 text-sm text-accent-100">Configure standard or custom fees.</p>
         </div>
         <div class="text-xs font-bold bg-indigo-700 py-1 px-3 rounded-lg border border-indigo-500">
             Step 4 / 5
@@ -113,10 +107,12 @@
             </button>
         </div>
 
-        {# FOOTER ACTIONS #}
-        <div class="fixed bottom-0 left-0 right-0 bg-white p-4 border-t border-gray-200 md:static md:bg-transparent md:border-none md:p-0 md:mt-10 flex flex-row justify-between items-center gap-4 z-50">
-            <a href="#" class="text-gray-500 font-bold text-sm px-4 hover:text-gray-700 transition-colors">Back</a>
-            <button type="submit" class="bg-indigo-600 text-white px-6 md:px-10 py-3 rounded-xl font-bold shadow-lg hover:bg-indigo-700 flex items-center gap-2 transition-transform active:scale-95">
+        {# FOOTER ACTIONS
+           Was `position: fixed`, which paints against the viewport — inside the
+           shell it covered the footer and the last row. In flow at the end. #}
+        <div class="mt-8 flex flex-row items-center justify-between gap-4 border-t border-gray-200 pt-5">
+            <a href="{{ path('app_tenant_onboarding_structure') }}" class="inline-flex min-h-[44px] items-center px-4 text-sm font-bold text-gray-500 transition-colors hover:text-gray-700">Back</a>
+            <button type="submit" class="flex min-h-[48px] items-center gap-2 rounded-xl bg-accent-600 px-6 py-3 font-bold text-white shadow-lg transition-transform hover:bg-accent-700 active:scale-95 md:px-10">
                 <span>Save & Continue</span>
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-width="2" stroke-linecap="round"/></svg>
             </button>
@@ -172,13 +168,13 @@
                             <select name="fee_items[items][${index}][frequency]" class="w-full rounded-md border-gray-300 text-sm border p-2 bg-white mt-1 md:mt-0">
                                 <option value="TERM">Every Term</option>
                                 <option value="SESSION">Once per Session</option>
-                                <option value="ONETIME">One-Time (Life of Student)</option>
+                                <option value="ONETIME">One-Time (Life of the {{ learner }})</option>
                             </select>
                         </div>
                         <div class="md:col-start-5">
                             <label class="text-[10px] font-bold text-gray-400 uppercase md:hidden">Target</label>
                             <select name="fee_items[items][${index}][target]" class="w-full rounded-md border-gray-300 text-sm border p-2 bg-white mt-1 md:mt-0">
-                                <option value="ALL">All Students</option>
+                                <option value="ALL">All {{ learner.pluralCapital }}</option>
                                 <option value="NEW">New Intake Only</option>
                             </select>
                         </div>
@@ -253,5 +249,4 @@
         }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
 </script>
-</body>
-</html>
+{% endblock %}

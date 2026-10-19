@@ -5,12 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ school is defined and school ? school.name : 'School Portal Login' }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
+    {# This page is a standalone document — it does not extend base.html.twig, so it
+       has to pull the design tokens in itself or `ink-*` / `accent-*` render as
+       nothing at all. #}
+    {% include '_design_tokens.html.twig' %}
     {# 1. DYNAMIC FAVICON #}
     {% if school is defined and school and school.logoFilename %}
         <link rel="icon" href="{{ asset('uploads/logos/' ~ school.logoFilename) }}">
     {% else %}
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><text y='1.2em' font-size='96'>🎓</text></svg>">
+        <link rel="icon" type="image/svg+xml" href="{{ asset('images/brand/edus-favicon.svg') }}">
     {% endif %}
 
     {# 2. DYNAMIC BRANDING COLORS #}
@@ -56,7 +60,7 @@
             <h2 class="text-4xl font-bold mb-4">
                 {{ school is defined and school ? school.name : 'Welcome Back' }}
             </h2>
-            <p class="text-blue-100 text-lg">
+            <p class="text-lg text-white/80">
                 {% if school is defined and school and school.motto %}
                     "{{ school.motto }}"
                 {% else %}
@@ -67,23 +71,41 @@
     </div>
 
     {# === RIGHT SIDE: LOGIN FORM === #}
-    <div class="flex flex-1 flex-col justify-center px-4 py-12 sm:px-6 lg:flex-none lg:px-20 xl:px-24 bg-gray-50">
+    {#
+        This is the page's <main>, and the form has the only <h1>. It used to be
+        a plain div with an <h2>, so a screen reader found no main landmark and
+        no page heading at all.
+    #}
+    <main class="flex flex-1 flex-col justify-center px-4 py-12 sm:px-6 lg:flex-none lg:px-20 xl:px-24 bg-ink-50">
         <div class="mx-auto w-full max-w-sm lg:w-96">
             
             <div class="text-center lg:text-left">
-                {# 3. DYNAMIC LOGO #}
-                {% if school is defined and school and school.logoFilename %}
-                    <img src="{{ asset('uploads/logos/' ~ school.logoFilename) }}" 
-                         alt="Logo" 
-                         class="h-20 w-auto mb-4 mx-auto lg:mx-0 object-contain">
-                {% else %}
-                    <span class="text-5xl block mb-4">🏫</span>
-                {% endif %}
+                {# The SCHOOL's identity only — the brand is in the footer below. #}
+                <div class="mb-4 flex flex-col items-center gap-2.5 lg:flex-row">
+                    {% if school is defined and school and school.logoFilename %}
+                        <img src="{{ asset('uploads/logos/' ~ school.logoFilename) }}" alt=""
+                             class="h-14 w-14 shrink-0 rounded-lg object-contain">
+                    {% elseif school is defined and school %}
+                        <span class="grid h-14 w-14 shrink-0 place-items-center rounded-lg bg-accent-600 text-xl font-bold text-white" aria-hidden="true">{{ school.name|slice(0, 1)|upper }}</span>
+                    {% endif %}
 
-                <h2 class="mt-2 text-3xl font-bold tracking-tight text-gray-900">
+                    <div class="min-w-0">
+                        {% if school is defined and school %}
+                            <p class="truncate text-lg font-semibold leading-tight text-ink-900">{{ school.name }}</p>
+                            {% if school.motto %}
+                                <p class="truncate text-xs text-ink-500">{{ school.motto }}</p>
+                            {% endif %}
+                        {% else %}
+                            {% import '_brand.html.twig' as brand %}
+                            {{ brand.wordmark('xl') }}
+                        {% endif %}
+                    </div>
+                </div>
+
+                <h1 class="text-2xl font-semibold tracking-tight text-ink-900">
                     {{ school is defined and school ? 'Sign In' : 'Staff Portal' }}
-                </h2>
-                <p class="mt-2 text-sm text-gray-600">
+                </h1>
+                <p class="mt-1 text-sm text-ink-600">
                     Please sign in to access your dashboard.
                 </p>
             </div>
@@ -137,10 +159,42 @@
                     </form>
 
                 </div>
+
+                {#
+                    A parent who lands here by mistake has no route back to the
+                    school they were reading about. The school website lives on
+                    the same host, at `/`. The login route is host-agnostic, so
+                    the subdomain is not a route attribute — the host itself is
+                    the address of the school. Only shown when we know the school.
+                #}
+                {% if school is defined and school %}
+                    <a href="{{ app.request.schemeAndHttpHost }}/"
+                       class="mt-4 inline-flex min-h-[44px] items-center gap-1 text-sm font-semibold text-ink-700 hover:text-ink-900">
+                        <span aria-hidden="true">&larr;</span> Back to {{ school.name }}
+                    </a>
+                {% endif %}
                 
-                <div class="mt-6 text-center">
-                    <p class="text-xs text-gray-500">
-                        Protected by {{ school is defined and school ? school.name : 'SchoolSaaS' }} Security
+                {# The brand sits at the BOTTOM, with the credit — never at the top.
+                   The wordmark IS the brand: no mark beside it.
+
+                   Brand on the left, maker on the right, space between them.
+                   "Powered by" credits the COMPANY that builds and runs Edus, not
+                   the product itself — repeating "edus.ng" next to the wordmark
+                   said the same thing twice.
+
+                   📱 On a phone both halves stay on ONE row: the tagline drops
+                   (it is already in the page title) so the wordmark and the
+                   company name each get a side, and nothing has to shrink below
+                   11px to fit 320px. #}
+                <div class="mt-6 flex items-center justify-between gap-4 border-t border-ink-200 pt-4">
+                    {% import '_brand.html.twig' as brand %}
+                    <span class="inline-flex shrink-0 flex-col leading-tight">
+                        {{ brand.wordmark('md') }}
+                        <span class="mt-1.5 hidden text-xs text-ink-500 sm:block">The school operating system</span>
+                    </span>
+                    <p class="text-right text-[11px] leading-tight text-ink-500">
+                        Powered by
+                        <span class="block font-semibold text-ink-700">Mu'ammil Web Services Limited</span>
                     </p>
                 </div>
             </div>

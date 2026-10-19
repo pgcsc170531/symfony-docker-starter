@@ -4,15 +4,18 @@ namespace App\Controller\Tenant;
 
 use App\Entity\Tenant\Enrollment;
 use App\Entity\Tenant\FeeStructure;
+use App\Entity\Tenant\Guardian;
 use App\Entity\Tenant\Invoice;
 use App\Entity\Tenant\InvoiceItem;
 use App\Entity\Tenant\Student;
 use App\Entity\Tenant\Term;
 use App\Entity\Tenant\School; // <--- 1. IMPORT ADDED
+use App\Service\Finance\DiscountCalculator;
+use App\Service\Finance\InvoiceNumberGenerator;
+use App\Service\SchoolMailer;
 use Symfony\Component\HttpFoundation\Request; // 🟢 ADD THIS LINE!
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use App\Entity\Tenant\StudentDiscount;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -20,6 +23,12 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[Route('/finance/invoice')]
 class InvoiceController extends AbstractController
 {
+    public function __construct(
+        private readonly DiscountCalculator $discountCalculator,
+        private readonly InvoiceNumberGenerator $invoiceNumbers,
+    ) {
+    }
+
     // ======================================================
     // 1. DEDICATED ACADEMIC LEDGER (SCHOOL FEES)
     // ======================================================
@@ -116,7 +125,7 @@ class InvoiceController extends AbstractController
     // 1. The "Generate" Button Action
     #[Route('/generate/{id}', name: 'app_tenant_invoice_generate', methods: ['GET', 'POST'])]
     #[IsGranted('ROLE_BURSAR')]
-    public function generate(Student $student, EntityManagerInterface $em): Response
+    public function generate(Student $student, EntityManagerInterface $em, SchoolMailer $mailer): Response
     {
         // A. Find the Active Term
         $activeTerm = $em->getRepository(Term::class)->findOneBy(['isActive' => true]);
@@ -166,8 +175,9 @@ class InvoiceController extends AbstractController
         $invoice->setTerm($activeTerm);
         $invoice->setSession($activeTerm->getSession());
         $invoice->setClassroom($enrollment->getClassroom());
-        $invoice->setType('ACADEMIC');
-        $invoice->setStatus('UNPAID');
+        $invoice->setInvoiceNumber($this->invoiceNumbers->next($this->invoiceNumbers->yearFor($activeTerm->getSession())));
+        $invoice->setType(Invoice::TYPE_ACADEMIC);
+        $invoice->setStatus(Invoice::STATUS_UNPAID);
 
         // === 2. SNAPSHOT LOGIC ADDED HERE ===
         // Fetch current school settings and freeze them into this invoice
@@ -196,29 +206,32 @@ class InvoiceController extends AbstractController
         }
 
         // 2. CHECK FOR DISCOUNTS
-        $studentDiscount = $em->getRepository(StudentDiscount::class)->findOneBy(['student' => $student]);
+        // One rule, one service: the same calculator the admission engine uses.
+        $discountAmount = $this->discountCalculator->calculateDiscount($student, (float) $totalAmount);
+        $invoice->setDiscountApplied((string) $discountAmount);
+        $invoice->setDiscountLabel($this->discountCalculator->describe($student));
 
-        if ($studentDiscount) {
-            $discount = $studentDiscount->getDiscountType();
-            $calcDiscount = 0;
-
-            if ($discount->getMode() === 'PERCENTAGE') {
-                $calcDiscount = $totalAmount * ($discount->getValue() / 100);
-            } else {
-                $calcDiscount = $discount->getValue();
-            }
-
-            if ($calcDiscount > $totalAmount) $calcDiscount = $totalAmount;
-
-            $invoice->setDiscountApplied((string)$calcDiscount);
-            $totalAmount -= $calcDiscount;
-        }
-
-        $invoice->setTotalAmount((string)$totalAmount);
+        // `total_amount` is NET (see Invoice::getNetBillable). The discount is
+        // kept separately so reports can show what was waived.
+        $invoice->setTotalAmount((string) max(0.0, (float) $totalAmount - $discountAmount));
         
         // F. Save Everything
         $em->persist($invoice);
         $em->flush();
+
+        // Tell the parent what is owed. Skipped silently when the school has
+        // switched this trigger off, or when mail is down.
+        if ($schoolSettings !== null) {
+            $mailer->invoiceIssued(
+                $schoolSettings,
+                $invoice,
+                $this->generateUrl(
+                    'app_tenant_invoice_show',
+                    ['id' => $invoice->getId()],
+                    \Symfony\Component\Routing\Generator\UrlGeneratorInterface::ABSOLUTE_URL
+                )
+            );
+        }
 
         $this->addFlash('success', 'Invoice generated successfully!');
         return $this->redirectToRoute('app_tenant_invoice_show', ['id' => $invoice->getId()]);
@@ -228,6 +241,17 @@ class InvoiceController extends AbstractController
     #[Route('/{id}', name: 'app_tenant_invoice_show', methods: ['GET'])]
     public function show(Invoice $invoice, EntityManagerInterface $em): Response
     {
+        // Parents reach this page from their own fee screen, so an id in the URL
+        // must not be enough to read another family's invoice.
+        if (!$this->isGranted('ROLE_BURSAR') && !$this->isGranted('ROLE_ADMIN') && !$this->isGranted('ROLE_STORE')) {
+            $guardian = $em->getRepository(Guardian::class)->findOneBy(['user' => $this->getUser()]);
+            $student = $invoice->getStudent();
+
+            if ($guardian === null || $student === null || !$guardian->getStudents()->contains($student)) {
+                throw $this->createAccessDeniedException('This invoice belongs to another family.');
+            }
+        }
+
         // === 3. FALLBACK LOGIC ADDED HERE ===
         // We fetch the live school settings just in case the invoice
         // is old and doesn't have the snapshot data.

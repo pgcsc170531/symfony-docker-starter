@@ -148,9 +148,9 @@ duplicate protection. Discounts are applied automatically at billing time.
 ### 💸 Expenses
 Record day-to-day expenses with categories and instant total-spent tracking.
 
-### 📈 Profit & Loss
-A date-range report that splits income into academic fees vs. store and subtracts
-expenses to show your school's true net profit.
+### 📈 Income & Expenditure
+A date-range statement that splits income into academic fees vs. store and subtracts
+expenses, so the school sees its true net position — surplus or deficit.
 
 ### 💳 SMS Wallet
 Top up your school's messaging credit wallet, track balance and transactions,

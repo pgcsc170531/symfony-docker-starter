@@ -3,7 +3,7 @@
 {% block title %}Reports{% endblock %}
 
 {% block body %}
-<div class="p-6 max-w-4xl mx-auto">
+<div class="px-4">
     <h1 class="text-2xl font-bold mb-6">📊 Reports</h1>
 
     <div class="grid gap-4 md:grid-cols-2">
@@ -47,6 +47,31 @@
                 <div class="text-2xl mb-2">📈</div>
                 <div class="font-semibold">Admin Dashboard</div>
                 <div class="text-sm text-gray-500">School-wide grade distribution.</div>
+            </a>
+
+            <a href="{{ path('app_tenant_report_performance') }}"
+               class="rounded-xl border border-accent-200 bg-white p-5 shadow-card transition hover:border-accent-400">
+                <div class="text-2xl mb-2">🔭</div>
+                <div class="font-semibold text-ink-900">School Performance</div>
+                <div class="text-sm text-ink-500">The agency brief: averages, subjects, classes and what needs attention.</div>
+            </a>
+        {% endif %}
+
+        {% if hasHod or isAdmin %}
+            <a href="{{ path('app_tenant_term_remarks') }}"
+               class="bg-white rounded-lg shadow p-5 hover:bg-blue-50 transition">
+                <div class="text-2xl mb-2">✍️</div>
+                <div class="font-semibold">Term Remarks</div>
+                <div class="text-sm text-gray-500">HOD and principal remarks for the report card.</div>
+            </a>
+        {% endif %}
+
+        {% if isAdmin %}
+            <a href="{{ path('app_tenant_report_archive') }}"
+               class="bg-white rounded-lg shadow p-5 hover:bg-blue-50 transition">
+                <div class="text-2xl mb-2">🗄️</div>
+                <div class="font-semibold">Report Archive</div>
+                <div class="text-sm text-gray-500">Every card and transcript issued, with fingerprints.</div>
             </a>
         {% endif %}
     </div>

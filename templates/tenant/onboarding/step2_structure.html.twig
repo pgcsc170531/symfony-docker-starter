@@ -1,16 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Setup Classes</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>body { font-family: 'Inter', sans-serif; }</style>
-</head>
-<body class="bg-gray-100 min-h-screen py-6 md:py-10 px-4">
+{% extends 'base.html.twig' %}
 
-    <div class="max-w-3xl mx-auto">
+{% block title %}Setup Classes{% endblock %}
+
+{% block body %}
+{# On the shell now — see the note in step1_identity.html.twig. The gutter moved
+   from <body> to the page wrapper, where every other page keeps it. #}
+<div class="px-4">
         
         {# PROGRESS BAR #}
         <div class="mb-8">
@@ -72,8 +67,8 @@
                         <div class="hidden">{{ form_rest(form) }}</div>
 
                         {# Locked Footer (Back Button Only) #}
-                        <div class="pt-6 mt-8 border-t border-gray-100 flex justify-start">
-                            <a href="{{ path('app_tenant_onboarding_identity') }}" class="text-gray-500 hover:text-gray-800 font-bold text-sm flex items-center gap-2 transition-colors py-2 px-4 rounded-lg hover:bg-gray-50">
+                        <div class="mt-8 flex justify-start border-t border-gray-100 pt-6">
+                            <a href="{{ path('app_tenant_onboarding_identity') }}" class="inline-flex min-h-[44px] items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-800">
                                 &larr; Back to Identity
                             </a>
                         </div>
@@ -156,5 +151,4 @@
             </div>
         </div>
     </div>
-</body>
-</html>
+{% endblock %}

@@ -26,6 +26,29 @@ class ExpenseController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $expense->setRecordedBy($this->getUser()?->getUserIdentifier());
+
+            /** @var \Symfony\Component\HttpFoundation\File\File|null $receipt */
+            $receipt = $form->get('receipt')->getData();
+            if ($receipt) {
+                $allowed = ['jpg', 'jpeg', 'png', 'webp', 'pdf'];
+                $ext = strtolower($receipt->guessExtension() ?? $receipt->getClientOriginalExtension());
+
+                if (!in_array($ext, $allowed, true)) {
+                    $this->addFlash('error', 'Receipt must be a JPG, PNG, WEBP or PDF file.');
+                    return $this->redirectToRoute('app_tenant_expense_index');
+                }
+
+                $filename = 'expense-' . uniqid() . '.' . $ext;
+                try {
+                    $receipt->move($this->getParameter('receipts_directory'), $filename);
+                    $expense->setReceiptFilename($filename);
+                } catch (\Exception) {
+                    $this->addFlash('error', 'Could not save the receipt. The expense was not recorded.');
+                    return $this->redirectToRoute('app_tenant_expense_index');
+                }
+            }
+
             $em->persist($expense);
             $em->flush();
             $this->addFlash('success', 'Expense recorded successfully!');

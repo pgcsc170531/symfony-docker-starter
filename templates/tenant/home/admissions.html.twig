@@ -4,78 +4,259 @@
 
 {% block tenant_public_content %}
 
+{#
+    Admissions is the page that has to convert, so it is built around one
+    question: "can I apply right now, and how?".
+
+    The old page described a paper process (visit the school, collect a form)
+    and hid the whole online application behind a switch — when the school was
+    closed the band simply vanished, leaving a parent with no information and
+    no action. Now the status is always stated, the action is always present,
+    and a closed window still tells the parent when to come back.
+
+    Mobile first: one column, full-width primary action, every tap target
+    ≥ 44px, no horizontal scroll at 320px.
+#}
+
+{% set today = 'now'|date('Y-m-d') %}
+{% set open_on = school.applicationsOpenAt|default(null) %}
+{% set close_on = school.applicationsCloseAt|default(null) %}
+{% set window_started = open_on is null or today >= open_on %}
+{% set window_open = close_on is null or today <= close_on %}
+{% set accepting = school.applicationsOpen and window_started and window_open %}
+{% set opens_later = open_on is not null and today < open_on %}
+{% set closed_early = school.applicationsOpen and not window_open %}
+{% set apply_route = path('app_tenant_apply_index', {'subdomain': subdomain}) %}
+
 {# ---------- PAGE HEADER ---------- #}
-<section class="relative overflow-hidden text-white" style="background: linear-gradient(135deg, {{ brand }}, {{ brand }}d9);">
-    <div class="absolute -top-16 -right-16 h-64 w-64 rounded-full bg-white/10 blur-2xl"></div>
-    <div class="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-24 text-center">
-        <p class="text-sm font-semibold uppercase tracking-[0.3em] text-white/80">Join Our Family</p>
-        <h1 class="mt-3 text-4xl sm:text-5xl font-extrabold tracking-tight">Admissions</h1>
-        {% if admissions_intro %}
-            <p class="mx-auto mt-5 max-w-2xl text-lg text-white/85">{{ admissions_intro }}</p>
-        {% else %}
-            <p class="mx-auto mt-5 max-w-2xl text-lg text-white/85">Begin your child's journey at {{ school_name }}.</p>
+<section class="border-b border-ink-200 bg-ink-50">
+    <div class="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-ink-500">Admissions</p>
+        <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">
+            Join {{ school_name }}
+        </h1>
+        <p class="mt-3 max-w-2xl text-base text-ink-700 sm:text-lg">
+            {% if admissions_intro %}
+                {{ admissions_intro }}
+            {% else %}
+                Applications are made online, from your phone. Create an account, apply for your
+                child, and follow every step through to the admission offer.
+            {% endif %}
+        </p>
+    </div>
+</section>
+
+{# ---------- STATUS + PRIMARY ACTION ---------- #}
+<section class="bg-white">
+    <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+        <div class="rounded-2xl border border-ink-200 bg-white p-5 shadow-sm sm:p-7">
+
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+                {% if accepting %}
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-paid/10 px-3 py-1 text-xs font-bold text-paid">
+                        <span class="h-1.5 w-1.5 rounded-full bg-paid" aria-hidden="true"></span>
+                        Open now
+                    </span>
+                {% elseif opens_later %}
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-ink-100 px-3 py-1 text-xs font-bold text-ink-700">
+                        <span class="h-1.5 w-1.5 rounded-full bg-ink-400" aria-hidden="true"></span>
+                        Opens {{ open_on|date('j F Y') }}
+                    </span>
+                {% else %}
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-ink-100 px-3 py-1 text-xs font-bold text-ink-700">
+                        <span class="h-1.5 w-1.5 rounded-full bg-ink-400" aria-hidden="true"></span>
+                        Closed
+                    </span>
+                {% endif %}
+
+                {% if school.applicationClassesNote %}
+                    <span class="rounded-full border border-ink-200 px-3 py-1 text-xs font-semibold text-ink-700">
+                        {{ school.applicationClassesNote }}
+                    </span>
+                {% endif %}
+            </div>
+
+            <h2 class="mt-4 text-xl font-bold text-ink-900 sm:text-2xl">
+                {% if accepting %}
+                    Applications are open{% if close_on %} until {{ close_on|date('j F Y') }}{% endif %}
+                {% elseif opens_later %}
+                    The next window opens on {{ open_on|date('j F Y') }}
+                {% elseif closed_early %}
+                    The application window closed on {{ close_on|date('j F Y') }}
+                {% else %}
+                    Online applications are closed at the moment
+                {% endif %}
+            </h2>
+
+            <p class="mt-2 max-w-2xl text-sm text-ink-700 sm:text-base">
+                {% if accepting %}
+                    Apply from home — no queue and no paperwork. You can save the form and finish it
+                    later, and you will be told by SMS whenever your application moves.
+                {% elseif opens_later %}
+                    You can prepare in the meantime: have your child's documents ready, and create
+                    your parent account now so you can apply the day it opens.
+                {% else %}
+                    Admissions for the next session have not opened yet. Call or message the school
+                    office and we will tell you when they do — or apply by phone if you prefer.
+                {% endif %}
+            </p>
+
+            <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+                {% if accepting %}
+                    <a href="{{ apply_route }}"
+                       class="inline-flex min-h-[48px] w-full items-center justify-center rounded-lg px-6 text-base font-bold text-white transition hover:opacity-90 sm:w-auto"
+                       style="background-color: {{ brand_ink }};">
+                        Apply online
+                    </a>
+                    <a href="{{ path('app_tenant_apply_login', {'subdomain': subdomain}) }}"
+                       class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-ink-300 px-5 text-sm font-semibold text-ink-800 transition hover:bg-ink-50 sm:w-auto">
+                        I already have an account
+                    </a>
+                {% elseif tel_url or whatsapp_url %}
+                    {% if tel_url %}
+                        <a href="{{ tel_url }}"
+                           class="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-lg px-6 text-base font-bold text-white transition hover:opacity-90 sm:w-auto"
+                           style="background-color: {{ brand_ink }};">
+                            Call the school office
+                        </a>
+                    {% endif %}
+                    {% if whatsapp_url %}
+                        <a href="{{ whatsapp_url }}" target="_blank" rel="noopener"
+                           class="inline-flex min-h-[48px] w-full items-center justify-center rounded-lg border border-ink-300 px-5 text-sm font-semibold text-ink-800 transition hover:bg-ink-50 sm:w-auto">
+                            Message on WhatsApp
+                        </a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+{# ---------- HOW IT WORKS ---------- #}
+<section class="border-y border-ink-100 bg-ink-50 py-12 sm:py-16">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <h2 class="text-2xl font-extrabold text-ink-900">How it works</h2>
+        <p class="mt-2 max-w-2xl text-ink-700">
+            Three steps, all from your phone. It takes about ten minutes.
+        </p>
+
+        <ol class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {% set steps = [
+                {
+                    'title': 'Create your parent account',
+                    'desc': 'Your email address and a password. We send a link to confirm it is you.'
+                },
+                {
+                    'title': 'Apply for your child',
+                    'desc': 'Name, date of birth, class and the school your child is coming from — if any.'
+                },
+                {
+                    'title': 'Follow it to the offer',
+                    'desc': 'You get an SMS and an email at every step. The offer appears in your portal.'
+                }
+            ] %}
+            {% for step in steps %}
+                <li class="rounded-xl border border-ink-200 bg-white p-5">
+                    <span class="inline-flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold text-white"
+                          style="background-color: {{ brand_ink }};" aria-hidden="true">{{ loop.index }}</span>
+                    <h3 class="mt-3 text-base font-bold text-ink-900">{{ step.title }}</h3>
+                    <p class="mt-1 text-sm text-ink-700">{{ step.desc }}</p>
+                </li>
+            {% endfor %}
+        </ol>
+
+        {% if school.applicationFeeAmount and school.applicationFeeAmount > 0 %}
+            <p class="mt-6 rounded-lg border border-ink-200 bg-white p-4 text-sm text-ink-700">
+                <strong class="text-ink-900">Application fee: ₦{{ school.applicationFeeAmount|number_format(0) }}.</strong>
+                The application is processed once this is paid. The school tells you how to pay
+                after you submit.
+            </p>
         {% endif %}
     </div>
 </section>
 
-{# ---------- HOW TO APPLY ---------- #}
-<section class="py-20 bg-white">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center max-w-3xl mx-auto">
-            <p class="text-sm font-bold uppercase tracking-widest" style="color: {{ brand }};">Applications</p>
-            <h2 class="mt-3 text-3xl sm:text-4xl font-extrabold text-gray-900">How to Apply</h2>
-            <p class="mt-4 text-lg text-gray-600">Our admission process is simple, transparent and welcoming.</p>
+{# ---------- FEES ---------- #}
+{% if school.feesSummary %}
+    <section class="bg-white py-12 sm:py-16">
+        <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <h2 class="text-2xl font-extrabold text-ink-900">School fees</h2>
+            <div class="mt-4 max-w-2xl space-y-3 text-base leading-relaxed text-ink-700">
+                {{ school.feesSummary|nl2br }}
+            </div>
+            <p class="mt-4 max-w-2xl text-sm text-ink-500">
+                Fees are set per class. Call the school office for an exact figure for your child's
+                class, or ask when you apply.
+            </p>
         </div>
+    </section>
+{% endif %}
 
-        <ol class="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {% set steps = [
-                {'title': 'Visit the School', 'desc': 'Come and see our campus, meet our staff and ask questions.'},
-                {'title': 'Obtain a Form', 'desc': 'Collect the admission form from the school or enquiries office.'},
-                {'title': 'Submit Documents', 'desc': 'Return the completed form with the required documents.'},
-                {'title': 'Assessment & Offer', 'desc': 'Attend the assessment and receive your admission offer.'}
-            ] %}
-            {% for step in steps %}
-            <li class="bg-gray-50 rounded-2xl border border-gray-100 p-7 shadow-sm">
-                <span class="flex h-11 w-11 items-center justify-center rounded-full text-white font-bold text-lg" style="background-color: {{ brand }};">{{ loop.index }}</span>
-                <h3 class="mt-5 text-lg font-bold text-gray-900">{{ step.title }}</h3>
-                <p class="mt-2 text-sm text-gray-600 leading-relaxed">{{ step.desc }}</p>
-            </li>
-            {% endfor %}
-        </ol>
+{# ---------- WHAT YOU NEED ---------- #}
+<section class="bg-white py-12 sm:py-16{% if school.feesSummary %} border-t border-ink-100{% endif %}">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <h2 class="text-2xl font-extrabold text-ink-900">What you will need</h2>
+
+        {% if school.applicationInstructions %}
+            <div class="mt-4 max-w-2xl space-y-2 text-base leading-relaxed text-ink-700">
+                {{- school.applicationInstructions|nl2br -}}
+            </div>
+        {% else %}
+            <ul class="mt-4 max-w-2xl space-y-3 text-ink-700">
+                {% for doc in [
+                    "Your child's date of birth (a birth certificate if you have one)",
+                    'The class you are applying for',
+                    'The name of the school your child is leaving, if any',
+                    'A phone number and email address we can reach you on'
+                ] %}
+                    <li class="flex items-start gap-3">
+                        <svg class="mt-0.5 h-5 w-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="color: {{ brand_ink }};">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span class="break-words">{{ doc }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+            <p class="mt-4 max-w-2xl text-sm text-ink-500">
+                Paper documents — birth certificate, last result, passport photograph — are checked
+                when your child is admitted, not before you apply.
+            </p>
+        {% endif %}
     </div>
 </section>
 
-{# ---------- REQUIREMENTS ---------- #}
-<section class="py-20 bg-gray-50">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid gap-12 lg:grid-cols-2 items-start">
-        <div class="bg-white rounded-3xl border border-gray-100 p-9 shadow-sm">
-            <h2 class="text-2xl sm:text-3xl font-extrabold text-gray-900">Required Documents</h2>
-            <ul class="mt-6 space-y-4">
-                {% for doc in ['Completed admission form', 'Birth certificate or proof of age', 'Recent passport photograph', 'Transfer letter (for higher classes)', 'Previous academic records'] %}
-                <li class="flex items-start gap-3">
-                    <svg class="h-6 w-6 flex-shrink-0" style="color: {{ brand }};" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <span class="text-gray-700">{{ doc }}</span>
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
+{# ---------- TALK TO US ---------- #}
+<section class="border-t border-ink-100 bg-ink-50 py-12 sm:py-16">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <h2 class="text-2xl font-extrabold text-ink-900">Questions?</h2>
+        <p class="mt-2 max-w-2xl text-ink-700">
+            The school office will walk you through the application on the phone if you prefer.
+        </p>
 
-        <div class="bg-white rounded-3xl border border-gray-100 p-9 shadow-sm">
-            <h2 class="text-2xl sm:text-3xl font-extrabold text-gray-900">Admissions Office</h2>
-            <p class="mt-4 text-gray-600">Our admissions team is happy to help you at every step.</p>
-            <ul class="mt-6 space-y-5">
-                {% if school_phone %}
-                    <li class="text-gray-800"><span class="font-semibold text-gray-400">Phone:</span> {{ school_phone }}</li>
-                {% endif %}
-                {% if school_email %}
-                    <li><a href="mailto:{{ school_email }}" class="text-blue-600 hover:underline">{{ school_email }}</a></li>
-                {% endif %}
-                <li class="text-gray-800"><span class="font-semibold text-gray-400">Visit:</span> {% if school_address %}{{ school_address }}{% else %}the school campus{% endif %}</li>
-            </ul>
-            <a href="{{ path('app_tenant_contact', {'subdomain': subdomain}) }}" class="mt-8 inline-flex items-center justify-center w-full px-6 py-3.5 rounded-full text-white font-bold shadow-lg hover:opacity-90 transition" style="background-color: {{ brand }};">
-                Contact Admissions
+        <div class="mt-6 flex flex-col gap-3 sm:flex-row">
+            {% if tel_url %}
+                <a href="{{ tel_url }}"
+                   class="inline-flex min-h-[48px] w-full items-center justify-center rounded-lg px-6 text-base font-bold text-white transition hover:opacity-90 sm:w-auto"
+                   style="background-color: {{ brand_ink }};">
+                    {{ school_phone }}
+                </a>
+            {% endif %}
+            {% if whatsapp_url %}
+                <a href="{{ whatsapp_url }}" target="_blank" rel="noopener"
+                   class="inline-flex min-h-[48px] w-full items-center justify-center rounded-lg border border-ink-300 bg-white px-6 text-base font-semibold text-ink-800 transition hover:bg-ink-100 sm:w-auto">
+                    WhatsApp
+                </a>
+            {% endif %}
+            <a href="{{ path('app_tenant_contact', {'subdomain': subdomain}) }}"
+               class="inline-flex min-h-[48px] w-full items-center justify-center rounded-lg border border-ink-300 bg-white px-6 text-base font-semibold text-ink-800 transition hover:bg-ink-100 sm:w-auto">
+                Contact page
             </a>
         </div>
+
+        {% if accepting %}
+            <p class="mt-6 text-sm text-ink-600">
+                Ready? <a href="{{ apply_route }}" class="font-semibold underline decoration-2 underline-offset-2" style="color: {{ brand_ink }};">Start your application online</a>.
+            </p>
+        {% endif %}
     </div>
 </section>
 

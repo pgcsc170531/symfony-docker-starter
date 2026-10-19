@@ -1,0 +1,56 @@
+{#
+    ═══════════════════════════════════════════════════════════════════════════
+    THE EDUS WORDMARK — the brand, and the only one.
+
+    "Edus" is four letters. It does not need a glyph beside it to be recognised,
+    and a mark + wordmark saying the same thing twice is a logo plus a caption
+    arguing for the same space. So the word IS the logo:
+
+        Edus.
+
+    Serif, bold, tight tracking, closed with an accent full stop. The full stop
+    is the one ornament, it is a single ink, and it therefore survives being
+    printed in black and white, photocopied, or set in DejaVu Serif inside a PDF.
+
+    ⚠️ Import this file and call the macro. Do not retype "Edus" by hand and do
+    not reintroduce `images/brand/edus-mark.svg` — the mark was retired when the
+    wordmark became the logo. The only mark left is the favicon
+    (`edus-favicon.svg`), because a 16 px tab cannot hold a word.
+
+    Usage:
+        {% import '_brand.html.twig' as brand %}
+        {{ brand.wordmark('md') }}            {# ink on a light background #}
+        {{ brand.wordmark('lg', 'light') }}   {# white on a dark background #}
+        {{ brand.lockup('dark') }}            {# wordmark + tagline #}
+    ═══════════════════════════════════════════════════════════════════════════
+#}
+
+{#
+    `size`: xs · sm · md · lg · xl
+    `tone`: 'dark'  — ink on a light background (the default)
+            'light' — white on a dark background
+#}
+{% macro wordmark(size = 'md', tone = 'dark') %}
+    {%- set scale = {
+        xs: 'text-sm',
+        sm: 'text-lg',
+        md: 'text-xl',
+        lg: 'text-2xl',
+        xl: 'text-4xl',
+    } -%}
+    {%- set colour = tone == 'light' ? 'text-white' : 'text-ink-900' -%}
+    {%- set dot = tone == 'light' ? 'text-accent-400' : 'text-accent-600' -%}
+    <span class="font-serif font-bold leading-none tracking-tight {{ scale[size]|default(scale.md) }} {{ colour }}">Edus<span class="{{ dot }}">.</span></span>
+{%- endmacro %}
+
+{#
+    The wordmark plus the one-line descriptor. Used where the brand stands
+    alone — the app footer, a standalone public page — never in a header that
+    already names the school.
+#}
+{% macro lockup(tone = 'dark', size = 'sm') %}
+    <span class="inline-flex flex-col leading-tight">
+        {{ _self.wordmark(size, tone) }}
+        <span class="mt-1.5 text-xs {{ tone == 'light' ? 'text-ink-300' : 'text-ink-500' }}">The school operating system</span>
+    </span>
+{%- endmacro %}

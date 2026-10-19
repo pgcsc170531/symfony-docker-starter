@@ -1,29 +1,29 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>School Identity</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body class="bg-gray-50 min-h-screen">
-    <div class="-m-6 md:m-0 bg-gray-50 min-h-screen">
-        <div class="max-w-4xl mx-auto md:pt-12 pb-24 md:pb-12">
-            
+{% extends 'base.html.twig' %}
+
+{% block title %}School Identity{% endblock %}
+
+{% block body %}
+{#
+    On the shell now (UI-SPEC §4.1.3). What went, and why:
+    · its own Tailwind CDN — a SECOND, independent Tailwind with no access to the
+      design tokens, so `bg-accent-*` would have produced no CSS at all here;
+    · Font Awesome, for three decorative glyphs — now inline SVG;
+    · the Inter web font — the system stack is the standard (§3);
+    · `-m-6`, which was cancelling <main>'s old padding. That padding is gone;
+    · `min-h-screen` on the wrappers and the card — <main> already fills the
+      viewport and is the only scroll container.
+#}
+<div class="px-4 py-2">
+    <div class="w-full">
+
             {# MAIN CARD #}
-            <div class="bg-white shadow-2xl md:rounded-3xl overflow-hidden min-h-screen md:min-h-0 flex flex-col">
+            <div class="flex flex-col overflow-hidden rounded-2xl bg-white shadow-card md:rounded-3xl">
                 
                 {# 1. BLUE HEADER #}
-                <div class="bg-blue-600 p-6 md:p-12 text-white relative">
-                    <div class="absolute top-0 right-0 opacity-10 transform translate-x-10 -translate-y-10 hidden md:block">
-                        <i class="fas fa-university fa-9x"></i>
-                    </div>
+                <div class="relative bg-accent-600 p-6 text-white md:p-10">
                     <div class="relative z-10">
-                        <h1 class="text-xl md:text-4xl font-black tracking-tight">👋 School Identity</h1>
-                        <p class="text-blue-100 text-sm md:text-base mt-1 font-medium opacity-90">Step 1: Build your brand for Gobarau Academy.</p>
+                        <h1 class="text-xl font-bold tracking-tight md:text-3xl">School Identity</h1>
+                        <p class="mt-1 text-sm text-accent-100 md:text-base">Step 1: Build your brand for Gobarau Academy.</p>
                     </div>
                 </div>
 
@@ -97,8 +97,11 @@
                                 </div>
 
                                 <div id="upload-instruction">
-                                    <i class="fas fa-camera text-blue-600 text-xl mb-2"></i>
-                                    <p class="font-bold text-sm text-gray-700">Tap to Upload Logo</p>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto mb-2 h-6 w-6 text-accent-600" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/>
+                                        <path d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z"/>
+                                    </svg>
+                                    <p class="text-sm font-bold text-gray-700">Tap to Upload Logo</p>
                                 </div>
 
                                 <div class="hidden">
@@ -107,12 +110,13 @@
                             </div>
                         </div>
 
-                        {# 3. STICKY NEXT BUTTON #}
-                        <div class="fixed bottom-0 left-0 w-full p-4 bg-white/95 backdrop-blur-md border-t border-gray-100 
-                                    md:relative md:p-0 md:bg-transparent md:border-none md:mt-12 z-[100] flex justify-end">
-                            <button type="submit" class="w-full md:w-auto bg-blue-600 text-white px-12 py-5 rounded-2xl shadow-xl font-black text-lg active:scale-95 transition-all flex justify-center items-center gap-3">
+                        {# Was `position: fixed`: that paints against the VIEWPORT, so
+                           inside the shell it floated over the footer and covered the
+                           last field. In flow at the end of the card is where it goes. #}
+                        <div class="mt-8 flex justify-end border-t border-gray-100 pt-5">
+                            <button type="submit" class="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-accent-600 px-10 py-4 text-base font-bold text-white shadow-lg transition active:scale-95 md:w-auto">
                                 Next Step
-                                <i class="fas fa-chevron-right text-sm"></i>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75"/></svg>
                             </button>
                         </div>
 
@@ -139,5 +143,4 @@
         }
     }
     </script>
-</body>
-</html>
+{% endblock %}

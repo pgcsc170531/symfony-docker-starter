@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ school.name ?? 'School' }} — Term Fee Summary</title>
+<style>
+    @page { size: A4 portrait; margin: 6mm 8mm 4mm 8mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "DejaVu Sans", sans-serif; font-size: 9.6pt; color: #111827; }
+
+    .header { width: 100%; border-collapse: collapse; background: #16223C; color: #ffffff; }
+    .header td { padding: 7pt 9pt; vertical-align: bottom; }
+    .brand-cell { width: 58%; }
+    .brand { font-family: "DejaVu Serif", serif; font-size: 18pt; font-weight: bold; color: #ffffff; }
+    .tagline { display: block; font-size: 7.6pt; color: #B8C4D8; letter-spacing: .05em; margin-top: 3pt; }
+    .doc-cell { text-align: right; }
+    .doc-type { display: block; font-size: 7.6pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1.1pt; color: #C3CFE2; }
+    .doc-no { display: block; font-size: 11pt; font-weight: bold; color: #ffffff; margin-top: 3pt; }
+    .accent-rule { height: 2.2pt; background: #2563EB; margin-bottom: 6pt; }
+
+    .identity { width: 100%; border-collapse: collapse; background: #F9FAFB; border-bottom: .8pt solid #D1D5DB; }
+    .identity td { padding: 4pt 7pt; vertical-align: top; border-left: .6pt solid #E5E7EB; }
+    .identity td:first-child { border-left: 0; }
+    .label { display: block; font-size: 6.8pt; text-transform: uppercase; letter-spacing: .5pt; color: #6B7280; margin-bottom: 1pt; }
+    .value { font-size: 9.4pt; font-weight: bold; }
+    .value.small { font-size: 8.4pt; font-weight: normal; color: #374151; }
+
+    h2 { font-size: 9pt; text-transform: uppercase; letter-spacing: .7pt; color: #374151; margin: 10pt 0 3pt; }
+
+    table.grid { width: 100%; border-collapse: collapse; }
+    table.grid th { background: #F3F4F6; border: .6pt solid #D1D5DB; padding: 2.4pt 3pt; font-size: 7.8pt; text-transform: uppercase; letter-spacing: .2pt; text-align: left; }
+    table.grid td { border: .6pt solid #E5E7EB; padding: 2pt 3pt; font-size: 9pt; }
+    table.grid td.num, table.grid th.num { text-align: right; white-space: nowrap; }
+    table.grid tr.total td { background: #F3F4F6; font-weight: bold; }
+
+    .kpis { width: 100%; border-collapse: collapse; margin-top: 4pt; }
+    .kpis td { width: 25%; border: .6pt solid #E5E7EB; padding: 5pt 6pt; vertical-align: top; }
+    .kpis .k-label { font-size: 6.8pt; text-transform: uppercase; letter-spacing: .5pt; color: #6B7280; }
+    .kpis .k-value { font-size: 12pt; font-weight: bold; margin-top: 1pt; }
+    .paid { color: #059669; }
+    .due { color: #B91C1C; }
+    .pending { color: #B45309; }
+
+    .two-col { width: 100%; border-collapse: collapse; }
+    .two-col > tbody > tr > td { width: 50%; vertical-align: top; }
+    .left { padding-right: 5pt; }
+    .right { padding-left: 5pt; }
+
+    .muted { color: #6B7280; font-size: 8pt; }
+    .footer { font-size: 7.4pt; color: #6B7280; border-top: .5pt solid #E5E7EB; padding-top: 4pt; margin-top: 12pt; }
+</style>
+</head>
+<body>
+    <table class="header">
+        <tr>
+            <td class="brand-cell">
+                {% if logo %}<img src="{{ logo }}" alt="" style="height: 26pt; vertical-align: middle; margin-right: 5pt;">{% endif %}
+                <span class="brand">{{ school.name ?? 'School' }}</span>
+                <span class="tagline">
+                    {% if school.address %}{{ school.address }}{% endif %}
+                    {% if school.phoneNumber %}{% if school.address %} · {% endif %}{{ school.phoneNumber }}{% endif %}
+                </span>
+            </td>
+            <td class="doc-cell">
+                <span class="doc-type">Term fee summary</span>
+                <span class="doc-no">{{ period }}</span>
+            </td>
+        </tr>
+    </table>
+    <div class="accent-rule"></div>
+
+    <table class="identity">
+        <tr>
+            <td>
+                <span class="label">Term</span>
+                <span class="value">{{ period }}</span>
+            </td>
+            <td>
+                <span class="label">Generated</span>
+                <span class="value">{{ generated_at|date('j M Y') }}</span>
+            </td>
+            <td>
+                <span class="label">Collection rate</span>
+                <span class="value">{{ totals.collectionRate is null ? '—' : totals.collectionRate ~ '%' }}</span>
+            </td>
+            <td>
+                <span class="label">Issued by</span>
+                <span class="value small">{{ school.name ?? 'School' }}</span>
+            </td>
+        </tr>
+    </table>
+
+    <table class="kpis">
+        <tr>
+            <td>
+                <div class="k-label">Expected</div>
+                <div class="k-value">₦{{ totals.netBillable|number_format(2) }}</div>
+            </td>
+            <td>
+                <div class="k-label">Collected</div>
+                <div class="k-value paid">₦{{ totals.collected|number_format(2) }}</div>
+            </td>
+            <td>
+                <div class="k-label">Outstanding</div>
+                <div class="k-value due">₦{{ totals.outstanding|number_format(2) }}</div>
+            </td>
+            <td>
+                <div class="k-label">Unverified</div>
+                <div class="k-value pending">₦{{ totals.pending|number_format(2) }}</div>
+            </td>
+        </tr>
+    </table>
+
+    <table class="two-col">
+        <tr>
+            <td class="left">
+                <h2>Income statement</h2>
+                <table class="grid">
+                    <thead>
+                        <tr>
+                            <th>Line</th>
+                            <th class="num">Accrual</th>
+                            <th class="num">Cash</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Academic fees</td>
+                            <td class="num">₦{{ statement.academic.accrued|number_format(2) }}</td>
+                            <td class="num">₦{{ statement.academic.collected|number_format(2) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Store sales</td>
+                            <td class="num">₦{{ statement.store.accrued|number_format(2) }}</td>
+                            <td class="num">₦{{ statement.store.collected|number_format(2) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Application fees</td>
+                            <td class="num">₦{{ (statement.applicationFees.paid + statement.applicationFees.waived)|number_format(2) }}</td>
+                            <td class="num">₦{{ statement.applicationFees.paid|number_format(2) }}</td>
+                        </tr>
+                        <tr class="total">
+                            <td>Total income</td>
+                            <td class="num">₦{{ statement.income.accrual|number_format(2) }}</td>
+                            <td class="num">₦{{ statement.income.cash|number_format(2) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Expenses</td>
+                            <td class="num">₦{{ statement.expenses.total|number_format(2) }}</td>
+                            <td class="num">₦{{ statement.expenses.total|number_format(2) }}</td>
+                        </tr>
+                        <tr class="total">
+                            <td>Net surplus / (deficit)</td>
+                            <td class="num">₦{{ statement.net.accrual|number_format(2) }}</td>
+                            <td class="num">₦{{ statement.net.cash|number_format(2) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p class="muted">
+                    Accrual is what the term was worth; cash is what actually arrived.
+                    Unverified proofs are excluded from cash until confirmed.
+                </p>
+            </td>
+            <td class="right">
+                <h2>Expenses by category</h2>
+                {% if statement.expenses.byCategory is empty %}
+                    <p class="muted">No expenses recorded for this term.</p>
+                {% else %}
+                    <table class="grid">
+                        <thead>
+                            <tr><th>Category</th><th class="num">Amount</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for category, amount in statement.expenses.byCategory %}
+                                <tr>
+                                    <td>{{ category }}</td>
+                                    <td class="num">₦{{ amount|number_format(2) }}</td>
+                                </tr>
+                            {% endfor %}
+                            <tr class="total">
+                                <td>Total</td>
+                                <td class="num">₦{{ statement.expenses.total|number_format(2) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+
+    <h2>Collection by class</h2>
+    {% if classes is empty %}
+        <p class="muted">No invoices were generated for this term.</p>
+    {% else %}
+        <table class="grid">
+            <thead>
+                <tr>
+                    <th>Class</th>
+                    <th class="num">Pupils</th>
+                    <th class="num">Expected</th>
+                    <th class="num">Collected</th>
+                    <th class="num">Outstanding</th>
+                    <th class="num">Rate</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in classes %}
+                    <tr>
+                        <td>{{ row.class ?? 'Unassigned' }}</td>
+                        <td class="num">{{ row.pupils }}</td>
+                        <td class="num">₦{{ row.billed|number_format(2) }}</td>
+                        <td class="num">₦{{ row.collected|number_format(2) }}</td>
+                        <td class="num">₦{{ row.outstanding|number_format(2) }}</td>
+                        <td class="num">{{ row.billed > 0 ? (row.collected / row.billed * 100)|round(1) ~ '%' : '—' }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+
+    {% if debtors is not empty %}
+        <h2>Largest family balances</h2>
+        <table class="grid">
+            <thead>
+                <tr>
+                    <th>Guardian</th>
+                    <th>Phone</th>
+                    <th class="num">Pupils</th>
+                    <th class="num">Outstanding</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for family in debtors|slice(0, 8) %}
+                    <tr>
+                        <td>{{ family.guardian }}</td>
+                        <td>{{ family.phone ?? '—' }}</td>
+                        <td class="num">{{ family.pupils }}</td>
+                        <td class="num">₦{{ family.outstanding|number_format(2) }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+
+    <div class="footer">
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="width: 40%;">
+                    {{ school.name ?? 'School' }} · {{ period }} · generated {{ generated_at|date('j M Y') }}
+                </td>
+                <td style="width: 38%; text-align: center; font-size: 6.8pt; line-height: 1.35;">
+                    {% if verification %}
+                        Scan or visit to verify:<br>
+                        <span style="font-size: 6pt;">{{ verification.url }}</span><br>
+                        Code: <strong style="font-family: 'DejaVu Sans Mono', monospace;">{{ verification.code }}</strong>
+                    {% endif %}
+                </td>
+                <td style="width: 22%; text-align: right;">
+                    {% if verification %}<img src="{{ verification.qr }}" style="width: 32pt; height: 32pt;" alt=""><br>{% endif %}
+                    Generated by Edus
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

@@ -60,7 +60,11 @@ class StaffAssignmentController extends AbstractController
                     } else {
                         $this->addFlash('warning', 'That assignment already exists.');
                     }
+                } else {
+                    $this->addFlash('error', 'That staff member, year group or session could not be found. Pick the person again from the search list.');
                 }
+            } else {
+                $this->addFlash('error', 'Choose a staff member, a year group and a session.');
             }
 
             return $this->redirectToRoute('app_tenant_year_group_master');
@@ -117,7 +121,11 @@ class StaffAssignmentController extends AbstractController
                     } else {
                         $this->addFlash('warning', 'That assignment already exists.');
                     }
+                } else {
+                    $this->addFlash('error', 'That staff member, class or term could not be found. Pick the person again from the search list.');
                 }
+            } else {
+                $this->addFlash('error', 'Choose a staff member, a class and a term.');
             }
 
             return $this->redirectToRoute('app_tenant_form_teacher');
@@ -174,7 +182,11 @@ class StaffAssignmentController extends AbstractController
                     } else {
                         $this->addFlash('warning', 'That assignment already exists.');
                     }
+                } else {
+                    $this->addFlash('error', 'That staff member, department or session could not be found. Pick the person again from the search list.');
                 }
+            } else {
+                $this->addFlash('error', 'Choose a staff member, a department and a session.');
             }
 
             return $this->redirectToRoute('app_tenant_hod');
@@ -278,7 +290,11 @@ class StaffAssignmentController extends AbstractController
                     } else {
                         $this->addFlash('warning', 'That assignment already exists.');
                     }
+                } else {
+                    $this->addFlash('error', 'That staff member, subject, class or term could not be found. Pick the person again from the search list.');
                 }
+            } else {
+                $this->addFlash('error', 'Choose a staff member, a subject, a class and a term.');
             }
 
             return $this->redirectToRoute('app_tenant_subject_teacher');

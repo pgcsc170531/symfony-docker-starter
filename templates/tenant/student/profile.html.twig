@@ -1,9 +1,9 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Student Profile: {{ student.firstName }}{% endblock %}
+{% block title %}{{ learner.capital }} Profile: {{ student.firstName }}{% endblock %}
 
 {% block body %}
-<div class="px-4 sm:px-6 lg:px-8 py-6 md:py-8 max-w-7xl mx-auto">
+<div class="px-4 py-6 md:py-8">
     
     {# --- Header, Profile Picture, and Actions --- #}
     <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 p-5 sm:p-6 bg-white shadow-sm rounded-xl border border-gray-100 relative">
@@ -148,7 +148,7 @@
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-8 bg-white border border-gray-200 p-5 rounded-xl shadow-sm gap-4">
                         <div>
                             <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-2">Total Debt (All Terms)</p>
-                            <span class="text-3xl sm:text-4xl font-black tracking-tight {{ totalBalance > 0 ? 'text-red-600' : 'text-green-600' }}">
+                            <span class="text-2xl font-black tracking-tight sm:text-4xl {{ totalBalance > 0 ? 'text-red-600' : 'text-green-600' }}">
                                 ₦{{ totalBalance|number_format(2) }}
                             </span>
                         </div>
@@ -189,7 +189,7 @@
 
                                             <div class="col-span-5">
                                                 <p class="text-sm font-bold text-gray-800 truncate">{{ invoice.term ? invoice.term.name : 'Unspecified Term' }}</p>
-                                                <p class="text-[10px] text-gray-400 truncate">#{{ invoice.invoiceNumber }}</p>
+                                                <p class="text-[10px] text-gray-400 truncate">{{ invoice.invoiceNumber }}</p>
                                             </div>
 
                                             <div class="col-span-4 text-right">

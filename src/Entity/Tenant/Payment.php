@@ -2,13 +2,29 @@
 
 namespace App\Entity\Tenant;
 
+use App\Repository\Tenant\PaymentRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: PaymentRepository::class)]
 #[ORM\Table(name: 'payment')]
 class Payment
 {
+    // ── Statuses ─────────────────────────────────────────────────────────
+    // One vocabulary for every query, report and template. The old code
+    // compared bare strings in a dozen places, which is how 'CANCELLED' ended
+    // up missing from the comment above `status`.
+    public const STATUS_PENDING   = 'PENDING';
+    public const STATUS_CONFIRMED = 'CONFIRMED';
+    public const STATUS_DECLINED  = 'DECLINED';
+    public const STATUS_CANCELLED = 'CANCELLED';
+
+    // ── Methods ──────────────────────────────────────────────────────────
+    public const METHOD_CASH     = 'CASH';
+    public const METHOD_TRANSFER = 'TRANSFER';
+    public const METHOD_POS      = 'POS';
+    public const METHOD_CHEQUE   = 'CHEQUE';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]

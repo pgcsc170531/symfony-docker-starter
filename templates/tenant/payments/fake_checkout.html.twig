@@ -1,0 +1,41 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Simulated checkout{% endblock %}
+
+{% block body %}
+<div class="max-w-md mx-auto mt-8 px-4 pb-16">
+
+    <div class="rounded-xl bg-amber-50 border border-amber-300 p-4 mb-5">
+        <p class="text-sm font-bold text-amber-900">🧪 Simulated payment page</p>
+        <p class="text-xs text-amber-800 mt-1">
+            This stands in for Paystack's checkout because no <code>PAYSTACK_SECRET_KEY</code> is
+            configured. No real money moves. Once the key is set, parents are sent to the real
+            Paystack page instead.
+        </p>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-gray-200 p-6 text-center">
+        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">{{ school.name|default('School') }}</p>
+        <p class="mt-1 text-sm text-gray-500">{{ student ? student.fullName : '' }}</p>
+
+        <p class="mt-5 text-2xl font-bold text-gray-900 whitespace-nowrap tabular-nums sm:text-4xl">₦{{ intent.amount|number_format(2) }}</p>
+        <p class="text-xs text-gray-500 mt-1">
+            ₦{{ intent.invoiceAmount|number_format(2) }} fees
+            + ₦{{ intent.processingFee|number_format(2) }} processing
+        </p>
+
+        <p class="mt-3 font-mono text-xs text-gray-400 break-all">{{ intent.reference }}</p>
+
+        <form method="post" class="mt-6 space-y-3">
+            <button type="submit" name="outcome" value="confirm"
+                    class="w-full min-h-[48px] rounded-lg bg-green-600 text-white font-bold hover:bg-green-700">
+                Simulate successful payment
+            </button>
+            <button type="submit" name="outcome" value="decline"
+                    class="w-full min-h-[44px] rounded-lg border border-gray-300 text-gray-600 font-bold hover:bg-gray-50">
+                Simulate a decline
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

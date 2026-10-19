@@ -1,9 +1,9 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Profit & Loss Statement{% endblock %}
+{% block title %}Income & Expenditure Statement{% endblock %}
 
 {% block body %}
-<div class="max-w-6xl mx-auto mt-8 px-4 md:px-6">
+<div class="mt-8 px-4">
 
     {# 1. RESPONSIVE HEADER & CONTROL BAR #}
     <div class="flex flex-col xl:flex-row justify-between items-start xl:items-end mb-10 gap-6">
@@ -11,9 +11,9 @@
         {# Title Section #}
         <div class="w-full xl:w-auto">
             
-            <h1 class="text-3xl font-black text-gray-900 tracking-tight">Profit & Loss</h1>
+            <h1 class="text-3xl font-black text-gray-900 tracking-tight">Income & Expenditure</h1>
             <p class="text-gray-500 mt-1 text-sm md:text-base">
-                Performance: 
+                Period: 
                 <span class="font-bold text-gray-900 border-b-2 border-gray-200">{{ startDate|date('M d, Y') }}</span> 
                 <span class="text-gray-400 mx-1">to</span> 
                 <span class="font-bold text-gray-900 border-b-2 border-gray-200">{{ endDate|date('M d, Y') }}</span>
@@ -61,7 +61,7 @@
                 <svg class="w-16 h-16 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
             </div>
             <div class="relative z-10">
-                <h3 class="text-gray-500 font-bold text-xs uppercase tracking-widest mb-1">Total Revenue</h3>
+                <h3 class="text-gray-500 font-bold text-xs uppercase tracking-widest mb-1">Total Income</h3>
                 <p class="text-3xl md:text-4xl font-black text-emerald-600 tracking-tight mb-4">₦{{ totalIncome|number_format(0) }}</p>
                 
                 <div class="space-y-2 pt-4 border-t border-gray-50">
@@ -90,7 +90,7 @@
                     <p class="text-sm text-gray-400">
                         Operational costs including salaries, maintenance, and purchases.
                     </p>
-                    <a href="{{ path('app_tenant_expense_index') }}" class="inline-block mt-3 text-xs font-bold text-rose-600 hover:text-rose-800">
+                    <a href="{{ path('app_tenant_expense_index') }}" class="mt-1 inline-flex items-center py-3 text-sm font-bold text-rose-600 hover:text-rose-800">
                         View Expense Breakdown &rarr;
                     </a>
                 </div>
@@ -103,27 +103,32 @@
             
             <div class="relative z-10 h-full flex flex-col justify-between">
                 <div>
-                    <h3 class="text-gray-400 font-bold text-xs uppercase tracking-widest mb-1">Net Profit / (Loss)</h3>
+                    <h3 class="text-gray-400 font-bold text-xs uppercase tracking-widest mb-1">
+                        {{ netProfit < 0 ? 'Deficit' : 'Surplus' }}
+                    </h3>
                     <p class="text-4xl md:text-5xl font-black tracking-tight {{ netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400' }}">
                         {% if netProfit > 0 %}+{% endif %}₦{{ netProfit|number_format(0) }}
+                    </p>
+                    <p class="mt-1 text-xs font-bold uppercase tracking-widest text-gray-400">
+                        Income − Expenditure
                     </p>
                 </div>
 
                 <div class="mt-6 p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
                      {% if netProfit > 0 %}
                         <div class="flex items-center gap-3 text-emerald-300">
-                            <span class="text-2xl">🚀</span>
-                            <span class="font-bold text-sm">Great job! The school is profitable this period.</span>
+                            <span class="text-2xl">✅</span>
+                            <span class="font-bold text-sm">Income covers expenditure for this period.</span>
                         </div>
                     {% elseif netProfit < 0 %}
                         <div class="flex items-center gap-3 text-rose-300">
                             <span class="text-2xl">⚠️</span>
-                            <span class="font-bold text-sm">Attention: Expenses are exceeding income.</span>
+                            <span class="font-bold text-sm">Expenditure is higher than income this period.</span>
                         </div>
                     {% else %}
                          <div class="flex items-center gap-3 text-gray-300">
                             <span class="text-2xl">⚖️</span>
-                            <span class="font-bold text-sm">Break-even point reached.</span>
+                            <span class="font-bold text-sm">Income and expenditure are level.</span>
                         </div>
                     {% endif %}
                 </div>
@@ -135,14 +140,14 @@
     {# 3. VISUALIZATION BAR #}
     {% if totalIncome > 0 %}
     <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-8">
-        <h3 class="font-bold text-gray-900 mb-6">Cash Flow Visualization</h3>
+        <h3 class="font-bold text-gray-900 mb-6">Where the income went</h3>
         
         <div class="flex h-12 w-full rounded-full overflow-hidden bg-gray-100">
-            {# Profit Portion #}
+            {# Surplus Portion #}
             {% if netProfit > 0 %}
                 {% set profitPercent = (netProfit / totalIncome) * 100 %}
                 <div style="width: {{ profitPercent }}%" class="bg-emerald-500 flex items-center justify-center text-white font-bold text-xs transition-all duration-1000">
-                    Profit {{ profitPercent|number_format(1) }}%
+                    Surplus {{ profitPercent|number_format(1) }}%
                 </div>
             {% endif %}
 
@@ -156,7 +161,7 @@
         <div class="flex justify-between mt-3 text-xs font-bold text-gray-400 uppercase">
             <span>0%</span>
             <span>50%</span>
-            <span>100% of Revenue</span>
+            <span>100% of Income</span>
         </div>
     </div>
     {% endif %}

@@ -32,6 +32,7 @@ class OnboardingIdentityType extends AbstractType
                 'choices' => [
                     'Secondary School (3 Terms)' => 'secondary',
                     'Primary / Nursery (3 Terms)' => 'primary', // 🟢 Updated Label
+                    'Primary & Secondary (combined, 3 Terms)' => 'combined',
                     'College / Poly (2 Semesters)' => 'tertiary',
                 ],
                 'expanded' => true, // Radio Buttons

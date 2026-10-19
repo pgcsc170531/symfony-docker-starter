@@ -1,15 +1,15 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Student Registration{% endblock %}
+{% block title %}{{ learner.capital }} Registration{% endblock %}
 
 {% block body %}
 {# px-0 on mobile for edge-to-edge feel #}
-<div class="max-w-5xl mx-auto px-0 sm:px-6 lg:px-8 py-4 sm:py-8">
+<div class="px-4 py-4 sm:py-8">
 
     {# --- HEADER --- #}
     <div class="mb-6 px-4 sm:px-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">🎓 Student Admission</h1>
+            <h1 class="text-2xl font-bold text-gray-800">🎓 {{ learner.capital }} Admission</h1>
             <p class="text-sm text-gray-500">
                 Guardian: <span class="font-bold text-indigo-600">{{ guardian.title }} {{ guardian.fullName }}</span>
             </p>

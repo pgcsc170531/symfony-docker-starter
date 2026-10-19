@@ -1,0 +1,55 @@
+{% extends 'emails/layout.html.twig' %}
+{% import 'emails/_components.html.twig' as ui %}
+
+{% block content %}
+    <h1 style="margin:0 0 16px;font-size:20px;line-height:1.3;color:#111827;">{{ headline }}</h1>
+
+    <p style="margin:0 0 12px;">Hello{% if guardian_name is defined and guardian_name %} {{ guardian_name }}{% endif %},</p>
+    <p style="margin:0 0 20px;">{{ intro }}</p>
+
+    {% if balance_due > 0 %}
+        {{ ui.amountBox('Amount due', '₦' ~ balance_due|number_format(2), brand) }}
+    {% else %}
+        {{ ui.amountBox('Amount due', 'Nothing — fully settled', brand) }}
+    {% endif %}
+
+    {{ ui.rows({
+        'Invoice'     : invoice_number,
+        'Child'       : child_name,
+        'Session'     : session_name,
+        'Term'        : term_name,
+        'Issued'      : created_at ? created_at|date('j M Y') : null,
+        'Total'       : '₦' ~ total_amount|number_format(2),
+        'Already paid': paid_amount > 0 ? '₦' ~ paid_amount|number_format(2) : null,
+        'Status'      : status|title,
+    }) }}
+
+    {% if items is not empty %}
+        <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;">Breakdown</p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;border-collapse:collapse;">
+            {% for item in items %}
+                <tr>
+                    <td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151;">{{ item.name }}</td>
+                    <td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:14px;color:#111827;text-align:right;white-space:nowrap;">₦{{ item.amount|number_format(2) }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+
+    {{ ui.button(button_label, url, brand) }}
+
+    {% if bank.name or bank.account_number %}
+        <p style="margin:0 0 8px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;">
+            Or pay by bank transfer
+        </p>
+        {{ ui.rows({
+            'Bank'          : bank.name,
+            'Account number': bank.account_number,
+            'Account name'  : bank.account_name,
+        }) }}
+        <p style="margin:0 0 18px;font-size:12px;color:#9ca3af;line-height:1.6;">
+            Quote your child's name and invoice number, then send the proof of payment through the
+            parent portal so the bursar can confirm it.
+        </p>
+    {% endif %}
+{% endblock %}

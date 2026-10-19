@@ -5,6 +5,8 @@ namespace App\Controller\Tenant;
 
 use App\Entity\Tenant\AssessmentScheme;
 use App\Entity\Tenant\ClassSubject;
+use App\Entity\Tenant\DepartmentHead;
+use App\Entity\Tenant\FormTeacher;
 use App\Entity\Tenant\GradingScale;
 use App\Entity\Tenant\ResultApproval;
 use App\Entity\Tenant\ResultComponentScore;
@@ -13,6 +15,7 @@ use App\Entity\Tenant\Student;
 use App\Entity\Tenant\StudentSubject;
 use App\Entity\Tenant\SubjectTeacher;
 use App\Entity\Tenant\Term;
+use App\Entity\Tenant\YearGroupMaster;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -20,14 +23,17 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/tenant/results')]
 #[IsGranted('ROLE_TEACHER')]
 class ResultEntryController extends AbstractController
 {
-    public function __construct(private EntityManagerInterface $em)
-    {
+    public function __construct(
+        private EntityManagerInterface $em,
+        private CsrfTokenManagerInterface $csrf,
+    ) {
     }
 
     #[Route('/entry', name: 'tenant_result_entry_index')]
@@ -45,6 +51,7 @@ class ResultEntryController extends AbstractController
     #[Route('/entry/{id}', name: 'tenant_result_entry_form')]
     public function entry(SubjectTeacher $assignment): Response
     {
+        $this->assertOwnAssignment($assignment);
         $classSubject = $this->resolveClassSubject($assignment);
 
         if (!$classSubject) {
@@ -63,6 +70,15 @@ class ResultEntryController extends AbstractController
             $scoresByStudent[$score->getStudent()->getId()][$score->getComponent()] = $score->getScore();
         }
 
+        // If an HOD sent this sheet back, the teacher must be told what to fix.
+        $approval = $this->em->getRepository(ResultApproval::class)->findOneBy([
+            'classSubject' => $classSubject,
+            'term' => $assignment->getTerm(),
+        ]);
+        $rejection = ($approval && $approval->getHodStatus() === ResultApproval::STATUS_REJECTED)
+            ? $approval->getHodReason()
+            : null;
+
         return $this->render('tenant/result_entry/entry.html.twig', [
             'assignment' => $assignment,
             'classSubject' => $classSubject,
@@ -72,13 +88,17 @@ class ResultEntryController extends AbstractController
             'scores' => $scoresByStudent,
             'gradingScale' => $this->gradingScaleJson(),
             'locked' => $this->isLocked($classSubject, $assignment->getTerm()),
+            'rejection' => $rejection,
+            'csrf' => $this->csrf->getToken('result_entry')->getValue(),
         ]);
     }
 
     #[Route('/entry/{id}/save', name: 'tenant_result_entry_save', methods: ['POST'])]
     public function save(SubjectTeacher $assignment, Request $request): JsonResponse
     {
+        $this->assertOwnAssignment($assignment);
         $data = json_decode($request->getContent(), true);
+        $this->assertCsrf((string) ($data['_token'] ?? ''));
         $classSubject = $this->resolveClassSubject($assignment);
 
         if (!$classSubject) {
@@ -89,9 +109,11 @@ class ResultEntryController extends AbstractController
             return $this->json(['success' => false, 'error' => 'Results are locked. An HOD or Admin must unlock before editing.'], 423);
         }
 
+        $roster = $this->rosterIds($classSubject);
+
         foreach ($data['scores'] ?? [] as $row) {
             $student = $this->em->getRepository(Student::class)->find($row['student_id'] ?? null);
-            if (!$student) {
+            if (!$student || !isset($roster[(int) $student->getId()])) {
                 continue;
             }
 
@@ -110,8 +132,11 @@ class ResultEntryController extends AbstractController
     }
 
     #[Route('/entry/{id}/submit', name: 'tenant_result_entry_submit', methods: ['POST'])]
-    public function submit(SubjectTeacher $assignment): JsonResponse
+    public function submit(SubjectTeacher $assignment, Request $request): JsonResponse
     {
+        $this->assertOwnAssignment($assignment);
+        $payload = json_decode((string) $request->getContent(), true) ?: [];
+        $this->assertCsrf((string) ($payload['_token'] ?? $request->request->get('_token', '')));
         $classSubject = $this->resolveClassSubject($assignment);
         if (!$classSubject) {
             return $this->json(['success' => false, 'error' => 'Subject not registered for this class.'], 400);
@@ -223,22 +248,46 @@ class ResultEntryController extends AbstractController
     #[Route('/entry/{id}/template', name: 'tenant_result_entry_template', methods: ['GET'])]
     public function downloadTemplate(SubjectTeacher $assignment): StreamedResponse
     {
+        $this->assertOwnAssignment($assignment);
         $scheme = $this->resolveScheme($assignment);
         $components = $this->resolveComponents($scheme);
+
+        $classSubject = $this->resolveClassSubject($assignment);
+        if (!$classSubject) {
+            throw $this->createNotFoundException('This subject has not been registered for the class.');
+        }
+
+        // The template is the class list, not a demo. It used to emit a single
+        // fake row ("24/001 John Doe"), so a teacher who followed the handout
+        // ("do not add or remove rows") imported marks for a pupil who does not
+        // exist. Existing marks are pre-filled, so the file round-trips.
+        $students = $this->resolveStudents($classSubject);
+        usort($students, fn (Student $a, Student $b) => strcasecmp($a->getFullName(), $b->getFullName()));
+
+        $existing = $this->em->getRepository(ResultComponentScore::class)->findBy([
+            'classSubject' => $classSubject,
+            'term' => $assignment->getTerm(),
+        ]);
+        $scoresByStudent = [];
+        foreach ($existing as $score) {
+            $scoresByStudent[$score->getStudent()->getId()][$score->getComponent()] = $score->getScore();
+        }
 
         $header = array_merge(
             ['Admission No', 'Student Name'],
             array_map('strtoupper', $components)
         );
-        $sample = array_merge(
-            ['24/001', 'John Doe'],
-            array_fill(0, count($components), '0')
-        );
 
-        $response = new StreamedResponse(function () use ($header, $sample) {
+        $response = new StreamedResponse(function () use ($header, $students, $components, $scoresByStudent) {
             $handle = fopen('php://output', 'w+');
             fputcsv($handle, $header);
-            fputcsv($handle, $sample);
+            foreach ($students as $student) {
+                $row = [$student->getAdmissionNumber(), $student->getFullName()];
+                foreach ($components as $component) {
+                    $row[] = $scoresByStudent[$student->getId()][$component] ?? '';
+                }
+                fputcsv($handle, $row);
+            }
             fclose($handle);
         });
 
@@ -251,6 +300,8 @@ class ResultEntryController extends AbstractController
     #[Route('/entry/{id}/import', name: 'tenant_result_entry_import', methods: ['POST'])]
     public function import(SubjectTeacher $assignment, Request $request): JsonResponse
     {
+        $this->assertOwnAssignment($assignment);
+        $this->assertCsrf((string) $request->request->get('_token', ''));
         $classSubject = $this->resolveClassSubject($assignment);
         if (!$classSubject) {
             return $this->json(['success' => false, 'error' => 'Subject not registered for this class.'], 400);
@@ -290,6 +341,7 @@ class ResultEntryController extends AbstractController
 
         $components = $this->resolveComponents($this->resolveScheme($assignment));
         $studentRepo = $this->em->getRepository(Student::class);
+        $roster = $this->rosterIds($classSubject);
 
         $imported = 0;
         $errors = [];
@@ -303,6 +355,10 @@ class ResultEntryController extends AbstractController
             $student = $studentRepo->findOneBy(['admissionNumber' => $admission]);
             if (!$student) {
                 $errors[] = "Student not found for admission no: {$admission}";
+                continue;
+            }
+            if (!isset($roster[(int) $student->getId()])) {
+                $errors[] = "Student {$admission} is not in this class.";
                 continue;
             }
 
@@ -336,6 +392,224 @@ class ResultEntryController extends AbstractController
             'classroom' => $assignment->getClassroom(),
             'session' => $assignment->getTerm()->getSession(),
         ]);
+    }
+
+    /**
+     * A subject teacher may only open the assignment the admin gave them.
+     * Admins keep a bypass because they are the ones who repair timetables.
+     */
+    /**
+     * Read-only view of one class subject's sheet.
+     *
+     * Reviewing results is not the same job as entering them. An HOD, the form
+     * teacher or the year group master has to be able to *read* a submitted sheet
+     * before approving it, and none of them may change a mark. This route is that
+     * view: every reviewer who is entitled to the sheet can open it, and the page
+     * has no inputs at all.
+     */
+    #[Route('/sheet/{id}', name: 'tenant_result_sheet_view', methods: ['GET'])]
+    public function sheet(ClassSubject $classSubject): Response
+    {
+        $this->assertCanReviewSheet($classSubject);
+
+        $term = $this->em->getRepository(Term::class)->findOneBy(['isActive' => true])
+            ?? $this->em->getRepository(Term::class)->findOneBy(['session' => $classSubject->getSession()]);
+
+        if (!$term) {
+            throw $this->createNotFoundException('No term is open for this class.');
+        }
+
+        $assignment = $this->em->getRepository(SubjectTeacher::class)->findOneBy([
+            'subject' => $classSubject->getSubject(),
+            'classroom' => $classSubject->getClassroom(),
+            'term' => $term,
+        ]);
+
+        $scheme = $assignment
+            ? $this->resolveScheme($assignment)
+            : ['ca_count' => 3, 'exam_mode' => 'single', 'ca_max' => 20, 'theory_max' => 60, 'practical_max' => 40];
+
+        $students = $this->resolveStudents($classSubject);
+        usort($students, static fn (Student $a, Student $b) => strcasecmp($a->getFullName(), $b->getFullName()));
+
+        $rows = $this->em->getRepository(ResultComponentScore::class)->findBy([
+            'classSubject' => $classSubject,
+            'term' => $term,
+        ]);
+
+        $scores = [];
+        $submitted = false;
+        foreach ($rows as $row) {
+            $scores[$row->getStudent()->getId()][$row->getComponent()] = (float) $row->getScore();
+            $submitted = $submitted || $row->getStatus() === ResultComponentScore::STATUS_SUBMITTED;
+        }
+
+        $components = [];
+        for ($i = 1; $i <= $scheme['ca_count']; $i++) {
+            $components[] = 'ca' . $i;
+        }
+        $components[] = 'theory';
+        if ($scheme['exam_mode'] === 'dual') {
+            $components[] = 'practical';
+        }
+
+        $grading = $this->gradingScaleJson();
+
+        $sheet = [];
+        $totals = [];
+        foreach ($students as $student) {
+            $pupilScores = $scores[$student->getId()] ?? [];
+            $marked = array_intersect_key($pupilScores, array_flip($components));
+
+            $total = $marked === [] ? null : array_sum($marked);
+            $grade = $total === null ? null : $this->gradeFor($total, $grading);
+
+            if ($total !== null) {
+                $totals[] = $total;
+            }
+
+            $sheet[] = [
+                'student' => $student,
+                'scores' => $pupilScores,
+                'total' => $total,
+                'grade' => $grade,
+            ];
+        }
+
+        // "How many credits" is the question an HOD actually asks a sheet:
+        // A1–C6 credit, D7–E8 pass, F9 fail.
+        $credits = 0;
+        $passes = 0;
+        $fails = 0;
+        foreach ($sheet as $row) {
+            if ($row['grade'] === null) {
+                continue;
+            }
+            if (in_array($row['grade'], ['A1', 'B2', 'B3', 'C4', 'C5', 'C6'], true)) {
+                $credits++;
+            } elseif (in_array($row['grade'], ['D7', 'E8'], true)) {
+                $passes++;
+            } else {
+                $fails++;
+            }
+        }
+
+        $approval = $this->em->getRepository(ResultApproval::class)->findOneBy([
+            'classSubject' => $classSubject,
+            'term' => $term,
+        ]);
+
+        return $this->render('tenant/result_entry/sheet.html.twig', [
+            'classSubject' => $classSubject,
+            'term' => $term,
+            'components' => $components,
+            'sheet' => $sheet,
+            'graded' => count($totals),
+            'roster' => count($sheet),
+            'average' => $totals === [] ? null : array_sum($totals) / count($totals),
+            'credits' => $credits,
+            'passes' => $passes,
+            'fails' => $fails,
+            'submitted' => $submitted,
+            'approval' => $approval,
+        ]);
+    }
+
+    private function gradeFor(float $total, array $grading): string
+    {
+        foreach ($grading as $scale) {
+            if ($total >= $scale['min'] && $total <= $scale['max']) {
+                return $scale['grade'];
+            }
+        }
+
+        return match (true) {
+            $total >= 75 => 'A1',
+            $total >= 70 => 'B2',
+            $total >= 60 => 'B3',
+            $total >= 50 => 'C4',
+            $total >= 45 => 'C5',
+            $total >= 40 => 'C6',
+            $total >= 35 => 'D7',
+            $total >= 30 => 'E8',
+            default => 'F9',
+        };
+    }
+
+    /**
+     * Who may read a class subject's sheet: the teacher who owns it, the class's
+     * form teacher, the HOD of its department, the year group master — and an
+     * admin. Nobody else, and nobody may edit it from here.
+     */
+    private function assertCanReviewSheet(ClassSubject $classSubject): void
+    {
+        if ($this->isGranted('ROLE_ADMIN')) {
+            return;
+        }
+
+        $staff = $this->getStaff();
+        $term = $this->em->getRepository(Term::class)->findOneBy(['isActive' => true]);
+
+        $owns = $term && $this->em->getRepository(SubjectTeacher::class)->findOneBy([
+            'subject' => $classSubject->getSubject(),
+            'classroom' => $classSubject->getClassroom(),
+            'term' => $term,
+            'staff' => $staff,
+        ]);
+
+        $isFormTeacher = (bool) $this->em->getRepository(FormTeacher::class)->findOneBy([
+            'classroom' => $classSubject->getClassroom(),
+            'staff' => $staff,
+        ]);
+
+        $department = $classSubject->getSubject()?->getDepartment();
+        $isHod = $department && $this->em->getRepository(DepartmentHead::class)->findOneBy([
+            'department' => $department,
+            'staff' => $staff,
+        ]);
+
+        $yearGroup = $classSubject->getClassroom()?->getYearGroup();
+        $isYearGroupMaster = $yearGroup && $this->em->getRepository(YearGroupMaster::class)->findOneBy([
+            'yearGroup' => $yearGroup,
+            'staff' => $staff,
+        ]);
+
+        if (!$owns && !$isFormTeacher && !$isHod && !$isYearGroupMaster) {
+            throw $this->createAccessDeniedException('You do not review this class subject.');
+        }
+    }
+
+    private function assertOwnAssignment(SubjectTeacher $assignment): void
+    {
+        if ($this->isGranted('ROLE_ADMIN')) {
+            return;
+        }
+
+        if ($assignment->getStaff()?->getId() !== $this->getStaff()->getId()) {
+            throw $this->createAccessDeniedException('This subject assignment belongs to another teacher.');
+        }
+    }
+
+    private function assertCsrf(string $token): void
+    {
+        if (!$this->isCsrfTokenValid('result_entry', $token)) {
+            throw $this->createAccessDeniedException('That form expired. Reload the page and try again.');
+        }
+    }
+
+    /**
+     * The pupils a class subject is allowed to receive scores for.
+     *
+     * @return array<int, true>
+     */
+    private function rosterIds(ClassSubject $classSubject): array
+    {
+        $ids = [];
+        foreach ($this->resolveStudents($classSubject) as $student) {
+            $ids[(int) $student->getId()] = true;
+        }
+
+        return $ids;
     }
 
     private function isLocked(ClassSubject $classSubject, Term $term): bool

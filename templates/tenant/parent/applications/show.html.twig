@@ -1,0 +1,306 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ application.reference ?: 'Application' }}{% endblock %}
+
+{% block body %}
+<div class="mt-6 px-4 pb-16">
+
+    {# ── HEADER ─────────────────────────────────────────────────────────── #}
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-gray-200 pb-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">{{ application.fullName ?: 'Unnamed draft' }}</h1>
+            <p class="text-gray-500 text-sm mt-1">
+                {% if application.reference %}
+                    Reference <span class="font-mono font-bold text-gray-700">{{ application.reference }}</span>
+                {% else %}
+                    Not submitted yet
+                {% endif %}
+                {%- if application.requestedClassroom %} · {{ application.requestedClassroom.name }}{% endif -%}
+            </p>
+        </div>
+        <a href="{{ path('app_parent_applications_index') }}"
+           class="shrink-0 inline-block py-3.5 text-xs font-bold text-gray-500 hover:text-indigo-600">← My applications</a>
+    </div>
+
+    {# ── STATUS HERO ────────────────────────────────────────────────────── #}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sm:p-8 mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Current status</p>
+                {% include 'tenant/parent/applications/_status_badge.html.twig' with {
+                    status: application.status,
+                    label: application.statusLabel
+                } only %}
+            </div>
+            {% if application.submittedAt %}
+                <div class="text-left sm:text-right">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Submitted</p>
+                    <p class="text-sm font-bold text-gray-700">{{ application.submittedAt|date('d M Y, H:i') }}</p>
+                </div>
+            {% endif %}
+        </div>
+
+        {# What happens next — the sentence a parent is actually looking for #}
+        <div class="mt-5 bg-indigo-50 border border-indigo-100 rounded-lg p-4">
+            <p class="text-xs font-bold text-indigo-900 uppercase tracking-wide">What happens next</p>
+            <p class="text-sm text-indigo-900 mt-1">
+                {% if application.status == 'draft' %}
+                    Nothing is sent to the school until you submit. Finish the form whenever you are ready.
+                {% elseif application.status == 'awaiting_payment' %}
+                    The school needs the application fee of <strong>{{ application.feeAmount }}</strong> before
+                    processing begins. Pay, then upload the receipt below.
+                {% elseif application.status == 'submitted' %}
+                    The school has received your application and will review it. You will be contacted on
+                    {{ application.guardianPhone }} — usually within a few working days.
+                {% elseif application.status == 'under_review' %}
+                    The office is reviewing this application now. No action is needed from you.
+                {% elseif application.status == 'needs_info' %}
+                    The school needs something clarified. Please read the note below, make the change and resubmit.
+                {% elseif application.status == 'approved' %}
+                    Congratulations — your child has been offered a place. The school will complete the enrolment.
+                {% elseif application.status == 'enrolled' %}
+                    Your child is enrolled. Their fees and results now appear on your dashboard.
+                {% elseif application.status == 'rejected' %}
+                    This application was not successful. The reason is shown below.
+                {% elseif application.status == 'withdrawn' %}
+                    You withdrew this application. You are welcome to start a new one.
+                {% else %}
+                    Your child is on the waiting list. The school will contact you if a place opens up.
+                {% endif %}
+            </p>
+        </div>
+
+        {# Notes from the school #}
+        {% if application.infoRequestedNote and application.status == 'needs_info' %}
+            <div class="mt-4 bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <p class="text-xs font-bold text-orange-800 uppercase tracking-wide">Information requested</p>
+                <p class="text-sm text-orange-900 mt-1">{{ application.infoRequestedNote }}</p>
+            </div>
+        {% endif %}
+        {% if application.rejectionReason and application.status == 'rejected' %}
+            <div class="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                <p class="text-xs font-bold text-red-800 uppercase tracking-wide">Reason</p>
+                <p class="text-sm text-red-900 mt-1">{{ application.rejectionReason }}</p>
+            </div>
+        {% endif %}
+    </div>
+
+    {# ── FEE GATE ───────────────────────────────────────────────────────── #}
+    {% if application.status == 'awaiting_payment' %}
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-6">
+            <h2 class="font-bold text-amber-900">Application fee {{ application.feeAmount }}</h2>
+
+            {% if application.feeStatus == 'awaiting_confirmation' %}
+                <p class="text-sm text-amber-800 mt-2">
+                    ✅ Your receipt was uploaded{% if application.feeReference %} (reference {{ application.feeReference }}){% endif %}.
+                    The school office will confirm it, then your application enters the review queue.
+                </p>
+            {% else %}
+                <p class="text-sm text-amber-800 mt-2">
+                    Transfer the fee using the reference below, then upload the receipt so the office can confirm it.
+                </p>
+                <div class="mt-3 bg-white border border-amber-200 rounded-lg p-3 inline-block">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Use this reference</p>
+                    <p class="font-mono font-bold text-gray-800">{{ application.reference }}</p>
+                </div>
+
+                {% if school and school.acceptsOfflinePayment %}
+                    <form method="post" action="{{ path('app_parent_applications_fee_proof', {id: application.id}) }}"
+                          enctype="multipart/form-data" class="mt-5 space-y-3">
+                        <input type="hidden" name="_token" value="{{ csrf_token('app_feeproof_' ~ application.id) }}">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">
+                                Transfer reference (optional)
+                            </label>
+                            <input type="text" name="feeReference" placeholder="e.g. bank transaction reference"
+                                   class="w-full rounded-lg border-gray-300 p-3 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">
+                                Upload your receipt
+                            </label>
+                            <input type="file" name="feeProof" accept="image/*,application/pdf"
+                                   class="w-full text-xs text-gray-600 border border-gray-300 rounded-lg p-2.5 bg-white
+                                          file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0
+                                          file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                            <p class="text-[11px] text-gray-400 mt-1">JPG, PNG or PDF · up to 4 MB.</p>
+                        </div>
+                        <button type="submit"
+                                class="bg-amber-600 text-white font-bold text-sm px-5 py-2.5 rounded-lg shadow hover:bg-amber-700 transition-colors">
+                            Upload receipt
+                        </button>
+                    </form>
+                {% else %}
+                    <p class="text-sm text-amber-800 mt-3">
+                        This school collects the fee online. Please contact the school office to complete the payment.
+                    </p>
+                {% endif %}
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <div class="grid lg:grid-cols-3 gap-6">
+
+        {# ── LEFT: DETAILS + DOCUMENTS ──────────────────────────────────── #}
+        <div class="lg:col-span-2 space-y-6">
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h2 class="font-bold text-gray-800 text-sm uppercase tracking-wide mb-4">Application details</h2>
+                <dl class="grid sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                    <div>
+                        <dt class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Date of birth</dt>
+                        <dd class="text-gray-800 font-medium">{{ application.dateOfBirth ? application.dateOfBirth|date('d M Y') : '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Gender</dt>
+                        <dd class="text-gray-800 font-medium">{{ application.gender ?: '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Class applied for</dt>
+                        <dd class="text-gray-800 font-medium">{{ application.requestedClassroom ? application.requestedClassroom.name : '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Religion</dt>
+                        <dd class="text-gray-800 font-medium">{{ application.religion ?: '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">State / LGA</dt>
+                        <dd class="text-gray-800 font-medium">
+                            {{ application.stateOfOrigin ? application.stateOfOrigin.name : '—' }}
+                            {%- if application.lga %} · {{ application.lga.name }}{% endif -%}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Blood group / genotype</dt>
+                        <dd class="text-gray-800 font-medium">
+                            {{ application.bloodGroup ?: '—' }}{% if application.genotype %} · {{ application.genotype }}{% endif %}
+                        </dd>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <dt class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Previous school</dt>
+                        <dd class="text-gray-800 font-medium">
+                            {{ application.previousSchool ?: 'None given' }}
+                            {%- if application.previousClass %} ({{ application.previousClass }}){% endif -%}
+                        </dd>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <dt class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Medical notes</dt>
+                        <dd class="text-gray-800 font-medium">{{ application.medicalConditions ?: 'None given' }}</dd>
+                    </div>
+                    <div class="sm:col-span-2 border-t border-gray-100 pt-3">
+                        <dt class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Submitted by</dt>
+                        <dd class="text-gray-800 font-medium">
+                            {{ application.guardianName }} ({{ application.relationshipToStudent ?: 'guardian' }})
+                            · {{ application.guardianPhone }}
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+
+            {% set documents = [
+                {'label': "Child's photograph", 'file': application.passportPhotoFilename},
+                {'label': 'Birth certificate', 'file': application.birthCertificateFilename},
+                {'label': 'Previous result', 'file': application.previousResultFilename},
+                {'label': 'Fee receipt', 'file': application.feeProofFilename}
+            ]|filter(d => d.file) %}
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h2 class="font-bold text-gray-800 text-sm uppercase tracking-wide mb-4">Documents</h2>
+                {% if documents is empty %}
+                    <p class="text-sm text-gray-500">
+                        No documents uploaded yet.
+                        {% if application.status in ['draft', 'needs_info'] %}
+                            You can add them when you
+                            <a href="{{ path('app_parent_applications_edit', {id: application.id}) }}" class="text-indigo-600 font-bold hover:underline">continue the form</a>.
+                        {% endif %}
+                    </p>
+                {% else %}
+                    <ul class="space-y-2">
+                        {% for document in documents %}
+                            <li class="flex items-center justify-between gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100">
+                                <span class="text-sm text-gray-700 font-medium">📎 {{ document.label }}</span>
+                                <span class="text-[11px] text-gray-400">Received</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+
+        </div>
+
+        {# ── RIGHT: TIMELINE + ACTIONS ──────────────────────────────────── #}
+        <div class="space-y-6">
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h2 class="font-bold text-gray-800 text-sm uppercase tracking-wide mb-4">History</h2>
+                {% if events is empty %}
+                    <p class="text-sm text-gray-500">Nothing has happened yet — this is a new draft.</p>
+                {% else %}
+                    <ol class="space-y-4">
+                        {% for event in events|sort((a, b) => a.createdAt <=> b.createdAt) %}
+                            <li class="flex gap-3">
+                                <div class="mt-1.5 w-2 h-2 rounded-full bg-indigo-500 shrink-0"></div>
+                                <div>
+                                    <p class="text-xs font-bold text-gray-800">{{ event.label }}</p>
+                                    <p class="text-[11px] text-gray-500 mt-0.5">{{ event.note }}</p>
+                                    <p class="text-[10px] text-gray-400 mt-0.5">
+                                        {{ event.createdAt ? event.createdAt|date('d M Y, H:i') : '' }}
+                                        {%- if event.actorLabel %} · {{ event.actorLabel }}{% endif -%}
+                                    </p>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ol>
+                {% endif %}
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-3">
+                <h2 class="font-bold text-gray-800 text-sm uppercase tracking-wide mb-1">Actions</h2>
+
+                {% if application.status == 'draft' %}
+                    <a href="{{ path('app_parent_applications_edit', {id: application.id}) }}"
+                       class="block text-center bg-indigo-600 text-white font-bold text-base sm:text-sm px-4 py-3.5 rounded-xl shadow hover:bg-indigo-700 active:bg-indigo-800 transition-colors">
+                        Continue this draft
+                    </a>
+
+                    <form method="post" action="{{ path('app_parent_applications_submit', {id: application.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('app_submit_' ~ application.id) }}">
+                        <button type="submit"
+                                class="w-full bg-emerald-600 text-white font-bold text-base sm:text-sm px-4 py-3.5 rounded-xl shadow hover:bg-emerald-700 active:bg-emerald-800 transition-colors">
+                            Submit as it is
+                        </button>
+                    </form>
+                {% elseif application.status == 'needs_info' %}
+                    <a href="{{ path('app_parent_applications_edit', {id: application.id}) }}"
+                       class="block text-center bg-orange-600 text-white font-bold text-base sm:text-sm px-4 py-3.5 rounded-xl shadow hover:bg-orange-700 active:bg-orange-800 transition-colors">
+                        Edit & resubmit
+                    </a>
+                {% endif %}
+
+                {% if not application.isFinal and application.status != 'draft' %}
+                    <form method="post" action="{{ path('app_parent_applications_withdraw', {id: application.id}) }}"
+                          onsubmit="return confirm('Withdraw this application? The school will stop processing it.');">
+                        <input type="hidden" name="_token" value="{{ csrf_token('app_withdraw_' ~ application.id) }}">
+                        <button type="submit"
+                                class="w-full bg-white border border-gray-300 text-gray-700 font-bold text-base sm:text-sm px-4 py-3.5 rounded-xl hover:border-red-400 hover:text-red-600 transition-colors">
+                            Withdraw application
+                        </button>
+                    </form>
+                {% endif %}
+
+                {% if application.status == 'draft' %}
+                    <form method="post" action="{{ path('app_parent_applications_delete', {id: application.id}) }}"
+                          onsubmit="return confirm('Delete this draft permanently?');">
+                        <input type="hidden" name="_token" value="{{ csrf_token('app_delete_' ~ application.id) }}">
+                        <button type="submit"
+                                class="w-full bg-white border border-gray-300 text-gray-500 font-bold text-base sm:text-sm px-4 py-3.5 rounded-xl hover:border-red-400 hover:text-red-600 transition-colors">
+                            Delete draft
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

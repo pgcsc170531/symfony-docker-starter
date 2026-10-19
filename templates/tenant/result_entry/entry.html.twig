@@ -7,9 +7,19 @@
      data-save-url="{{ path('tenant_result_entry_save', {id: assignment.id}) }}"
      data-import-url="{{ path('tenant_result_entry_import', {id: assignment.id}) }}"
      data-submit-url="{{ path('tenant_result_entry_submit', {id: assignment.id}) }}"
-     class="p-6">
+     data-token="{{ csrf }}"
+     class="p-4 sm:p-6">
     <h1 class="text-2xl font-bold mb-1">{{ assignment.subject.name }}</h1>
     <p class="text-gray-600 mb-4">{{ assignment.classroom.name }} • {{ assignment.term.label ?? assignment.term.name }}</p>
+
+    {% if rejection is defined and rejection %}
+        {# Sent back by the HOD: say what to fix, in their words. #}
+        <div class="mb-4 rounded-lg border border-failed/40 bg-failed/5 p-3 text-sm" role="alert">
+            <p class="font-bold text-failed">Sent back by the HOD</p>
+            <p class="mt-1 break-words text-ink-700">{{ rejection }}</p>
+            <p class="mt-1 text-xs text-ink-500">Correct the sheet and submit it again.</p>
+        </div>
+    {% endif %}
 
     {# CSV toolbar #}
     <div class="flex flex-wrap items-center gap-3 mb-4">
@@ -45,7 +55,7 @@
         <table class="w-full text-sm">
             <thead class="bg-gray-100 text-left">
                 <tr>
-                    <th class="p-3">Student</th>
+                    <th class="p-3">{{ learner.capital }}</th>
                     <template x-for="n in scheme.ca_count" :key="'ca'+n">
                         <th class="p-3" x-text="'CA' + n"></th>
                     </template>
@@ -63,27 +73,33 @@
                         <td class="p-3" x-text="s.name"></td>
                         <template x-for="n in scheme.ca_count" :key="'ca'+n">
                             <td class="p-3">
-                                <input type="number" class="w-16 border rounded p-1 text-center"
+                                <input type="number" class="w-16 border rounded p-1 text-center text-base"
                                        x-model.number="s['ca'+n]"
                                        :disabled="locked"
+                                       @click.stop
                                        @change="calcTotal(s)">
                             </td>
                         </template>
                         <td class="p-3">
-                            <input type="number" class="w-16 border rounded p-1 text-center"
+                            <input type="number" class="w-16 border rounded p-1 text-center text-base"
                                    x-model.number="s.theory"
                                    :disabled="locked"
+                                   @click.stop
                                    @change="calcTotal(s)">
                         </td>
                         <template x-if="scheme.exam_mode === 'dual'">
                             <td class="p-3">
-                                <input type="number" class="w-16 border rounded p-1 text-center"
+                                <input type="number" class="w-16 border rounded p-1 text-center text-base"
                                        x-model.number="s.practical"
                                        :disabled="locked"
+                                       @click.stop
                                        @change="calcTotal(s)">
                             </td>
                         </template>
-                        <td class="p-3 font-semibold" x-text="s.total"></td>
+                        {# A pupil with no marks entered yet is *unmarked*, not a fail.
+                           Printing 0 / F9 for an empty sheet told every teacher their
+                           whole class had failed. #}
+                        <td class="p-3 font-semibold" x-text="s.total === null ? '—' : s.total"></td>
                         <td class="p-3" x-text="grade(s.total)"></td>
                     </tr>
                 </template>
@@ -149,18 +165,29 @@ function resultEntry() {
         currentIndex: 0,
         modalOpen: false,
         locked: {{ locked|default(false) ? 'true' : 'false' }},
+        token: '',
         importing: false,
         importMessage: '',
 
         init() {
+            this.token = this.$root.dataset.token;
             this.students.forEach(s => {
+                // Empty, not zero: no mark is a missing mark.
                 this.scheme.ca_count && ['ca1','ca2','ca3'].slice(0, this.scheme.ca_count).forEach(c => {
-                    s[c] = this.scores[s.id]?.[c] ?? 0;
+                    s[c] = this.scores[s.id]?.[c] ?? '';
                 });
-                s.theory = this.scores[s.id]?.theory ?? 0;
-                s.practical = this.scores[s.id]?.practical ?? 0;
+                s.theory = this.scores[s.id]?.theory ?? '';
+                s.practical = this.scores[s.id]?.practical ?? '';
                 this.calcTotal(s);
             });
+        },
+
+        hasScores(s) {
+            const parts = [s.theory, s.practical];
+            for (let i = 1; i <= this.scheme.ca_count; i++) {
+                parts.push(s['ca'+i]);
+            }
+            return parts.some(v => v !== '' && v !== null && v !== undefined);
         },
 
         calcTotal(s) {
@@ -172,10 +199,11 @@ function resultEntry() {
             if (this.scheme.exam_mode === 'dual') {
                 total += parseFloat(s.practical || 0);
             }
-            s.total = total;
+            s.total = this.hasScores(s) ? total : null;
         },
 
         grade(total) {
+            if (total === null || total === '' || total === undefined) return '—';
             for (const g of this.grading) {
                 if (total >= g.min && total <= g.max) return g.grade;
             }
@@ -194,18 +222,30 @@ function resultEntry() {
         },
 
         async saveAll() {
-            await this.persist();
-            alert('Scores saved.');
+            try {
+                await this.persist();
+                alert('Scores saved.');
+            } catch (e) {
+                alert(e.message);
+            }
         },
 
         async submit() {
-            await this.persist();
-            const res = await fetch(this.$el.dataset.submitUrl, { method: 'POST' });
-            const result = await res.json();
-            if (result.success) {
-                window.location.reload();
-            } else {
-                alert(result.error || 'Submit failed.');
+            try {
+                await this.persist();
+                const res = await fetch(this.$root.dataset.submitUrl, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({_token: this.token})
+                });
+                const result = await res.json();
+                if (result.success) {
+                    window.location.reload();
+                } else {
+                    alert(result.error || 'Submit failed.');
+                }
+            } catch (e) {
+                alert(e.message);
             }
         },
 
@@ -219,16 +259,30 @@ function resultEntry() {
         },
 
         async persist() {
-            const payload = this.students.map(s => ({
-                student_id: s.id,
-                ...Object.fromEntries(['ca1','ca2','ca3','theory','practical']
-                    .map(c => [c, s[c] ?? 0]))
-            }));
-            await fetch(this.$el.dataset.saveUrl, {
+            // Only send pupils that actually have a mark. Sending the whole
+            // roster wrote a row of zeroes for every pupil on the sheet, which
+            // then read back as "scored 0 → F9" for children nobody had marked.
+            const components = ['theory'];
+            for (let i = 1; i <= this.scheme.ca_count; i++) components.push('ca' + i);
+            if (this.scheme.exam_mode === 'dual') components.push('practical');
+
+            const payload = this.students
+                .filter(s => this.hasScores(s))
+                .map(s => ({
+                    student_id: s.id,
+                    ...Object.fromEntries(components
+                        .map(c => [c, (s[c] === '' || s[c] === null || s[c] === undefined) ? 0 : s[c]]))
+                }));
+            const res = await fetch(this.$root.dataset.saveUrl, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({scores: payload})
+                body: JSON.stringify({scores: payload, _token: this.token})
             });
+
+            if (!res.ok) {
+                const detail = await res.text();
+                throw new Error(`Could not save scores (HTTP ${res.status}). ${detail.slice(0, 120)}`);
+            }
         },
 
         async importCsv(event) {
@@ -237,11 +291,12 @@ function resultEntry() {
 
             const formData = new FormData();
             formData.append('file', file);
+            formData.append('_token', this.token);
 
             this.importing = true;
             this.importMessage = '';
             try {
-                const res = await fetch(this.$el.dataset.importUrl, {
+                const res = await fetch(this.$root.dataset.importUrl, {
                     method: 'POST',
                     body: formData,
                 });

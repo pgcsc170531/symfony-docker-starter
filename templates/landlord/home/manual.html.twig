@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EDUS - Official User Manual 1.0</title>
+<title>EDUS - Official User Manual 2.0</title>
 <style>
     :root {
-        --primary: #4f46e5;
-        --sidebar-bg: #1e1e2f;
+        --primary: #2563EB;
+        --sidebar-bg: #16223C;
         --text-main: #333;
         --text-muted: #666;
         --bg-light: #f9fafb;
@@ -31,15 +31,16 @@
         background: var(--primary);
         color: #fff;
         border: none;
-        padding: 10px 15px;
+        padding: 12px 18px;
         border-radius: 5px;
         cursor: pointer;
         font-size: 1rem;
+        line-height: 1.4;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         transition: background 0.3s;
     }
     .menu-toggle:hover {
-        background: #3730a3;
+        background: #1D4ED8;
     }
 
     /* --- Sidebar --- */
@@ -145,6 +146,64 @@
     }
     .note strong { color: #b45309; }
 
+    /* --- Tables: always wrapped in .table-scroll so a wide table scrolls
+       inside its own box and never pushes the page sideways on a phone. --- */
+    .table-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 25px 0;
+    }
+    table.manual-table {
+        width: 100%;
+        min-width: 620px;
+        border-collapse: collapse;
+        font-size: 0.92rem;
+        background: #fff;
+    }
+    table.manual-table th {
+        background: #f3f4f6;
+        border: 1px solid #e5e7eb;
+        padding: 10px 12px;
+        text-align: left;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        color: #4b5563;
+    }
+    table.manual-table td {
+        border: 1px solid #e5e7eb;
+        padding: 10px 12px;
+        color: #475569;
+        vertical-align: top;
+    }
+    table.manual-table td code,
+    p code, li code {
+        background: #f1f5f9;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 0.86em;
+        color: #1e293b;
+        overflow-wrap: anywhere;
+    }
+    .checkpoint {
+        background: #f0fdf4;
+        border-left: 5px solid #059669;
+        padding: 18px 20px;
+        margin: 25px 0;
+        border-radius: 0 8px 8px 0;
+    }
+    .checkpoint strong { color: #047857; }
+    .checkpoint ul { margin-bottom: 0; }
+    .version-banner {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin: 25px 0 10px;
+        font-size: 0.92rem;
+        color: #1e40af;
+    }
+
     /* --- MOBILE RESPONSIVENESS --- */
     @media (max-width: 900px) {
         .content {
@@ -199,15 +258,34 @@
         <li><a href="#section-2">2. Student Management</a></li>
         <li><a href="#section-3">3. Admissions & Initial Billing</a></li>
         <li><a href="#section-4">4. The School Store & POS System</a></li>
-        <li><a href="#section-5">5. Payment History & Bank Verification</a></li>
+        <li><a href="#section-5">5. Payment Terminal & Bank Verification</a></li>
         <li><a href="#section-6">6. Student Directory & Management</a></li>
         <li><a href="#section-7">7. Expenses & Financial Health</a></li>
         <li><a href="#section-8">8. System Administration</a></li>
+        <li><a href="#section-9">9. Academic Structure & Assignments</a></li>
+        <li><a href="#section-10">10. Results, Approvals & Report Cards</a></li>
+        <li><a href="#section-11">11. Attendance & Behaviour</a></li>
+        <li><a href="#section-12">12. Fee Reporting & the Term Close</a></li>
+        <li><a href="#section-13">13. Online Applications & Parent Portal</a></li>
+        <li><a href="#section-14">14. Verifying an EDUS Document</a></li>
+        <li><a href="#section-15">15. What Changed in 2.0</a></li>
     </ul>
+    <p style="margin-top:28px;font-size:0.78rem;color:#94a3b8;line-height:1.5;">
+        This manual describes EDUS as it is built today. Where a screen needs a
+        permission you do not have, the section says who does.
+    </p>
 </div>
 
 <div class="content">
-    <h1>EDUS User Manual 1.0</h1>
+    <h1>EDUS User Manual 2.0</h1>
+    <p class="version-banner">
+        <strong>Version 2.0.</strong> Chapters 9–15 are new: academic structure,
+        results and approvals, attendance and behaviour, the fee reporting suite,
+        online applications, document verification, and a summary of everything
+        that changed. Chapters 1–8 have been re-checked against the current
+        screens: navigation names, parent logins, store menus and subscription
+        plans have all moved since 1.0.
+    </p>
     
     <h2 id="section-1">1. Getting Started</h2>
     
@@ -283,12 +361,18 @@
 
     <h3>1.4 Understanding Your Navigation Menu</h3>
     <img src="{{ asset('images/manual/screencapture-demo-edus-ng-academic-2026-04-21-14_30_47.png') }}" alt="Left Navigation Menu" class="manual-screenshot">
-    <p>The left-hand side menu is your permanent control center. It is divided into three main operational categories: Academic, Finance, and System.</p>
+    <p>The left-hand menu is your permanent control centre, grouped by the job you are doing rather than by the screen you built. A group only appears if your role can use it — a bursar never sees Result Entry, a teacher never sees Finance.</p>
     <ul>
-        <li><strong>ACADEMIC:</strong> This section handles all student records and the school calendar (Sessions & Terms, School Calendar, New Admission, Bulk Import, Students, Promote Students, Classes).</li>
-        <li><strong>FINANCE:</strong> This section is the core of your EDUS portal, handling all money flowing in and out of the school (Fee Schedule, Academic Fees, Store Sales / Store Inventory / Store POS, Payment History, Scholarships, Expenses, Profit & Loss).</li>
-        <li><strong>SYSTEM:</strong> This section manages your software account and administrative preferences (My Subscription, My Wallet, Settings).</li>
+        <li><strong>Admissions</strong> — online applications, New Admission, Quick Enrolment (bulk import), Students, Promote Students.</li>
+        <li><strong>Administration</strong> — sessions and terms, Classes, Year Groups, Departments, Subjects, Staff, and the four Staff Assignments (Chapter 9).</li>
+        <li><strong>Teaching</strong> — My Class (attendance and behaviour), Result Entry, Approvals, Class Subjects, Grading Scale and Term Remarks (Chapters 10 and 11).</li>
+        <li><strong>Finance</strong> — Fee Schedule, Invoices, Payment Terminal, Discounts, Expenses, Income &amp; Expenditure, Subscription, and <strong>Reports</strong> (Chapter 12).</li>
+        <li><strong>Store</strong> — Products (inventory), POS and Sales.</li>
+        <li><strong>System</strong> — My Subscription, My Wallet and Settings.</li>
     </ul>
+    <div class="note">
+        <strong>Looking for Payment History?</strong> The old single screen has been split. To search a pupil and take money, use <strong>Finance → Payment Terminal</strong>. To read, filter or export the register of every payment, use <strong>Finance → Reports → Payments</strong>. A bookmark to the old Payment History address now lands on the register.
+    </div>
 
     <h2 id="section-2">2. Student Management: Migrating Your Records</h2>
     <p>Now that your School Identity, Classes, and Fees are configured, it is time to populate EDUS with your student body. After clicking the "Confirm Fees & Import Students" button at the end of the Setup Wizard, you will arrive at the Quick Student Migration page.</p>
@@ -384,23 +468,25 @@
     </ul>
 
     <div class="note">
-        <strong>💡 A Note on Our Payment Philosophy: Why Manual Verification?</strong><br><br>
-        You might wonder why EDUS prioritizes offline bank transfers and manual slip uploads rather than instant online card payments. The answer is simple: <strong>We protect your school's revenue.</strong><br><br>
-        Automated online payment processors deduct a percentage-based service fee from every single transaction. For most educational institutions, losing a portion of every student's tuition to third-party processing charges is simply not sustainable. By utilizing our secure "Upload Slip & Verify" architecture, your school receives 100% of the owed fees directly into your designated bank account without any external deductions. Meanwhile, parents still enjoy a modern, digital experience by submitting their proof of payment right from their phones.<br><br>
-        <em>Future Upgrade Notice: We recognize that as schools grow, some may prefer to prioritize instant processing over transaction fees. In an upcoming EDUS feature release, we will introduce optional, automated payment gateway integrations for institutions that wish to eliminate manual Bursar verification entirely.</em>
+        <strong>💡 A Note on Our Payment Philosophy</strong><br><br>
+        EDUS defaults to <strong>offline bank transfer with manual verification</strong>, because automated processors deduct a percentage of every transaction and for most schools losing part of every child's tuition to processing charges is not sustainable. With a slip-and-verify flow, the school receives the full amount into its own account.<br><br>
+        <strong>Online payment is optional, not absent.</strong> Where the school has a payment provider configured and has opted in, a parent sees a <em>Pay online</em> button and the payment confirms itself. Where it has not, that button simply does not appear — the parent never sees a dead end. The decision belongs to the school, and it can change term by term.
     </div>
 
     <h3>3.5 Important: Parent Portal Login Credentials</h3>
-    <p>Parents have their own dedicated login to view their children's invoices and academic progress. It is the Admin's responsibility to inform parents of their default login credentials, which differ based on how the student was enrolled into the EDUS system:</p>
+    <p>Parents have their own dedicated login to view their children's invoices and academic progress. How that login is created depends on how the pupil came into the system:</p>
     <ul>
-        <li><strong>For Parents Registered Manually (Via the Admissions Form):</strong><br>
-        Username: The specific Email Address provided during the parent registration step.<br>
-        Default Password: <em>parent</em></li>
-        <li><strong>For Parents Registered via Bulk CSV Upload:</strong><br>
-        Username: Their Phone Number combined with the .edus.ng suffix (e.g., 8031234567.edus.ng).<br>
-        Default Password: <em>12345678</em></li>
+        <li><strong>Parents registered manually</strong> (New Admission form, with an email address):<br>
+        Username: the email address entered during registration.<br>
+        Default password: <em>parent</em></li>
+        <li><strong>Parents created by Quick Enrolment or a bulk CSV import</strong> (no email given):<br>
+        Username: the parent's phone number <strong>with an <code>@edus.ng</code> suffix</strong> — e.g. <code>8036249925@edus.ng</code>.<br>
+        Default password: <em>12345678</em></li>
+        <li><strong>Parents who applied online</strong> (through <code>/apply</code>): they chose their own password and verified their email address. There is nothing for the school to hand over.</li>
     </ul>
-    <p><em>Note: Parents are strongly encouraged to log in and change these default passwords immediately for security purposes.</em></p>
+    <div class="note">
+        <strong>Tell the parent to change the password on first sign-in.</strong> A default password is a known password, and the portal shows a child's fees. If a parent has forgotten theirs, use the reset link on the sign-in page — you never need to know it.
+    </div>
 
     <h3>3.6 The Parent Portal Experience</h3>
     <p>The EDUS Parent Portal is designed to give guardians full transparency over their children's financial standing with the school, reducing the number of phone calls and physical visits to the Bursar's office.</p>
@@ -433,7 +519,7 @@
 
     <h3>4.1 Managing Store Inventory</h3>
     <img src="{{ asset('images/manual/screencapture-gobarau-localhost-8082-store-products-2026-04-21-16_28_38.png') }}" alt="Store Inventory List" class="manual-screenshot">
-    <p>Before you can sell anything, you must stock your digital shelves. Navigate to Finance > Store Inventory.</p>
+    <p>Before you can sell anything, you must stock your digital shelves. Navigate to Store > Products.</p>
     <ul>
         <li><strong>Add Single Item:</strong> Use the panel on the left to manually enter a new product. You can specify the Item Name, Category (e.g., Books, Stationery), Price, and the initial Stock quantity.</li>
         <li><strong>Class Assignment:</strong> You can assign items to specific classes (e.g., "Math Book 2" for JSS 2) or leave it as a "General Item" for everyone.</li>
@@ -448,7 +534,7 @@
 
     <h3>4.2 The Point of Sale (POS) Terminal</h3>
     <img src="{{ asset('images/manual/screencapture-gobarau-localhost-8082-store-sales-search-2026-04-21-16_23_04.png') }}" alt="POS Terminal Student Search" class="manual-screenshot">
-    <p>When a student or parent comes to the administrative office to purchase an item, navigate to Finance > Store POS. The POS system offers two distinct workflows to give the Bursar maximum flexibility:</p>
+    <p>When a student or parent comes to the administrative office to purchase an item, navigate to Store > POS. The POS system offers two distinct workflows to give the Bursar maximum flexibility:</p>
     
     <p><strong>Option A: Selling to an Enrolled Student</strong></p>
     <ol>
@@ -471,29 +557,30 @@
 
     <h3>4.3 Understanding Financial Ledgers: Academic vs. Store</h3>
     <p>To keep the school's accounting clean and accurate, EDUS automatically separates mandatory school fees from physical store purchases.</p>
-    <p><strong>The Academic Fees Ledger (Finance > Academic Fees)</strong></p>
-    <img src="{{ asset('images/manual/screencapture-gobarau-localhost-8082-finance-invoice-academic-2026-04-21-16_32_40.png') }}" alt="Academic Fees Ledger" class="manual-screenshot">
+    <p><strong>The Invoices Ledger (Finance > Invoices)</strong></p>
+    <img src="{{ asset('images/manual/screencapture-gobarau-localhost-8082-finance-invoice-academic-2026-04-21-16_32_40.png') }}" alt="Invoices ledger" class="manual-screenshot">
     <ul>
         <li>This ledger tracks purely academic and statutory bills (Tuition, PTA, Exam Fees).</li>
         <li>It provides a clear view of which students have cleared their termly obligations and who still has an outstanding balance.</li>
     </ul>
 
-    <p><strong>The Store Sales Ledger (Finance > Store Sales)</strong></p>
+    <p><strong>The Store Sales Ledger (Store > Sales)</strong></p>
     <img src="{{ asset('images/manual/screencapture-gobarau-localhost-8082-finance-invoice-store-2026-04-21-16_26_33.png') }}" alt="Store Sales Ledger" class="manual-screenshot">
     <ul>
         <li>This ledger tracks every single POS transaction, separating Walk-In customers from enrolled students.</li>
         <li>The Bursar and Sales Personnel can use this screen to monitor total shop revenue, manage unpaid store bills, and track overall retail performance.</li>
     </ul>
 
-    <h2 id="section-5">5. Payment History & Bank Verification</h2>
-    <p>The Payment History module is your central hub for tracking all financial transactions related to students. Most importantly, it is where the Bursar officially confirms and clears the pending bank transfers uploaded by parents via their portal.</p>
+    <h2 id="section-5">5. Payment Terminal &amp; Bank Verification</h2>
+    <p>Taking money and proving money arrived are two separate jobs, and EDUS keeps them on separate screens. The <strong>Payment Terminal</strong> is where you search a pupil, record cash and upload a slip. The <strong>payment register</strong> under Finance → Reports is where every payment is listed, filtered and exported. This chapter covers the terminal; the reports are Chapter 12.</p>
 
     <h3>5.1 The Payment Terminal Search</h3>
     <img src="{{ asset('images/manual/screencapture-gobarau-localhost-8082-finance-payment-2026-04-21-17_51_31.png') }}" alt="Payment Terminal Search Bar" class="manual-screenshot">
-    <p>To look up any student's billing profile or payment record, navigate to Finance > Payment History.</p>
+    <p>To look up any student's billing profile or payment record, navigate to Finance > Payment Terminal.</p>
     <ul>
-        <li><strong>Searching:</strong> Simply type the student's Name or their Admission Number (e.g., 2026/100) into the search bar and click Search.</li>
+        <li><strong>Searching:</strong> Simply type the student's Name or their Admission Number (e.g., 26/21ECE) into the search bar and click Search.</li>
         <li><strong>Selecting a Record:</strong> The matching student will appear under the "Search Results." Clicking on their name will take you directly to their specific financial profile to view their invoices or log new cash payments.</li>
+        <li><strong>Reading the register:</strong> Finance > Reports > Payments lists every payment with its method, reference, status and who confirmed it, filters by date, class, method and status, and exports the filtered rows to CSV.</li>
     </ul>
 
     <h3>5.2 Verifying Parent Bank Transfers</h3>
@@ -547,7 +634,7 @@
     <ul>
         <li><strong>Comprehensive Ledger:</strong> This screen displays every single invoice generated for the student across all terms and sessions. It details the Total billed, the Amount Paid, the remaining Balance, and the Status.</li>
         <li><strong>Invoice Details:</strong> Click View next to any invoice to see the itemized breakdown of the charges.</li>
-        <li><strong>Quick Payment Access:</strong> If a parent is ready to pay an outstanding balance while you are reviewing this page, simply click the purple Open Payment Terminal button at the top right to instantly log the transaction.</li>
+        <li><strong>Quick Payment Access:</strong> If a parent is ready to pay an outstanding balance while you are reviewing this page, simply click the blue Open Payment Terminal button at the top right to instantly log the transaction.</li>
     </ul>
 
     <h3>6.5 End of Session: Student Promotion & Repetition</h3>
@@ -594,42 +681,43 @@
     </ol>
     <p>Once saved, the transaction will appear in the "Recent Transactions" list, and the "Total Spent" metric at the top right of the screen will automatically update.</p>
 
-    <h3>7.3 Generating Profit & Loss Reports</h3>
-    <img src="{{ asset('images/manual/screencapture-gobarau-localhost-8082-finance-report-profit-loss-2026-04-21-21_29_53.png') }}" alt="Profit and Loss Visual Dashboard" class="manual-screenshot">
-    <p>The ultimate tool for the school proprietor is the Profit & Loss dashboard. This screen automatically calculates your net revenue without requiring any manual spreadsheet work. Navigate to Finance > Profit & Loss on the left-hand menu.</p>
+    <h3>7.3 Generating Income &amp; Expenditure Reports</h3>
+    <img src="{{ asset('images/manual/screencapture-gobarau-localhost-8082-finance-report-profit-loss-2026-04-21-21_29_53.png') }}" alt="Income and Expenditure dashboard" class="manual-screenshot">
+    <p>The report a proprietor actually needs: Income &amp; Expenditure. It adds up every naira that came in, subtracts the naira that went out, and tells you whether the school finished the period in surplus or in deficit — without a spreadsheet. The route keeps its old address, so open <strong>Finance &gt; Income &amp; Expenditure</strong> from the left-hand menu.</p>
     <ul>
-        <li><strong>Custom Date Filtering:</strong> Use the calendar fields at the top to filter the report. You can review the financial performance of a specific week, a single term, or the entire academic session. Click Filter Report to update the data.</li>
-        <li><strong>Total Revenue:</strong> This card automatically pulls all collected income and splits it between your Academic Fees (tuition, levies) and your Store Sales (books, uniforms), giving you clear insight into your revenue streams.</li>
-        <li><strong>Total Expenses:</strong> This pulls the sum of everything logged in the Expense Manager during that timeframe.</li>
-        <li><strong>Net Profit / (Loss):</strong> The system automatically subtracts your expenses from your revenue to display your exact profit.</li>
-        <li><strong>Cash Flow Visualization:</strong> A clear, color-coded bar chart provides a visual percentage breakdown of how much of your revenue was retained as profit versus how much was consumed by operational expenses.</li>
+        <li><strong>Custom Date Filtering:</strong> Use the calendar fields at the top to filter the report. You can review a specific week, a single term, or the entire academic session. Click Filter Report to update the data.</li>
+        <li><strong>Total Income:</strong> This card pulls all confirmed money received and splits it between Academic Fees (tuition, levies) and Store Sales (books, uniforms).</li>
+        <li><strong>Total Expenses:</strong> This pulls the sum of everything logged in the Expense Manager during the same dates.</li>
+        <li><strong>Surplus / (Deficit):</strong> Income minus expenditure, labelled for what it is. A positive figure is a surplus carried forward; a negative figure is a deficit the school has to cover.</li>
+        <li><strong>Where the income went:</strong> A colour-coded bar showing what share of income was kept as surplus and what share was consumed by running costs.</li>
     </ul>
 
     <h2 id="section-8">8. System Administration</h2>
     <p>The System section on your left-hand navigation menu is restricted to the Proprietor or top-level Administrator. Here, you manage your EDUS software license, fund your communication wallet, and customize your school's core identity.</p>
 
     <h3>8.1 My Subscription</h3>
-    <img src="{{ asset('images/manual/screencapture-gobarau-localhost-8082-subscription-2026-04-21-21_38_33.png') }}" alt="Subscription Plans" class="manual-screenshot">
-    <p>To keep your EDUS portal active and seamlessly manage your student data, you must maintain an active subscription. Navigate to System > My Subscription.</p>
+    {# No screenshot here on purpose: the page it would show prints the current
+       plan prices, and prices change. A manual that quotes last season's
+       figures is worse than one without the picture. #}
+    <p>To keep your EDUS portal active and manage your school's data, you must keep a current subscription. Navigate to System > My Subscription.</p>
     <ul>
-        <li><strong>Current Status:</strong> The top banner displays your current active plan and its expiration date. If your trial or plan has expired, a red "EXPIRED" tag will alert you.</li>
-        <li><strong>Choosing a Plan:</strong> EDUS offers flexible plans based on your school's size:
-            <ul>
-                <li>Starter: Best for small schools (Up to 100 Students).</li>
-                <li>Growth Plan: Best for mid-sized institutions (Up to 400 Students).</li>
-                <li>Scale Plan: Best for large schools needing unlimited student capacity.</li>
-            </ul>
-        </li>
-        <li><strong>Included Credits:</strong> Notice that paid plans come with bundled Wallet Credits, which you can use for automated SMS notifications!</li>
-        <li><strong>How to Upgrade:</strong> Simply click the dark Switch to [Plan Name] button under your desired tier to extend your access for the term.</li>
+        <li><strong>Current status:</strong> The banner shows the period you have paid for and the date it ends. A red <em>EXPIRED</em> tag means the portal has gone read-only: everyone can still sign in and read, but nothing can be saved until the invoice is settled.</li>
+        <li><strong>Choosing a plan:</strong> the page lists the plans currently on offer. This manual deliberately does not quote prices — they change, and the page is always the current source. Read the plan names and their terms on screen, decide, and the amount is shown before anything is committed.</li>
+        <li><strong>Register this term:</strong> Choose the session, term and declared number of pupils, then click <strong>Register this term</strong>. The registration creates the invoice and shows the amount before you commit. Registering the same term twice is blocked — a pending invoice for that term stops a second one.</li>
+        <li><strong>Paying the invoice:</strong> Where the school's payment gateway is configured you can pay online and the subscription activates as soon as the gateway confirms. Otherwise a transfer slip and proof upload work exactly as they do for a parent's fees, and the platform operator verifies it.</li>
+        <li><strong>Invoice history:</strong> <strong>Invoice history →</strong> in the header lists every subscription invoice for the school, with a pay link on anything still outstanding.</li>
+        <li><strong>Check the roll:</strong> the platform operator reviews the declared number of pupils against the actual roll. A large difference is invoiced separately, so declare accurately rather than optimistically.</li>
     </ul>
+    <div class="note">
+        <strong>Why the portal goes read-only, not blank.</strong> An expired school keeps every record; it simply cannot add or change them. Nothing is deleted, and paying restores full use immediately — the data was never at risk.
+    </div>
 
     <h3>8.2 My Wallet (SMS & Communication Credits)</h3>
     <img src="{{ asset('images/manual/screencapture-gobarau-localhost-8082-wallet-2026-04-21-21_39_02.png') }}" alt="Wallet and Credits Dashboard" class="manual-screenshot">
     <p>EDUS keeps parents informed through automated SMS alerts for things like payment receipts and new enrollments. To send these messages, your school needs a funded communication wallet. Navigate to System > My Wallet.</p>
     <ul>
-        <li><strong>Checking Your Balance:</strong> The large purple card displays your available balance in Naira.</li>
-        <li><strong>Quick Top Up:</strong> To add funds, enter an amount in the input box (Minimum: N1,000) and click Add Funds. Just like parent payments, you will be asked to upload your proof of payment for the system admin to verify and credit your wallet.</li>
+        <li><strong>Checking Your Balance:</strong> The large card at the top displays your available balance in Naira.</li>
+        <li><strong>Quick Top Up:</strong> To add funds, enter an amount in the input box (the form states the minimum) and click Add Funds. Just like parent payments, you will be asked to upload your proof of payment for the system admin to verify and credit your wallet.</li>
         <li><strong>Transaction History:</strong> The bottom panel keeps a permanent ledger of all your wallet top-ups and credit deductions, ensuring complete transparency over your communication spending.</li>
     </ul>
 
@@ -647,10 +735,463 @@
                 <li>Fee Payment Receipts (Sent when a Bursar confirms a payment).</li>
                 <li>Calendar & Event Reminders.</li>
             </ul>
-            <em>Note: The cost per SMS unit (e.g., N12/unit) is displayed next to each option. These funds are deducted from your "My Wallet" balance.</em>
+            <em>Note: The cost per SMS unit is displayed next to each option on screen. These funds are deducted from your "My Wallet" balance.</em>
         </li>
-        <li>Click the purple <strong>Save School Settings</strong> button at the bottom to instantly apply your changes across the entire EDUS platform.</li>
+        <li>Click the blue <strong>Save School Settings</strong> button at the bottom to instantly apply your changes across the entire EDUS platform.</li>
     </ol>
+
+    <h2 id="section-9">9. Academic Structure &amp; Assignments</h2>
+    <p>Results, attendance and the report card all depend on the same frame: sessions and terms, classes, subjects, a grading scale, and staff who are assigned to teach and approve. Build this frame once, in the order below, before a term starts.</p>
+
+    <div class="note">
+        <strong>Order matters.</strong> A subject cannot be assigned to a class until it exists. A teacher cannot enter scores until they are assigned to a class-subject. And a result cannot be approved until someone holds the approving role. Work top to bottom.
+    </div>
+
+    <h3>9.1 Sessions and terms</h3>
+    <p>Open <strong>Administration → Academic</strong>. A <em>session</em> is an academic year (for example 2026/2027); each session holds three terms. Exactly <strong>one term is active</strong> at a time, and the active term is what the dashboard shows and what new invoices and registers attach to.</p>
+    <ol>
+        <li>Create the session, then its terms with resumption and vacation dates.</li>
+        <li>Activate the term the school is actually in.</li>
+        <li>At the change of term, create and activate the next one — the previous term closes automatically and keeps its own figures.</li>
+    </ol>
+    <p>Every report has a term selector. Choosing <em>All terms</em> gives the whole history; choosing one term gives exactly that term.</p>
+
+    <h3>9.2 Classes and arms</h3>
+    <p>Open <strong>Administration → Classes</strong>. The smart creator builds the whole ladder from a level and a list of arms: level <code>JSS 1</code> with arms <code>A,B</code> creates <strong>JSS 1 A</strong> and <strong>JSS 1 B</strong>. One class is one arm — a pupil sits in one class, and every invoice, register and result belongs to it.</p>
+    <ul>
+        <li>Enter the level once; add the arms as a comma-separated list.</li>
+        <li>Classes are ordered by the sequence you give them, so the fee schedule and the matrix read in school order.</li>
+        <li>Never create a second class with the same name — reports would split the same pupils across two rows.</li>
+    </ul>
+
+    <h3>9.3 Year groups</h3>
+    <p>Open <strong>Administration → Year Groups</strong>. A year group gathers the arms of one level (JSS 1 A and JSS 1 B belong to <em>JSS 1</em>). The year-group master approves results for the whole group at once, and the performance report compares arms against each other.</p>
+
+    <h3>9.4 Departments, subjects and the HOD</h3>
+    <ol>
+        <li><strong>Departments</strong> — create the academic departments (Sciences, Languages, Humanities…).</li>
+        <li><strong>Subjects</strong> — name, short code and the department it belongs to.</li>
+        <li>Assign one <strong>Head of Department</strong> per department: that person is the first approver of any result in those subjects.</li>
+    </ol>
+
+    <h3>9.5 Class subjects</h3>
+    <p>Open <strong>Teaching → Class Subjects</strong>. This is the bridge between a class and its subjects for one session, and the only place a subject becomes teachable. Mark each row <strong>Core</strong> or <strong>Elective</strong>. A class with no subjects hides those subjects from teachers, from score entry and from the report card.</p>
+
+    <h3>9.6 Grading scale</h3>
+    <p>Open <strong>Teaching → Grading Scale</strong>. Each band carries a range, a letter grade, grade points and a remark. Bands must not overlap or leave a gap: a pupil whose total falls in a gap gets no grade at all, and the report card prints a blank where the grade should be. Order the bands from highest to lowest.</p>
+
+    <h3>9.7 Behaviour traits</h3>
+    <p>Open <strong>System → Settings → Behaviour Traits</strong>. These are the five or six qualities a form teacher rates each term (for example <em>Punctuality</em>, <em>Neatness</em>, <em>Cooperation</em>). Use the move arrows to set the order they appear on the report card. Removing a trait stops new ratings; ratings already recorded stay in the pupil's history.</p>
+
+    <h3>9.8 Staff accounts</h3>
+    <p>Open <strong>Administration → Staff</strong> and create a login for each member of staff. The role decides which menu groups appear — a bursar never sees Result Entry, a teacher never sees Finance. Two staff cannot share an email address.</p>
+
+    <h3>9.9 The four assignments</h3>
+    <p>Open <strong>Administration → Staff Assignments</strong>. There are four, and each one unlocks a specific screen:</p>
+    <div class="table-scroll">
+        <table class="manual-table">
+            <thead>
+                <tr><th>Assignment</th><th>What it unlocks</th><th>How many</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Subject Teacher</strong></td>
+                    <td>Score entry for that class and subject only, and the mark sheet for it</td>
+                    <td>Many (one per class × subject)</td>
+                </tr>
+                <tr>
+                    <td><strong>Form Teacher</strong></td>
+                    <td>The class register, behaviour ratings, and confirming a pupil's results are complete</td>
+                    <td>One per class</td>
+                </tr>
+                <tr>
+                    <td><strong>HOD</strong></td>
+                    <td>Approving or rejecting results in the department's subjects</td>
+                    <td>One per department</td>
+                </tr>
+                <tr>
+                    <td><strong>Year Group Master</strong></td>
+                    <td>The final approval for a year group, and the year-group status report</td>
+                    <td>One per year group</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <p>A teacher with no assignment sees an empty state explaining that nothing has been assigned yet — that is not an error. It means the assignment step is still outstanding.</p>
+
+    <div class="checkpoint">
+        <strong>Check before you move on</strong>
+        <ul>
+            <li>Exactly one term is active, and the dashboard shows its name.</li>
+            <li>Each class has at least the subjects it actually teaches this session.</li>
+            <li>The grading scale covers 0–100 with no gaps and no overlaps.</li>
+            <li>Each class has one form teacher; each department has one HOD; each year group has one master.</li>
+        </ul>
+    </div>
+
+    <h2 id="section-10">10. Results, Approvals &amp; Report Cards</h2>
+    <p>A result moves through four hands: the <strong>subject teacher</strong> enters it, the <strong>form teacher</strong> confirms the class is complete, the <strong>HOD</strong> approves it academically, and the <strong>year group master</strong> releases it. Nothing reaches a parent until the last signature.</p>
+
+    <h3>10.1 The assessment scheme</h3>
+    <p>Each subject carries continuous assessment (CA1–CA3), the examination, and where relevant a practical. The entry screen shows the components side by side and calculates the total as you type. Grades, points and remarks come from the grading scale in §9.6 — never typed by hand.</p>
+
+    <h3>10.2 A teacher enters scores</h3>
+    <ol>
+        <li>Open <strong>Teaching → Result Entry</strong>. Only your assigned classes and subjects are listed.</li>
+        <li>Open a class-subject. The pupil list is the roster of that class.</li>
+        <li>Enter the component scores. Leave a pupil blank only if they were not assessed.</li>
+        <li>Click <strong>Save draft</strong> as often as you like — a draft is private to you and can be corrected.</li>
+        <li>When the column is complete, <strong>Submit for approval</strong>. Submission locks the scores: you cannot edit them until they are rejected or unlocked.</li>
+    </ol>
+    <p><strong>Working offline:</strong> if you would rather type in Excel, download the template for that class-subject from the entry screen, fill it, and import it back. The template already has the correct pupil list, so a row can never land on the wrong child.</p>
+
+    <h3>10.3 The approval chain</h3>
+    <div class="table-scroll">
+        <table class="manual-table">
+            <thead>
+                <tr><th>Stage</th><th>Who</th><th>What they are confirming</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><strong>1. Submitted</strong></td><td>Subject teacher</td><td>Every pupil in the class has a score for this subject</td></tr>
+                <tr><td><strong>2. Class confirmed</strong></td><td>Form teacher</td><td>No pupil is missing a subject, and the class list is right</td></tr>
+                <tr><td><strong>3. HOD approved</strong></td><td>Head of Department</td><td>The marks are academically sound for that subject</td></tr>
+                <tr><td><strong>4. Released</strong></td><td>Year Group Master</td><td>The year group is complete and may be published</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <p>Open <strong>Teaching → Approvals</strong> for everything waiting on you. A rejection sends the result back to the subject teacher with a reason, and only to them. An administrator can <strong>unlock</strong> an approved result with a recorded reason — use that for a genuine correction, not to bypass the chain.</p>
+
+    <h3>10.4 Term remarks</h3>
+    <p>Open <strong>Teaching → Term Remarks</strong> while the results are being approved. Write the form teacher's comment for each pupil; it prints on the report card and is visible to the parent. Do it before the results are released, because the card is generated from what is stored at that moment.</p>
+
+    <h3>10.5 The reports, and what each one answers</h3>
+    <div class="table-scroll">
+        <table class="manual-table">
+            <thead>
+                <tr><th>Report</th><th>Answers</th><th>Who opens it</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><strong>Teacher's mark sheet</strong></td><td>What did my class score in my subject, and who is falling behind?</td><td>Subject teacher</td></tr>
+                <tr><td><strong>Form teacher's sheet</strong></td><td>Is this class complete across all subjects, and where does each pupil stand overall?</td><td>Form teacher</td></tr>
+                <tr><td><strong>HOD's subject report</strong></td><td>How did my department perform across classes?</td><td>HOD</td></tr>
+                <tr><td><strong>Year-group status</strong></td><td>Which classes and subjects are still outstanding for this year?</td><td>Year Group Master</td></tr>
+                <tr><td><strong>Administrator's overview</strong></td><td>How much of the school has finished entry, by class and subject?</td><td>Admin</td></tr>
+                <tr><td><strong>Pupil report</strong></td><td>This child's subjects, scores, grade, position and remark</td><td>Admin, form teacher, parent (own child)</td></tr>
+                <tr><td><strong>Class broadsheet</strong></td><td>Every pupil against every subject, with positions — printable</td><td>Form teacher, admin</td></tr>
+                <tr><td><strong>Session transcript</strong></td><td>A pupil's full history across sessions, for transfer or admission</td><td>Admin</td></tr>
+                <tr><td><strong>Whole-school performance</strong></td><td>Comparisons across classes and subjects, with a shareable pack</td><td>Admin, proprietor</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>10.6 The report card</h3>
+    <ol>
+        <li>Open the pupil's report and <strong>preview</strong> it — the preview and the printed card are the same document.</li>
+        <li>Choose <strong>Print / PDF</strong> to produce the A4 card.</li>
+        <li><strong>Email</strong> it to the guardian, or <strong>share</strong> it as a link when the parent does not use the portal.</li>
+        <li>A shared link carries a token, expires, and can be revoked from the same screen. Revoke it when a parent leaves the school.</li>
+    </ol>
+    <p>Every issued card carries a short code and a QR in the footer. Anyone holding the paper can open <code>/verify/&lt;code&gt;</code> and confirm the school issued it, for which pupil and term — without seeing any marks. See §14.</p>
+
+    <div class="checkpoint">
+        <strong>Check before you move on</strong>
+        <ul>
+            <li>A teacher cannot see, let alone edit, another teacher's subject.</li>
+            <li>A submitted result cannot be edited until it is rejected or unlocked.</li>
+            <li>A rejection returns to the subject teacher only, with the reason visible.</li>
+            <li>The totals on the report card match the entry screen kobo for kobo.</li>
+            <li>The card's verification code resolves, and the page shows no marks.</li>
+        </ul>
+    </div>
+
+    <h2 id="section-11">11. Attendance &amp; Behaviour</h2>
+    <p>Both live under <strong>Teaching → My Class</strong> and are the form teacher's daily and termly duties.</p>
+
+    <h3>11.1 The daily register</h3>
+    <ol>
+        <li>Open <strong>My Class → Attendance</strong>.</li>
+        <li>Pick the date. Today is selected by default; a past date can be corrected.</li>
+        <li>Mark each pupil <strong>Present</strong>, <strong>Absent</strong> or <strong>Late</strong>.</li>
+        <li>Save. There is one register per class per day — saving again updates that day rather than creating a second sheet.</li>
+    </ol>
+    <p>Amendments to a past register are recorded in the change log, so a corrected mark never silently replaces the original.</p>
+
+    <div class="note">
+        <strong>Absence is not a fee matter.</strong> Marking a pupil absent does not change any invoice, and a debt does not stop a pupil being marked present. The two ledgers are deliberately independent.
+    </div>
+
+    <h3>11.2 The attendance summary</h3>
+    <p><strong>My Class → Attendance Summary</strong> shows each pupil's days present, days absent and percentage for the term. Use it with the form teacher's report: a pupil below the school's threshold is usually the first conversation of the term.</p>
+
+    <h3>11.3 Behaviour ratings</h3>
+    <ol>
+        <li>Open <strong>My Class → Behaviour</strong>.</li>
+        <li>Each pupil is listed against the traits configured in §9.7.</li>
+        <li>Rate each trait and save. Ratings are per term, so a new term starts clean while past terms stay visible in the pupil's history.</li>
+    </ol>
+    <p>A parent sees only their own child's ratings, on the report card.</p>
+
+    <div class="checkpoint">
+        <strong>Check before you move on</strong>
+        <ul>
+            <li>Only one register exists for a class on a given day.</li>
+            <li>An amendment leaves the earlier value in the change log.</li>
+            <li>Behaviour ratings appear on the report card in the configured order.</li>
+        </ul>
+    </div>
+
+    <h2 id="section-12">12. Fee Reporting &amp; the Term Close</h2>
+    <p>Open <strong>Finance → Reports</strong>. Every figure on every screen comes from one service, so a balance shown on the collection screen is the same balance shown on the invoice, the statement and the term summary. This is the section a proprietor, a board or a bank will ask you to produce.</p>
+    <p><strong>Who can open it:</strong> bursar and administrator. Teachers and store keepers cannot.</p>
+
+    <h3>12.1 The figures, defined</h3>
+    <div class="table-scroll">
+        <table class="manual-table">
+            <thead>
+                <tr><th>Figure</th><th>Means</th><th>Common mistake</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><strong>Billed</strong></td><td>The invoice total <em>after</em> any discount — what the family actually owes</td><td>Reading the gross figure as the bill. Gross = billed + discount.</td></tr>
+                <tr><td><strong>Discount</strong></td><td>The value of scholarships and waivers applied this term</td><td>Adding it to billed instead of subtracting it.</td></tr>
+                <tr><td><strong>Collected</strong></td><td>Payments the bursar has <em>confirmed</em></td><td>Counting a parent's uploaded proof as money received.</td></tr>
+                <tr><td><strong>Awaiting confirmation</strong></td><td>Proofs uploaded or claimed but not yet verified</td><td>Chasing a family who has in fact already paid.</td></tr>
+                <tr><td><strong>Outstanding</strong></td><td>Billed minus collected; never below zero</td><td>Subtracting a credit from one family against another family's debt.</td></tr>
+                <tr><td><strong>Collection rate</strong></td><td>Collected ÷ billed, as a percentage</td><td>Comparing rates across terms of different length.</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <p><strong>Part payments are invoice-level.</strong> If a family pays half of a ₦60,000 invoice, the invoice is <em>Partially paid</em> and ₦30,000 remains outstanding. The system does not split a payment across fee items, so do not promise a parent that their money "went to tuition first".</p>
+    <p><strong>Store purchases are a separate ledger.</strong> A child's books and uniforms are charged to the store ledger. They appear in the debtors report and in the statement only when you include store purchases — because a store debt is not a fee debt.</p>
+
+    <h3>12.2 What each report answers</h3>
+    <div class="table-scroll">
+        <table class="manual-table">
+            <thead>
+                <tr><th>Report</th><th>Question</th><th>Use it</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><strong>Overview</strong></td><td>Where does the term stand right now?</td><td>Every morning, before anything else</td></tr>
+                <tr><td><strong>Daily collections</strong> (day book)</td><td>What came in today, by method?</td><td>At the close of business, to balance the cash box</td></tr>
+                <tr><td><strong>By class</strong></td><td>Which class is lagging behind, and by how much?</td><td>Weekly, to brief the proprietor and the form teachers</td></tr>
+                <tr><td><strong>Debtors by guardian</strong></td><td>Which families owe, how much in total, and what is their phone number?</td><td>Weekly — one phone call per family, not one per child</td></tr>
+                <tr><td><strong>Statement</strong></td><td>What exactly has this pupil been charged and paid?</td><td>When a parent disputes a balance</td></tr>
+                <tr><td><strong>Payment register</strong></td><td>Every confirmed payment, filtered</td><td>Audit, and reprinting a receipt</td></tr>
+                <tr><td><strong>Reconciliation</strong></td><td>Cash vs transfer vs POS vs cheque; verified vs pending</td><td>Weekly, and before banking</td></tr>
+                <tr><td><strong>Class matrix</strong></td><td>Pupil × fee item: paid, partial or unpaid</td><td>When a form teacher is asked "has this child paid?"</td></tr>
+                <tr><td><strong>Discounts</strong></td><td>What was waived, and to whom</td><td>Before the term closes, to justify the shortfall</td></tr>
+                <tr><td><strong>Application fees</strong></td><td>Collected, waived, awaiting confirmation, still unpaid</td><td>During the admission season</td></tr>
+                <tr><td><strong>Expenses</strong></td><td>Every naira that left the school, by category and payee</td><td>When the proprietor asks what the term cost</td></tr>
+                <tr><td><strong>Income statement</strong></td><td>Income by source, expenses by category, and the surplus</td><td>Board pack, bank, or inspection</td></tr>
+                <tr><td><strong>Term summary PDF</strong></td><td>The same numbers, on one A4 sheet</td><td>Handing the term to a proprietor or a bank</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <p>Every list exports to <strong>CSV</strong> using the filters you have applied — not the whole table. Open it in Excel if you need to work further; the figures will match the screen exactly.</p>
+
+    <h3>12.3 Debtors, one call per family</h3>
+    <ol>
+        <li>Open <strong>Finance → Reports → Outstanding fees</strong>.</li>
+        <li>Each row is a <strong>guardian</strong>, with the total owed across all their children, plus a phone number. Expand the row to see each child's own balance.</li>
+        <li>Work down the list from the largest balance.</li>
+        <li>Use <strong>WhatsApp</strong> on a row to open a prefilled reminder, or <strong>export the reminder CSV</strong> for the whole filtered list.</li>
+    </ol>
+    <div class="note">
+        <strong>Nothing is sent automatically.</strong> The system drafts the message; a member of staff reads it and presses send. That is deliberate — a wrong reminder to the wrong family costs more than the fee.
+    </div>
+    <p>Rows grouped under <strong>No guardian assigned</strong> are pupils whose record has no guardian linked. Those families cannot be contacted, so fix the pupil record first (see Chapter 6).</p>
+
+    <h3>12.4 The statement, as an issued document</h3>
+    <p>The statement screen shows one pupil's ledger. Next to <strong>Print / Save PDF</strong> there is an <strong>Official PDF</strong> button. That is the document to hand over: A4, school masthead, billed/paid/outstanding, the running ledger, payment instructions quoting the admission number, and a verification QR in the footer.</p>
+    <p>Parents can produce the same document themselves from <strong>Fees → Download statement (PDF)</strong> in their portal (§13.3). They only ever see their own children.</p>
+
+    <h3>12.5 Closing the term</h3>
+    <ol>
+        <li>Confirm the final day's collections and verify every pending proof (§12.2, reconciliation). Unverified proofs are <em>not</em> income, and the term summary will say so.</li>
+        <li>Check the discounts report — a scholarship that was never applied is a parent complaint waiting to happen.</li>
+        <li>Generate the <strong>term summary PDF</strong> from the reports section. Read it before you send it: expected, collected, outstanding, unverified, income statement, collection by class and the largest family balances.</li>
+        <li>At term end the same PDF is <strong>emailed to the proprietor automatically</strong>, once per term. Re-sending is blocked while a copy has already been recorded, so nobody receives it twice.</li>
+        <li>The proprietor also receives a <strong>weekly outstanding-fees email</strong> for as long as the term is running.</li>
+    </ol>
+    <p>The school's own service provider schedule and command reference is in <code>docs/operations/FEE-REPORT-EMAILS.md</code>. If the emails stop arriving, that is the first page to check — usually mail credentials, not the report.</p>
+
+    <h3>12.6 Reading a printed fee document</h3>
+    <ul>
+        <li><strong>Masthead:</strong> school name and contact details, and the document's own identity on the right (pupil admission number, or the term).</li>
+        <li><strong>Figures:</strong> billed, paid, outstanding and awaiting confirmation. Only <em>paid</em> is money in hand.</li>
+        <li><strong>Ledger:</strong> every invoice and every confirmed payment, in date order, with a running balance.</li>
+        <li><strong>Footer:</strong> the issuer, the period, a verification code and a QR. That footer is what makes the paper a document rather than a printout — see §14.</li>
+    </ul>
+
+    <div class="checkpoint">
+        <strong>Check before you move on</strong>
+        <ul>
+            <li>Collected + outstanding equals billed, on every report.</li>
+            <li>A pending proof never counts as collected until it is confirmed.</li>
+            <li>The debtors total for a family equals the sum of that family's children.</li>
+            <li>A CSV contains exactly the rows on screen, with the same filter.</li>
+            <li>An issued PDF prints at A4, and its code resolves to a page with no amounts.</li>
+        </ul>
+    </div>
+
+    <h2 id="section-13">13. Online Applications &amp; the Parent Portal</h2>
+    <p>The parent side has two parts: a public application flow that needs no account, and a signed-in portal for families already with the school.</p>
+
+    <h3>13.1 The parent applies</h3>
+    <ol>
+        <li>The parent opens the school's own address and clicks <strong>Apply</strong>.</li>
+        <li>They create an account with their email (or sign in if they already have one), and verify the email address.</li>
+        <li>They complete the guardian details, then the child's details, and choose the class applied for.</li>
+        <li>They pay the <strong>application fee</strong> — online where the school accepts online payment, or by transfer with a proof uploaded.</li>
+        <li>The application is submitted and appears on their dashboard with a status. They can add a second child without creating a second account.</li>
+    </ol>
+    <p><strong>Apply is always available</strong>, even when admissions are closed. A parent who arrives out of season can still start, and the status band tells them when admission is next open.</p>
+
+    <h3>13.2 The school's side</h3>
+    <ol>
+        <li>Open <strong>Admissions → Applications</strong>. Filter by status and search by name or reference.</li>
+        <li>Open an application. Review the guardian, the child, and the fee.</li>
+        <li><strong>The application fee has its own step.</strong> A transfer is shown as <em>Awaiting confirmation</em> until a staff member checks the proof and confirms it. Reject it with a reason, or waive it for a member of staff's child.</li>
+        <li>When the fee is settled, click <strong>Admit</strong>. This creates the pupil record, the enrolment, the term invoice, and (when SMS is enabled) notifies the guardian.</li>
+        <li>Print the admission letter if the family needs one.</li>
+    </ol>
+    <div class="note">
+        <strong>Do not admit before confirming the fee.</strong> Admission is what creates the invoice and the pupil record. Admitting on an unconfirmed promise leaves a pupil in the books and a fee that nobody is chasing.
+    </div>
+    <p>Walk-in and bulk intake — a family that arrives at the gate, or a whole intake from a spreadsheet — is Chapter 2 (migration) and Chapter 3 (admission and billing). Use the online flow only for families who actually applied.</p>
+
+    <h3>13.3 The parent portal</h3>
+    <p>A parent signs in at the school's address. On a phone the portal is four tabs and nothing else:</p>
+    <div class="table-scroll">
+        <table class="manual-table">
+            <thead>
+                <tr><th>Tab</th><th>What the parent gets</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><strong>Home</strong></td><td>Each child with their outstanding balance, any flash notice, upcoming calendar, and the last three applications</td></tr>
+                <tr><td><strong>Applications</strong></td><td>Every application and its status, from draft to admitted</td></tr>
+                <tr><td><strong>Results</strong></td><td>The released report card for the active term, printable and shareable</td></tr>
+                <tr><td><strong>Fees</strong></td><td>The child's ledger, the payment slip with the school's bank details, <em>Pay online</em> where enabled, proof upload, receipts, and <strong>Download statement (PDF)</strong></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>13.4 What a parent can never see</h3>
+    <p>Every parent screen checks the relationship, not just the login. Changing an id in the address bar to another family's child, invoice or statement is refused. Test it deliberately before you tell parents the portal is live: sign in as one parent, try to open another family's child, and expect to be turned away.</p>
+
+    <h3>13.5 When a parent cannot sign in</h3>
+    <ul>
+        <li><strong>Forgotten password:</strong> use the reset link on the sign-in page. The email goes to the address on the guardian record.</li>
+        <li><strong>No child shown:</strong> the guardian record is not linked to the pupil. Fix the pupil's guardian in the student profile, not the parent's account.</li>
+        <li><strong>Verification email missing:</strong> ask them to check spam first; the link expires, so resend rather than reuse an old one.</li>
+    </ul>
+
+    <div class="checkpoint">
+        <strong>Check before you move on</strong>
+        <ul>
+            <li>Admitting an application creates exactly one pupil, one enrolment and one invoice.</li>
+            <li>An unconfirmed application fee blocks admission.</li>
+            <li>A parent sees only their own children — verified by changing the URL.</li>
+            <li>The statement PDF downloads on a phone and its code resolves.</li>
+            <li>All four tabs work at 360 pixels wide with no sideways scrolling.</li>
+        </ul>
+    </div>
+
+    <h2 id="section-14">14. Verifying an EDUS Document</h2>
+    <p>Every document EDUS issues — a report card, a fee statement, a term summary, a performance pack — carries a short code and a QR. Anyone holding the paper can check that it is genuine without an account and without being shown the contents. This is what protects the school against a forged copy.</p>
+
+    <div class="table-scroll">
+        <table class="manual-table">
+            <thead>
+                <tr><th>Document</th><th>Scan or open</th><th>The page confirms</th><th>It never shows</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Report card</strong></td>
+                    <td><code>/verify/&lt;code&gt;</code></td>
+                    <td>Issued by this school, for this pupil and term</td>
+                    <td>Marks, grades or position</td>
+                </tr>
+                <tr>
+                    <td><strong>Term summary &amp; fee statement</strong></td>
+                    <td><code>/verify/fee-report/&lt;code&gt;</code></td>
+                    <td>Issued by this school, the document type, the period and the issue date</td>
+                    <td>Any amount or balance</td>
+                </tr>
+                <tr>
+                    <td><strong>Whole-school performance</strong></td>
+                    <td><code>/pv/&lt;term&gt;/&lt;year-group&gt;/&lt;code&gt;</code></td>
+                    <td>The pack is genuine for that term and year group</td>
+                    <td>Individual pupils' results</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <p><strong>Shared links are different from verification codes.</strong> A shared report card or performance pack link (<code>/r/…</code>, <code>/p/performance…</code>) carries a random token that expires and can be revoked. The verification code on the printed footer is permanent, so a copy already filed with a bank or an inspector keeps validating after the share link has died.</p>
+    <p>Verification pages are excluded from search engines and are never cached. If a code does not resolve, the document was not issued by this school — or the code was retyped wrongly (there are no <code>O</code>, <code>0</code>, <code>I</code> or <code>1</code> characters in a code, precisely so this is hard to get wrong).</p>
+
+    <h2 id="section-15">15. What Changed in 2.0</h2>
+    <p>If you are moving a school from version 1.0, this is the complete list of what behaves differently. Everything in 1.0 still works the same way unless it is named below.</p>
+
+    <div class="table-scroll">
+        <table class="manual-table">
+            <thead>
+                <tr><th>Area</th><th>In 1.0</th><th>In 2.0</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Application fee</strong></td>
+                    <td>A parent could mark the fee as paid and it stayed that way</td>
+                    <td>Every offline fee waits as <em>Awaiting confirmation</em> until a staff member confirms, rejects or waives it</td>
+                </tr>
+                <tr>
+                    <td><strong>Discounts</strong></td>
+                    <td>Some screens charged the gross amount, some the net</td>
+                    <td>Every screen, the payment terminal and the bulk importer use one net figure. Gross = billed + discount</td>
+                </tr>
+                <tr>
+                    <td><strong>Fee reporting</strong></td>
+                    <td>Income &amp; Expenditure and a payment history</td>
+                    <td>Thirteen reports from the day book to the income statement, with CSV on every list — Chapter 12</td>
+                </tr>
+                <tr>
+                    <td><strong>Statements</strong></td>
+                    <td>Printed from the browser</td>
+                    <td>An issued A4 PDF with a verification footer, for the bursar and for the parent</td>
+                </tr>
+                <tr>
+                    <td><strong>Term close</strong></td>
+                    <td>The proprietor asked for the numbers</td>
+                    <td>The term summary PDF is emailed automatically at term end; a weekly outstanding-fees email runs during the term</td>
+                </tr>
+                <tr>
+                    <td><strong>Debtors</strong></td>
+                    <td>One row per child</td>
+                    <td>One row per family, expandable to each child, with a phone number and a drafted reminder</td>
+                </tr>
+                <tr>
+                    <td><strong>Results</strong></td>
+                    <td>Entry only</td>
+                    <td>A four-stage approval chain, HOD and year-group reports, term remarks, and a report card with a verification code — Chapters 10 and 14</td>
+                </tr>
+                <tr>
+                    <td><strong>Privacy</strong></td>
+                    <td>Some parent screens checked only that you were signed in</td>
+                    <td>Every parent screen checks the relationship — invoices and statements included</td>
+                </tr>
+                <tr>
+                    <td><strong>Mobile</strong></td>
+                    <td>Usable on a laptop</td>
+                    <td>Built for a 360-pixel phone first: no sideways scrolling, every action thumb-sized, every field large enough that the page does not zoom</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="note">
+        <strong>Upgrade note for 1.0 schools.</strong> Old invoices that were created as "tuition" by the bulk importer are converted to the academic ledger so they appear in the new reports. If a figure in a 1.0 report does not match a 2.0 report, the 2.0 figure is the correct one: it is calculated from invoices and confirmed payments only.
+    </div>
+
+    <p>Questions the manual does not answer should be raised with the school's EDUS support contact rather than worked around — a shortcut in one term becomes a disputed figure at the next.</p>
 </div>
 
 <script>

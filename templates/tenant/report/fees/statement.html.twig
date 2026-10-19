@@ -1,0 +1,164 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Fee Statement — {{ data.student.fullName }}{% endblock %}
+
+{% block body %}
+<style>
+    @media print {
+        @page { size: A4 portrait; margin: 12mm; }
+        html, body { height: auto !important; overflow: visible !important; background: #fff !important; }
+        header.app-glass, #sidebar, #sidebar-backdrop, footer, .no-print { display: none !important; }
+        main { overflow: visible !important; height: auto !important; padding: 0 !important; }
+        .print-sheet { border: 0 !important; box-shadow: none !important; max-width: none !important; padding: 0 !important; }
+        thead { display: table-header-group; }
+        tr { break-inside: avoid; }
+    }
+</style>
+
+<div class="px-4 py-4 sm:px-6 sm:py-6">
+
+    <div class="no-print mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+            <a href="{{ path('app_tenant_report_debtors', term ? {term: term.id} : {}) }}"
+               class="inline-flex min-h-[44px] items-center text-xs font-semibold text-accent-700 hover:underline">&larr; Outstanding fees</a>
+            <h1 class="mt-1 text-2xl font-black tracking-tight text-ink-900 sm:text-3xl">Fee statement</h1>
+        </div>
+
+        <form method="get" action="{{ path('app_tenant_report_statement', {id: data.student.id}) }}" class="flex flex-wrap items-end gap-2">
+            <div>
+                <label for="term" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Term</label>
+                <select id="term" name="term" class="min-h-[44px] rounded-lg border border-ink-300 bg-white px-3 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500">
+                    <option value="all" {{ term is null ? 'selected' }}>All terms</option>
+                    {% for t in terms %}
+                        <option value="{{ t.id }}" {{ term and term.id == t.id ? 'selected' }}>
+                            {{ t.session.name }} · {{ t.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="min-h-[44px] rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white hover:bg-accent-700">Show</button>
+            <label class="inline-flex min-h-[44px] items-center gap-2 text-sm text-ink-700">
+                <input type="checkbox" name="store" value="1" {{ includeStore ? 'checked' }}
+                       class="h-4 w-4 rounded border-ink-300 text-accent-600 focus:ring-accent-500">
+                Include store purchases
+            </label>
+            <button type="button" onclick="window.print()"
+                    class="min-h-[44px] rounded-lg border border-ink-300 px-4 text-sm font-semibold text-ink-700 hover:border-accent-400 hover:text-accent-700">
+                Print / Save PDF
+            </button>
+            <a href="{{ path('app_tenant_report_statement_pdf', {id: data.student.id, term: term ? term.id : 'all', store: includeStore ? 1 : null, download: 1}) }}"
+               class="inline-flex min-h-[44px] items-center rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white hover:bg-accent-700">
+                Official PDF
+            </a>
+        </form>
+    </div>
+
+    <article class="print-sheet mx-auto max-w-3xl rounded-xl border border-ink-200 bg-white p-5 shadow-card sm:p-8">
+
+        <header class="flex flex-wrap items-start justify-between gap-4 border-b border-ink-200 pb-4">
+            <div class="min-w-0">
+                <p class="text-2xl font-black tracking-tight text-ink-900">{{ school ? school.name : 'School' }}</p>
+                {% if school %}
+                    <p class="mt-0.5 text-xs text-ink-500">
+                        {% if school.address %}{{ school.address }}{% endif %}
+                        {% if school.phoneNumber %}{% if school.address %} · {% endif %}{{ school.phoneNumber }}{% endif %}
+                        {% if school.email %}{% if school.address or school.phoneNumber %} · {% endif %}{{ school.email }}{% endif %}
+                    </p>
+                {% endif %}
+            </div>
+            <div class="text-right">
+                <p class="text-xs font-bold uppercase tracking-widest text-ink-500">Fee statement</p>
+                <p class="mt-1 text-sm font-semibold text-ink-900">{{ term ? term.name : 'All terms' }}</p>
+                <p class="text-xs text-ink-500">Issued {{ 'now'|date('j M Y') }}</p>
+            </div>
+        </header>
+
+        <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-4">
+            <div>
+                <dt class="text-xs font-semibold uppercase tracking-wide text-ink-500">Pupil</dt>
+                <dd class="break-words font-semibold text-ink-900">{{ data.student.fullName }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs font-semibold uppercase tracking-wide text-ink-500">Admission no.</dt>
+                <dd class="font-mono text-ink-800">{{ data.student.admissionNumber ?: '—' }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs font-semibold uppercase tracking-wide text-ink-500">Class</dt>
+                <dd class="text-ink-800">{{ data.classroom ?: '—' }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs font-semibold uppercase tracking-wide text-ink-500">Guardian</dt>
+                <dd class="break-words text-ink-800">
+                    {{ data.student.guardian ? data.student.guardian.fullName : '—' }}
+                    {% if data.student.guardian and data.student.guardian.phoneNumber %}
+                        <span class="block text-xs text-ink-500">{{ data.student.guardian.phoneNumber }}</span>
+                    {% endif %}
+                </dd>
+            </div>
+        </dl>
+
+        {% if data.lines is empty %}
+            <div class="mt-6 rounded-lg border border-ink-200 bg-ink-50 p-6 text-center text-sm text-ink-600">
+                No invoices for {{ term ? term.name : 'this pupil' }}. Nothing is owed.
+            </div>
+        {% else %}
+            <div class="mt-6 overflow-x-auto">
+                <table class="min-w-[560px] w-full text-left text-sm">
+                    <thead class="border-b border-ink-200 text-xs uppercase tracking-wide text-ink-500">
+                        <tr>
+                            <th class="py-2 pr-3">Date</th>
+                            <th class="py-2 pr-3">Description</th>
+                            <th class="py-2 pr-3 text-right">Charged</th>
+                            <th class="py-2 pr-3 text-right">Paid</th>
+                            <th class="py-2 text-right">Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-ink-100">
+                        {% for line in data.lines %}
+                            <tr>
+                                <td class="whitespace-nowrap py-2 pr-3 text-ink-600">{{ line.date ? line.date|date('j M Y') : '—' }}</td>
+                                <td class="py-2 pr-3">
+                                    <span class="block font-medium text-ink-900">{{ line.label }}</span>
+                                    {% if line.detail %}<span class="block text-xs text-ink-500">{{ line.detail }}</span>{% endif %}
+                                </td>
+                                <td class="money py-2 pr-3 text-right text-ink-800">{{ line.debit > 0 ? '₦' ~ line.debit|number_format(2) : '—' }}</td>
+                                <td class="money py-2 pr-3 text-right text-paid">{{ line.credit > 0 ? '₦' ~ line.credit|number_format(2) : '—' }}</td>
+                                <td class="money py-2 text-right font-semibold text-ink-900">₦{{ line.balance|number_format(2) }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-5 border-t-2 border-ink-200 pt-4">
+                <dl class="ml-auto w-full space-y-2 text-sm sm:w-1/2">
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-ink-600">Total charged</dt>
+                        <dd class="money font-semibold text-ink-900">₦{{ data.totals.net|number_format(2) }}</dd>
+                    </div>
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-ink-600">Total paid</dt>
+                        <dd class="money font-semibold text-paid">₦{{ data.totals.paid|number_format(2) }}</dd>
+                    </div>
+                    {% if data.totals.pending > 0 %}
+                        <div class="flex justify-between gap-4">
+                            <dt class="text-ink-600">Unverified proofs</dt>
+                            <dd class="money font-semibold text-pending">₦{{ data.totals.pending|number_format(2) }}</dd>
+                        </div>
+                    {% endif %}
+                    <div class="flex justify-between gap-4 rounded-lg {{ data.totals.outstanding > 0 ? 'bg-failed/10 text-failed' : 'bg-paid/10 text-paid' }} px-3 py-2">
+                        <dt class="font-bold">{{ data.totals.outstanding > 0 ? 'Outstanding' : 'Paid in full' }}</dt>
+                        <dd class="money font-black">₦{{ data.totals.outstanding|number_format(2) }}</dd>
+                    </div>
+                </dl>
+            </div>
+        {% endif %}
+
+        <footer class="mt-6 border-t border-ink-200 pt-3 text-xs leading-relaxed text-ink-500">
+            This statement is issued by {{ school ? school.name : 'the school' }}.
+            Unverified transfer proofs are not included in “Total paid” until the bursary confirms them.
+            Please keep this statement for your records.
+        </footer>
+    </article>
+</div>
+{% endblock %}

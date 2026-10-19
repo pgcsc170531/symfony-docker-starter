@@ -1,9 +1,9 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}POS Student Search{% endblock %}
+{% block title %}POS {{ learner.capital }} Search{% endblock %}
 
 {% block body %}
-<div class="max-w-3xl mx-auto mt-4 md:mt-10 p-3 md:p-5">
+<div class="mt-4 px-4 md:mt-10">
     
     {# --- HEADER & WALK-IN ACTION (Mobile Stacked, Desktop Row) --- #}
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 md:mb-8">
@@ -25,7 +25,7 @@
                 {{ form_widget(form.query, {
                     'attr': {
                         'class': 'w-full border border-gray-300 p-4 rounded-lg focus:ring-teal-600 focus:border-teal-600 text-base outline-none shadow-sm',
-                        'placeholder': 'Enter Student Name or Adm No...'
+                        'placeholder': 'Enter ' ~ learner.capital ~ ' Name or Adm No...'
                     }
                 }) }}
             </div>

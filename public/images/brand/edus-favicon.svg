@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="Edus">
+  <!-- Favicon: the wordmark reduced to what survives 16 px — a serif capital E
+       and the accent full stop that ends the wordmark.
+
+       The tab is the ONLY place a glyph is allowed. A four-letter wordmark is
+       illegible at 16 px, so this is a reduction of `Edus.`, not a second logo:
+       same serif voice, same one accent colour, same full stop.
+
+       A white tile is deliberate — a browser tab can be light or dark, and this
+       is the inverse of the "filled tile + white letter" that collides with the
+       Microsoft Edge logo. -->
+  <rect x="1.5" y="1.5" width="29" height="29" rx="7.5" fill="#FFFFFF"/>
+  <text x="8.2" y="24.2"
+        font-family="Georgia, 'Times New Roman', 'DejaVu Serif', serif"
+        font-size="21" font-weight="700" fill="#111827">E</text>
+  <circle cx="23.4" cy="22.6" r="2.1" fill="#2563EB"/>
+</svg>

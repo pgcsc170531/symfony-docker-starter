@@ -1,0 +1,92 @@
+{% extends 'tenant/home/layout.html.twig' %}
+
+{% block title %}Events — {{ school_name }}{% endblock %}
+
+{#
+    Upcoming dates from the school calendar (`SchoolEvent`). Only future events
+    are listed; an empty calendar says so plainly rather than showing a blank
+    box, and always offers the school office as the way to ask.
+#}
+
+{% block tenant_public_content %}
+
+{# ---------- HEADER ---------- #}
+<section class="border-b border-ink-200 bg-ink-50">
+    <div class="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-ink-500">School calendar</p>
+        <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">
+            Upcoming events
+        </h1>
+        <p class="mt-3 max-w-2xl text-base text-ink-700 sm:text-lg">
+            Exams, holidays, sports and meetings — everything already on the calendar at
+            {{ school_name }}.
+        </p>
+    </div>
+</section>
+
+{# ---------- EVENTS ---------- #}
+<section class="bg-white py-10 sm:py-14">
+    <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        {% if events is not empty %}
+            <ul class="space-y-3">
+                {% for event in events %}
+                    <li class="rounded-xl border border-ink-200 p-4 sm:p-5">
+                        <div class="flex items-start gap-4">
+                            {# Date block: the day is the thing a parent scans for. #}
+                            <div class="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg bg-ink-50 leading-none">
+                                <span class="text-lg font-extrabold text-ink-900">{{ event.startDate|date('j') }}</span>
+                                <span class="mt-0.5 text-[11px] font-bold uppercase tracking-wide text-ink-500">{{ event.startDate|date('M') }}</span>
+                            </div>
+
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h2 class="break-words text-base font-bold text-ink-900 sm:text-lg">{{ event.title }}</h2>
+                                    {% if event.type %}
+                                        <span class="rounded-full bg-ink-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-ink-600">{{ event.type }}</span>
+                                    {% endif %}
+                                </div>
+
+                                <p class="mt-1 text-sm text-ink-600">
+                                    {{ event.startDate|date('l, j F Y') }}
+                                    {% if event.startDate|date('H:i') != '00:00' %}
+                                        · {{ event.startDate|date('g:i A') }}
+                                    {% endif %}
+                                    {% if event.endDate and event.endDate|date('Y-m-d') != event.startDate|date('Y-m-d') %}
+                                        – {{ event.endDate|date('j F Y') }}
+                                    {% endif %}
+                                </p>
+
+                                {% if event.description %}
+                                    <p class="mt-2 break-words text-sm leading-relaxed text-ink-700">{{ event.description }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <div class="rounded-2xl border border-dashed border-ink-300 bg-white px-6 py-12 text-center">
+                <p class="text-lg font-semibold text-ink-700">Nothing on the calendar yet</p>
+                <p class="mx-auto mt-1 max-w-md text-sm text-ink-500">
+                    No upcoming events have been published here. Call or message the school office for
+                    term dates and the next school event.
+                </p>
+                <div class="mt-5 flex flex-col justify-center gap-2 sm:flex-row">
+                    {% if tel_url %}
+                        <a href="{{ tel_url }}"
+                           class="inline-flex min-h-[44px] items-center justify-center rounded-lg px-5 text-sm font-bold text-white"
+                           style="background-color: {{ brand_ink }};">
+                            Call the school
+                        </a>
+                    {% endif %}
+                    <a href="{{ path('app_tenant_contact', {'subdomain': subdomain}) }}"
+                       class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-ink-300 px-5 text-sm font-semibold text-ink-800">
+                        Send a message
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ school_name }} — Invoice {{ reference }}</title>
+<style>
+    /* Same page geometry, masthead, meta strip and footer as the Value & Billing
+       statement — one document family (see .github/skills/pdf-documents). */
+    @page { size: A4 portrait; margin: 6mm 8mm 4mm 8mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "DejaVu Sans", sans-serif; font-size: 10.5pt; color: #111827; }
+
+    /* ── Masthead ───────────────────────────────────────────────────────── */
+    .header { width: 100%; border-collapse: collapse; background: #16223C; color: #ffffff; }
+    .header td { padding: 7pt 9pt; vertical-align: bottom; }
+    .brand-cell { width: 58%; }
+    .wordmark { font-family: "DejaVu Serif", serif; font-size: 20pt; font-weight: bold; color: #ffffff; letter-spacing: -0.35pt; line-height: 1; }
+    .wordmark .dot { color: #60A5FA; }
+    .tagline { display: block; font-size: 7.6pt; color: #B8C4D8; letter-spacing: .05em; margin-top: 4pt; }
+    .doc-cell { text-align: right; }
+    .doc-type { display: block; font-size: 7.6pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1.1pt; color: #C3CFE2; }
+    .doc-no { display: block; font-family: "DejaVu Sans Mono", monospace; font-size: 12pt; font-weight: bold; color: #ffffff; margin-top: 3pt; white-space: nowrap; }
+    .accent-rule { height: 2.2pt; background: #2563EB; margin-bottom: 6pt; }
+
+    /* ── Identity strip ─────────────────────────────────────────────────── */
+    .identity { width: 100%; border-collapse: collapse; background: #F9FAFB; border-bottom: 0.8pt solid #D1D5DB; }
+    .identity td { padding: 4pt 7pt; vertical-align: top; border-left: 0.6pt solid #E5E7EB; }
+    .identity td:first-child { border-left: 0; padding-left: 9pt; }
+    .identity td:last-child { padding-right: 9pt; }
+    .label { display: block; font-size: 7pt; text-transform: uppercase; letter-spacing: .5pt; color: #6B7280; margin-bottom: 1pt; }
+    .value { font-size: 9.8pt; font-weight: bold; color: #111827; }
+    .value.small { font-size: 8.8pt; font-weight: normal; color: #374151; }
+    .value.mono { font-family: "DejaVu Sans Mono", monospace; font-size: 9pt; }
+    .value.nowrap { white-space: nowrap; }
+
+    /* ── Amount band ────────────────────────────────────────────────────── */
+    .headline { width: 100%; border-collapse: collapse; margin-top: 8pt;
+                background: #F9FAFB;
+                border-top: 0.8pt solid #D1D5DB; border-bottom: 0.8pt solid #D1D5DB; }
+    .headline td { text-align: center; padding: 5pt 4pt 6pt; width: 33.33%; border-left: 0.6pt solid #E5E7EB; }
+    .headline td:first-child { border-left: 0; }
+    .headline .big { display: block; font-size: 16pt; font-weight: bold; margin-top: 1.5pt; }
+    .headline .note { display: block; font-size: 7.4pt; color: #6B7280; margin-top: 1pt; }
+    .headline .is-paid .big { color: #059669; }
+    .headline .is-due .big { color: #B45309; }
+
+    /* ── Sections ───────────────────────────────────────────────────────── */
+    h2 { font-size: 9.5pt; font-weight: bold; text-transform: uppercase;
+         letter-spacing: 0.6pt; color: #374151; margin: 9pt 0 0; padding-bottom: 1pt; }
+    table.grid { width: 100%; border-collapse: collapse; }
+    table.grid th { background: #F3F4F6; border: 0.6pt solid #D1D5DB; padding: 2.2pt 2.6pt;
+                    font-size: 8.4pt; font-weight: bold; text-transform: uppercase;
+                    letter-spacing: 0.2pt; color: #1F2937; text-align: left; }
+    table.grid td { border: 0.6pt solid #E5E7EB; padding: 1.8pt 2.6pt; font-size: 9.6pt; }
+    table.grid td.num, table.grid th.num { text-align: right; white-space: nowrap; }
+    table.grid tr.total td { background: #F9FAFB; font-weight: bold; border-top: 0.9pt solid #9CA3AF; }
+    .muted { color: #4B5563; }
+
+    .pill { display: inline-block; padding: 0.6pt 4pt; font-size: 7.6pt; font-weight: bold; }
+    .pill-paid { background: #D1FAE5; color: #065F46; }
+    .pill-pending { background: #FEF3C7; color: #92400E; }
+    .pill-other { background: #F3F4F6; color: #374151; }
+
+    /* ── Payment block ──────────────────────────────────────────────────── */
+    .pay { width: 100%; border-collapse: collapse; margin-top: 4pt; }
+    .pay td { vertical-align: top; }
+    .pay .box { background: #F9FAFB; border-left: 2.5pt solid #2563EB; padding: 5pt 7pt; }
+    .pay .remark {
+        font-family: "DejaVu Sans Mono", monospace; font-size: 11pt; font-weight: bold;
+        background: #FEF3C7; color: #92400E; padding: 2.5pt 6pt; margin-top: 2pt;
+        display: inline-block;
+    }
+    table.kv { width: 100%; border-collapse: collapse; }
+    table.kv td { padding: 1.4pt 0; font-size: 9.4pt; vertical-align: top; }
+    table.kv td.k { color: #6B7280; width: 42%; }
+    table.kv td.v { font-weight: bold; text-align: right; }
+    table.kv td.v.mono { font-family: "DejaVu Sans Mono", monospace; letter-spacing: .04em; }
+
+    .notes { background: #F9FAFB; border-left: 2.5pt solid #2563EB; padding: 4pt 7pt; margin-top: 10pt; font-size: 8.4pt; line-height: 1.35; color: #374151; }
+    .notes strong { color: #111827; }
+
+    .footer { font-size: 7.8pt; color: #6B7280; border-top: 0.5pt solid #E5E7EB; padding-top: 2pt; margin-top: 12pt; }
+    .footer .verify { text-align: center; font-size: 7pt; line-height: 1.3; }
+    .footer .verify .code { font-family: "DejaVu Sans Mono", monospace; font-size: 8pt; letter-spacing: 0.4pt; }
+</style>
+</head>
+<body>
+
+<table class="header">
+    <tr>
+        <td class="brand-cell">
+            <span class="wordmark">Edus<span class="dot">.</span></span>
+            <span class="tagline">The school operating system · edus.ng</span>
+        </td>
+        <td class="doc-cell">
+            <span class="doc-type">Subscription Invoice</span>
+            <span class="doc-no">{{ reference }}</span>
+        </td>
+    </tr>
+</table>
+<div class="accent-rule"></div>
+
+<table class="identity">
+    <tr>
+        <td style="width: 40%;">
+            <span class="label">Billed to</span>
+            <table style="border-collapse: collapse;"><tr>
+                {% if logo %}
+                    <td style="width: 22pt; padding: 0 5pt 0 0; vertical-align: middle;">
+                        <img src="{{ logo }}" alt="" style="max-width: 19pt; max-height: 19pt;">
+                    </td>
+                {% endif %}
+                <td style="padding: 0; vertical-align: middle;">
+                    <span class="value">{{ school_name }}</span>
+                    {% if school_address %}<br><span class="value small">{{ school_address }}</span>{% endif %}
+                </td>
+            </tr></table>
+        </td>
+        <td style="width: 20%;">
+            <span class="label">Invoice no.</span>
+            <span class="value mono nowrap">{{ reference }}</span>
+        </td>
+        <td style="width: 24%;">
+            <span class="label">Billing period</span>
+            <span class="value small nowrap">{{ period }}</span>
+        </td>
+        <td style="width: 16%;">
+            <span class="label">Issued</span>
+            <span class="value small nowrap">{{ issued_at|date('j M Y') }}</span>
+        </td>
+    </tr>
+</table>
+
+<table class="headline">
+    <tr>
+        <td class="{{ status == 'PENDING' or status == 'VERIFYING' ? 'is-due' : 'is-paid' }}">
+            <span class="label">Amount due</span>
+            <span class="big">₦{{ amount|number_format(0) }}</span>
+            <span class="note">{{ status_label }}</span>
+        </td>
+        <td>
+            <span class="label">Plan</span>
+            <span class="big" style="font-size: 12pt;">{{ plan_name }}</span>
+            <span class="note">{{ supplementary ? 'Supplementary invoice' : 'Term subscription' }}</span>
+        </td>
+        <td>
+            <span class="label">{{ learner.pluralCapital }} on roll</span>
+            <span class="big">{{ declared_students is null ? '—' : declared_students|number_format(0) }}</span>
+            <span class="note">{{ billing_cycle == 'annual' ? 'Paid for the year' : 'Per term' }}</span>
+        </td>
+    </tr>
+</table>
+
+<h2>What this invoice covers</h2>
+<table class="grid">
+    <thead>
+        <tr>
+            <th style="width: 56%;">Description</th>
+            <th class="num" style="width: 22%;">Amount</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% if supplementary %}
+            <tr>
+                <td>
+                    <strong>Overage — {{ learner.plural }} above the declared roll</strong>
+                    <div class="muted" style="font-size: 8.4pt;">{{ period }}</div>
+                </td>
+                <td class="num">₦{{ amount|number_format(0) }}</td>
+            </tr>
+        {% elseif unit_price is not null %}
+            <tr>
+                <td>
+                    <strong>{{ plan_name }} · {{ declared_students|number_format(0) }} {{ learner.plural }}</strong>
+                    <div class="muted" style="font-size: 8.4pt;">
+                        ₦{{ unit_price|number_format(0) }} per {{ learner }} ·
+                        {{ billing_cycle == 'annual' ? 'whole year, paid now' : 'termly' }}
+                    </div>
+                </td>
+                <td class="num">₦{{ (subtotal - discount)|number_format(0) }}</td>
+            </tr>
+            {% if discount > 0 %}
+                <tr>
+                    <td class="muted">Annual discount (33% off the termly rate)</td>
+                    <td class="num">− ₦{{ discount|number_format(0) }}</td>
+                </tr>
+            {% endif %}
+            {% if implementation_fee > 0 %}
+                <tr>
+                    <td class="muted">One-time implementation</td>
+                    <td class="num">₦{{ implementation_fee|number_format(0) }}</td>
+                </tr>
+            {% endif %}
+        {% else %}
+            <tr>
+                <td>
+                    <strong>{{ plan_name }} subscription</strong>
+                    <div class="muted" style="font-size: 8.4pt;">{{ period }}</div>
+                </td>
+                <td class="num">₦{{ amount|number_format(0) }}</td>
+            </tr>
+        {% endif %}
+    </tbody>
+    <tfoot>
+        <tr class="total">
+            <td>Total due</td>
+            <td class="num">₦{{ amount|number_format(0) }}</td>
+        </tr>
+    </tfoot>
+</table>
+
+{% if status == 'PENDING' or status == 'VERIFYING' %}
+    <h2>How to pay</h2>
+    <table class="pay">
+        <tr>
+            <td style="width: 50%; padding-right: 8pt;">
+                <div class="box">
+                    <span class="label">Use this reference in your bank transfer</span>
+                    <span class="remark">{{ reference }}</span>
+                </div>
+            </td>
+            <td style="width: 50%;">
+                {% if bank.account %}
+                    <table class="kv">
+                        {% if bank.name %}<tr><td class="k">Bank</td><td class="v">{{ bank.name }}</td></tr>{% endif %}
+                        <tr><td class="k">Account number</td><td class="v mono">{{ bank.account }}</td></tr>
+                        {% if bank.account_name %}<tr><td class="k">Account name</td><td class="v">{{ bank.account_name }}</td></tr>{% endif %}
+                    </table>
+                {% else %}
+                    <p class="muted" style="margin: 0; font-size: 9pt;">
+                        Transfer details are sent with this invoice by email. Contact Edus
+                        quoting the reference if you need them again.
+                    </p>
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+{% endif %}
+
+<div class="notes">
+    <strong>Pay online instead.</strong>
+    Open <span style="font-family: 'DejaVu Sans Mono', monospace; font-size: 8pt;">{{ pay_url }}</span>
+    to pay by card, transfer or USSD — the subscription activates as soon as the
+    provider confirms, with no manual check. A bank transfer is matched by its
+    reference; without the reference it cannot be credited automatically.
+</div>
+
+<div class="footer">
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="width: 38%;">Edus · {{ reference }} · {{ issued_at|date('j M Y') }}</td>
+            <td style="width: 40%;" class="verify">
+                {% if verification %}
+                    Scan or visit to verify:<br>
+                    <span style="font-size: 6.4pt;">{{ verification.url }}</span><br>
+                    Code: <span class="code">{{ verification.code }}</span>
+                {% endif %}
+            </td>
+            <td style="width: 22%; text-align: right;">
+                {% if verification %}
+                    <img src="{{ verification.qr }}" style="width: 34pt; height: 34pt;" alt=""><br>
+                {% endif %}
+                Generated by Edus
+            </td>
+        </tr>
+    </table>
+</div>
+
+</body>
+</html>

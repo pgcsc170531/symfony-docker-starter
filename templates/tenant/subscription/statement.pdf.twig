@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ school_name }} — Value &amp; Billing statement {{ reference }}</title>
+<style>
+    /* ── Page geometry ────────────────────────────────────────────────────
+       A4 portrait, identical to every other Edus document (see
+       App\Service\Pdf\A4PdfRenderer and .github/skills/pdf-documents). */
+    @page { size: A4 portrait; margin: 6mm 8mm 4mm 8mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "DejaVu Sans", sans-serif; font-size: 10.5pt; color: #111827; }
+
+    /* ── Masthead ─────────────────────────────────────────────────────────
+       Issuer on the left, document identity on the right — the same shape as
+       the report card, so the two read as one family. */
+    .header { width: 100%; border-collapse: collapse; background: #16223C; color: #ffffff; }
+    .header td { padding: 7pt 9pt 7pt; vertical-align: bottom; }
+
+    /* Brand lockup: the wordmark alone. "Edus" is four letters — it does not
+       need a letter-mark beside it to be recognised, and two marks on one
+       baseline read as a logo plus a caption. The tagline carries the rest. */
+    .brand-cell { width: 58%; }
+    .wordmark { font-family: "DejaVu Serif", serif; font-size: 20pt; font-weight: bold; color: #ffffff; letter-spacing: -0.35pt; line-height: 1; }
+    /* The one ornament: an accent full stop, lighter on navy so it still reads
+       in print. Same device as the app; one ink, so it survives a photocopy. */
+    .wordmark .dot { color: #60A5FA; }
+    .tagline { display: block; font-size: 7.6pt; color: #B8C4D8; letter-spacing: .05em; margin-top: 4pt; }
+
+    /* Document identity, right-aligned: what the paper is, then its number. */
+    .doc-cell { text-align: right; }
+    .doc-type { display: block; font-size: 7.6pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1.1pt; color: #C3CFE2; }
+    .doc-no { display: block; font-family: "DejaVu Sans Mono", monospace; font-size: 12pt; font-weight: bold; color: #ffffff; margin-top: 3pt; white-space: nowrap; }
+
+    /* The accent rule ties the masthead to the status colours below it. */
+    .accent-rule { height: 2.2pt; background: #2563EB; margin-bottom: 6pt; }
+
+    /* ── Identity band ──────────────────────────────────────────────────── */
+    /* A quiet meta strip: no outer box, only separators between fields. A
+       bordered grid here made the top of the page look like a form. */
+    .identity { width: 100%; border-collapse: collapse; background: #F9FAFB; border-bottom: 0.8pt solid #D1D5DB; }
+    .identity td { padding: 4pt 7pt; vertical-align: top; border-left: 0.6pt solid #E5E7EB; }
+    .identity td:first-child { border-left: 0; padding-left: 9pt; }
+    .identity td:last-child { padding-right: 9pt; }
+    .label { display: block; font-size: 7pt; text-transform: uppercase; letter-spacing: .5pt; color: #6B7280; margin-bottom: 1pt; }
+    .value { font-size: 9.8pt; font-weight: bold; color: #111827; }
+    .value.small { font-size: 8.8pt; font-weight: normal; color: #374151; }
+    .value.mono { font-family: "DejaVu Sans Mono", monospace; font-size: 9pt; }
+    .value.nowrap { white-space: nowrap; }
+
+    /* ── Headline figures ───────────────────────────────────────────────── */
+    /* Same treatment as the identity strip — a band with separators, not three
+       boxes drawn inside another box. */
+    .headline { width: 100%; border-collapse: collapse; margin-top: 8pt;
+                background: #F9FAFB;
+                border-top: 0.8pt solid #D1D5DB; border-bottom: 0.8pt solid #D1D5DB; }
+    .headline td { text-align: center; padding: 5pt 4pt 6pt; width: 33.33%; border-left: 0.6pt solid #E5E7EB; }
+    .headline td:first-child { border-left: 0; }
+    .headline .big { display: block; font-size: 15pt; font-weight: bold; margin-top: 1.5pt; }
+    .headline .note { display: block; font-size: 7.4pt; color: #6B7280; margin-top: 1pt; }
+    .headline .is-paid .big { color: #059669; }
+    .headline .is-due .big { color: #B45309; }
+
+    /* ── Sections ───────────────────────────────────────────────────────── */
+    h2 {
+        font-size: 9.5pt; font-weight: bold; text-transform: uppercase;
+        letter-spacing: 0.6pt; color: #374151;
+        margin: 9pt 0 0; padding-top: 1.5pt; padding-bottom: 1pt;
+    }
+    table.grid { width: 100%; border-collapse: collapse; }
+    table.grid th {
+        background: #F3F4F6; border: 0.6pt solid #D1D5DB; padding: 2.2pt 2.6pt;
+        font-size: 8.4pt; font-weight: bold; text-transform: uppercase;
+        letter-spacing: 0.2pt; color: #1F2937; text-align: left;
+    }
+    table.grid td { border: 0.6pt solid #E5E7EB; padding: 1.6pt 2.6pt; font-size: 9.6pt; }
+    table.grid td.num, table.grid th.num { text-align: right; white-space: nowrap; }
+    table.grid tbody tr:nth-child(even) td { background: #FAFAFA; }
+    table.grid tr.total td {
+        background: #F9FAFB; font-weight: bold; border-top: 0.9pt solid #9CA3AF;
+    }
+    .ref { font-family: "DejaVu Sans Mono", monospace; font-size: 8.6pt; }
+    .tag { font-size: 7.2pt; font-weight: bold; letter-spacing: 0.3pt; color: #2563EB; }
+    .muted { color: #4B5563; }
+
+    /* Status pills — the only place colour carries meaning. */
+    .pill { display: inline-block; padding: 0.6pt 4pt; font-size: 7.6pt; font-weight: bold; }
+    .pill-paid { background: #D1FAE5; color: #065F46; }
+    .pill-pending { background: #FEF3C7; color: #92400E; }
+    .pill-other { background: #F3F4F6; color: #374151; }
+
+    /* ── Notes, signature, footer ───────────────────────────────────────── */
+    /* NB: this box is `.notes`, not `.note` — a single class shared with the
+       small caption text inside the KPI cells made every caption grow a blue
+       left border in print. */
+    /* A callout, not a boxed div: a tinted band with one accent edge. A full
+       outline here fought the tables above it. */
+    .notes { background: #F9FAFB; border-left: 2.5pt solid #2563EB; padding: 4pt 7pt; margin-top: 10pt; font-size: 8.4pt; line-height: 1.35; color: #374151; }
+    .notes strong { color: #111827; }
+    /* Signature: the name sits above the rule, the rule spans the whole column
+       and the role sits under it — the line is a place to sign, not decoration. */
+    .signature { margin-top: 14pt; }
+    .sign-role { font-size: 8.2pt; color: #374151; margin-bottom: 1pt; }
+    .sign-line { border-top: 0.5pt solid #9CA3AF; height: 16pt; }
+    .sign-name { font-size: 7.6pt; color: #6B7280; padding-top: 2pt; }
+    .footer { font-size: 7.8pt; color: #6B7280; border-top: 0.5pt solid #E5E7EB; padding-top: 2pt; margin-top: 10pt; }
+    .footer .right { text-align: right; }
+    .footer .verify { text-align: center; font-size: 7pt; line-height: 1.3; }
+    .footer .verify .code { font-family: "DejaVu Sans Mono", monospace; font-size: 8pt; letter-spacing: 0.4pt; }
+</style>
+</head>
+<body>
+
+<table class="header">
+    <tr>
+        <td class="brand-cell">
+            <span class="wordmark">Edus<span class="dot">.</span></span>
+            <span class="tagline">The school operating system · edus.ng</span>
+        </td>
+        <td class="doc-cell">
+            <span class="doc-type">Value &amp; Billing Statement</span>
+            <span class="doc-no">{{ reference }}</span>
+        </td>
+    </tr>
+</table>
+<div class="accent-rule"></div>
+
+<table class="identity">
+    <tr>
+        <td style="width: 40%;">
+            <span class="label">Prepared for</span>
+            <table style="border-collapse: collapse;"><tr>
+                {% if logo %}
+                    <td style="width: 22pt; padding: 0 5pt 0 0; vertical-align: middle;">
+                        <img src="{{ logo }}" alt="" style="max-width: 19pt; max-height: 19pt;">
+                    </td>
+                {% endif %}
+                <td style="padding: 0; vertical-align: middle;">
+                    <span class="value">{{ school_name }}</span>
+                    {% if school_address %}<br><span class="value small">{{ school_address }}</span>{% endif %}
+                </td>
+            </tr></table>
+        </td>
+        <td style="width: 20%;">
+            <span class="label">Statement no.</span>
+            <span class="value mono nowrap">{{ reference }}</span>
+        </td>
+        <td style="width: 24%;">
+            <span class="label">Billing period</span>
+            <span class="value small nowrap">{{ period }}</span>
+        </td>
+        <td style="width: 16%;">
+            <span class="label">Issued</span>
+            <span class="value small nowrap">{{ generated_at|date('j M Y') }}</span>
+        </td>
+    </tr>
+</table>
+
+<table class="headline">
+    <tr>
+        <td>
+            <span class="label">Total invoiced</span>
+            <span class="big">₦{{ invoiced|number_format(0) }}</span>
+            <span class="note">Excludes cancelled invoices</span>
+        </td>
+        <td class="is-paid">
+            <span class="label">Settled</span>
+            <span class="big">₦{{ paid|number_format(0) }}</span>
+            <span class="note">Confirmed payments</span>
+        </td>
+        {# Amber only when money is actually owed; a zero balance is good news
+           and must not be dressed up as a warning. #}
+        <td class="{{ outstanding > 0 ? 'is-due' : 'is-paid' }}">
+            <span class="label">Outstanding</span>
+            <span class="big">₦{{ outstanding|number_format(0) }}</span>
+            <span class="note">{{ outstanding > 0 ? 'Awaiting payment' : 'Nothing due' }}</span>
+        </td>
+    </tr>
+</table>
+
+<h2>Your plan</h2>
+<table class="grid">
+    <thead>
+        <tr>
+            <th style="width: 28%;">Plan</th>
+            <th class="num" style="width: 18%;">{{ learner.pluralCapital }} on roll</th>
+            <th style="width: 30%;">Billing period</th>
+            <th style="width: 24%;">Account status</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>{{ plan_name }}</strong></td>
+            <td class="num">{{ roll|number_format(0) }}</td>
+            <td>{{ period }}</td>
+            <td>
+                <span class="pill {{ status == 'Active' ? 'pill-paid' : (status == 'Expired' ? 'pill-pending' : 'pill-other') }}">
+                    {{ status }}
+                </span>
+                {% if renews_on and renews_on != '—' %}
+                    <span class="muted" style="font-size: 8pt;">· renews {{ renews_on }}</span>
+                {% endif %}
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>Invoice history</h2>
+{% if invoices is empty %}
+    <table class="grid">
+        <tbody>
+            <tr><td class="muted">No invoices have been raised yet.</td></tr>
+        </tbody>
+    </table>
+{% else %}
+    <table class="grid">
+        <thead>
+            <tr>
+                <th style="width: 32%;">Reference</th>
+                <th style="width: 28%;">Period</th>
+                <th style="width: 16%;">Date</th>
+                <th class="num" style="width: 14%;">Amount</th>
+                <th style="width: 10%;">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for invoice in invoices %}
+                <tr>
+                    <td class="ref">
+                        {{ invoice.reference }}
+                        {% if invoice.supplementary %}<br><span class="tag">OVERAGE</span>{% endif %}
+                    </td>
+                    <td>{{ invoice.period ?: '—' }}</td>
+                    <td>{{ invoice.date ? invoice.date|date('j M Y') : '—' }}</td>
+                    <td class="num"><strong>₦{{ invoice.amount|number_format(0) }}</strong></td>
+                    <td>
+                        <span class="pill {{ invoice.status == 'APPROVED' ? 'pill-paid' : (invoice.status == 'PENDING' or invoice.status == 'VERIFYING' ? 'pill-pending' : 'pill-other') }}">
+                            {{ invoice.status|capitalize }}
+                        </span>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="total">
+                <td colspan="3">Total invoiced</td>
+                <td class="num">₦{{ invoiced|number_format(0) }}</td>
+                <td></td>
+            </tr>
+        </tfoot>
+    </table>
+{% endif %}
+
+<div class="notes">
+    <strong>About this statement.</strong>
+    It is issued by Edus and reflects the billing records at the time shown on the
+    cover. It covers the Edus subscription only — school fees collected from
+    parents are recorded separately in your portal and are not part of this
+    balance.
+</div>
+
+<div class="signature">
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="width: 47%; padding: 0; vertical-align: bottom;">
+                <div class="sign-role">For Edus — Accounts</div>
+                <div class="sign-line"></div>
+                <div class="sign-name">Name · Date</div>
+            </td>
+            <td style="width: 6%; padding: 0;"></td>
+            <td style="width: 47%; padding: 0; vertical-align: bottom;">
+                <div class="sign-role">For {{ school_name }} — Bursar</div>
+                <div class="sign-line"></div>
+                <div class="sign-name">Name · Date</div>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div class="footer">
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="width: 38%;">Edus · {{ reference }} · {{ generated_at|date('j M Y') }}</td>
+            <td style="width: 40%;" class="verify">
+                {% if verification %}
+                    Scan or visit to verify:<br>
+                    <span style="font-size: 6.4pt;">{{ verification.url }}</span><br>
+                    Code: <span class="code">{{ verification.code }}</span>
+                {% endif %}
+            </td>
+            <td style="width: 22%; text-align: right;">
+                {% if verification %}
+                    <img src="{{ verification.qr }}" style="width: 34pt; height: 34pt;" alt=""><br>
+                {% endif %}
+                Generated by Edus
+            </td>
+        </tr>
+    </table>
+</div>
+
+</body>
+</html>

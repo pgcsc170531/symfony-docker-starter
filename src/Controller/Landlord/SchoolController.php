@@ -3,27 +3,20 @@
 namespace App\Controller\Landlord;
 
 use App\Entity\Landlord\School;
-use App\Entity\Tenant\User;
-use App\Entity\Tenant\Session;
-use App\Entity\Tenant\Term;
-use App\Entity\Tenant\School as TenantSchool;
 use App\Entity\Landlord\Plan;
 use App\Entity\Landlord\Subscription;
 use App\Service\SubscriptionService;
+use App\Service\TenantProvisioner;
 use App\Service\WalletService; // 🟢 1. IMPORT WALLET SERVICE
 use App\Form\SchoolType;
 
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\ORMSetup;
-use Doctrine\ORM\Tools\SchemaTool;
-use Doctrine\DBAL\DriverManager;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 #[Route('/admin/school')]
 class SchoolController extends AbstractController
@@ -33,8 +26,8 @@ class SchoolController extends AbstractController
         Request $request,
         #[Autowire(service: 'doctrine.orm.landlord_entity_manager')]
         EntityManagerInterface $entityManager,
-        UserPasswordHasherInterface $passwordHasher,
-        SubscriptionService $subscriptionService
+        SubscriptionService $subscriptionService,
+        TenantProvisioner $provisioner
     ): Response
     {
         $school = new School();
@@ -75,17 +68,26 @@ class SchoolController extends AbstractController
             $entityManager->persist($school);
             $entityManager->flush();
 
-            // 6. Create Tenant DB & User
-            $this->createTenantDatabaseAndSchema(
-                $dbName, 
-                $school->getName(), 
-                $school->getSubdomain(),
-                $pName, 
-                $pEmail, 
-                $pPass, 
-                $passwordHasher,
-                $school->getId()
-            );
+            // 6. Build the tenant database: schema, session, term, grading scale, admin login.
+            try {
+                $provisioner->provision(
+                    schoolName: $school->getName(),
+                    subdomain: $school->getSubdomain(),
+                    landlordSchoolId: $school->getId(),
+                    principalName: $pName,
+                    principalEmail: $pEmail,
+                    principalPassword: $pPass,
+                    databaseName: $dbName,
+                );
+            } catch (\Throwable $e) {
+                $this->addFlash('error', sprintf(
+                    "School '%s' was registered but its database could not be built: %s",
+                    $dbName,
+                    $e->getMessage()
+                ));
+
+                return $this->redirectToRoute('landlord_school_show', ['id' => $school->getId()]);
+            }
 
             $this->addFlash('success', "School '$dbName' created with Free Trial activated!");
             return $this->redirectToRoute('landlord_school_index'); 
@@ -133,93 +135,47 @@ class SchoolController extends AbstractController
         return $this->redirectToRoute('landlord_school_show', ['id' => $school->getId()]);
     }
 
-    private function createTenantDatabaseAndSchema(
-        string $dbName, 
-        string $schoolName,
-        string $subdomain,
-        string $principalName, 
-        string $principalEmail,
-        string $principalPassword,
-        UserPasswordHasherInterface $hasher,
-        int $landlordSchoolId
-    ): void
-    {
-        $connectionParams = [
-            'user' => 'root', 'password' => 'root', 'host' => 'database', 'driver' => 'pdo_mysql',
-        ];
-
-        $tmpConnection = DriverManager::getConnection($connectionParams);
-        $schemaManager = $tmpConnection->createSchemaManager();
-
-        if (!in_array($dbName, $schemaManager->listDatabases())) {
-            $schemaManager->createDatabase($dbName);
-        }
-        $tmpConnection->close();
-
-        // Connect to New Database
-        $tenantParams = array_merge($connectionParams, ['dbname' => $dbName]);
-        
-        $config = ORMSetup::createAttributeMetadataConfiguration(
-            paths: [__DIR__ . '/../../Entity/Tenant'],
-            isDevMode: true
-        );
-        
-        $tenantConnection = DriverManager::getConnection($tenantParams, $config);
-        $tenantEntityManager = new \Doctrine\ORM\EntityManager($tenantConnection, $config);
-
-        // Create Tables
-        $metadata = $tenantEntityManager->getMetadataFactory()->getAllMetadata();
-        $schemaTool = new SchemaTool($tenantEntityManager);
-        $schemaTool->updateSchema($metadata, true);
-
-        // Seed Data
-        try {
-            $currentYear = date('Y');
-            $nextYear = $currentYear + 1;
-            
-            $session = new Session();
-            $session->setName("$currentYear/$nextYear");
-            $session->setIsActive(true);
-            $tenantEntityManager->persist($session);
-
-            $term = new Term();
-            $term->setName('First Term');
-            $term->setIsActive(true);
-            $term->setSession($session);
-            $tenantEntityManager->persist($term);
-
-            $tenantSchool = new TenantSchool();
-            $tenantSchool->setName($schoolName);
-            $tenantSchool->setEmail($principalEmail);
-            $tenantSchool->setSubdomain($subdomain); 
-            $tenantSchool->setLandlordSchoolId($landlordSchoolId);
-            $tenantSchool->setPrimaryColor('#4f46e5'); 
-            $tenantEntityManager->persist($tenantSchool);
-
-            $user = new User();
-            $user->setEmail($principalEmail);
-            $user->setFullName($principalName);
-            $user->setRoles(['ROLE_ADMIN', 'ROLE_BURSAR']);
-            $user->setSchool($tenantSchool); 
-
-            $hashedPassword = $hasher->hashPassword($user, $principalPassword);
-            $user->setPassword($hashedPassword);
-            
-            $tenantEntityManager->persist($user);
-            $tenantEntityManager->flush();
-            
-        } catch (\Exception $e) {
-            // Log error
-        }
-
-        $tenantConnection->close();
-    }
-
+    /**
+     * Rebuild a school's tenant database (schema, settings row, session/term,
+     * grading scale, principal login). Idempotent — `TenantProvisioner` only
+     * creates what is missing — so it is safe on a healthy school and is the
+     * recovery path for one whose provisioning failed half way.
+     *
+     * The principal's password is never reset here: provision() only creates the
+     * user when the email does not exist.
+     */
     #[Route('/{id}/fix-schema', name: 'app_landlord_school_fix_schema', methods: ['GET'])]
-    public function fixSchema(School $school): Response
+    public function fixSchema(School $school, TenantProvisioner $provisioner): Response
     {
-        $this->addFlash('warning', "Schema fix not fully implemented for new args yet.");
-        return $this->redirectToRoute('app_landlord_school_new');
+        try {
+            $result = $provisioner->provision(
+                schoolName: (string) $school->getName(),
+                subdomain: (string) $school->getSubdomain(),
+                landlordSchoolId: $school->getId(),
+                principalName: $school->getPrincipalName(),
+                principalEmail: $school->getPrincipalEmail(),
+                databaseName: $school->getDatabaseName(),
+            );
+        } catch (\Throwable $e) {
+            $this->addFlash('error', sprintf(
+                'Could not repair %s: %s',
+                (string) $school->getDatabaseName(),
+                $e->getMessage()
+            ));
+
+            return $this->redirectToRoute('landlord_school_show', ['id' => $school->getId()]);
+        }
+
+        $this->addFlash('success', sprintf(
+            'Schema verified for %s%s — session %s, %s ready%s.',
+            $result['database'],
+            $result['database_created'] ? ' (database created)' : '',
+            $result['session'],
+            $result['term'],
+            $result['admin_created'] !== null ? ', principal login created' : ''
+        ));
+
+        return $this->redirectToRoute('landlord_school_show', ['id' => $school->getId()]);
     }
 
     #[Route('/', name: 'landlord_school_index', methods: ['GET'])]

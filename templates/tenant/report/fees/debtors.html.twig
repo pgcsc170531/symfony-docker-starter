@@ -1,0 +1,155 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Outstanding Fees{% endblock %}
+
+{% block body %}
+<div class="px-4 py-4 sm:px-6 sm:py-6">
+
+    <div class="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+            <a href="{{ path('app_tenant_report_fees') }}" class="inline-flex min-h-[44px] items-center text-xs font-semibold text-accent-700 hover:underline">&larr; Fee reports</a>
+            <h1 class="mt-1 text-2xl font-black tracking-tight text-ink-900 sm:text-3xl">Outstanding fees</h1>
+            <p class="mt-1 text-sm text-ink-600">
+                One row per family. A guardian with three children gets one total and one phone call.
+            </p>
+        </div>
+
+        <form method="get" action="{{ path('app_tenant_report_debtors') }}" class="flex flex-wrap items-end gap-2 no-print">
+            <div>
+                <label for="term" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Term</label>
+                <select id="term" name="term" class="min-h-[44px] rounded-lg border border-ink-300 bg-white px-3 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500">
+                    {% for t in terms %}
+                        <option value="{{ t.id }}" {{ term and term.id == t.id ? 'selected' }}>
+                            {{ t.session.name }} · {{ t.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="classroom" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Class</label>
+                <select id="classroom" name="classroom" class="min-h-[44px] rounded-lg border border-ink-300 bg-white px-3 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500">
+                    <option value="">All classes</option>
+                    {% for c in classrooms %}
+                        <option value="{{ c.id }}" {{ classroom and classroom.id == c.id ? 'selected' }}>{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="min-h-[44px] rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white hover:bg-accent-700">Show</button>
+            <a href="{{ path('app_tenant_report_debtors_csv', app.request.query.all) }}"
+               class="inline-flex min-h-[44px] items-center rounded-lg border border-ink-300 px-4 text-sm font-semibold text-ink-700 hover:border-accent-400 hover:text-accent-700">
+                Export reminders
+            </a>
+            <button type="button" onclick="window.print()"
+                    class="min-h-[44px] rounded-lg border border-ink-300 px-4 text-sm font-semibold text-ink-700 hover:border-accent-400 hover:text-accent-700">
+                Print
+            </button>
+        </form>
+    </div>
+
+    {% if term is null %}
+        <div class="rounded-xl border border-ink-200 bg-white p-8 text-center text-sm text-ink-600">
+            No term selected. Create a term before chasing balances.
+        </div>
+    {% else %}
+        <div class="grid grid-cols-2 gap-3">
+            <div class="rounded-xl border border-ink-200 bg-white p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">Families owing</p>
+                <p class="mt-1 text-xl font-black text-ink-900">{{ families|length }}</p>
+            </div>
+            <div class="rounded-xl border border-ink-200 bg-white p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">Total outstanding</p>
+                <p class="money mt-1 text-xl font-black text-failed">₦{{ totalOwed|number_format(2) }}</p>
+            </div>
+        </div>
+
+        {% if families is empty %}
+            <div class="mt-4 rounded-xl border border-ink-200 bg-white p-8 text-center">
+                <p class="text-4xl" aria-hidden="true">🎉</p>
+                <h2 class="mt-3 text-lg font-bold text-ink-900">Nobody owes anything for this term</h2>
+                <p class="mt-1 text-sm text-ink-600">Every billed pupil is fully paid.</p>
+            </div>
+        {% else %}
+            <div class="mt-4 space-y-2">
+                {% for family in families %}
+                    {# Phone: local 0803… → international 234803… for WhatsApp. #}
+                    {% set digits = family.phone ? family.phone|replace({' ': '', '-': '', '(': '', ')': '', '+': '', '.': ''}) : '' %}
+                    {% if digits starts with '0' %}
+                        {% set waPhone = '234' ~ digits|slice(1) %}
+                    {% elseif digits starts with '234' %}
+                        {% set waPhone = digits %}
+                    {% elseif digits is not empty %}
+                        {% set waPhone = '234' ~ digits %}
+                    {% else %}
+                        {% set waPhone = '' %}
+                    {% endif %}
+
+                    {% set reminder = 'Dear ' ~ (family.guardian ?: 'Guardian') ~ ', our records show N' ~ family.outstanding|number_format(2) ~ ' outstanding for ' ~ term.name ~ '. Kindly settle with the school office.' %}
+
+                    <details class="group rounded-xl border border-ink-200 bg-white">
+                        <summary class="flex min-h-[56px] cursor-pointer list-none items-center justify-between gap-3 p-4">
+                            <span class="min-w-0">
+                                <span class="block break-words font-semibold text-ink-900">{{ family.guardian }}</span>
+                                <span class="block text-xs text-ink-500">
+                                    {{ family.pupils }} pupil{{ family.pupils == 1 ? '' : 's' }}
+                                    {% if family.phone %} · {{ family.phone }}{% else %} · no phone{% endif %}
+                                </span>
+                            </span>
+                            <span class="flex shrink-0 items-center gap-3">
+                                <span class="money font-black text-failed">₦{{ family.outstanding|number_format(2) }}</span>
+                                <span class="text-xl leading-none text-ink-400 transition group-open:rotate-45" aria-hidden="true">+</span>
+                            </span>
+                        </summary>
+
+                        <div class="border-t border-ink-100 p-4">
+                            <ul class="divide-y divide-ink-100">
+                                {% for child in family.children %}
+                                    {% if child.outstanding > 0 %}
+                                        <li class="flex flex-wrap items-center justify-between gap-2 py-2">
+                                            <span class="min-w-0">
+                                                <span class="block break-words text-sm font-semibold text-ink-900">{{ child.pupil }}</span>
+                                                <span class="block text-xs text-ink-500">
+                                                    {{ child.class ?: 'No class' }}{% if child.admissionNumber %} · {{ child.admissionNumber }}{% endif %}
+                                                </span>
+                                            </span>
+                                            <span class="flex items-center gap-3">
+                                                <span class="money text-sm font-semibold text-failed">₦{{ child.outstanding|number_format(2) }}</span>
+                                                <a href="{{ path('app_tenant_report_statement', {id: child.studentId, term: term.id}) }}"
+                                                   class="inline-flex min-h-[44px] items-center text-xs font-semibold text-accent-700 hover:underline">Statement</a>
+                                                <a href="{{ path('app_tenant_payment_terminal', {id: child.studentId}) }}"
+                                                   class="inline-flex min-h-[44px] items-center text-xs font-semibold text-ink-700 hover:text-accent-700">Pay</a>
+                                            </span>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                            </ul>
+
+                            {% if family.guardianId is null %}
+                                <p class="mt-3 rounded-lg bg-failed/10 p-3 text-xs text-failed">
+                                    This pupil has no guardian attached. Link a guardian before sending a reminder.
+                                </p>
+                            {% elseif not family.phone %}
+                                <p class="mt-3 rounded-lg bg-pending/10 p-3 text-xs text-ink-700">
+                                    This guardian has no phone number on file. Add one before sending a reminder.
+                                </p>
+                            {% else %}
+                                <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                    <a href="tel:{{ family.phone }}"
+                                       class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-ink-300 px-4 text-sm font-semibold text-ink-700 hover:border-accent-400 hover:text-accent-700">
+                                        Call guardian
+                                    </a>
+                                    <a href="https://wa.me/{{ waPhone }}?text={{ reminder|url_encode }}"
+                                       target="_blank" rel="noopener noreferrer"
+                                       class="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white hover:bg-accent-700">
+                                        WhatsApp reminder
+                                    </a>
+                                </div>
+                                <p class="mt-2 text-xs text-ink-500">The message opens in WhatsApp; nothing is sent automatically.</p>
+                            {% endif %}
+                        </div>
+                    </details>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

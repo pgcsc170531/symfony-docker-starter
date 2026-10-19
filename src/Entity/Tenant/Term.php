@@ -30,6 +30,10 @@ class Term
     #[ORM\Column(name: 'end_date', type: 'date_immutable', nullable: true)]
     private ?\DateTimeImmutable $endDate = null;
 
+    /** When the end-of-term summary was emailed to the proprietor. */
+    #[ORM\Column(name: 'summary_sent_at', nullable: true)]
+    private ?\DateTimeImmutable $summarySentAt = null;
+
     public function getId(): ?int { return $this->id; }
 
     public function getName(): ?string { return $this->name; }
@@ -64,4 +68,7 @@ class Term
         $this->endDate = $endDate;
         return $this;
     }
+
+    public function getSummarySentAt(): ?\DateTimeImmutable { return $this->summarySentAt; }
+    public function setSummarySentAt(?\DateTimeImmutable $summarySentAt): static { $this->summarySentAt = $summarySentAt; return $this; }
 }

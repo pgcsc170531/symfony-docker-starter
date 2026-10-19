@@ -1,0 +1,264 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Term remarks — {{ classroom.name }}{% endblock %}
+
+{% block body %}
+<div class="px-4">
+
+    <a href="{{ path('app_tenant_reports_hub') }}"
+       class="mb-4 inline-flex min-h-[44px] items-center gap-1 text-sm font-semibold text-ink-600 hover:text-accent-700">
+        <span aria-hidden="true">&larr;</span> Reports
+    </a>
+
+    <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div class="min-w-0">
+            <h1 class="text-2xl font-bold text-ink-900">Term remarks</h1>
+            <p class="mt-1 text-sm text-ink-500">
+                {{ classroom.name }} · {{ term.name }}{% if term.session %} · {{ term.session.name }}{% endif %}
+            </p>
+        </div>
+        {% if locked %}
+            <span class="shrink-0 self-start rounded bg-paid/10 px-2.5 py-1 text-xs font-semibold text-paid">Released — read only</span>
+        {% endif %}
+    </div>
+
+    {% if classes|length > 1 %}
+        <label class="mb-4 block max-w-sm">
+            <span class="mb-1 block text-sm font-medium text-ink-700">Class</span>
+            <select onchange="if (this.value) window.location = this.value"
+                    class="w-full rounded-lg border border-ink-300 p-2.5 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500">
+                {% for option in classes %}
+                    <option value="{{ path('app_tenant_term_remarks', {classroom: option.id, student: selectedId}) }}"
+                            {{ option.id == classroom.id ? 'selected' }}>
+                        {{ option.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </label>
+    {% endif %}
+
+    {% if pupils is empty %}
+        <div class="rounded-xl border border-dashed border-ink-300 bg-white px-6 py-12 text-center">
+            <p class="text-lg font-semibold text-ink-700">No {{ learner.plural }} in this class yet</p>
+            <p class="mx-auto mt-1 max-w-md text-sm text-ink-500">
+                Enrol {{ learner.plural }} first; their remarks appear here once they are on the class list.
+            </p>
+        </div>
+    {% else %}
+
+        <div class="grid gap-4 lg:grid-cols-3">
+
+            {# ── Pupil picker ──────────────────────────────────────── #}
+            <div class="lg:col-span-1">
+                <label class="block lg:hidden">
+                    <span class="mb-1 block text-sm font-medium text-ink-700">{{ learner.capital }}</span>
+                    <select onchange="if (this.value) window.location = this.value"
+                            class="w-full rounded-lg border border-ink-300 p-2.5 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500">
+                        {% for pupil in pupils %}
+                            <option value="{{ path('app_tenant_term_remarks', {classroom: classroom.id, student: pupil.id}) }}"
+                                    {{ pupil.id == selectedId ? 'selected' }}>
+                                {{ pupil.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </label>
+
+                <div class="hidden max-h-[70vh] overflow-y-auto rounded-xl border border-ink-200 bg-white lg:block">
+                    <p class="sticky top-0 border-b border-ink-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-ink-500">
+                        {{ pupils|length }} {{ learner.plural }}
+                    </p>
+                    <ul class="divide-y divide-ink-100">
+                        {% for pupil in pupils %}
+                            <li>
+                                <a href="{{ path('app_tenant_term_remarks', {classroom: classroom.id, student: pupil.id}) }}"
+                                   class="flex min-h-[44px] items-center justify-between gap-2 px-4 py-2 text-sm transition {{ pupil.id == selectedId ? 'bg-accent-50 font-semibold text-accent-700' : 'text-ink-700 hover:bg-ink-50' }}">
+                                    <span class="min-w-0 break-words">{{ pupil.name }}</span>
+                                    <span class="flex shrink-0 gap-1 text-[10px] font-semibold">
+                                        <span class="{{ pupil.form ? 'text-paid' : 'text-ink-300' }}" title="Form teacher">F</span>
+                                        <span class="{{ pupil.hod ? 'text-paid' : 'text-ink-300' }}" title="HOD">H</span>
+                                        <span class="{{ pupil.principal ? 'text-paid' : 'text-ink-300' }}" title="Principal">P</span>
+                                    </span>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            {# ── Remark panels ─────────────────────────────────────── #}
+            <div class="lg:col-span-2">
+                <div x-data="termRemarks()"
+                     x-init="init($el)"
+                     data-token="{{ csrf }}"
+                     data-save-url="{{ path('app_tenant_term_remark_save', {student: selectedId, classroom: classroom.id}) }}"
+                     data-next-url="{{ path('app_tenant_term_remarks', {classroom: classroom.id, student: nextId}) }}"
+                     data-locked="{{ locked ? '1' : '0' }}"
+                     data-can-form="{{ canForm ? '1' : '0' }}"
+                     data-can-hod="{{ canHod ? '1' : '0' }}"
+                     data-can-principal="{{ canPrincipal ? '1' : '0' }}"
+                     class="space-y-4">
+
+                    <script type="application/json">{{ {
+                        form: remark and remark.text ? remark.text : '',
+                        hod: remark and remark.hodText ? remark.hodText : '',
+                        principal: remark and remark.principalText ? remark.principalText : '',
+                        suggestion: suggestion ?? ''
+                    }|json_encode|raw }}</script>
+
+                    <div class="rounded-xl border border-ink-200 bg-white p-4 shadow-card sm:p-5">
+                        <div class="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-ink-200 pb-3">
+                            <h2 class="text-lg font-bold text-ink-900">
+                                {{ selectedStudent ? selectedStudent.fullName : 'No ' ~ learner }}
+                            </h2>
+                            <span class="rounded bg-ink-100 px-2 py-1 text-xs font-semibold text-ink-600"
+                                  x-text="saved"></span>
+                        </div>
+
+                        <p x-show="message" :style="message ? '' : 'display:none'"
+                           :class="isError ? 'text-failed' : 'text-paid'"
+                           class="mb-3 text-sm font-medium" x-text="message"></p>
+
+                        {# ── Form teacher ─────────────────────────────── #}
+                        <div class="mb-5">
+                            <div class="mb-1 flex items-center justify-between gap-2">
+                                <h3 class="text-sm font-bold text-ink-800">Form teacher's remark</h3>
+                                {% if canForm and not locked %}
+                                    <button type="button" @click="useSuggestion()"
+                                            class="inline-flex min-h-[44px] items-center rounded-lg border border-accent-300 px-3 text-xs font-semibold text-accent-700">
+                                        Use suggestion
+                                    </button>
+                                {% endif %}
+                            </div>
+                            <textarea x-model="fields.form" rows="3" :maxlength="{{ maxLength }}" :disabled="locked || !can.form"
+                                      class="w-full rounded-lg border border-ink-300 p-2.5 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500 disabled:bg-ink-50 disabled:text-ink-500"></textarea>
+                            <p class="mt-1 text-xs text-ink-500">Maximum {{ maxLength }} characters — about two lines on the printed card.</p>
+                            {% if canForm and not locked %}
+                                <button type="button" @click="save('form')"
+                                        class="mt-2 inline-flex min-h-[44px] items-center justify-center rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white hover:bg-accent-700">
+                                    Save form teacher remark
+                                </button>
+                            {% endif %}
+                        </div>
+
+                        {# ── HOD ──────────────────────────────────────── #}
+                        <div class="mb-5 border-t border-ink-200 pt-4">
+                            <h3 class="mb-1 text-sm font-bold text-ink-800">Head of Department's remark</h3>
+                            <textarea x-model="fields.hod" rows="3" :maxlength="{{ maxLength }}" :disabled="locked || !can.hod"
+                                      class="w-full rounded-lg border border-ink-300 p-2.5 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500 disabled:bg-ink-50 disabled:text-ink-500"></textarea>
+                            <p class="mt-1 text-xs text-ink-500">Maximum {{ maxLength }} characters.</p>
+                            {% if canHod and not locked %}
+                                <button type="button" @click="save('hod')"
+                                        class="mt-2 inline-flex min-h-[44px] items-center justify-center rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white hover:bg-accent-700">
+                                    Save HOD remark
+                                </button>
+                            {% endif %}
+                        </div>
+
+                        {# ── Principal ────────────────────────────────── #}
+                        <div class="border-t border-ink-200 pt-4">
+                            <h3 class="mb-1 text-sm font-bold text-ink-800">Principal's remark</h3>
+                            {% if school and school.principalName %}
+                                <p class="mb-2 text-xs text-ink-500">{{ school.principalName }}{% if school.principalTitle %}, {{ school.principalTitle }}{% endif %}</p>
+                            {% endif %}
+                            <textarea x-model="fields.principal" rows="3" :maxlength="{{ maxLength }}" :disabled="locked || !can.principal"
+                                      class="w-full rounded-lg border border-ink-300 p-2.5 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500 disabled:bg-ink-50 disabled:text-ink-500"></textarea>
+                            <p class="mt-1 text-xs text-ink-500">Maximum {{ maxLength }} characters.</p>
+                            {% if canPrincipal and not locked %}
+                                <button type="button" @click="save('principal')"
+                                        class="mt-2 inline-flex min-h-[44px] items-center justify-center rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white hover:bg-accent-700">
+                                    Save principal remark
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-2 sm:flex-row">
+                        <button type="button" @click="saveAndNext()" :disabled="locked"
+                                class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-ink-300 bg-white px-5 text-sm font-semibold text-ink-700 disabled:opacity-60 sm:flex-1">
+                            Save all &amp; next {{ learner }}
+                        </button>
+                        <a href="{{ path('app_tenant_term_remarks', {classroom: classroom.id, student: nextId}) }}"
+                           class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-ink-300 px-5 text-sm font-semibold text-ink-700 sm:flex-none">
+                            Next without saving
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <p class="mt-6 text-xs text-ink-400">
+        Each role writes only its own paragraph. All three print on the report card with the writer's
+        name and the term-end date. Remarks lock when the term is released.
+    </p>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+    function termRemarks() {
+        return {
+            fields: { form: '', hod: '', principal: '' },
+            can: { form: false, hod: false, principal: false },
+            locked: false,
+            token: '',
+            saveUrl: '',
+            nextUrl: '',
+            message: '',
+            isError: false,
+            saved: '',
+            suggestion: '',
+
+            init(el) {
+                this.locked = el.dataset.locked === '1';
+                this.can.form = el.dataset.canForm === '1';
+                this.can.hod = el.dataset.canHod === '1';
+                this.can.principal = el.dataset.canPrincipal === '1';
+                this.token = el.dataset.token;
+                this.saveUrl = el.dataset.saveUrl;
+                this.nextUrl = el.dataset.nextUrl;
+                const initial = JSON.parse(el.querySelector('script[type="application/json"]').textContent);
+                this.suggestion = initial.suggestion || '';
+                this.fields.form = initial.form || '';
+                this.fields.hod = initial.hod || '';
+                this.fields.principal = initial.principal || '';
+            },
+
+            useSuggestion() {
+                this.fields.form = this.suggestion;
+            },
+
+            async save(field) {
+                this.message = '';
+                const res = await fetch(this.saveUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ field: field, text: this.fields[field], _token: this.token })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.success) {
+                    this.isError = true;
+                    this.message = data.error || 'Could not save that remark.';
+                    return false;
+                }
+                this.isError = false;
+                this.message = 'Saved.';
+                this.saved = 'Saved';
+                return true;
+            },
+
+            async saveAndNext() {
+                const fields = [];
+                if (this.can.form) fields.push('form');
+                if (this.can.hod) fields.push('hod');
+                if (this.can.principal) fields.push('principal');
+                for (const field of fields) {
+                    const ok = await this.save(field);
+                    if (!ok) return;
+                }
+                window.location = this.nextUrl;
+            }
+        };
+    }
+</script>
+{% endblock %}
