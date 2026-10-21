@@ -1,0 +1,133 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit {{ school.name }}{% endblock %}
+
+{% block body %}
+<div class="px-4 py-4 sm:px-6 sm:py-6">
+
+    <a href="{{ path('landlord_school_show', {id: school.id}) }}"
+       class="mb-4 inline-flex min-h-[44px] items-center text-sm font-semibold text-ink-500 hover:text-ink-900">
+        &larr; Back to {{ school.name }}
+    </a>
+
+    <div class="mb-5">
+        <h1 class="text-xl font-black tracking-tight text-ink-900 sm:text-2xl">Edit school</h1>
+        <p class="mt-1 break-words text-sm text-ink-500">
+            <span class="font-mono">{{ school.subdomain }}.edus.ng</span>
+            · database <span class="font-mono">{{ school.databaseName }}</span>
+        </p>
+    </div>
+
+    {{ form_start(form, {attr: {class: 'space-y-4'}}) }}
+
+        {# ── Identity ──────────────────────────────────────────────────── #}
+        <div class="rounded-xl border border-ink-200 bg-white">
+            <div class="border-b border-ink-100 px-4 py-3">
+                <h2 class="text-sm font-bold text-ink-900">Identity</h2>
+            </div>
+            <div class="space-y-4 p-4">
+                <div>
+                    <label for="{{ form.name.vars.id }}" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">School name</label>
+                    {{ form_widget(form.name, {attr: {class: 'min-h-[44px] w-full rounded-lg border border-ink-300 px-3 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500'}}) }}
+                    {{ form_errors(form.name) }}
+                </div>
+
+                <div>
+                    <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Subdomain</span>
+                    <p class="rounded-lg border border-ink-200 bg-ink-50 px-3 py-2.5 font-mono text-sm text-ink-700">
+                        {{ school.subdomain }}.edus.ng
+                    </p>
+                    <p class="mt-1 text-xs text-ink-500">
+                        Not editable. It is the school's address, and it is already printed on report cards,
+                        receipts and emails. Renaming it is a migration, not a form field.
+                    </p>
+                </div>
+
+                <div>
+                    <label class="flex min-h-[44px] items-center gap-3 rounded-lg border border-ink-200 px-3 py-2">
+                        {{ form_widget(form.isActive, {attr: {class: 'h-5 w-5 rounded border-ink-300 text-accent-600 focus:ring-accent-500'}}) }}
+                        <span class="text-sm font-semibold text-ink-800">School is active</span>
+                    </label>
+                    <p class="mt-1 text-xs text-ink-500">{{ form.isActive.vars.help }}</p>
+                </div>
+            </div>
+        </div>
+
+        {# ── Owner account ─────────────────────────────────────────────── #}
+        <div class="rounded-xl border border-ink-200 bg-white">
+            <div class="border-b border-ink-100 px-4 py-3">
+                <h2 class="text-sm font-bold text-ink-900">Owner account</h2>
+            </div>
+            <div class="space-y-4 p-4">
+                <div>
+                    <label for="{{ form.principalName.vars.id }}" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Name</label>
+                    {{ form_widget(form.principalName, {attr: {class: 'min-h-[44px] w-full rounded-lg border border-ink-300 px-3 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500'}}) }}
+                    {{ form_errors(form.principalName) }}
+                </div>
+                <div>
+                    <label for="{{ form.principalEmail.vars.id }}" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Email</label>
+                    {{ form_widget(form.principalEmail, {attr: {class: 'min-h-[44px] w-full rounded-lg border border-ink-300 px-3 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500'}}) }}
+                    {% if form.principalEmail.vars.help %}<p class="mt-1 text-xs text-ink-500">{{ form.principalEmail.vars.help }}</p>{% endif %}
+                    {{ form_errors(form.principalEmail) }}
+                </div>
+                <div>
+                    <label for="{{ form.newPassword.vars.id }}" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">New password</label>
+                    {{ form_widget(form.newPassword, {attr: {class: 'min-h-[44px] w-full rounded-lg border border-ink-300 px-3 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500', placeholder: 'Leave blank to keep the current one'}}) }}
+                    {% if form.newPassword.vars.help %}<p class="mt-1 text-xs text-ink-500">{{ form.newPassword.vars.help }}</p>{% endif %}
+                    {{ form_errors(form.newPassword) }}
+                </div>
+                <div>
+                    <label for="{{ form.agent.vars.id }}" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Referred by</label>
+                    {{ form_widget(form.agent, {attr: {class: 'min-h-[44px] w-full rounded-lg border border-ink-300 bg-white px-3 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500'}}) }}
+                    {{ form_errors(form.agent) }}
+                </div>
+            </div>
+            <div class="border-t border-ink-100 p-4">
+                <button type="submit"
+                        class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-accent-600 px-5 text-sm font-semibold text-white hover:bg-accent-700 sm:w-auto">
+                    Save changes
+                </button>
+            </div>
+        </div>
+
+    {{ form_end(form) }}
+
+    {# ── Danger zone ───────────────────────────────────────────────────── #}
+    <div class="mt-8 rounded-xl border border-failed/30 bg-white">
+        <div class="border-b border-ink-100 px-4 py-3">
+            <h2 class="text-sm font-bold text-failed">Danger zone</h2>
+        </div>
+        <div class="p-4">
+            <p class="text-sm text-ink-700">
+                <strong>Deleting removes the school for good.</strong> Its pupils, marks, bills, payments and staff logins
+                go with it, along with the database
+                <span class="font-mono text-xs">{{ school.databaseName }}</span>.
+            </p>
+            <p class="mt-2 text-sm text-ink-500">
+                If you only want to stop them using Edus for now, switch <strong>School is active</strong> off above and save —
+                nothing is deleted, and it can be switched back on.
+            </p>
+
+            <form method="post" action="{{ path('landlord_school_delete', {id: school.id}) }}"
+                  class="mt-4 space-y-3"
+                  onsubmit="return confirm('Delete {{ school.name|e('js') }} permanently? This cannot be undone.');">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete_school_' ~ school.id) }}">
+
+                <div>
+                    <label for="confirm_subdomain" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">
+                        Type <span class="font-mono normal-case">{{ school.subdomain }}</span> to confirm
+                    </label>
+                    <input id="confirm_subdomain" name="confirm_subdomain" type="text" autocomplete="off"
+                           placeholder="{{ school.subdomain }}"
+                           class="min-h-[44px] w-full rounded-lg border border-ink-300 px-3 text-base text-ink-900 focus:border-failed focus:ring-failed/30 sm:max-w-xs">
+                </div>
+
+                <button type="submit"
+                        class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-failed bg-failed px-5 text-sm font-semibold text-white hover:opacity-90 sm:w-auto">
+                    Delete this school permanently
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

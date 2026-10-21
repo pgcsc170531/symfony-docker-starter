@@ -8,6 +8,7 @@ use App\Entity\Landlord\Subscription;
 use App\Service\SubscriptionService;
 use App\Service\TenantProvisioner;
 use App\Service\WalletService; // 🟢 1. IMPORT WALLET SERVICE
+use App\Form\SchoolEditType;
 use App\Form\SchoolType;
 
 use Doctrine\ORM\EntityManagerInterface;
@@ -196,5 +197,129 @@ class SchoolController extends AbstractController
         return $this->render('landlord/school/show.html.twig', [
             'school' => $school,
         ]);
+    }
+
+    /**
+     * Edit a school.
+     *
+     * The subdomain is deliberately not editable here: it is the tenant's address,
+     * embedded in every report card, receipt, email and link the school has already
+     * handed out. Renaming it is a migration, not a form field.
+     */
+    #[Route('/{id}/edit', name: 'landlord_school_edit', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
+    public function edit(
+        School $school,
+        Request $request,
+        #[Autowire(service: 'doctrine.orm.landlord_entity_manager')]
+        EntityManagerInterface $em,
+    ): Response {
+        $form = $this->createForm(SchoolEditType::class, $school);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $newPassword = (string) $form->get('newPassword')->getData();
+            if ($newPassword !== '') {
+                $school->setPrincipalPassword(password_hash($newPassword, PASSWORD_BCRYPT));
+            }
+
+            $em->flush();
+
+            $this->addFlash('success', sprintf('%s updated.', $school->getName()));
+
+            return $this->redirectToRoute('landlord_school_show', ['id' => $school->getId()]);
+        }
+
+        // Counted, not guessed: the confirmation asks the operator to type the
+        // subdomain, so the screen must show exactly how much is about to go.
+        $subscribed = $em->getRepository(Subscription::class)->count(['school' => $school]);
+
+        return $this->render('landlord/school/edit.html.twig', [
+            'school' => $school,
+            'form' => $form,
+            'subscriptions' => $subscribed,
+        ]);
+    }
+
+    /**
+     * Delete a school permanently.
+     *
+     * This is the destructive one: the record, its subscriptions/wallet/credit rows
+     * and the tenant database itself go. Guarded three ways — POST only, a CSRF
+     * token, and the operator typing the subdomain. "Deactivate" on the edit screen
+     * is the reversible alternative and is offered right next to it.
+     */
+    #[Route('/{id}/delete', name: 'landlord_school_delete', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function delete(
+        School $school,
+        Request $request,
+        ManagerRegistry $doctrine,
+    ): Response {
+        if (!$this->isCsrfTokenValid('delete_school_' . $school->getId(), (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'That confirmation expired. Try again.');
+
+            return $this->redirectToRoute('landlord_school_edit', ['id' => $school->getId()]);
+        }
+
+        $typed = trim((string) $request->request->get('confirm_subdomain'));
+        if ($typed === '' || strcasecmp($typed, (string) $school->getSubdomain()) !== 0) {
+            $this->addFlash('error', sprintf(
+                'Nothing was deleted: type the subdomain "%s" to confirm.',
+                (string) $school->getSubdomain()
+            ));
+
+            return $this->redirectToRoute('landlord_school_edit', ['id' => $school->getId()]);
+        }
+
+        $name = (string) $school->getName();
+        $subdomain = (string) $school->getSubdomain();
+        $database = (string) $school->getDatabaseName();
+
+        $em = $doctrine->getManager('landlord');
+
+        // Child rows first — the school row holds foreign keys they point at.
+        foreach ([
+            'App\Entity\Landlord\SubscriptionPayment' => 'school',
+            'App\Entity\Landlord\TermRegistration' => 'school',
+            'App\Entity\Landlord\StatementVerification' => 'school',
+            'App\Entity\Landlord\WalletTransaction' => 'school',
+            'App\Entity\Landlord\CreditRequest' => 'school',
+            'App\Entity\Landlord\SupportTicket' => 'school',
+            'App\Entity\Landlord\RegistrationInvite' => 'school',
+            'App\Entity\Landlord\Subscription' => 'school',
+        ] as $class => $field) {
+            foreach ($em->getRepository($class)->findBy([$field => $school]) as $row) {
+                $em->remove($row);
+            }
+        }
+
+        $em->remove($school);
+        $em->flush();
+
+        // The database is dropped AFTER the record is gone, and a failure here is
+        // reported rather than hidden: on a server whose app user has no DROP
+        // privilege the school is still deleted, and the operator is told what is
+        // left behind instead of being told it worked.
+        $databaseDropped = false;
+        if ($database !== '') {
+            try {
+                $em->getConnection()->executeStatement(sprintf('DROP DATABASE IF EXISTS `%s`', str_replace('`', '', $database)));
+                $databaseDropped = true;
+            } catch (\Throwable) {
+                // handled below
+            }
+        }
+
+        if ($databaseDropped) {
+            $this->addFlash('success', sprintf('%s (%s) deleted, and database %s dropped.', $name, $subdomain, $database));
+        } else {
+            $this->addFlash('warning', sprintf(
+                '%s (%s) deleted, but database %s could not be dropped from here — drop it manually.',
+                $name,
+                $subdomain,
+                $database
+            ));
+        }
+
+        return $this->redirectToRoute('landlord_school_index');
     }
 }

@@ -77,10 +77,11 @@
 
                     {# Bottom Row: Actions #}
                     <div class="grid grid-cols-2 gap-3 pt-2">
-                        <a href="#" class="flex items-center justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                        <a href="{{ path('landlord_school_edit', {'id': school.id}) }}"
+                           class="flex min-h-[44px] items-center justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
                             Edit
                         </a>
-                        <a href="{{ path('landlord_school_show', {'id': school.id}) }}" class="flex items-center justify-center rounded-md bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-600 hover:bg-indigo-100">
+                        <a href="{{ path('landlord_school_show', {'id': school.id}) }}" class="flex min-h-[44px] items-center justify-center rounded-md bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-600 hover:bg-indigo-100">
                             View
                         </a>
                     </div>
@@ -161,7 +162,7 @@
                             {# Actions #}
                             <td class="px-6 py-4 text-right">
                                 <div class="flex justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                                    <a href="#" class="text-gray-500 hover:text-indigo-600 hover:bg-gray-100 p-1.5 rounded-md transition" title="Edit Settings">
+                                    <a href="{{ path('landlord_school_edit', {'id': school.id}) }}" class="text-gray-500 hover:text-indigo-600 hover:bg-gray-100 p-1.5 rounded-md transition" title="Edit school">
                                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                         </svg>
