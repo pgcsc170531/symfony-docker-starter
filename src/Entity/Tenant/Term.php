@@ -30,11 +30,24 @@ class Term
     #[ORM\Column(name: 'end_date', type: 'date_immutable', nullable: true)]
     private ?\DateTimeImmutable $endDate = null;
 
+    /**
+     * When pupils return for the next term.
+     *
+     * The card prefers the *next term's* start date when that term has been
+     * created, but most schools set one term at a time — so the resumption day
+     * is recorded here instead of being printed as "to be announced".
+     */
+    #[ORM\Column(name: 'resumption_date', type: 'date_immutable', nullable: true)]
+    private ?\DateTimeImmutable $resumptionDate = null;
+
     /** When the end-of-term summary was emailed to the proprietor. */
     #[ORM\Column(name: 'summary_sent_at', nullable: true)]
     private ?\DateTimeImmutable $summarySentAt = null;
 
     public function getId(): ?int { return $this->id; }
+
+    public function getResumptionDate(): ?\DateTimeImmutable { return $this->resumptionDate; }
+    public function setResumptionDate(?\DateTimeImmutable $resumptionDate): static { $this->resumptionDate = $resumptionDate; return $this; }
 
     public function getName(): ?string { return $this->name; }
     public function setName(string $name): static { $this->name = $name; return $this; }

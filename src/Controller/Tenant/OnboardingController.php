@@ -84,13 +84,16 @@ class OnboardingController extends AbstractController
         $type = $school->getInstitutionType() ?? 'secondary';
         
         $suggestions = match($type) {
-            'primary' => ['Nursery 1', 'Nursery 2', 'KG 1', 'KG 2', 'Primary 1', 'Primary 2', 'Primary 3', 'Primary 4', 'Primary 5', 'Primary 6'],
-            'combined' => [
+            School::TYPE_NURSERY => ['Nursery 1', 'Nursery 2', 'KG 1', 'KG 2'],
+            School::TYPE_PRIMARY => ['Nursery 1', 'Nursery 2', 'KG 1', 'KG 2', 'Primary 1', 'Primary 2', 'Primary 3', 'Primary 4', 'Primary 5', 'Primary 6'],
+            School::TYPE_JUNIOR_SECONDARY => ['JSS 1', 'JSS 2', 'JSS 3'],
+            School::TYPE_SENIOR_SECONDARY => ['SS 1', 'SS 2', 'SS 3'],
+            School::TYPE_COMBINED => [
                 'Nursery 1', 'Nursery 2', 'KG 1', 'KG 2',
                 'Primary 1', 'Primary 2', 'Primary 3', 'Primary 4', 'Primary 5', 'Primary 6',
                 'JSS 1', 'JSS 2', 'JSS 3', 'SS 1', 'SS 2', 'SS 3',
             ],
-            'tertiary' => ['ND 1', 'ND 2', 'HND 1', 'HND 2', 'Year 1', 'Year 2', 'Year 3', 'Year 4'],
+            School::TYPE_TERTIARY => ['ND 1', 'ND 2', 'HND 1', 'HND 2', 'Year 1', 'Year 2', 'Year 3', 'Year 4'],
             default => ['JSS 1', 'JSS 2', 'JSS 3', 'SS 1', 'SS 2', 'SS 3'],
         };
 

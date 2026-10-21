@@ -2,9 +2,12 @@
 
 namespace App\Service\Payment;
 
+use App\Entity\Tenant\Application;
+use App\Entity\Tenant\ApplicationEvent;
 use App\Entity\Tenant\Invoice;
 use App\Entity\Tenant\Payment;
 use App\Entity\Tenant\PaymentIntent;
+use App\Entity\Tenant\School;
 use App\Service\SchoolMailer;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -46,6 +49,11 @@ final class SettlementService
             ]);
 
             return false;
+        }
+
+        // One settlement path for both journeys; only the bookkeeping differs.
+        if ($intent->isApplicationFee()) {
+            return $this->settleApplicationFee($intent, $rawPayload);
         }
 
         $invoice = $intent->getInvoice();
@@ -112,6 +120,106 @@ final class SettlementService
         if ($school !== null && $intent->getPayment() !== null) {
             $this->mailer->paymentReceipt($school, $intent->getPayment());
         }
+
+        return true;
+    }
+
+    /**
+     * An application fee: the applicant is not a pupil yet, so there is no
+     * invoice. The ledger row carries the money and the reference; the
+     * `Application` carries the link and the gate.
+     */
+    private function settleApplicationFee(PaymentIntent $intent, string $rawPayload): bool
+    {
+        $application = $intent->getApplication();
+        if (!$application instanceof Application) {
+            $this->logger->error('Application fee settlement failed for {reference}: intent has no application', [
+                'reference' => $intent->getReference(),
+            ]);
+
+            return false;
+        }
+
+        // The bursar may have confirmed an uploaded receipt while this intent was
+        // still open. The money is already counted then; a second Payment row
+        // would invent revenue. Record the attempt and leave the books alone.
+        if (in_array($application->getFeeStatus(), [Application::FEE_PAID, Application::FEE_WAIVED], true)) {
+            $this->logger->warning('Application fee already settled for {application}; online payment {reference} needs a refund check', [
+                'application' => $application->getId(),
+                'reference' => $intent->getReference(),
+            ]);
+
+            $intent->setStatus(PaymentIntent::STATUS_PAID);
+            $intent->setPaidAt(new \DateTimeImmutable());
+            if ($rawPayload !== '') {
+                $intent->setRawPayload($rawPayload);
+            }
+            $this->em->flush();
+
+            return false;
+        }
+
+        $settledAmount = (string) $intent->getInvoiceAmount();
+
+        try {
+            $this->em->wrapInTransaction(function () use ($intent, $application, $settledAmount, $rawPayload): void {
+                $payment = new Payment();
+                $payment->setInvoice(null); // no invoice exists before enrolment
+                $payment->setAmount($settledAmount);
+                $payment->setMethod('ONLINE');
+                $payment->setStatus('CONFIRMED');
+                $payment->setReferenceCode($intent->getReference()); // unique → double-settle guard
+                $payment->setReference($intent->getProviderReference());
+                $payment->setConfirmedAt(new \DateTimeImmutable());
+                $payment->setConfirmedBy('ONLINE GATEWAY');
+                $this->em->persist($payment);
+
+                $application->setFeePayment($payment);
+                $application->setFeeStatus(Application::FEE_PAID);
+                $application->setFeeAmount(number_format((float) $settledAmount, 2, '.', ''));
+                $application->setFeeChannel(Application::CHANNEL_ONLINE);
+                $application->setFeeReference($intent->getProviderReference() ?: $intent->getReference());
+                $application->setFeePaidAt(new \DateTimeImmutable());
+
+                // Pay-first: settling the fee unlocks the form. It does NOT
+                // submit the application — the parent still has to fill it in.
+                if ($application->getStatus() === Application::STATUS_AWAITING_PAYMENT) {
+                    $from = $application->getStatus();
+                    $application->setStatus(Application::STATUS_DRAFT);
+
+                    $event = new ApplicationEvent();
+                    $event->setFromStatus($from);
+                    $event->setToStatus(Application::STATUS_DRAFT);
+                    $event->setNote('Application fee paid online. You can now complete the application form.');
+                    $event->setActorLabel('ONLINE GATEWAY');
+                    $event->setCreatedAt(new \DateTimeImmutable());
+                    $application->addEvent($event);
+                }
+
+                $this->em->persist($application);
+
+                $intent->setStatus(PaymentIntent::STATUS_PAID);
+                $intent->setPaidAt(new \DateTimeImmutable());
+                $intent->setPayment($payment);
+                if ($rawPayload !== '') {
+                    $intent->setRawPayload($rawPayload);
+                }
+                $this->em->persist($intent);
+            });
+        } catch (\Throwable $e) {
+            $this->logger->warning('Application fee settlement write failed for {reference}: {message}', [
+                'reference' => $intent->getReference(),
+                'message' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+
+        $this->logger->info('Application fee settled: {reference} — ₦{amount} on application {application}', [
+            'reference' => $intent->getReference(),
+            'amount' => $settledAmount,
+            'application' => $application->getId(),
+        ]);
 
         return true;
     }

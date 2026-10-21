@@ -44,10 +44,72 @@ class DiscountCalculator
     }
 
     /**
-     * Returns the monetary value to subtract from the bill.
-     * e.g., if Bill is 100k and Discount is 50%, returns 50,000.
+     * The base a discount may be taken from: **tuition only**.
+     *
+     * A 50% scholarship on the whole bill would quietly pay for uniforms, ID
+     * cards and development levies as well — the owner's rule is that a waiver
+     * is a tuition waiver, whatever its mode (percentage or fixed amount). Every
+     * caller must hand the calculator this figure, never the invoice total.
+     *
+     * @param iterable<\App\Entity\Tenant\InvoiceItem> $items
      */
-    public function calculateDiscount(Student $student, float $currentBillTotal): float
+    public function tuitionBaseFromItems(iterable $items): float
+    {
+        $base = 0.0;
+
+        foreach ($items as $item) {
+            $feeItem = $item->getFeeItem();
+
+            // A hand-written or imported bill may have no fee-item link; the
+            // description is then the only thing that says "this is tuition".
+            $isTuition = $feeItem !== null
+                ? $feeItem->isTuition()
+                : \App\Entity\Tenant\FeeItem::looksLikeTuition($item->getDescription());
+
+            if ($isTuition) {
+                $base += (float) $item->getAmount();
+            }
+        }
+
+        return round($base, 2);
+    }
+
+    /**
+     * The same figure while the bill is still being built, before any
+     * InvoiceItem exists.
+     *
+     * @param iterable<\App\Entity\Tenant\FeeStructure> $feeStructures
+     */
+    public function tuitionBaseFromStructures(iterable $feeStructures): float
+    {
+        $base = 0.0;
+
+        foreach ($feeStructures as $fee) {
+            $item = $fee->getFeeItem();
+            if ($item === null || $item->isOptional() || !$item->isTuition()) {
+                continue;
+            }
+
+            $base += (float) $fee->getAmount();
+        }
+
+        return round($base, 2);
+    }
+
+    /** The discount on a saved invoice, measured against its tuition lines. */
+    public function discountFor(Student $student, \App\Entity\Tenant\Invoice $invoice): float
+    {
+        return $this->calculateDiscount($student, $this->tuitionBaseFromItems($invoice->getItems()));
+    }
+
+    /**
+     * Returns the monetary value to subtract from the bill.
+     *
+     * `$tuitionBase` must be the TUITION total, not the invoice total — use
+     * {@see tuitionBaseFromItems()} / {@see tuitionBaseFromStructures()} to get
+     * it. A fixed rebate larger than the tuition is capped at the tuition.
+     */
+    public function calculateDiscount(Student $student, float $tuitionBase): float
     {
         // 1. Check if student has an active scholarship
         $assignment = $this->assignmentFor($student);
@@ -63,26 +125,31 @@ class DiscountCalculator
             return 0.00;
         }
 
+        // No tuition on the bill — nothing for a tuition waiver to reduce.
+        if ($tuitionBase <= 0) {
+            return 0.00;
+        }
+
         $discountValue = 0.00;
 
         // 2. Calculate based on Mode
         if ($rule->getMode() === 'PERCENTAGE') {
-            // Formula: (Total * Percentage) / 100
-            // Example: (100,000 * 50) / 100 = 50,000
+            // Formula: (Tuition * Percentage) / 100
+            // Example: (50,000 * 50) / 100 = 25,000
             $percentage = (float) $rule->getValue();
-            $discountValue = ($currentBillTotal * $percentage) / 100;
+            $discountValue = ($tuitionBase * $percentage) / 100;
         } else {
-            // Formula: Flat Amount
-            // Example: ₦5,000 off
+            // Formula: Flat Amount, and only ever against the tuition line
             $discountValue = (float) $rule->getValue();
         }
 
-        // 3. Safety Check: Discount cannot be more than the bill itself
-        // (We don't want to owe the student money!)
-        if ($discountValue > $currentBillTotal) {
-            return $currentBillTotal;
+        // 3. Safety Check: the waiver cannot exceed the tuition it applies to
+        // (we do not want to owe the family money, and we never discount the
+        // uniform, the ID card or a levy).
+        if ($discountValue > $tuitionBase) {
+            return $tuitionBase;
         }
 
-        return $discountValue;
+        return round(max(0.0, $discountValue), 2);
     }
 }

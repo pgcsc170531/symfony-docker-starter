@@ -1,0 +1,33 @@
+{#
+    One search field for every admin directory.
+
+    GET, never POST: a filtered list is a URL you can bookmark, share with a
+    colleague, or send back to yourself — and it survives a page refresh. The
+    field is a real `<label>` for screen readers, 44px tall for thumbs, and it
+    keeps the current term while you type.
+
+    Usage:
+        {% import 'tenant/_list_search.html.twig' as search %}
+        {{ search.form(q, 'Search subjects, codes or departments') }}
+#}
+
+{% macro form(q, placeholder, action = null, label = 'Search') %}
+    <form method="get" action="{{ action ?: app.request.pathinfo }}" class="mb-4 flex flex-wrap items-center gap-2">
+        <div class="min-w-0 flex-1 basis-56">
+            <label class="sr-only" for="list-search">{{ label }}</label>
+            <input id="list-search" name="q" type="search" value="{{ q }}"
+                   placeholder="{{ placeholder }}" autocomplete="off"
+                   class="min-h-[44px] w-full rounded-lg border border-ink-200 bg-white px-3 text-sm text-ink-900 placeholder:text-ink-400 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-200">
+        </div>
+        <button type="submit"
+                class="min-h-[44px] shrink-0 rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-700">
+            Search
+        </button>
+        {% if q %}
+            <a href="{{ action ?: app.request.pathinfo }}"
+               class="inline-flex min-h-[44px] shrink-0 items-center px-2 text-sm font-semibold text-ink-500 hover:text-ink-800">
+                Clear
+            </a>
+        {% endif %}
+    </form>
+{% endmacro %}

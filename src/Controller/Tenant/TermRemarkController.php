@@ -71,7 +71,7 @@ final class TermRemarkController extends AbstractController
             ];
         }
 
-        $selectedId = $request->query->getInt('student');
+        $selectedId = (int) $request->query->get('student', 0);
         if ($selectedId <= 0 || !isset($roster[$selectedId])) {
             $selectedId = (int) ($pupils[0]['id'] ?? 0);
         }
@@ -199,7 +199,8 @@ final class TermRemarkController extends AbstractController
         $own = $this->formTeacherClassroom($term);
         $allowed = $this->availableClasses($term);
 
-        $requested = $request->query->getInt('classroom') ?: $request->request->getInt('classroom');
+        // Both bags can carry an empty value (a cleared picker); cast, don't getInt().
+        $requested = (int) ($request->query->get('classroom') ?: $request->request->get('classroom'));
         if ($requested > 0) {
             foreach ($allowed as $classroom) {
                 if ((int) $classroom->getId() === $requested) {

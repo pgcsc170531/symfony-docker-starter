@@ -12,6 +12,7 @@ use App\Entity\Tenant\Invoice;
 use App\Entity\Tenant\InvoiceItem;
 use App\Entity\Tenant\FeeStructure;
 use App\Service\Finance\DiscountCalculator;
+use App\Service\Finance\AdvancePaymentService;
 use App\Service\Admissions\AdmissionNumberGenerator;
 use App\Service\Finance\InvoiceNumberGenerator;
 use Doctrine\ORM\EntityManagerInterface;
@@ -41,6 +42,7 @@ class QuickAdmissionController extends AbstractController
         private readonly DiscountCalculator $discountCalculator,
         private readonly InvoiceNumberGenerator $invoiceNumbers,
         private readonly AdmissionNumberGenerator $admissionNumbers,
+        private readonly AdvancePaymentService $advances,
     ) {
     }
 
@@ -416,6 +418,7 @@ class QuickAdmissionController extends AbstractController
             if (!$fee->getFeeItem()->isOptional()) { 
                 $item = new InvoiceItem();
                 $item->setInvoice($invoice);
+                $item->setFeeItem($fee->getFeeItem());
                 $item->setDescription($fee->getFeeItem()->getName());
                 $item->setAmount((string)$fee->getAmount());
                 $em->persist($item);
@@ -424,11 +427,15 @@ class QuickAdmissionController extends AbstractController
         }
 
         if ($total > 0) {
-            $discount = $this->discountCalculator->calculateDiscount($student, (float) $total);
+            $discount = $this->discountCalculator->calculateDiscount(
+                $student,
+                $this->discountCalculator->tuitionBaseFromStructures($fees)
+            );
             $invoice->setDiscountApplied((string) $discount);
             $invoice->setDiscountLabel($this->discountCalculator->describe($student));
             $invoice->setTotalAmount((string) max(0.0, (float) $total - $discount));
             $em->persist($invoice);
+            $this->advances->applyTo($invoice);
         }
     }
 

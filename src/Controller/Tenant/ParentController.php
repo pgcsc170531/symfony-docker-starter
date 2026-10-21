@@ -13,8 +13,8 @@ use App\Entity\Tenant\Application; // 👈 Online admission applications
 use App\Entity\Tenant\PaymentIntent;
 use App\Service\Fees\FeeReportService;
 use App\Service\Fees\StudentStatementPdfRenderer;
-use App\Service\Payment\PaymentGatewayInterface;
-use App\Service\Payments\PlatformPaymentSwitch;
+use App\Service\Payment\OnlinePaymentAvailability;
+use App\Service\Payment\PaymentChargePolicy;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -27,9 +27,9 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class ParentController extends AbstractController
 {
     public function __construct(
-        private PaymentGatewayInterface $gateway,
+        private OnlinePaymentAvailability $onlinePayments,
+        private PaymentChargePolicy $charges,
         private EntityManagerInterface $em,
-        private PlatformPaymentSwitch $platformSwitch,
     ) {
     }
     #[Route('/dashboard', name: 'app_parent_dashboard')]
@@ -168,12 +168,29 @@ class ParentController extends AbstractController
         // Sort payments by date (descending)
         usort($payments, fn($a, $b) => $b->getCreatedAt() <=> $a->getCreatedAt());
 
+        // What the parent would actually be charged online — balance plus the
+        // (capped) processing charge, or just the balance when the school has
+        // switched the charge off. Shown on the button, so nobody taps "Pay"
+        // and discovers the number at the provider's page.
+        $school = $em->getRepository(School::class)->findOneBy([]);
+        $onlineTotals = [];
+        $onlineCharges = [];
+        foreach ($invoices as $invoice) {
+            if ($invoice->getBalanceDue() <= 0) {
+                continue;
+            }
+            $onlineTotals[$invoice->getId()] = $this->charges->totalFor($school, (float) $invoice->getBalanceDue());
+            $onlineCharges[$invoice->getId()] = $this->charges->feeFor($school, (float) $invoice->getBalanceDue());
+        }
+
         return $this->render('tenant/parent/finance_view.html.twig', [
             'student' => $student,
             'invoices' => $invoices,
             'payments' => $payments,
             // The pay button only appears when a payment could actually complete.
             'onlinePaymentAvailable' => $this->onlinePaymentAvailable(),
+            'onlineTotals' => $onlineTotals,
+            'onlineCharges' => $onlineCharges,
         ]);
     }
 
@@ -283,22 +300,8 @@ class ParentController extends AbstractController
      */
     private function onlinePaymentAvailable(): bool
     {
-        $school = $this->em->getRepository(School::class)->findOneBy([]);
-
-        // Platform first: if the operator has switched online collection off,
-        // no school may offer it, whatever its own setting says.
-        if (!$this->platformSwitch->isEnabled()) {
-            return false;
-        }
-
-        if ($school === null || !$school->acceptsOnlinePayment() || !$this->gateway->isConfigured()) {
-            return false;
-        }
-
-        if ($this->gateway->name() === PaymentIntent::PROVIDER_PAYSTACK) {
-            return trim((string) $school->getPaystackSubaccountCode()) !== '';
-        }
-
-        return true;
+        return $this->onlinePayments->isAvailable(
+            $this->em->getRepository(School::class)->findOneBy([])
+        );
     }
 }

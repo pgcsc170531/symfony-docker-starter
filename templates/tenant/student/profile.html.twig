@@ -83,6 +83,12 @@
             <a href="{{ path('app_tenant_student_print_idcard', {'id': student.id}) }}" target="_blank" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-4 rounded-lg shadow-md transition-colors flex items-center justify-center">
                 <i class="fas fa-id-card mr-2"></i> ID Card
             </a>
+
+            {# The admission letter is the family's proof of the offer — printable
+               on demand, for as long as this child is on the roll. #}
+            <a href="{{ path('app_tenant_admission_print', {'id': student.id}) }}" target="_blank" rel="noopener" class="w-full sm:w-auto bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 font-bold py-2.5 px-4 rounded-lg shadow-sm transition-colors flex items-center justify-center">
+                <i class="fas fa-file-signature mr-2"></i> Admission Letter
+            </a>
             
         </div>
     </div>

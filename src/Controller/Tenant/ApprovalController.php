@@ -35,13 +35,23 @@ class ApprovalController extends AbstractController
     #[Route('', name: 'tenant_approval_hub')]
     public function hub(): Response
     {
-        $staff = $this->getStaff();
+        // An administrator or overseer may hold no assignment of their own. They
+        // still need the hub to open — it is the screen they reach from the
+        // dashboard's approval counts — so it renders with empty groups rather
+        // than a 403. A teacher without a Staff profile is a real data error and
+        // keeps the explicit refusal.
+        $user = $this->getUser();
+        $staff = $user instanceof \App\Entity\Tenant\User ? $user->getStaff() : null;
+
+        if (!$staff && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException('No staff profile linked to your account.');
+        }
 
         return $this->render('tenant/approval/hub.html.twig', [
             'isAdmin' => $this->isGranted('ROLE_ADMIN'),
-            'formTeacherGroups' => $this->formTeacherGroups($staff),
-            'hodGroups' => $this->hodGroups($staff),
-            'yearGroupGroups' => $this->yearGroupGroups($staff),
+            'formTeacherGroups' => $staff ? $this->formTeacherGroups($staff) : [],
+            'hodGroups' => $staff ? $this->hodGroups($staff) : [],
+            'yearGroupGroups' => $staff ? $this->yearGroupGroups($staff) : [],
         ]);
     }
 

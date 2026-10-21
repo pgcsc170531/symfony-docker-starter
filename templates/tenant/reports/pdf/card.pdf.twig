@@ -32,7 +32,7 @@
     h2 { font-size: 9.5pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.6pt; color: #374151; margin: 0; padding-top: 1.5pt; padding-bottom: 1pt; }
     table.grid { width: 100%; border-collapse: collapse; }
     table.grid th { background: #F3F4F6; border: 0.6pt solid #D1D5DB; padding: 2.2pt 2.6pt; font-size: 8.4pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.2pt; color: #1F2937; text-align: left; }
-    table.grid td { border: 0.6pt solid #E5E7EB; padding: 0.8pt 2.6pt; font-size: 9.8pt; }
+    table.grid td { border: 0.6pt solid #D1D5DB; padding: 0.8pt 2.6pt; font-size: 9.8pt; font-weight: bold; }
     table.grid td.num, table.grid th.num { text-align: right; }
     table.grid td.subject { font-weight: bold; }
     table.grid tbody tr:nth-child(even) td { background: #FAFAFA; }
@@ -68,6 +68,7 @@
         </td>
         <td>
             <div class="school-name">{{ school ? school.name : 'School' }}</div>
+            {% if school and school.sectionLabel %}<div class="school-meta">{{ school.sectionLabel }}</div>{% endif %}
             {% if school and school.motto %}<div class="school-meta">{{ school.motto }}</div>{% endif %}
             {% if school and (school.address or school.phoneNumber) %}
                 <div class="school-meta">
@@ -118,7 +119,7 @@
         </td>
         <td colspan="2">
             <span class="label">Next term begins</span>
-            <span class="value">{{ sheet.next_term and sheet.next_term.start ? sheet.next_term.start|date('j F Y') : 'To be announced' }}</span>
+            <span class="value">{{ sheet.return_date ? sheet.return_date|date('j F Y') : 'To be announced' }}</span>
         </td>
     </tr>
 </table>
@@ -166,7 +167,6 @@
             <th class="num">Total</th>
             <th class="num">High</th>
             <th class="num">Average</th>
-            <th class="num">Position</th>
             <th class="num">Grade</th>
             <th>Remark</th>
         </tr>
@@ -183,7 +183,6 @@
                 <td class="num"><strong>{{ s.total is null ? '—' : s.total }}</strong></td>
                 <td class="num muted">{{ s.class_highest ?? '—' }}</td>
                 <td class="num muted">{{ s.class_average ?? '—' }}</td>
-                <td class="num"><strong>{{ s.position ? s.position ~ '/' ~ s.position_of : '—' }}</strong></td>
                 <td class="num"><strong>{{ s.grade ?? '—' }}</strong></td>
                 <td class="muted">{{ s.remark ?? '' }}</td>
             </tr>

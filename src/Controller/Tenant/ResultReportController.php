@@ -336,7 +336,8 @@ class ResultReportController extends AbstractController
 
         // One term at a time: the card is a document for a term, not a transcript.
         // Defaults to the active term; ?term=<id> lets a parent look back.
-        $termId = $request->query->getInt('term');
+        // An empty ?term= must mean "default", not a 400.
+        $termId = (int) $request->query->get('term', 0);
         $term = $termId > 0
             ? $this->em->getRepository(Term::class)->find($termId)
             : $this->em->getRepository(Term::class)->findOneBy(['isActive' => true]);
@@ -356,7 +357,10 @@ class ResultReportController extends AbstractController
 
             // Unapproved marks are not a report card. Staff may preview a sheet
             // that is still in the approval chain; a parent may not see one.
-            $released = $this->classroomOf($student) && $this->release->isReleased($this->classroomOf($student), $term);
+            // The class is resolved the way the sheet itself resolves it — an
+            // enrolment for the term first, then the pupil record.
+            $classroom = $this->sheetBuilder->classroomFor($student, $term);
+            $released = $classroom !== null && $this->release->isReleased($classroom, $term);
             $maySee = $released || $this->isGranted('ROLE_TEACHER');
 
             if ($withheld) {
@@ -399,9 +403,11 @@ class ResultReportController extends AbstractController
      * It is rendered from the same ResultSheetBuilder structure as the screen, so a
      * parent can never download different figures from the ones they just read.
      */
-    private function classroomOf(Student $student): ?Classroom
+    private function classroomOf(Student $student, ?Term $term = null): ?Classroom
     {
-        return $student->getCurrentClass();
+        $term ??= $this->em->getRepository(Term::class)->findOneBy(['isActive' => true]);
+
+        return $term ? $this->sheetBuilder->classroomFor($student, $term) : $student->getCurrentClass();
     }
 
     #[Route('/student/pdf', name: 'app_tenant_report_student_pdf', methods: ['GET'])]
@@ -625,8 +631,9 @@ class ResultReportController extends AbstractController
     #[IsGranted('ROLE_TEACHER')]
     public function classPrint(Classroom $classroom, Request $request): Response
     {
-        $term = $request->query->getInt('term') > 0
-            ? $this->em->getRepository(Term::class)->find($request->query->getInt('term'))
+        $termId = (int) $request->query->get('term', 0);
+        $term = $termId > 0
+            ? $this->em->getRepository(Term::class)->find($termId)
             : $this->em->getRepository(Term::class)->findOneBy(['isActive' => true]);
 
         if (!$term) {
@@ -753,7 +760,7 @@ class ResultReportController extends AbstractController
             throw $this->createAccessDeniedException('No student records are linked to your account.');
         }
 
-        $studentId = $request->query->getInt('student') ?: $request->request->getInt('student');
+        $studentId = (int) ($request->query->get('student') ?: $request->request->get('student'));
         $student = null;
         foreach ($students as $candidate) {
             if ($studentId > 0 && (int) $candidate->getId() === $studentId) {
@@ -769,7 +776,7 @@ class ResultReportController extends AbstractController
             }
         }
 
-        $termId = $request->query->getInt('term') ?: $request->request->getInt('term');
+        $termId = (int) ($request->query->get('term') ?: $request->request->get('term'));
         $term = $termId > 0
             ? $this->em->getRepository(Term::class)->find($termId)
             : $this->em->getRepository(Term::class)->findOneBy(['isActive' => true]);

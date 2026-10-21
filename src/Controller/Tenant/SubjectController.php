@@ -48,9 +48,23 @@ class SubjectController extends AbstractController
             return $this->redirectToRoute('app_tenant_subject_index');
         }
 
+        $q = trim((string) $request->query->get('q', ''));
+
+        // Searching a subject is also how you find out whether it already exists
+        // before creating a duplicate — so name, code and department all match.
+        $qb = $this->em->getRepository(Subject::class)->createQueryBuilder('s')
+            ->leftJoin('s.department', 'd')->addSelect('d')
+            ->orderBy('s.name', 'ASC');
+
+        if ($q !== '') {
+            $qb->andWhere('LOWER(s.name) LIKE :q OR LOWER(s.code) LIKE :q OR LOWER(d.name) LIKE :q')
+                ->setParameter('q', '%' . mb_strtolower($q) . '%');
+        }
+
         return $this->render('tenant/subject/index.html.twig', [
-            'subjects' => $this->em->getRepository(Subject::class)->findBy([], ['name' => 'ASC']),
+            'subjects' => $qb->getQuery()->getResult(),
             'departments' => $this->em->getRepository(Department::class)->findBy([], ['name' => 'ASC']),
+            'q' => $q,
         ]);
     }
 

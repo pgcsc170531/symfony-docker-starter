@@ -8,6 +8,9 @@ use App\Entity\Tenant\Guardian;
 use App\Entity\Tenant\School;
 use App\Entity\Tenant\State;
 use App\Form\Tenant\ParentApplicationType;
+use App\Service\Payment\OnlinePaymentAvailability;
+use App\Service\Payment\PaymentChargePolicy;
+use App\Service\Payment\ProcessingFeeCalculator;
 use App\Service\SchoolMailer;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -44,6 +47,9 @@ class ParentApplicationController extends AbstractController
         private readonly EntityManagerInterface $em,
         private readonly LoggerInterface $logger,
         private readonly SchoolMailer $mailer,
+        private readonly OnlinePaymentAvailability $onlinePayments,
+        private readonly PaymentChargePolicy $charges,
+        private readonly ProcessingFeeCalculator $feeCalculator,
     ) {
     }
 
@@ -74,7 +80,15 @@ class ParentApplicationController extends AbstractController
     // Create / edit the child's application
     // ──────────────────────────────────────────────────────────────────────
 
-    #[Route('/new', name: 'app_parent_applications_new', methods: ['GET', 'POST'])]
+    /**
+     * Start an application.
+     *
+     * **Payment comes first.** A parent pays the form fee before they can fill
+     * anything in, so an application is created here as a fee-bearing shell —
+     * no child details, no reference number, and no place in the school's queue.
+     * The wizard unlocks only after the fee is paid or waived.
+     */
+    #[Route('/new', name: 'app_parent_applications_new', methods: ['GET'])]
     public function new(Request $request): Response
     {
         $guardian = $this->currentGuardian();
@@ -86,19 +100,68 @@ class ParentApplicationController extends AbstractController
             return $this->redirectToRoute('app_parent_applications_index');
         }
 
+        if ($guardian === null) {
+            throw $this->createAccessDeniedException('No parent profile is linked to this account.');
+        }
+
+        // One unpaid shell at a time: paying twice for one child, or stacking
+        // empty applications, is never what the parent meant.
+        $unpaid = $this->em->getRepository(Application::class)->findOneBy([
+            'guardian' => $guardian,
+            'status' => Application::STATUS_AWAITING_PAYMENT,
+        ]);
+
+        if ($unpaid !== null) {
+            return $this->redirectToRoute('app_parent_applications_show', ['id' => $unpaid->getId()]);
+        }
+
         $application = new Application();
         $application->setSource(Application::SOURCE_PARENT_PORTAL);
-        $application->setStatus(Application::STATUS_DRAFT);
         $application->setGuardian($guardian);
         $this->snapshotGuardian($application, $guardian);
 
-        return $this->handleWizard($request, $application, isNew: true);
+        $fee = (float) ($school?->getApplicationFeeAmount() ?? 0);
+
+        if ($fee <= 0) {
+            // A free application has nothing to pay for: open the form.
+            $application->setStatus(Application::STATUS_DRAFT);
+            $application->setFeeStatus(Application::FEE_WAIVED);
+            $application->setFeeAmount(null);
+            $this->em->persist($application);
+            $this->em->flush();
+
+            return $this->redirectToRoute('app_parent_applications_edit', ['id' => $application->getId()]);
+        }
+
+        $application->setStatus(Application::STATUS_AWAITING_PAYMENT);
+        $application->setFeeStatus(Application::FEE_UNPAID);
+        $application->setFeeAmount(number_format($fee, 2, '.', ''));
+        $this->em->persist($application);
+        $this->em->flush();
+
+        return $this->redirectToRoute('app_parent_applications_show', ['id' => $application->getId()]);
     }
 
     #[Route('/{id}/edit', name: 'app_parent_applications_edit', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
     public function edit(Application $application, Request $request): Response
     {
         $this->assertOwnedByCurrentParent($application);
+
+        // The form is behind the fee. This is the whole point of pay-first: no
+        // application can be filled, let alone submitted, before the money is in.
+        if (!$application->hasPassedFeeGate()) {
+            // Applications started under the old flow may still be `draft` with
+            // an unpaid fee. Move them to the pay screen rather than leaving
+            // them in a state with no way forward.
+            if ($application->getStatus() === Application::STATUS_DRAFT) {
+                $application->setStatus(Application::STATUS_AWAITING_PAYMENT);
+                $this->em->flush();
+            }
+
+            $this->addFlash('info', 'Pay the application fee first — the form opens as soon as it is confirmed.');
+
+            return $this->redirectToRoute('app_parent_applications_show', ['id' => $application->getId()]);
+        }
 
         if (!$application->isEditableByParent()) {
             $this->addFlash('error', 'This application can no longer be edited.');
@@ -140,10 +203,21 @@ class ParentApplicationController extends AbstractController
     {
         $this->assertOwnedByCurrentParent($application);
 
+        $school = $this->currentSchool();
+
+        // The parent must see the exact total before leaving for the provider —
+        // the same rule the school-fee payment screen follows.
+        $fee = (float) ($application->getFeeAmount() ?? $school?->getApplicationFeeAmount() ?? 0);
+        $feeProcessing = $this->charges->feeFor($school, $fee);
+
         return $this->render('tenant/parent/applications/show.html.twig', [
             'application' => $application,
-            'school' => $this->currentSchool(),
+            'school' => $school,
             'events' => $application->getEvents()->toArray(),
+            'onlinePaymentAvailable' => $this->onlinePayments->isAvailable($school),
+            'feeProcessing' => $feeProcessing,
+            'feeTotal' => $fee + $feeProcessing,
+            'feeGatesPassed' => $application->hasPassedFeeGate(),
         ]);
     }
 
@@ -232,6 +306,14 @@ class ParentApplicationController extends AbstractController
     public function feeProof(Application $application, Request $request): Response
     {
         $this->assertOwnedByCurrentParent($application);
+
+        // Proof belongs to the fee shell. A submitted application must not be
+        // pushed back into "awaiting confirmation" by an upload.
+        if ($application->getStatus() !== Application::STATUS_AWAITING_PAYMENT) {
+            $this->addFlash('error', 'This application is no longer waiting for a fee.');
+
+            return $this->redirectToRoute('app_parent_applications_show', ['id' => $application->getId()]);
+        }
 
         if (!$this->isCsrfTokenValid('app_feeproof_' . $application->getId(), (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid security token.');
@@ -334,31 +416,23 @@ class ParentApplicationController extends AbstractController
         $application->setConsentAt(new \DateTimeImmutable());
         $application->setConsentVersion(self::CONSENT_VERSION);
 
-        $fee = (float) ($school?->getApplicationFeeAmount() ?? 0);
+        // The fee is settled before this form is reachable (`new()` creates the
+        // shell and `edit()` refuses until it is paid). This is the last line of
+        // defence: an application must never become a submission unpaid.
+        if (!$application->hasPassedFeeGate()) {
+            throw $this->createAccessDeniedException('The application fee has not been settled.');
+        }
 
         if ($isResubmission) {
-            // Already past the fee gate once — going back to the queue, not back to payment.
             $application->setStatus(Application::STATUS_SUBMITTED);
             $this->logEvent($application, $from, Application::STATUS_SUBMITTED, 'Updated and resubmitted by the parent.');
-        } elseif ($fee <= 0) {
-            $application->setFeeStatus(Application::FEE_WAIVED);
-            $application->setFeeAmount(null);
-            // Q5: a school can switch approval off and let submissions land as approved.
+        } else {
+            // A school can switch approval off and let submissions land as approved.
             $status = ($school?->isApplicationRequireApproval() ?? true)
                 ? Application::STATUS_SUBMITTED
                 : Application::STATUS_APPROVED;
             $application->setStatus($status);
-            $this->logEvent($application, $from, $status, 'Submitted by the parent. No application fee is charged.');
-        } else {
-            $application->setFeeAmount(number_format($fee, 2, '.', ''));
-            $application->setFeeStatus(Application::FEE_UNPAID);
-            $application->setStatus(Application::STATUS_AWAITING_PAYMENT);
-            $this->logEvent(
-                $application,
-                $from,
-                Application::STATUS_AWAITING_PAYMENT,
-                sprintf('Submitted by the parent. Application fee of %s must be settled to start processing.', number_format($fee, 2))
-            );
+            $this->logEvent($application, $from, $status, 'Submitted by the parent. Application fee settled.');
         }
 
         $this->em->persist($application);
@@ -562,7 +636,7 @@ class ParentApplicationController extends AbstractController
     private function stepForField(string $name): int
     {
         return match (true) {
-            in_array($name, ['firstName', 'middleName', 'lastName', 'dateOfBirth', 'gender', 'religion', 'requestedClassroom'], true) => 1,
+            in_array($name, ['firstName', 'middleName', 'lastName', 'dateOfBirth', 'gender', 'religion', 'requestedYearGroup'], true) => 1,
             in_array($name, ['nationality', 'stateOfOrigin', 'lga', 'homeTown', 'bloodGroup', 'genotype', 'medicalConditions'], true) => 2,
             in_array($name, ['previousSchool', 'previousClass'], true) => 3,
             str_starts_with($name, 'guardian') => 4,

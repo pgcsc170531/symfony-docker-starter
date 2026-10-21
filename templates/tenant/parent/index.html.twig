@@ -3,61 +3,82 @@
 {% block title %}Parent Directory{% endblock %}
 
 {% block body %}
-    {# Page owns its gutter — see the note in tenant/staff/index.html.twig. #}
-    <div class="mb-6 flex flex-wrap items-center justify-between gap-3 px-4">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-800">Parent Directory</h1>
-            <p class="text-gray-500">{{ guardians|length }} parent{{ guardians|length == 1 ? '' : 's' }} linked to enrolled students.</p>
-        </div>
-        <a href="{{ path('app_tenant_admission_index') }}" class="flex min-h-[44px] items-center rounded bg-blue-600 px-4 py-2 font-bold text-white shadow hover:bg-blue-700">
-            <span class="mr-2">+</span> New Admission
-        </a>
-    </div>
+{% import 'tenant/_list_search.html.twig' as search %}
 
-    <div class="mx-4 overflow-hidden rounded-lg border border-gray-200 bg-white shadow">
-        <table class="w-full text-left text-sm">
-            <thead class="bg-gray-50 border-b">
-                <tr>
-                    <th class="p-4 font-bold text-gray-600">Parent / Guardian</th>
-                    <th class="p-4 font-bold text-gray-600">Phone</th>
-                    <th class="p-4 font-bold text-gray-600">Email / Login</th>
-                    <th class="p-4 font-bold text-gray-600">Children</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                {% for guardian in guardians %}
-                <tr class="hover:bg-gray-50 transition">
-                    <td class="p-4 font-bold text-gray-800">
-                        {{ guardian.fullName }}
-                        {% if guardian.relationshipToStudent %}
-                            <span class="block text-xs text-gray-400 font-normal">{{ guardian.relationshipToStudent }}</span>
-                        {% endif %}
-                    </td>
-                    <td class="p-4 text-gray-600">{{ guardian.phoneNumber }}</td>
-                    <td class="p-4 text-gray-600">
-                        {{ guardian.email }}
-                        {% if guardian.user %}
-                            <span class="block text-xs text-gray-400 font-mono">Login: {{ guardian.user.email }}</span>
-                        {% else %}
-                            <span class="block text-xs text-amber-600">No login account</span>
-                        {% endif %}
-                    </td>
-                    <td class="p-4 text-gray-600">
-                        {% for student in guardian.students %}
-                            <span class="inline-block bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs font-bold mb-1 mr-1">
-                                {{ student.fullName }}
-                            </span>
-                        {% else %}
-                            <span class="text-gray-400">—</span>
-                        {% endfor %}
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="4" class="p-8 text-center text-gray-500">No parents found.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    {# Page owns its gutter — see the note in tenant/staff/index.html.twig. #}
+    <div class="px-4">
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">Parent Directory</h1>
+                <p class="text-gray-500">
+                    {% if q %}
+                        {{ guardians|length }} match{{ guardians|length == 1 ? '' : 'es' }} for “{{ q }}”.
+                        <a href="{{ path('app_tenant_parent_index') }}" class="font-semibold text-blue-600">Show all</a>
+                    {% else %}
+                        {{ guardians|length }} parent{{ guardians|length == 1 ? '' : 's' }} linked to enrolled students.
+                    {% endif %}
+                </p>
+            </div>
+            <a href="{{ path('app_tenant_admission_index') }}" class="flex min-h-[44px] items-center rounded bg-blue-600 px-4 py-2 font-bold text-white shadow hover:bg-blue-700">
+                <span class="mr-2">+</span> New Admission
+            </a>
+        </div>
+
+        {{ search.form(q, 'Search name, phone number, email or child') }}
+
+        <div class="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow">
+            <table class="w-full min-w-[720px] text-left text-sm">
+                <thead class="bg-gray-50 border-b">
+                    <tr>
+                        <th class="p-4 font-bold text-gray-600">Parent / Guardian</th>
+                        <th class="p-4 font-bold text-gray-600">Phone</th>
+                        <th class="p-4 font-bold text-gray-600">Email / Login</th>
+                        <th class="p-4 font-bold text-gray-600">Children</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for guardian in guardians %}
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="p-4 font-bold text-gray-800">
+                            {{ guardian.fullName }}
+                            {% if guardian.relationshipToStudent %}
+                                <span class="block text-xs text-gray-400 font-normal">{{ guardian.relationshipToStudent }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-gray-600">{{ guardian.phoneNumber }}</td>
+                        <td class="p-4 text-gray-600">
+                            {{ guardian.email }}
+                            {% if guardian.user %}
+                                <span class="block text-xs text-gray-400 font-mono">Login: {{ guardian.user.email }}</span>
+                            {% else %}
+                                <span class="block text-xs text-amber-600">No login account</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-gray-600">
+                            {% for student in guardian.students %}
+                                <span class="inline-block bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs font-bold mb-1 mr-1">
+                                    {{ student.fullName }}
+                                </span>
+                            {% else %}
+                                <span class="text-gray-400">—</span>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="p-8 text-center text-gray-500">
+                            {% if q %}
+                                No parent matches “{{ q }}”. Try a name, a phone number, an email
+                                or one of the children's names.
+                                <a href="{{ path('app_tenant_parent_index') }}" class="font-semibold text-blue-600">Show all parents</a>.
+                            {% else %}
+                                No parents found.
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 {% endblock %}

@@ -15,7 +15,7 @@
                 {% else %}
                     Not submitted yet
                 {% endif %}
-                {%- if application.requestedClassroom %} · {{ application.requestedClassroom.name }}{% endif -%}
+                {%- if application.requestedClassName %} · {{ application.requestedClassName }}{% endif -%}
             </p>
         </div>
         <a href="{{ path('app_parent_applications_index') }}"
@@ -45,10 +45,10 @@
             <p class="text-xs font-bold text-indigo-900 uppercase tracking-wide">What happens next</p>
             <p class="text-sm text-indigo-900 mt-1">
                 {% if application.status == 'draft' %}
-                    Nothing is sent to the school until you submit. Finish the form whenever you are ready.
+                    The form is open. Nothing is sent to the school until you submit it — finish it whenever you are ready.
                 {% elseif application.status == 'awaiting_payment' %}
-                    The school needs the application fee of <strong>{{ application.feeAmount }}</strong> before
-                    processing begins. Pay, then upload the receipt below.
+                    Pay the application fee of <strong>₦{{ application.feeAmount|number_format(2) }}</strong> to unlock the form.
+                    Nothing is sent to the school until you have filled it in and submitted it.
                 {% elseif application.status == 'submitted' %}
                     The school has received your application and will review it. You will be contacted on
                     {{ application.guardianPhone }} — usually within a few working days.
@@ -85,10 +85,31 @@
         {% endif %}
     </div>
 
+    {#
+        The admission letter, from the first moment the child exists on the roll.
+        The family's proof of the offer belongs to them — printable on demand, for
+        as long as the child is at the school, without a trip to the office.
+    #}
+    {% if application.student %}
+        <div class="mb-6 rounded-xl border border-accent-200 bg-accent-50 p-5">
+            <p class="font-bold text-accent-900">
+                Admitted — <span class="font-mono">{{ application.student.admissionNumber }}</span>
+            </p>
+            <p class="mt-1 text-sm text-accent-800">
+                Your child&rsquo;s admission letter is yours to keep. Open it to print or save it whenever you need it.
+            </p>
+            <a href="{{ path('app_parent_admission_letter', {id: application.student.id}) }}"
+               target="_blank" rel="noopener"
+               class="mt-4 inline-flex min-h-[48px] w-full items-center justify-center rounded-lg bg-accent-600 px-6 text-sm font-semibold text-white shadow transition-colors hover:bg-accent-700 sm:w-auto">
+                Open admission letter (PDF) &rarr;
+            </a>
+        </div>
+    {% endif %}
+
     {# ── FEE GATE ───────────────────────────────────────────────────────── #}
     {% if application.status == 'awaiting_payment' %}
         <div class="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-6">
-            <h2 class="font-bold text-amber-900">Application fee {{ application.feeAmount }}</h2>
+            <h2 class="font-bold text-amber-900">Application fee ₦{{ application.feeAmount|number_format(2) }}</h2>
 
             {% if application.feeStatus == 'awaiting_confirmation' %}
                 <p class="text-sm text-amber-800 mt-2">
@@ -96,46 +117,119 @@
                     The school office will confirm it, then your application enters the review queue.
                 </p>
             {% else %}
-                <p class="text-sm text-amber-800 mt-2">
-                    Transfer the fee using the reference below, then upload the receipt so the office can confirm it.
-                </p>
-                <div class="mt-3 bg-white border border-amber-200 rounded-lg p-3 inline-block">
-                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Use this reference</p>
-                    <p class="font-mono font-bold text-gray-800">{{ application.reference }}</p>
-                </div>
+                {#
+                    Online first when the school offers it: the fee is the only
+                    thing standing between this application and the review queue,
+                    and paying it here means no office visit and no receipt photo.
+                    The exact total is on the button — never a surprise at checkout.
+                #}
+                {% if onlinePaymentAvailable %}
+                    <p class="text-sm text-amber-800 mt-2">
+                        Pay now and your application goes straight into the review queue — no office visit, no receipt to upload.
+                    </p>
 
-                {% if school and school.acceptsOfflinePayment %}
-                    <form method="post" action="{{ path('app_parent_applications_fee_proof', {id: application.id}) }}"
-                          enctype="multipart/form-data" class="mt-5 space-y-3">
-                        <input type="hidden" name="_token" value="{{ csrf_token('app_feeproof_' ~ application.id) }}">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">
-                                Transfer reference (optional)
-                            </label>
-                            <input type="text" name="feeReference" placeholder="e.g. bank transaction reference"
-                                   class="w-full rounded-lg border-gray-300 p-3 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">
-                                Upload your receipt
-                            </label>
-                            <input type="file" name="feeProof" accept="image/*,application/pdf"
-                                   class="w-full text-xs text-gray-600 border border-gray-300 rounded-lg p-2.5 bg-white
-                                          file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0
-                                          file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                            <p class="text-[11px] text-gray-400 mt-1">JPG, PNG or PDF · up to 4 MB.</p>
-                        </div>
+                    <form method="post" action="{{ path('app_parent_application_pay', {id: application.id}) }}" class="mt-4">
+                        <input type="hidden" name="_token" value="{{ csrf_token('pay_application_' ~ application.id) }}">
                         <button type="submit"
-                                class="bg-amber-600 text-white font-bold text-sm px-5 py-2.5 rounded-lg shadow hover:bg-amber-700 transition-colors">
-                            Upload receipt
+                                class="w-full min-h-[48px] rounded-lg bg-accent-600 px-5 text-sm font-semibold text-white shadow transition-colors hover:bg-accent-700 sm:w-auto">
+                            Pay ₦{{ feeTotal|number_format(2) }} online
                         </button>
                     </form>
-                {% else %}
+                    <p class="mt-2 text-xs leading-relaxed text-amber-800">
+                        {% if feeProcessing > 0 %}
+                            ₦{{ application.feeAmount|number_format(2) }} is the fee; ₦{{ feeProcessing|number_format(2) }}
+                            covers payment processing (capped at {{ payment_cap() }}). The school receives its fee in full.
+                        {% else %}
+                            You pay exactly the fee — the school covers the payment charge.
+                        {% endif %}
+                    </p>
+                    {% include 'tenant/parent/_channel_note.html.twig' %}
+                {% endif %}
+
+                {% if school and school.acceptsOfflinePayment %}
+                    <div class="{{ onlinePaymentAvailable ? 'mt-5 border-t border-amber-200 pt-5' : 'mt-2' }}">
+                        {% if onlinePaymentAvailable %}
+                            <p class="text-sm font-semibold text-amber-900">Or transfer instead</p>
+                        {% endif %}
+                        <p class="text-sm text-amber-800 mt-1">
+                            {% if application.reference %}
+                                Transfer the fee using the reference below, then upload the receipt so the office can confirm it.
+                            {% else %}
+                                Transfer the fee to the school account, then upload the receipt so the office can confirm it.
+                            {% endif %}
+                        </p>
+                        {#
+                            An application reference (APP/2026/NNNN) belongs to a finished,
+                            submitted application — under pay-first it does not exist while the
+                            shell is unpaid. Printing the empty chip told the parent to use a
+                            reference that was not there, so we quote what the bursar queue can
+                            actually search on instead: the guardian phone and the child's name.
+                        #}
+                        {% if application.reference %}
+                            <div class="mt-3 bg-white border border-amber-200 rounded-lg p-3 inline-block">
+                                <p class="text-[10px] font-bold text-ink-400 uppercase tracking-widest">Use this reference</p>
+                                <p class="font-mono font-bold text-ink-800 break-all">{{ application.reference }}</p>
+                            </div>
+                        {% elseif application.guardianPhone %}
+                            <div class="mt-3 bg-white border border-amber-200 rounded-lg p-3">
+                                <p class="text-[10px] font-bold text-ink-400 uppercase tracking-widest">Write this in the narration</p>
+                                <p class="font-mono font-bold text-ink-800 break-all">{{ application.guardianPhone }}</p>
+                                <p class="mt-1 text-[11px] leading-relaxed text-ink-500">
+                                    Your reference number is issued when you submit, so the office matches
+                                    your transfer on this phone number and your child's name.
+                                </p>
+                            </div>
+                        {% endif %}
+
+                        <form method="post" action="{{ path('app_parent_applications_fee_proof', {id: application.id}) }}"
+                              enctype="multipart/form-data" class="mt-5 space-y-3">
+                            <input type="hidden" name="_token" value="{{ csrf_token('app_feeproof_' ~ application.id) }}">
+                            <div>
+                                <label class="block text-xs font-bold text-ink-600 uppercase tracking-wide mb-1.5">
+                                    Transfer reference (optional)
+                                </label>
+                                <input type="text" name="feeReference" placeholder="e.g. bank transaction reference"
+                                       class="w-full rounded-lg border-ink-300 p-3 text-base shadow-sm focus:ring-accent-500 focus:border-accent-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-ink-600 uppercase tracking-wide mb-1.5">
+                                    Upload your receipt
+                                </label>
+                                <input type="file" name="feeProof" accept="image/*,application/pdf"
+                                       class="w-full text-xs text-ink-600 border border-ink-300 rounded-lg p-2.5 bg-white
+                                              file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0
+                                              file:text-xs file:font-bold file:bg-accent-50 file:text-accent-700 hover:file:bg-accent-100">
+                                <p class="text-[11px] text-ink-400 mt-1">JPG, PNG or PDF · up to 4 MB.</p>
+                            </div>
+                            <button type="submit"
+                                    class="bg-amber-600 text-white font-bold text-sm px-5 py-2.5 rounded-lg shadow hover:bg-amber-700 transition-colors">
+                                Upload receipt
+                            </button>
+                        </form>
+                    </div>
+                {% elseif not onlinePaymentAvailable %}
                     <p class="text-sm text-amber-800 mt-3">
-                        This school collects the fee online. Please contact the school office to complete the payment.
+                        This school has not opened online payment for the application fee.
+                        Please contact the school office to complete the payment.
                     </p>
                 {% endif %}
             {% endif %}
+        </div>
+    {% endif %}
+
+    {# Pay-first: settling the fee opens the wizard. This is the hand-off from
+       "paid" to "now tell us about your child". #}
+    {% if feeGatesPassed and application.status == 'draft' %}
+        <div class="mb-6 rounded-xl border border-accent-200 bg-accent-50 p-5">
+            <p class="font-bold text-accent-900">Payment received — the form is open</p>
+            <p class="mt-1 text-sm text-accent-800">
+                Now tell us about your child. Your answers are saved as you go, and nothing is
+                sent to the school until you submit.
+            </p>
+            <a href="{{ path('app_parent_applications_edit', {id: application.id}) }}"
+               class="mt-4 inline-flex min-h-[48px] w-full items-center justify-center rounded-lg bg-accent-600 px-6 text-sm font-semibold text-white shadow transition-colors hover:bg-accent-700 sm:w-auto">
+                Continue the application &rarr;
+            </a>
         </div>
     {% endif %}
 
@@ -157,7 +251,7 @@
                     </div>
                     <div>
                         <dt class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Class applied for</dt>
-                        <dd class="text-gray-800 font-medium">{{ application.requestedClassroom ? application.requestedClassroom.name : '—' }}</dd>
+                        <dd class="text-gray-800 font-medium">{{ application.requestedClassName ?: '—' }}</dd>
                     </div>
                     <div>
                         <dt class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Religion</dt>

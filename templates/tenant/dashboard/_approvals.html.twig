@@ -1,0 +1,104 @@
+{#
+    Approval queues — HOD (department) and year group master.
+
+    Cards rather than a wide table: a department name plus four counts is a
+    stacked block on a phone, and the only action is one link. "Waiting" counts
+    sheets a teacher has actually submitted, which is what makes the number worth
+    acting on.
+#}
+{% import 'tenant/dashboard/_kpi.html.twig' as kpi %}
+
+{% set hasDepartments = departments is defined and departments|length > 0 %}
+{% set hasYearGroups = yearGroups is defined and yearGroups|length > 0 %}
+
+{% if hasDepartments %}
+    <section class="mb-8" aria-labelledby="departments-heading">
+        <div class="mb-3 flex items-end justify-between gap-3">
+            <h2 id="departments-heading" class="text-sm font-semibold text-ink-900">Department approvals</h2>
+            <a href="{{ path('tenant_approval_hub') }}"
+               class="inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-600 hover:text-accent-700">
+                Open queue &rarr;
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {% for department in departments %}
+                <div class="rounded-lg border border-ink-200 bg-white p-5 shadow-card">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-ink-900">
+                                {{ department.department ? department.department.name : 'Department' }}
+                            </p>
+                            <p class="text-xs text-ink-500">
+                                {{ department.subjectCount }} subject{{ department.subjectCount == 1 ? '' : 's' }}
+                                &middot; {{ department.classCount }} class{{ department.classCount == 1 ? '' : 'es' }}
+                            </p>
+                        </div>
+                        <span class="{{ department.waiting > 0 ? 'badge-pending' : 'badge-paid' }} shrink-0">
+                            {{ department.waiting > 0 ? department.waiting ~ ' waiting' : 'Clear' }}
+                        </span>
+                    </div>
+
+                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                        <span class="badge-neutral">{{ department.total }} sheets</span>
+                        <span class="badge-neutral">{{ department.submitted }} submitted</span>
+                        <span class="badge-paid">{{ department.approved }} approved</span>
+                        {% if department.returned > 0 %}
+                            <span class="badge-failed">{{ department.returned }} returned</span>
+                        {% endif %}
+                    </div>
+
+                    <a href="{{ path('tenant_approval_hub') }}"
+                       class="mt-3 inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-600 hover:text-accent-700">
+                        Review department &rarr;
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+{% endif %}
+
+{% if hasYearGroups %}
+    <section class="mb-8" aria-labelledby="year-groups-heading">
+        <div class="mb-3 flex items-end justify-between gap-3">
+            <h2 id="year-groups-heading" class="text-sm font-semibold text-ink-900">Year group approvals</h2>
+            <a href="{{ path('tenant_approval_hub') }}"
+               class="inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-600 hover:text-accent-700">
+                Open queue &rarr;
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {% for yearGroup in yearGroups %}
+                <div class="rounded-lg border border-ink-200 bg-white p-5 shadow-card">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-ink-900">
+                                {{ yearGroup.yearGroup ? yearGroup.yearGroup.name : 'Year group' }}
+                            </p>
+                            <p class="text-xs text-ink-500">
+                                {{ yearGroup.classCount }} class{{ yearGroup.classCount == 1 ? '' : 'es' }}
+                            </p>
+                        </div>
+                        <span class="{{ yearGroup.waiting > 0 ? 'badge-pending' : 'badge-paid' }} shrink-0">
+                            {{ yearGroup.waiting > 0 ? yearGroup.waiting ~ ' waiting' : 'Clear' }}
+                        </span>
+                    </div>
+
+                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                        <span class="badge-neutral">{{ yearGroup.total }} sheets</span>
+                        <span class="badge-paid">{{ yearGroup.approved }} approved</span>
+                        {% if yearGroup.returned > 0 %}
+                            <span class="badge-failed">{{ yearGroup.returned }} returned</span>
+                        {% endif %}
+                    </div>
+
+                    <a href="{{ path('tenant_approval_hub') }}"
+                       class="mt-3 inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-600 hover:text-accent-700">
+                        Review year group &rarr;
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+{% endif %}

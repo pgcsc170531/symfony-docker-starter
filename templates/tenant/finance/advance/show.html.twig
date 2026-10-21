@@ -1,0 +1,103 @@
+{% extends 'base.html.twig' %}
+{% block title %}Advance {{ advance.reference }}{% endblock %}
+
+{% block body %}
+<div class="px-4 py-4 sm:px-6 sm:py-6">
+
+    <a href="{{ path('app_tenant_advance_index') }}"
+       class="mb-4 inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 hover:underline">
+        &larr; All advances
+    </a>
+
+    <div class="mb-5">
+        <h1 class="break-words text-xl font-black tracking-tight text-ink-900 sm:text-2xl">
+            {{ advance.student.fullName }}
+        </h1>
+        <p class="mt-1 text-sm text-ink-500">
+            Advance <span class="tabular font-semibold text-ink-700">{{ advance.reference }}</span>
+            · received {{ advance.receivedOn ? advance.receivedOn|date('j M Y') : 'date not set' }}
+            · {{ advance.method|capitalize }}
+        </p>
+    </div>
+
+    <div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div class="rounded-xl border border-ink-200 bg-white p-4">
+            <p class="text-[11px] font-bold uppercase tracking-wider text-ink-400">Received</p>
+            <p class="money mt-1 text-xl font-black text-ink-900">₦{{ advance.amount|number_format(2) }}</p>
+        </div>
+        <div class="rounded-xl border border-ink-200 bg-white p-4">
+            <p class="text-[11px] font-bold uppercase tracking-wider text-ink-400">Drawn down</p>
+            <p class="money mt-1 text-xl font-black text-ink-900">
+                ₦{{ (advance.amount - left)|number_format(2) }}
+            </p>
+        </div>
+        <div class="rounded-xl border border-ink-200 bg-white p-4">
+            <p class="text-[11px] font-bold uppercase tracking-wider text-ink-400">Credit left</p>
+            <p class="money mt-1 text-xl font-black {{ advance.closed ? 'text-ink-400' : 'text-ink-900' }}">
+                ₦{{ left|number_format(2) }}
+            </p>
+            <p class="mt-1 text-xs text-ink-500">{{ advance.closed ? 'Closed — no longer pays invoices' : 'Pays the next invoice raised' }}</p>
+        </div>
+    </div>
+
+    {% if advance.coversNote or advance.remark %}
+        <div class="mb-6 rounded-xl border border-ink-200 bg-white p-4">
+            {% if advance.coversNote %}
+                <p class="text-xs font-bold uppercase tracking-wider text-ink-400">Covers</p>
+                <p class="mt-1 break-words text-sm text-ink-800">{{ advance.coversNote }}</p>
+            {% endif %}
+            {% if advance.remark %}
+                <p class="mt-3 text-xs font-bold uppercase tracking-wider text-ink-400">Remark</p>
+                <p class="mt-1 break-words text-sm text-ink-800">{{ advance.remark }}</p>
+            {% endif %}
+            <p class="mt-3 text-xs text-ink-500">
+                Recorded {{ advance.createdAt|date('j M Y, H:i') }}
+                {%- if advance.createdBy %} by {{ advance.createdBy }}{% endif %}.
+            </p>
+        </div>
+    {% endif %}
+
+    <div class="rounded-xl border border-ink-200 bg-white">
+        <div class="border-b border-ink-100 px-4 py-3">
+            <h2 class="text-sm font-bold text-ink-900">Invoices this advance has paid</h2>
+        </div>
+
+        {% if draws is empty %}
+            <div class="px-4 py-10 text-center">
+                <p class="text-sm font-semibold text-ink-700">Nothing drawn yet.</p>
+                <p class="mx-auto mt-1 max-w-sm text-sm text-ink-500">
+                    The next invoice raised for {{ advance.student.fullName }} will be paid from this credit
+                    and will appear here with its remark.
+                </p>
+            </div>
+        {% else %}
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[640px] text-left text-sm">
+                    <thead class="border-b border-ink-100 text-[11px] uppercase tracking-wider text-ink-400">
+                        <tr>
+                            <th class="px-4 py-3 font-semibold">Invoice</th>
+                            <th class="px-4 py-3 font-semibold">Payment code</th>
+                            <th class="px-4 py-3 text-right font-semibold">Amount</th>
+                            <th class="px-4 py-3 font-semibold">Remark</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-ink-100">
+                        {% for p in draws %}
+                            <tr class="align-top">
+                                <td class="px-4 py-3 font-semibold text-ink-900">
+                                    {{ p.invoice ? p.invoice.invoiceNumber : '—' }}
+                                </td>
+                                <td class="tabular px-4 py-3 text-ink-600">{{ p.referenceCode }}</td>
+                                <td class="money px-4 py-3 text-right font-semibold text-ink-900">
+                                    ₦{{ p.amount|number_format(2) }}
+                                </td>
+                                <td class="px-4 py-3 text-xs leading-relaxed text-ink-600">{{ p.note }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -22,6 +22,11 @@ class FeeItemType extends AbstractType
                 'label' => 'Is this optional? (e.g. School Bus)',
                 'required' => false,
                 'help' => 'Check this box if students can choose not to pay this.',
+            ])
+            ->add('isTuition', CheckboxType::class, [
+                'label' => 'This is the tuition line',
+                'required' => false,
+                'help' => 'Scholarships and rebates are deducted from this line only — never from uniforms, levies or ID cards.',
             ]);
     }
 

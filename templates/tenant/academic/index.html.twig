@@ -22,6 +22,8 @@
                 {% for term in session.terms %}
                     <div class="p-4 rounded border {{ term.isActive ? 'bg-green-100 border-green-500' : 'bg-gray-50 border-gray-200' }}">
                         <span class="font-bold">{{ term.name }}</span>
+                        <a href="{{ path('app_tenant_term_edit', {id: term.id}) }}"
+                           class="ml-2 text-xs font-semibold text-blue-600 hover:underline">Edit</a>
                         {% if term.isActive %}
                             <span class="text-xs bg-green-600 text-white px-2 py-1 rounded ml-2">Active</span>
                         {% endif %}

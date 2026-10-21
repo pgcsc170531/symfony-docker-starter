@@ -31,12 +31,15 @@ class SchoolSettingsType extends AbstractType
                 'label' => 'School Type',
                 'required' => true,
                 'choices' => [
-                    'Primary / Nursery — calls children “pupils”' => School::TYPE_PRIMARY,
-                    'Secondary — calls them “students”' => School::TYPE_SECONDARY,
+                    'Nursery — calls children “pupils”' => School::TYPE_NURSERY,
+                    'Primary — calls children “pupils”' => School::TYPE_PRIMARY,
+                    'Junior Secondary (JSS 1–3)' => School::TYPE_JUNIOR_SECONDARY,
+                    'Senior Secondary (SS 1–3)' => School::TYPE_SENIOR_SECONDARY,
+                    'Secondary — both junior and senior' => School::TYPE_SECONDARY,
                     'Primary & Secondary (combined)' => School::TYPE_COMBINED,
                     'College / Polytechnic' => School::TYPE_TERTIARY,
                 ],
-                'help' => 'Combined and secondary schools use “student” everywhere. Only a pure primary school says “pupil”.',
+                'help' => 'This decides the section printed on the report card and whether children are called “pupils” or “students”.',
             ])
             ->add('motto', TextType::class, ['label' => 'School Motto/Slogan', 'required' => false])
             ->add('email', EmailType::class, ['label' => 'Official Email'])
@@ -229,6 +232,15 @@ class SchoolSettingsType extends AbstractType
                     'Both — let the parent choose' => School::PAYMENT_BOTH,
                 ],
                 'required' => true,
+            ])
+            ->add('onlineProcessingFeeEnabled', CheckboxType::class, [
+                'label' => 'Parent pays the online payment charge',
+                'required' => false,
+                'help' => 'On: the parent pays the fee plus the gateway charge — 1% capped at ₦300, '
+                    . 'plus 7.5% VAT on it, plus ₦200 handling, and never more than ₦500. '
+                    . 'The school receives the full fee. Off: the parent pays the fee exactly, '
+                    . 'and the gateway charge comes out of the school’s settlement instead. '
+                    . 'Applies to school fees and the application form fee alike.',
             ])
             ->add('applicationRequireApproval', CheckboxType::class, [
                 'label' => 'A bursar must review every application',

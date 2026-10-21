@@ -1,114 +1,145 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Verify Payment{% endblock %}
+{% block title %}Verify Payments{% endblock %}
 
 {% block body %}
-<div class="max-w-xl mx-auto mt-10">
-    
-    <h1 class="text-2xl font-bold text-gray-800 mb-6 text-center">Verify Bank Transfer</h1>
+<div class="px-4 py-4">
 
-    {# SEARCH FORM #}
-    <div class="bg-white p-6 rounded-lg shadow-md mb-8">
-        <form action="{{ path('app_tenant_payment_verify') }}" method="get" class="flex gap-2">
-            <input type="text" name="code" value="{{ search_code }}" 
-                   placeholder="Enter Code (e.g. PAY-A1B2)" 
-                   class="flex-1 border border-gray-300 rounded px-4 py-2 focus:ring-2 focus:ring-indigo-500 outline-none uppercase font-mono"
-                   required>
-            <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700 font-bold">
-                Search
-            </button>
-        </form>
+    <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div class="min-w-0">
+            <p class="text-xs font-semibold uppercase tracking-wider text-accent-600">Bursary</p>
+            <h1 class="text-2xl font-semibold tracking-tight text-ink-900">Verify payments</h1>
+            <p class="text-sm leading-relaxed text-ink-500">
+                {% if payments|length > 0 %}
+                    {{ payments|length }} payment{{ payments|length == 1 ? '' : 's' }} awaiting verification
+                    &middot; ₦{{ pendingTotal|number_format(2) }} claimed
+                {% else %}
+                    Nothing is waiting to be verified.
+                {% endif %}
+            </p>
+        </div>
+        <a href="{{ path('app_tenant_payment_index') }}"
+           class="inline-flex min-h-[44px] shrink-0 items-center text-sm font-semibold text-accent-600 hover:text-accent-700">
+            Payment terminal &rarr;
+        </a>
     </div>
 
-    {# RESULTS AREA #}
-    {% if search_code %}
-        {% if payment %}
-            <div class="bg-white border-l-4 {{ payment.status == 'CONFIRMED' ? 'border-green-500' : 'border-yellow-500' }} shadow-md rounded p-6">
-                
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <p class="text-xs text-gray-500 uppercase">{{ learner.capital }}</p>
-                        <h2 class="text-xl font-bold text-gray-800">{{ payment.invoice.student.fullName }}</h2>
-                        <p class="text-sm text-gray-600">{{ payment.invoice.student.admissionNumber }}</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-xs text-gray-500 uppercase">Amount</p>
-                        <h2 class="text-2xl font-black text-indigo-600">₦{{ payment.amount|number_format(2) }}</h2>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4 text-sm mb-6 bg-gray-50 p-3 rounded">
-                    <div>
-                        <span class="block text-xs text-gray-500">Status:</span>
-                        {% if payment.status == 'CONFIRMED' %}
-                            <span class="bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs font-bold">Verified ✅</span>
-                        {% else %}
-                            <span class="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs font-bold">Pending ⏳</span>
-                        {% endif %}
-                    </div>
-                    <div>
-                        <span class="block text-xs text-gray-500">Date Initiated:</span>
-                        <span class="font-medium">{{ payment.createdAt|date('d M Y') }}</span>
-                    </div>
-                </div>
-
-                {# PARENT'S UPLOADED PROOF #}
-                {% if payment.proofFilename %}
-                <div class="mb-6">
-                    <span class="block text-xs text-gray-500 mb-2 font-bold uppercase">Parent's Uploaded Proof</span>
-                    <a href="{{ asset('uploads/proofs/' ~ payment.proofFilename) }}" target="_blank" class="inline-block border rounded shadow-sm overflow-hidden">
-                        <img src="{{ asset('uploads/proofs/' ~ payment.proofFilename) }}" alt="Payment proof" class="max-h-56">
-                    </a>
-                    {% if payment.proofUploadedAt %}
-                        <p class="text-xs text-gray-400 mt-1">Uploaded {{ payment.proofUploadedAt|date('d M Y, h:i A') }}</p>
-                    {% endif %}
-                </div>
-                {% endif %}
-
-                {# CONFIRM ACTION #}
-                {% if payment.status != 'CONFIRMED' %}
-                    <form action="{{ path('app_tenant_payment_confirm', {id: payment.id}) }}" method="post" onsubmit="return confirm('Are you sure the money is in the bank?');">
-                        <button type="submit" class="w-full bg-green-600 text-white py-3 rounded hover:bg-green-700 font-bold shadow">
-                            ✅ Confirm Payment Received
-                        </button>
-                    </form>
-                {% else %}
-                {# 1. Show Confirmation Details #}
-                <div class="text-center text-gray-500 text-sm mb-4">
-                    Confirmed by {{ payment.confirmedBy }} on {{ payment.confirmedAt|date('d M Y') }}
-                </div>
-
-                {# 2. NEW: Show Print Receipt Button #}
-                <div class="border-t pt-4">
-                    <a href="{{ path('app_tenant_payment_receipt', {id: payment.id}) }}" target="_blank" 
-                       class="w-full block text-center bg-gray-800 text-white py-3 rounded hover:bg-gray-900 font-bold shadow transition-transform transform hover:scale-105">
-                        🖨️ Print Official Receipt
-                    </a>
-                </div>
-            {% endif %}
-
-            </div>
-        {% else %}
-            {# 🔴 ERROR STATE: Code provided, but no payment found #}
-            <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded shadow-sm">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <span class="text-red-500 text-xl">🚫</span>
-                    </div>
-                    <div class="ml-3">
-                        <p class="text-sm text-red-700 font-bold">
-                            Payment Not Found
-                        </p>
-                        <p class="text-xs text-red-600 mt-1">
-                            The code <span class="font-mono bg-red-100 px-1 rounded">{{ search_code }}</span> does not exist in the system.
-                        </p>
-                    </div>
-                </div>
-            </div>
+    {# The bursar is reading a bank app: any of these values should find the row. #}
+    <form method="get" action="{{ path('app_tenant_payment_verify') }}"
+          class="mb-5 flex flex-wrap items-center gap-2">
+        <div class="min-w-0 flex-1 basis-56">
+            <label class="sr-only" for="verify-q">Search pending payments</label>
+            <input id="verify-q" name="q" type="search" value="{{ q }}" autocomplete="off"
+                   placeholder="Name, admission no, slip code, phone, invoice or amount"
+                   class="min-h-[44px] w-full rounded-lg border border-ink-200 bg-white px-3 text-sm text-ink-900 placeholder:text-ink-400 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-200">
+        </div>
+        <button type="submit"
+                class="min-h-[44px] shrink-0 rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-700">
+            Search
+        </button>
+        {% if q %}
+            <a href="{{ path('app_tenant_payment_verify') }}"
+               class="inline-flex min-h-[44px] shrink-0 items-center px-2 text-sm font-semibold text-ink-500 hover:text-ink-800">
+                Clear
+            </a>
         {% endif %}
-        
+    </form>
 
-    
+    {% if payments is empty %}
+        <div class="rounded-lg border border-dashed border-ink-300 bg-white p-6 text-center">
+            {% if q %}
+                <p class="text-sm font-semibold text-ink-900">No pending payment matches “{{ q }}”</p>
+                <p class="mx-auto mt-1 max-w-md text-sm leading-relaxed text-ink-500">
+                    Check the spelling, or search by the slip code the parent used.
+                    Payments already confirmed are in the payment register, not here.
+                </p>
+            {% else %}
+                <p class="text-sm font-semibold text-ink-900">Every payment has been checked</p>
+                <p class="mx-auto mt-1 max-w-md text-sm leading-relaxed text-ink-500">
+                    A parent's transfer appears here as soon as they open a payment slip or
+                    upload a receipt.
+                </p>
+            {% endif %}
+            <a href="{{ path('app_tenant_payment_history') }}"
+               class="mt-2 inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-600 hover:text-accent-700">
+                Open the payment register &rarr;
+            </a>
+        </div>
+    {% else %}
+        <ul class="space-y-3">
+            {% for payment in payments %}
+                {% set student = payment.invoice and payment.invoice.student ? payment.invoice.student : null %}
+                <li class="rounded-lg border border-ink-200 bg-white p-4 shadow-card">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="break-words text-sm font-semibold text-ink-900">
+                                {{ student ? student.fullName : (payment.invoice ? payment.invoice.buyerName : 'Walk-in sale') }}
+                            </p>
+                            <p class="text-xs text-ink-500">
+                                {% if student and student.admissionNumber %}{{ student.admissionNumber }} &middot; {% endif %}
+                                {{ payment.invoice ? payment.invoice.invoiceNumber : '—' }}
+                            </p>
+                            <p class="mt-1 flex flex-wrap items-center gap-2 text-xs text-ink-500">
+                                <span class="badge-neutral font-mono">{{ payment.referenceCode }}</span>
+                                <span class="badge-pending">Awaiting</span>
+                                <span>{{ payment.method }}</span>
+                                <span>{{ payment.createdAt ? payment.createdAt|date('d M, H:i') : '' }}</span>
+                            </p>
+                            <p class="mt-1 text-xs">
+                                {% if payment.proofFilename %}
+                                    <a href="{{ asset('uploads/proofs/' ~ payment.proofFilename) }}" target="_blank" rel="noopener"
+                                       class="font-semibold text-accent-600 underline">
+                                        Open the parent's proof
+                                    </a>
+                                    {% if payment.proofUploadedAt %}
+                                        <span class="text-ink-400">({{ payment.proofUploadedAt|date('d M, H:i') }})</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-ink-400">No proof uploaded — match the slip code in your bank narration.</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <p class="money shrink-0 text-lg font-semibold text-ink-900">
+                            ₦{{ payment.amount|number_format(2) }}
+                        </p>
+                    </div>
+
+                    {#
+                        Approval requires the amount to be typed again. It is the
+                        one deliberate second look that stops a queue being
+                        rubber-stamped, and it is where a real-world difference
+                        (bank charges, a part payment) is recorded.
+                    #}
+                    <form method="post"
+                          action="{{ path('app_tenant_payment_confirm', {id: payment.id}) }}"
+                          class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                        <input type="hidden" name="_token" value="{{ csrf_token('payment_confirm_' ~ payment.id) }}">
+                        <input type="hidden" name="return_to" value="queue">
+
+                        <div>
+                            <label for="amount-{{ payment.id }}" class="mb-1 block text-xs font-semibold text-ink-700">
+                                Amount you saw in the bank (₦)
+                            </label>
+                            <input id="amount-{{ payment.id }}" name="actual_amount" type="number"
+                                   step="0.01" min="0" inputmode="decimal" required
+                                   value="{{ payment.amount }}"
+                                   class="min-h-[44px] w-full rounded-lg border border-ink-200 px-3 text-sm text-ink-900 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-200">
+                        </div>
+
+                        <button type="submit"
+                                class="min-h-[44px] w-full rounded-lg bg-paid px-5 text-sm font-semibold text-white transition-colors hover:bg-paid/90 sm:w-auto">
+                            Approve payment
+                        </button>
+
+                        <label class="flex items-start gap-2 text-xs leading-relaxed text-ink-600 sm:col-span-2">
+                            <input type="checkbox" name="amount_differs" value="1"
+                                   class="mt-0.5 h-4 w-4 shrink-0 rounded border-ink-300">
+                            <span>The bank shows a different amount from the slip — record the bank amount above.</span>
+                        </label>
+                    </form>
+                </li>
+            {% endfor %}
+        </ul>
     {% endif %}
 
 </div>

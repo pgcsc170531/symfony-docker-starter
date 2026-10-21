@@ -1,221 +1,139 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Dashboard{% endblock %}
+{% import 'tenant/dashboard/_kpi.html.twig' as kpi %}
+
+{% block title %}{{ persona.label }} dashboard{% endblock %}
 
 {% block body %}
 
 {# The page gutter lives here, not on <main> — see docs/architecture/UI-SPEC.md §4.1. #}
 <div class="px-4 py-4">
 
-{# === 1. HEADER SECTION === #}
-<div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-    
-    {# Title Section #}
-    <div>
-        <h1 class="text-2xl font-semibold tracking-tight text-ink-900">Dashboard</h1>
-        <p class="text-sm font-medium text-ink-500">
-            {% if currentSession %}
-                <span class="font-semibold text-accent-600">{{ currentSession.name }}</span> 
-                <span class="text-ink-300 mx-2">|</span> 
-                {{ currentTerm.name|default('No Term') }}
-            {% else %}
-                <span class="badge-failed">System halted</span>
-            {% endif %}
-        </p>
-    </div>
-    
-    {# Date Pill (Full width on mobile for touch target, Auto on desktop) #}
-    <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-            
-            {# 🟢 NEW: "Resume Setup" Button (Only shows if no students exist) #}
-            {% if studentCount == 0 %}
-                <a href="{{ path('app_tenant_onboarding_identity') }}" class="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg bg-accent-600 px-5 text-sm font-semibold text-white shadow-card transition-colors hover:bg-accent-700 sm:w-auto">
-                    Resume setup
-                </a>
-            {% endif %}
+    {# ═══ 1. WHO IS LOOKING AT THIS ═══════════════════════════════════
+       The shell already names the school and the person. This header names the
+       *seat*: the same URL answers differently for the bursar, the form teacher
+       and the overseer, so it has to say which one is speaking. #}
+    <div class="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div class="min-w-0">
+            <p class="text-xs font-semibold uppercase tracking-wider text-accent-600">{{ persona.label }}</p>
+            <h1 class="text-2xl font-semibold tracking-tight text-ink-900">Dashboard</h1>
+            <p class="text-sm leading-relaxed text-ink-500">{{ persona.headline }}</p>
+            <p class="mt-1 text-sm text-ink-500">
+                {% if currentSession %}
+                    <span class="font-semibold text-ink-700">{{ currentSession.name }}</span>
+                    {% if currentTerm %}
+                        <span class="mx-2 text-ink-300">|</span>{{ currentTerm.name }}
+                    {% endif %}
+                {% else %}
+                    <span class="badge-failed">No active session</span>
+                {% endif %}
+            </p>
+        </div>
 
-            {# Date pill #}
-            <div class="flex min-h-[44px] w-full items-center justify-between gap-3 rounded-lg border border-ink-200 bg-white px-4 py-2 shadow-card sm:w-auto sm:justify-start">
-                <div class="text-left sm:text-right">
-                    <div class="text-[10px] font-semibold uppercase tracking-wider text-ink-500">Today</div>
-                    <div class="text-sm font-semibold leading-none text-ink-900">{{ "now"|date("l, M j") }}</div>
-                </div>
-                <div class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-ink-100 text-ink-600" aria-hidden="true">
-                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M4 11h16M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                    </svg>
-                </div>
+        {# The date is the one fact that is the same for every seat. Full width on
+           a phone so it stays a thumb-sized target, auto on a desktop. #}
+        <div class="flex min-h-[44px] w-full items-center justify-between gap-3 rounded-lg border border-ink-200 bg-white px-4 py-2 shadow-card sm:w-auto sm:justify-start">
+            <div class="text-left sm:text-right">
+                <div class="text-[10px] font-semibold uppercase tracking-wider text-ink-500">Today</div>
+                <div class="text-sm font-semibold leading-none text-ink-900">{{ "now"|date("l, M j") }}</div>
             </div>
+            <div class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-ink-100 text-ink-600">
+                {{ kpi.icon('clock') }}
+            </div>
+        </div>
     </div>
 
-</div>
-
-{# === 2. HEADLINE FIGURES ===
-   Four numbers, not five. "Active debtor count" is a detail OF the debt, so it
-   lives in that card rather than shouting on its own — and four is what the grid
-   holds, so nothing wraps onto a second row by itself.
-
-   Flat white cards. Neutral figures. The accent appears only on the one thing you
-   can act on, and colour appears only where a state exists. #}
-<div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-
-    {# ── Wallet balance ──────────────────────────────────────────────── #}
-    <div class="flex flex-col rounded-lg border border-ink-200 bg-white p-5 shadow-card">
-        <div class="flex items-start justify-between gap-3">
-            <p class="text-xs font-semibold uppercase tracking-wider text-ink-500">Wallet balance</p>
-            <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-ink-100 text-ink-600" aria-hidden="true">
-                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z"/>
-                    <path stroke-linecap="round" d="M16 13h.01"/>
-                </svg>
-            </span>
+    {# A school with nobody enrolled: say what is missing instead of drawing a
+       dashboard full of zeroes. Administrators are redirected to onboarding
+       before they ever reach this page. #}
+    {% if studentCount == 0 %}
+        <div class="mb-6 rounded-lg border border-pending/30 bg-pending/10 p-4">
+            <p class="text-sm font-semibold text-ink-900">No {{ learner.plural }} have been enrolled yet</p>
+            <p class="mt-1 text-sm leading-relaxed text-ink-600">
+                Your school is set up but the register is empty. An administrator needs to
+                finish the setup wizard before attendance, results and fees have anything to show.
+            </p>
         </div>
-        <p class="money mt-3 text-2xl font-semibold tracking-tight text-ink-900">
-            ₦{{ landlordSchool.walletBalance|default(0)|number_format(0) }}
+    {% endif %}
+
+    {# ═══ 2. YOUR WORK — the actionable part ═══════════════════════════
+       Everything on this list belongs to the person reading it. If it is empty,
+       that is worth saying: a blank space reads as a broken page. #}
+    {% if actions|length %}
+        <section class="mb-8" aria-labelledby="your-work-heading">
+            <h2 id="your-work-heading" class="mb-3 text-sm font-semibold text-ink-900">Your work</h2>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {% for action in actions %}
+                    <a href="{{ action.url }}"
+                       class="flex min-h-[68px] items-center gap-3 rounded-lg border border-ink-200 bg-white p-4 shadow-card transition-colors hover:border-accent-300">
+                        <span class="grid h-10 w-10 shrink-0 place-items-center rounded-lg
+                            {%- if action.tone == 'failed' %} bg-failed/10 text-failed
+                            {%- elseif action.tone == 'pending' %} bg-pending/10 text-pending
+                            {%- else %} bg-accent-50 text-accent-600{% endif %}">
+                            {{ kpi.icon(action.tone == 'failed' ? 'alert' : (action.tone == 'pending' ? 'clock' : 'check')) }}
+                        </span>
+                        <span class="min-w-0 flex-1">
+                            <span class="block text-sm font-semibold leading-snug text-ink-900">{{ action.label }}</span>
+                            <span class="mt-0.5 block text-xs leading-relaxed text-ink-500">{{ action.hint }}</span>
+                        </span>
+                        <span class="shrink-0 text-ink-400" aria-hidden="true">&rarr;</span>
+                    </a>
+                {% endfor %}
+            </div>
+        </section>
+    {% else %}
+        <p class="mb-8 rounded-lg border border-paid/30 bg-paid/10 p-4 text-sm text-ink-700">
+            Nothing is waiting on you right now.
         </p>
-        <a href="{{ path('tenant_wallet_index') }}"
-           class="mt-auto inline-flex min-h-[44px] items-center pt-3 text-sm font-semibold text-accent-600 hover:text-accent-700">
-            Top up or view history &rarr;
-        </a>
-    </div>
+    {% endif %}
 
-    {# ── Students ────────────────────────────────────────────────────── #}
-    <div class="flex flex-col rounded-lg border border-ink-200 bg-white p-5 shadow-card">
-        <div class="flex items-start justify-between gap-3">
-            <p class="text-xs font-semibold uppercase tracking-wider text-ink-500">{{ learner.pluralCapital }}</p>
-            <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-ink-100 text-ink-600" aria-hidden="true">
-                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.42A12 12 0 0112 21a12 12 0 01-6.16-10.42L12 14z"/>
-                </svg>
-            </span>
-        </div>
-        <p class="tabular mt-3 text-2xl font-semibold tracking-tight text-ink-900">{{ studentCount }}</p>
-        <a href="{{ path('app_tenant_student_index') }}"
-           class="mt-auto inline-flex min-h-[44px] items-center pt-3 text-sm font-semibold text-accent-600 hover:text-accent-700">
-            View directory &rarr;
-        </a>
-    </div>
+    {# ═══ 3. THE PANELS THIS SEAT MAY SEE ═════════════════════════════
+       Each partial is included only when the persona can see it, and the
+       controller only loads the data for those same panels. #}
+    {% if persona.seesWholeSchool() %}
+        {% include 'tenant/dashboard/_overview.html.twig' %}
+    {% else %}
+        {% if persona.canSeeAdmissions is defined and persona.canSeeAdmissions and admissions is defined %}
+            {% include 'tenant/dashboard/_admissions.html.twig' %}
+        {% endif %}
+        {% if persona.canSeeFinance %}
+            {% include 'tenant/dashboard/_finance.html.twig' %}
+        {% endif %}
+        {% if persona.canSeeStore %}
+            {% include 'tenant/dashboard/_store.html.twig' %}
+        {% endif %}
+    {% endif %}
 
-    {# ── Cash in today ───────────────────────────────────────────────── #}
-    <div class="flex flex-col rounded-lg border border-ink-200 bg-white p-5 shadow-card">
-        <div class="flex items-start justify-between gap-3">
-            <p class="text-xs font-semibold uppercase tracking-wider text-ink-500">Cash in today</p>
-            <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-ink-100 text-ink-600" aria-hidden="true">
-                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 9v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
-                </svg>
-            </span>
-        </div>
-        <p class="money mt-3 text-2xl font-semibold tracking-tight text-ink-900">
-            ₦{{ cashInToday|number_format(0) }}
-        </p>
-        <p class="mt-auto pt-3 text-sm text-ink-500">Confirmed payments</p>
-    </div>
+    {% if teaching is defined and (teaching.total > 0 or not persona.seesWholeSchool()) %}
+        {% include 'tenant/dashboard/_teaching.html.twig' %}
+    {% endif %}
 
-    {# ── Fees outstanding ────────────────────────────────────────────── #}
-    <div class="flex flex-col rounded-lg border border-ink-200 bg-white p-5 shadow-card">
-        <div class="flex items-start justify-between gap-3">
-            <p class="text-xs font-semibold uppercase tracking-wider text-ink-500">Fees outstanding</p>
-            <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-ink-100 text-ink-600" aria-hidden="true">
-                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-                </svg>
-            </span>
-        </div>
-        <p class="money mt-3 text-2xl font-semibold tracking-tight text-ink-900">
-            ₦{{ totalDebt|number_format(0) }}
-        </p>
-        {# The badge states the state in words — never colour alone. #}
-        <div class="mt-auto pt-3">
-            {% if debtors|length > 0 %}
-                <a href="{{ path('app_tenant_invoice_index') }}" class="badge-pending">Across {{ debtorCount|default(debtors|length) }} student{{ debtorCount|default(debtors|length) == 1 ? '' : 's' }}</a>
-            {% else %}
-                <span class="badge-paid">Nothing outstanding</span>
-            {% endif %}
-        </div>
-    </div>
+    {% if formClass is defined and formClass %}
+        {% include 'tenant/dashboard/_form_class.html.twig' %}
+    {% endif %}
 
-</div>
+    {% if (departments is defined and departments|length > 0) or (yearGroups is defined and yearGroups|length > 0) %}
+        {% include 'tenant/dashboard/_approvals.html.twig' %}
+    {% endif %}
 
-{# === 3. DATA TABLES === #}
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-    
-    {# LOW STOCK #}
-    <section class="flex h-full flex-col overflow-hidden rounded-lg border border-ink-200 bg-white shadow-card">
-        <div class="flex items-center justify-between gap-3 border-b border-ink-200 px-5 py-3">
-            <h2 class="text-sm font-semibold text-ink-900">Low stock</h2>
-            <a href="{{ path('app_tenant_product_index') }}"
-               class="inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-600 hover:text-accent-700">Manage &rarr;</a>
+    {# A staff account with no seat at all — usually a login created before a job
+       title was assigned. An empty page would look like a bug. #}
+    {% if not persona.seesWholeSchool()
+        and not persona.canSeeFinance
+        and not persona.canSeeAdmissions
+        and not persona.canSeeStore
+        and not persona.canSeeTeaching
+        and not persona.isFormTeacher
+        and not persona.isHod
+        and not persona.isYearGroupMaster %}
+        <div class="rounded-lg border border-dashed border-ink-300 bg-white p-6 text-center">
+            <p class="text-sm font-semibold text-ink-900">Your account has no responsibilities yet</p>
+            <p class="mx-auto mt-1 max-w-md text-sm leading-relaxed text-ink-500">
+                Ask an administrator to give you a job title on the Staff screen. Once you are
+                a form teacher, an HOD or a subject teacher, this page fills itself in.
+            </p>
         </div>
-        <div class="flex-1 overflow-x-auto">
-            <table class="w-full min-w-[420px] text-left text-sm">
-                <thead>
-                    <tr class="border-b border-ink-200">
-                        <th scope="col" class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-500">Item</th>
-                        <th scope="col" class="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-ink-500">In stock</th>
-                        <th scope="col" class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-ink-500">Unit price</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-ink-100">
-                    {% for product in lowStock %}
-                    <tr>
-                        <td class="px-5 py-3 font-medium text-ink-900">{{ product.name }}</td>
-                        <td class="px-5 py-3 text-center"><span class="badge-failed">{{ product.stockQuantity }} left</span></td>
-                        <td class="money px-5 py-3 text-right text-ink-600">₦{{ product.unitPrice|number_format(2) }}</td>
-                    </tr>
-                    {% else %}
-                        <tr><td colspan="3" class="px-5 py-8 text-center text-sm text-ink-500">Nothing is running low.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </section>
-
-    {# HIGHEST DEBTS #}
-    <section class="flex h-full flex-col overflow-hidden rounded-lg border border-ink-200 bg-white shadow-card">
-        <div class="flex items-center justify-between gap-3 border-b border-ink-200 px-5 py-3">
-            <h2 class="text-sm font-semibold text-ink-900">Highest debts</h2>
-            <a href="{{ path('app_tenant_invoice_index') }}"
-               class="inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-600 hover:text-accent-700">View all &rarr;</a>
-        </div>
-        <div class="flex-1 overflow-x-auto">
-            <table class="w-full min-w-[420px] text-left text-sm">
-                <thead>
-                    <tr class="border-b border-ink-200">
-                        <th scope="col" class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-500">{{ learner.capital }}</th>
-                        <th scope="col" class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-500">Invoice</th>
-                        <th scope="col" class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-ink-500">Owing</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-ink-100">
-                    {% for invoice in debtors %}
-                    <tr>
-                        <td class="px-5 py-3">
-                            {# A real link, not an onclick on the row: a row is not
-                               reachable by keyboard, and a screen reader cannot
-                               announce it. #}
-                            <a href="{{ path('app_tenant_invoice_show', {id: invoice.id}) }}"
-                               class="inline-flex min-h-[44px] flex-col justify-center font-semibold text-ink-900 hover:text-accent-600">
-                                {{ invoice.student.fullName }}
-                                <span class="text-xs font-normal text-ink-500">{{ invoice.student.admissionNumber }}</span>
-                            </a>
-                        </td>
-                        <td class="px-5 py-3 text-xs text-ink-500">
-                            <span class="badge-neutral">{{ invoice.invoiceNumber }}</span>
-                        </td>
-                        <td class="money px-5 py-3 text-right font-semibold text-ink-900">
-                            ₦{{ (invoice.totalAmount - invoice.paidAmount)|number_format(2) }}
-                        </td>
-                    </tr>
-                    {% else %}
-                        <tr><td colspan="3" class="px-5 py-8 text-center text-sm text-ink-500">No debts found.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </section>
-</div>
+    {% endif %}
 
 </div>{# / page gutter #}
 

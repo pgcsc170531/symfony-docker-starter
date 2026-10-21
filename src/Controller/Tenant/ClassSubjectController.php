@@ -68,11 +68,35 @@ class ClassSubjectController extends AbstractController
         }
         ksort($subjectGroups);
 
+        // One field matches whatever the person can see in the row: the subject,
+        // its department, the class or the session. A registrar looking for
+        // "JSS 2" should not have to remember whether that is a class or a session.
+        $q = trim((string) $request->query->get('q', ''));
+
+        $qb = $this->em->getRepository(ClassSubject::class)->createQueryBuilder('cs')
+            ->join('cs.subject', 'sub')->addSelect('sub')
+            ->join('cs.classroom', 'classroom')->addSelect('classroom')
+            ->join('cs.session', 'sess')->addSelect('sess')
+            ->leftJoin('sub.department', 'dept')->addSelect('dept')
+            ->orderBy('sess.id', 'DESC')
+            ->addOrderBy('classroom.name', 'ASC')
+            ->addOrderBy('sub.name', 'ASC');
+
+        if ($q !== '') {
+            $qb->andWhere('LOWER(sub.name) LIKE :q'
+                    . ' OR LOWER(sub.code) LIKE :q'
+                    . ' OR LOWER(classroom.name) LIKE :q'
+                    . ' OR LOWER(sess.name) LIKE :q'
+                    . ' OR LOWER(dept.name) LIKE :q')
+                ->setParameter('q', '%' . mb_strtolower($q) . '%');
+        }
+
         return $this->render('tenant/class_subject/index.html.twig', [
-            'classSubjects' => $this->em->getRepository(ClassSubject::class)->findBy([], ['session' => 'DESC', 'classroom' => 'ASC', 'subject' => 'ASC']),
+            'classSubjects' => $qb->getQuery()->getResult(),
             'subjectGroups' => $subjectGroups,
             'classrooms' => $this->em->getRepository(Classroom::class)->findBy([], ['name' => 'ASC']),
             'sessions' => $this->em->getRepository(Session::class)->findBy([], ['id' => 'DESC']),
+            'q' => $q,
         ]);
     }
 

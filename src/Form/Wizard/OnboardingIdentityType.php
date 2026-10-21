@@ -30,10 +30,13 @@ class OnboardingIdentityType extends AbstractType
             ->add('institutionType', ChoiceType::class, [
                 'label' => 'Institution Type',
                 'choices' => [
-                    'Secondary School (3 Terms)' => 'secondary',
-                    'Primary / Nursery (3 Terms)' => 'primary', // 🟢 Updated Label
-                    'Primary & Secondary (combined, 3 Terms)' => 'combined',
-                    'College / Poly (2 Semesters)' => 'tertiary',
+                    'Nursery (3 Terms)' => School::TYPE_NURSERY,
+                    'Primary (3 Terms)' => School::TYPE_PRIMARY,
+                    'Junior Secondary — JSS (3 Terms)' => School::TYPE_JUNIOR_SECONDARY,
+                    'Senior Secondary — SS (3 Terms)' => School::TYPE_SENIOR_SECONDARY,
+                    'Secondary — JSS and SS together (3 Terms)' => School::TYPE_SECONDARY,
+                    'Primary & Secondary (combined, 3 Terms)' => School::TYPE_COMBINED,
+                    'College / Poly (2 Semesters)' => School::TYPE_TERTIARY,
                 ],
                 'expanded' => true, // Radio Buttons
                 'multiple' => false,

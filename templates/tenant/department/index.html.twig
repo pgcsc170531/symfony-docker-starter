@@ -3,6 +3,7 @@
 {% block title %}Departments{% endblock %}
 
 {% block body %}
+{% import 'tenant/_list_search.html.twig' as search %}
 <div class="px-4">
     <h1 class="text-2xl font-bold mb-6">🏛️ Departments</h1>
 
@@ -25,8 +26,10 @@
     </div>
 
     {# List #}
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-        <table class="w-full text-sm">
+    {{ search.form(q, 'Search department name or description') }}
+
+    <div class="overflow-x-auto rounded-lg bg-white shadow">
+        <table class="w-full min-w-[560px] text-sm">
             <thead class="bg-gray-100 text-left text-gray-500">
                 <tr>
                     <th class="p-3">Name</th>
@@ -51,7 +54,14 @@
                     </tr>
                 {% else %}
                     <tr class="border-t">
-                        <td class="p-3 text-gray-500" colspan="4">No departments yet.</td>
+                        <td class="p-3 text-gray-500" colspan="4">
+                            {% if q %}
+                                No department matches “{{ q }}”.
+                                <a href="{{ path('app_tenant_department_index') }}" class="font-semibold text-blue-600">Clear the search</a>.
+                            {% else %}
+                                No departments yet.
+                            {% endif %}
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>

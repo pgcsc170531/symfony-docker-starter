@@ -1,0 +1,78 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ isNew ? 'New document' : 'Edit document' }}{% endblock %}
+
+{% block body %}
+<div class="px-4 py-4 sm:py-6">
+    <div class="mx-auto max-w-3xl">
+
+        <a href="{{ path('app_tenant_document_index') }}"
+           class="inline-flex min-h-[44px] items-center text-xs font-semibold text-accent-700 hover:underline">&larr; All documents</a>
+        <h1 class="mt-1 text-2xl font-black tracking-tight text-ink-900">
+            {{ isNew ? 'New document' : 'Edit document' }}
+        </h1>
+
+        <form method="post" class="mt-5 space-y-4 rounded-xl border border-ink-200 bg-white p-4 shadow-card sm:p-6">
+            <input type="hidden" name="_token" value="{{ csrf_token('save_document') }}">
+
+            <div>
+                <label for="title" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Title</label>
+                <input id="title" name="title" type="text" required value="{{ document.title }}"
+                       placeholder="e.g. Rules and Regulations"
+                       class="w-full rounded-lg border border-ink-300 p-3 text-base shadow-sm focus:border-accent-500 focus:ring-accent-500 sm:text-sm">
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                    <label for="category" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Category</label>
+                    <select id="category" name="category"
+                            class="w-full rounded-lg border border-ink-300 p-3 text-base shadow-sm focus:border-accent-500 focus:ring-accent-500 sm:text-sm">
+                        {% for value, label in categories %}
+                            <option value="{{ value }}" {{ document.category == value ? 'selected' }}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="sortOrder" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Order</label>
+                    <input id="sortOrder" name="sortOrder" type="number" value="{{ document.sortOrder }}"
+                           class="w-full rounded-lg border border-ink-300 p-3 text-base shadow-sm focus:border-accent-500 focus:ring-accent-500 sm:text-sm">
+                    <p class="mt-1 text-[11px] text-ink-400">Appendices are printed in this order.</p>
+                </div>
+            </div>
+
+            <div>
+                <label for="body" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Text</label>
+                <textarea id="body" name="body" rows="16" required
+                          placeholder="One paragraph per blank line. Numbered rules read well: “1. Pupils must …”"
+                          class="w-full rounded-lg border border-ink-300 p-3 text-base font-normal shadow-sm focus:border-accent-500 focus:ring-accent-500 sm:text-sm">{{ document.body }}</textarea>
+                <p class="mt-1 text-[11px] text-ink-400">
+                    Plain text. Leave a blank line between paragraphs; numbered lines stay numbered.
+                </p>
+            </div>
+
+            <label class="flex items-start gap-3 rounded-lg border border-ink-200 p-3">
+                <input type="checkbox" name="isPublished" value="1" {{ document.isPublished ? 'checked' }}
+                       class="mt-0.5 h-4 w-4 rounded border-ink-300 text-accent-600 focus:ring-accent-500">
+                <span>
+                    <span class="block text-sm font-medium text-ink-800">Show on the school website</span>
+                    <span class="block text-xs text-ink-500">Live at <span class="font-mono">/p/{{ document.slug ?: '…' }}</span></span>
+                </span>
+            </label>
+
+            <label class="flex items-start gap-3 rounded-lg border border-ink-200 p-3">
+                <input type="checkbox" name="attachToAdmissionLetter" value="1" {{ document.attachesToAdmissionLetter ? 'checked' }}
+                       class="mt-0.5 h-4 w-4 rounded border-ink-300 text-accent-600 focus:ring-accent-500">
+                <span>
+                    <span class="block text-sm font-medium text-ink-800">Attach to the admission letter</span>
+                    <span class="block text-xs text-ink-500">Printed as an appendix after the letter itself.</span>
+                </span>
+            </label>
+
+            <button type="submit"
+                    class="min-h-[48px] w-full rounded-lg bg-accent-600 px-6 text-sm font-bold text-white hover:bg-accent-700 sm:w-auto">
+                Save document
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

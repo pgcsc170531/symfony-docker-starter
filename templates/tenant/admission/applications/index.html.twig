@@ -109,7 +109,7 @@
                         </div>
                         <dl class="mt-3 grid grid-cols-2 gap-y-1 text-xs">
                             <dt class="text-ink-500">Class</dt>
-                            <dd class="text-right font-medium text-ink-900">{{ app.requestedClassroom ? app.requestedClassroom.name : '—' }}</dd>
+                            <dd class="text-right font-medium text-ink-900">{{ app.requestedClassName ?: '—' }}</dd>
                             <dt class="text-ink-500">Parent</dt>
                             <dd class="truncate text-right font-medium text-ink-900">{{ app.guardianName ?: '—' }}</dd>
                             <dt class="text-ink-500">Applied</dt>
@@ -142,7 +142,7 @@
                                 <a href="{{ path('app_tenant_application_show', {id: app.id}) }}"
                                    class="hover:text-accent-700 hover:underline">{{ app.fullName }}</a>
                             </td>
-                            <td class="px-4 py-3 text-ink-700">{{ app.requestedClassroom ? app.requestedClassroom.name : '—' }}</td>
+                            <td class="px-4 py-3 text-ink-700">{{ app.requestedClassName ?: '—' }}</td>
                             <td class="px-4 py-3 text-ink-700">
                                 <span class="block">{{ app.guardianName ?: '—' }}</span>
                                 <span class="block text-xs text-ink-500">{{ app.guardianPhone }}</span>

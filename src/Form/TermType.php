@@ -47,6 +47,15 @@ class TermType extends AbstractType
             ->add('isActive', CheckboxType::class, [
                 'label' => 'Set as Active Term?',
                 'required' => false,
+            ])
+
+            // Printed on the report card as "Next term begins". Used when the
+            // next term has not been created yet — most schools set one at a time.
+            ->add('resumptionDate', DateType::class, [
+                'widget' => 'single_text',
+                'input' => 'datetime_immutable',
+                'label' => 'Next term begins (resumption date)',
+                'required' => false,
             ]);
     }
 

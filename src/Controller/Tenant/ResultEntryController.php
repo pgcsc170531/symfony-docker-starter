@@ -39,9 +39,16 @@ class ResultEntryController extends AbstractController
     #[Route('/entry', name: 'tenant_result_entry_index')]
     public function index(): Response
     {
-        $staff = $this->getStaff();
-        $assignments = $this->em->getRepository(SubjectTeacher::class)
-            ->findBy(['staff' => $staff], ['term' => 'ASC']);
+        // An overseer or an administrator may hold no timetable of their own.
+        // The index must still open for them — it lists personal assignments,
+        // and an empty list is the truth. The entry form itself stays strict:
+        // `assertOwnAssignment()` still refuses a sheet that is not yours.
+        $user = $this->getUser();
+        $staff = $user instanceof \App\Entity\Tenant\User ? $user->getStaff() : null;
+
+        $assignments = $staff
+            ? $this->em->getRepository(SubjectTeacher::class)->findBy(['staff' => $staff], ['term' => 'ASC'])
+            : [];
 
         return $this->render('tenant/result_entry/index.html.twig', [
             'assignments' => $assignments,

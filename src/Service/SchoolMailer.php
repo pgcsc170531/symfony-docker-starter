@@ -73,7 +73,7 @@ final class SchoolMailer
                 'child_name' => $child,
                 'reference' => $application->getReference(),
                 'submitted_at' => $application->getSubmittedAt(),
-                'requested_class' => $application->getRequestedClassroom()?->getName(),
+                'requested_class' => $application->getRequestedClassName(),
                 'status' => $application->getStatus(),
                 'fee_due' => $feeDue,
                 'fee_due_formatted' => ($feeDue !== null && $feeDue > 0) ? $this->money($feeDue) : null,

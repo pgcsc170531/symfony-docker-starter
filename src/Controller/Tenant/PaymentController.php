@@ -23,6 +23,7 @@ use App\Repository\Tenant\PaymentRepository;
 // Updated: Using your custom Notification Service
 use App\Service\NotificationService; 
 use App\Service\Finance\DiscountCalculator;
+use App\Service\Finance\AdvancePaymentService;
 use App\Service\Finance\InvoiceNumberGenerator;
 use App\Service\Finance\PaymentReferenceGenerator;
 use App\Service\SchoolMailer;
@@ -34,6 +35,7 @@ class PaymentController extends AbstractController
         private readonly DiscountCalculator $discountCalculator,
         private readonly InvoiceNumberGenerator $invoiceNumbers,
         private readonly PaymentReferenceGenerator $paymentReferences,
+        private readonly AdvancePaymentService $advances,
     ) {
     }
     // ==========================================
@@ -194,6 +196,9 @@ class PaymentController extends AbstractController
         foreach ($fees as $fee) {
             $item = new InvoiceItem();
             $item->setInvoice($invoice);
+            // The fee item is what tells the discount engine which line is
+            // tuition; without it a scholarship could not find its base.
+            $item->setFeeItem($fee->getFeeItem());
             $item->setDescription($fee->getFeeItem()->getName());
             $item->setAmount((string)$fee->getAmount());
             $em->persist($item);
@@ -201,14 +206,18 @@ class PaymentController extends AbstractController
         }
 
         // The terminal used to ignore scholarships entirely, so a discounted
-        // pupil was billed the full amount from this screen. Use the same
-        // calculator as admissions, and store the total NET of the discount.
-        $discount = $this->discountCalculator->calculateDiscount($student, (float) $total);
+        // pupil was billed the full amount from this screen. Same calculator as
+        // admissions, and the base is TUITION only.
+        $discount = $this->discountCalculator->calculateDiscount(
+            $student,
+            $this->discountCalculator->tuitionBaseFromStructures($fees)
+        );
         $invoice->setDiscountApplied((string) $discount);
         $invoice->setDiscountLabel($this->discountCalculator->describe($student));
         $invoice->setTotalAmount((string) max(0.0, (float) $total - $discount));
 
         $em->persist($invoice);
+        $this->advances->applyTo($invoice);
         $em->flush();
 
         $this->addFlash('success', 'Invoice generated successfully.');
@@ -277,19 +286,66 @@ class PaymentController extends AbstractController
         return $this->redirectToRoute('app_tenant_payment_receipt', ['id' => $payment->getId()]);
     }
 
+    /**
+     * The bursar's verification queue.
+     *
+     * A parent transfers with a slip code, or uploads a receipt when the code
+     * never made it into the narration. Either way the money is sitting in the
+     * school's account and only a human can say "yes, that one is ours" — so
+     * this page is a work queue, not a lookup box. It is the manual link in the
+     * navigation and the destination of the dashboard counter.
+     */
     #[Route('/verify', name: 'app_tenant_payment_verify')]
     #[IsGranted('ROLE_BURSAR')]
     public function verify(Request $request, EntityManagerInterface $em): Response
     {
-        $code = $request->query->get('code');
-        $payment = null;
-        if ($code) {
-             $cleanCode = trim(str_replace(' ', '', $code));
-             $payment = $em->getRepository(Payment::class)->findOneBy(['referenceCode' => $cleanCode]);
+        // `code` is the old deep-link parameter used by the collections and
+        // reconciliation reports; it filters the queue to that slip.
+        $q = trim((string) ($request->query->get('q') ?: $request->query->get('code') ?: ''));
+
+        $qb = $em->getRepository(Payment::class)->createQueryBuilder('p')
+            ->join('p.invoice', 'i')->addSelect('i')
+            ->leftJoin('i.student', 's')->addSelect('s')
+            ->leftJoin('s.guardian', 'g')->addSelect('g')
+            ->andWhere('p.status = :pending')
+            ->setParameter('pending', Payment::STATUS_PENDING)
+            // Oldest first: a queue, so nothing quietly rots at the bottom.
+            ->orderBy('p.createdAt', 'ASC');
+
+        if ($q !== '') {
+            // The bursar is reading a bank app. Whatever is on that screen — the
+            // pupil's name, the admission number, the slip code, a parent's phone,
+            // the invoice number or the amount — should find the row.
+            $where = 'LOWER(s.firstName) LIKE :q'
+                . ' OR LOWER(s.lastName) LIKE :q'
+                . ' OR LOWER(s.middleName) LIKE :q'
+                . ' OR LOWER(s.admissionNumber) LIKE :q'
+                . ' OR LOWER(g.fullName) LIKE :q'
+                . ' OR LOWER(g.phoneNumber) LIKE :q'
+                . ' OR LOWER(p.referenceCode) LIKE :q'
+                . ' OR LOWER(p.reference) LIKE :q'
+                . ' OR LOWER(i.invoiceNumber) LIKE :q';
+
+            $numeric = str_replace([',', ' '], '', $q);
+            if (is_numeric($numeric)) {
+                $where .= ' OR p.amount = :amount';
+                $qb->setParameter('amount', number_format((float) $numeric, 2, '.', ''));
+            }
+
+            $qb->andWhere($where)->setParameter('q', '%' . mb_strtolower($q) . '%');
         }
+
+        $payments = $qb->getQuery()->getResult();
+
+        $pendingTotal = 0.0;
+        foreach ($payments as $pendingPayment) {
+            $pendingTotal += (float) $pendingPayment->getAmount();
+        }
+
         return $this->render('tenant/payment/verify.html.twig', [
-            'payment' => $payment, 
-            'search_code' => $code
+            'payments' => $payments,
+            'q' => $q,
+            'pendingTotal' => $pendingTotal,
         ]);
     }
 
@@ -299,30 +355,56 @@ class PaymentController extends AbstractController
     {
         $invoice = $payment->getInvoice(); // Grab the invoice early so we can use its ID
 
+        // A confirmation is a money movement, so it must carry a token. It did
+        // not before, which meant any page could POST another bursar's approval.
+        if (!$this->isCsrfTokenValid('payment_confirm_' . $payment->getId(), (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'That form expired. Reload the page and try again.');
+
+            return $this->backFromConfirm($request, $invoice);
+        }
+
+        // Where the bursar came from decides where they go back to: the queue
+        // should keep them in the queue, the terminal in the terminal.
+        $back = $this->backFromConfirm($request, $invoice);
+
         if ($payment->getStatus() !== Payment::STATUS_PENDING) {
             $this->addFlash('error', 'Action Failed: This payment slip is ' . $payment->getStatus());
-            // 🟢 FIX: Added 'invoice_id' to the redirect
-            return $this->redirectToRoute('app_tenant_payment_terminal', [
-                'id' => $invoice->getStudent()->getId(),
-                'invoice_id' => $invoice->getId() 
-            ]);
+
+            return $back;
         }
-        
+
+        // The second pair of eyes: the bursar must type what the bank actually
+        // shows. A blank box is never an approval, and a figure that disagrees
+        // with the slip needs an explicit acknowledgement.
+        $rawAmount = trim((string) $request->request->get('actual_amount', ''));
+        $actualAmount = is_numeric($rawAmount) ? round((float) $rawAmount, 2) : 0.0;
+
+        if ($actualAmount <= 0) {
+            $this->addFlash('error', 'Enter the amount you saw in the bank before confirming this payment.');
+
+            return $back;
+        }
+
+        $expectedAmount = round((float) $payment->getAmount(), 2);
+        if (abs($actualAmount - $expectedAmount) > 0.01 && !$request->request->getBoolean('amount_differs')) {
+            $this->addFlash('error', sprintf(
+                'The slip says ₦%s but you entered ₦%s. If the bank really shows a different figure, tick “the amount differs”.',
+                number_format($expectedAmount, 2),
+                number_format($actualAmount, 2)
+            ));
+
+            return $back;
+        }
+
         if ($invoice->getStatus() === Invoice::STATUS_PAID || $invoice->getPaidAmount() >= $invoice->getTotalAmount()) {
             $this->addFlash('error', 'Action Blocked: This invoice is already fully paid.');
             $payment->setStatus(Payment::STATUS_CANCELLED);
             $em->flush();
-            // 🟢 FIX: Added 'invoice_id' to the redirect
-            return $this->redirectToRoute('app_tenant_payment_terminal', [
-                'id' => $invoice->getStudent()->getId(),
-                'invoice_id' => $invoice->getId()
-            ]);
+
+            return $back;
         }
 
-        $actualAmount = $request->request->get('actual_amount');
-        if ($actualAmount && (float)$actualAmount > 0) {
-            $payment->setAmount((string)$actualAmount);
-        }
+        $payment->setAmount(number_format($actualAmount, 2, '.', ''));
 
         $payment->setStatus(Payment::STATUS_CONFIRMED);
         $payment->setConfirmedAt(new \DateTimeImmutable());
@@ -360,13 +442,28 @@ class PaymentController extends AbstractController
             $mailer->paymentReceipt($school, $payment, $receiptUrl);
         }
     
-        $this->addFlash('success', 'Payment verified and confirmed.');
-        
-        // 🟢 FIX: Added 'invoice_id' to the success redirect
-        return $this->redirectToRoute('app_tenant_payment_terminal', [
-            'id' => $invoice->getStudent()->getId(),
-            'invoice_id' => $invoice->getId()
-        ]);
+        $this->addFlash('success', sprintf(
+            'Payment verified and confirmed: ₦%s recorded for %s.',
+            number_format((float) $payment->getAmount(), 2),
+            $invoice->getStudent()?->getFullName() ?? 'this pupil'
+        ));
+
+        return $back;
+    }
+
+    /**
+     * Return to the screen the bursar submitted from.
+     */
+    private function backFromConfirm(Request $request, Invoice $invoice): Response
+    {
+        return match ((string) $request->request->get('return_to', 'terminal')) {
+            'queue' => $this->redirectToRoute('app_tenant_payment_verify'),
+            'history' => $this->redirectToRoute('app_tenant_payment_history'),
+            default => $this->redirectToRoute('app_tenant_payment_terminal', [
+                'id' => $invoice->getStudent()?->getId(),
+                'invoice_id' => $invoice->getId(),
+            ]),
+        };
     }
 
     // ==========================================

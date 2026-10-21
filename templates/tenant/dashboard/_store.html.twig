@@ -1,0 +1,64 @@
+{#
+    Store panel — store keeper, administrator, super admin.
+
+    Only included when the persona may see inventory
+    (DashboardPersona::canSeeStore). Note that "low stock" is not the same thing
+    as "out of stock": the badge says how many are left, in words.
+#}
+{% import 'tenant/dashboard/_kpi.html.twig' as kpi %}
+
+<section class="mb-8" aria-labelledby="store-heading">
+    <h2 id="store-heading" class="mb-3 text-sm font-semibold text-ink-900">Store</h2>
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {{ kpi.kpi('Items in the store', store.productCount,
+            'Products you sell', path('app_tenant_product_index'), 'Open inventory', 'box') }}
+        {{ kpi.kpi('Stock value', '₦' ~ store.stockValue|number_format(0),
+            'Quantity × unit price', null, null, 'cash') }}
+        {{ kpi.kpi('Sales today', '₦' ~ store.salesToday|number_format(0),
+            store.salesCountToday ~ ' sale' ~ (store.salesCountToday == 1 ? '' : 's') ~ ' at the POS', null, null, 'receipt') }}
+        {{ kpi.kpi('Low stock', store.lowStockCount,
+            store.lowStockCount > 0 ? 'Restock before it runs out' : 'Nothing is running low', null, null, 'alert') }}
+    </div>
+
+    <section class="mt-4 flex h-full flex-col overflow-hidden rounded-lg border border-ink-200 bg-white shadow-card">
+        <div class="flex items-center justify-between gap-3 border-b border-ink-200 px-5 py-3">
+            <h2 class="text-sm font-semibold text-ink-900">Running low</h2>
+            <a href="{{ path('app_tenant_product_index') }}"
+               class="inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-600 hover:text-accent-700">Manage &rarr;</a>
+        </div>
+        <div class="flex-1 overflow-x-auto">
+            <table class="w-full min-w-[420px] text-left text-sm">
+                <thead>
+                    <tr class="border-b border-ink-200">
+                        <th scope="col" class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-500">Item</th>
+                        <th scope="col" class="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-ink-500">In stock</th>
+                        <th scope="col" class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-ink-500">Unit price</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-ink-100">
+                    {% for product in store.lowStock %}
+                        <tr>
+                            <td class="px-5 py-3 font-medium text-ink-900">
+                                {{ product.name }}
+                                {% if product.classroom %}
+                                    <span class="block text-xs font-normal text-ink-500">{{ product.classroom.name }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-5 py-3 text-center">
+                                <span class="{{ product.stockQuantity > 0 ? 'badge-pending' : 'badge-failed' }}">
+                                    {{ product.stockQuantity }} left
+                                </span>
+                            </td>
+                            <td class="money px-5 py-3 text-right text-ink-600">₦{{ product.unitPrice|number_format(2) }}</td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="3" class="px-5 py-8 text-center text-sm text-ink-500">Nothing is running low.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</section>

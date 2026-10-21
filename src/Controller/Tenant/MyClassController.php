@@ -10,6 +10,7 @@ use App\Entity\Tenant\BehaviourTrait;
 use App\Entity\Tenant\Classroom;
 use App\Entity\Tenant\Enrollment;
 use App\Entity\Tenant\FormTeacher;
+use App\Entity\Tenant\Invoice;
 use App\Entity\Tenant\Student;
 use App\Entity\Tenant\StudentTermRemark;
 use App\Entity\Tenant\Term;
@@ -94,7 +95,132 @@ final class MyClassController extends AbstractController
             'today' => $this->currentSchoolDay($term),
             'released' => $this->release->isReleased($classroom, $term),
             'outstandingSubjects' => $this->release->outstandingSubjects($classroom, $term),
+            'fees' => $this->feeSnapshot($roster, $term),
         ]);
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    //  Fees — what the class has paid, so the form teacher can see it
+    // ──────────────────────────────────────────────────────────────────
+
+    /**
+     * The class's fees, pupil by pupil.
+     *
+     * A form teacher is the person a parent rings first, so "has this family
+     * paid?" should not require a trip to the bursar. The list shows billed,
+     * paid and balance per pupil — no discounts broken down, no ledger, just the
+     * question the teacher is actually asked.
+     */
+    #[Route('/fees', name: 'app_tenant_my_class_fees', methods: ['GET'])]
+    public function fees(Request $request): Response
+    {
+        $term = $this->activeTerm();
+        $classroom = $this->resolveClassroom($request, $term);
+        $roster = $this->roster($classroom, $term);
+
+        return $this->render('tenant/my_class/fees.html.twig', [
+            'term' => $term,
+            'classroom' => $classroom,
+            'classes' => $this->availableClasses($term),
+            'fees' => $this->feeSnapshot($roster, $term),
+            'learner' => $this->wording,
+            // A form teacher needs to know WHO owes, not how much. Large figures
+            // on a class list become a talking point about other families; the
+            // numbers stay with the bursary.
+            'showAmounts' => $this->isGranted('ROLE_BURSAR'),
+        ]);
+    }
+
+    /**
+     * Billed / paid / outstanding for every pupil in the roster.
+     *
+     * Reads the pupil's academic invoice for the active term; a pupil with no
+     * invoice is "not billed" rather than "owes nothing", which are very
+     * different things to a form teacher chasing a parent.
+     *
+     * @param array<int, array{student: Student, from: \DateTimeImmutable}> $roster
+     * @return array{billed: float, collected: float, outstanding: float, cleared: int, owing: int, notBilled: int, rows: array<int, array<string, mixed>>}
+     */
+    private function feeSnapshot(array $roster, ?Term $term): array
+    {
+        $empty = ['billed' => 0.0, 'collected' => 0.0, 'outstanding' => 0.0, 'cleared' => 0, 'owing' => 0, 'notBilled' => 0, 'rows' => []];
+
+        if ($roster === [] || $term === null) {
+            return $empty;
+        }
+
+        $invoices = $this->em->getRepository(Invoice::class)->createQueryBuilder('i')
+            ->andWhere('i.student IN (:ids)')
+            ->andWhere('i.type = :type')
+            ->andWhere('i.term = :term')
+            ->setParameter('ids', array_keys($roster))
+            ->setParameter('type', Invoice::TYPE_ACADEMIC)
+            ->setParameter('term', $term)
+            ->orderBy('i.id', 'DESC')
+            ->getQuery()
+            ->getResult();
+
+        $latest = [];
+        foreach ($invoices as $invoice) {
+            $studentId = (int) $invoice->getStudent()?->getId();
+            if ($studentId > 0 && !isset($latest[$studentId])) {
+                $latest[$studentId] = $invoice;
+            }
+        }
+
+        $rows = [];
+        $billed = $collected = $outstanding = 0.0;
+        $cleared = $owing = $notBilled = 0;
+
+        foreach ($roster as $studentId => $entry) {
+            $invoice = $latest[$studentId] ?? null;
+
+            if ($invoice === null) {
+                $notBilled++;
+                $rows[$studentId] = [
+                    'student' => $entry['student'],
+                    'invoice' => null,
+                    'billed' => 0.0,
+                    'paid' => 0.0,
+                    'balance' => 0.0,
+                    'status' => 'NOT BILLED',
+                ];
+                continue;
+            }
+
+            $total = (float) $invoice->getTotalAmount();
+            $paid = (float) $invoice->getPaidAmount();
+            $balance = max(0.0, $total - $paid);
+
+            $billed += $total;
+            $collected += $paid;
+            $outstanding += $balance;
+
+            if ($balance <= 0.01) {
+                $cleared++;
+            } else {
+                $owing++;
+            }
+
+            $rows[$studentId] = [
+                'student' => $entry['student'],
+                'invoice' => $invoice,
+                'billed' => $total,
+                'paid' => $paid,
+                'balance' => $balance,
+                'status' => $invoice->getStatus(),
+            ];
+        }
+
+        return [
+            'billed' => $billed,
+            'collected' => $collected,
+            'outstanding' => $outstanding,
+            'cleared' => $cleared,
+            'owing' => $owing,
+            'notBilled' => $notBilled,
+            'rows' => $rows,
+        ];
     }
 
     // ──────────────────────────────────────────────────────────────────
@@ -324,7 +450,8 @@ final class MyClassController extends AbstractController
             ];
         }
 
-        $selectedId = $request->query->getInt('student');
+        // `getInt()` 400s on an empty value; a cleared picker must not break the page.
+        $selectedId = (int) $request->query->get('student', 0);
         if ($selectedId <= 0 || !isset($roster[$selectedId])) {
             // Default to the first pupil who still has work outstanding.
             $firstIncomplete = null;
@@ -505,7 +632,7 @@ final class MyClassController extends AbstractController
             ];
         }
 
-        $selectedId = $request->query->getInt('student');
+        $selectedId = (int) $request->query->get('student', 0);
         if ($selectedId <= 0 || !isset($roster[$selectedId])) {
             $firstMissing = null;
             foreach ($pupils as $pupil) {
@@ -662,7 +789,8 @@ final class MyClassController extends AbstractController
 
         // An admin (or a teacher looking at another class with permission) may pass
         // ?classroom=; a form master without that parameter always gets their own.
-        $requested = $request->query->getInt('classroom');
+        // Empty means "not given" — `getInt()` would answer that with a 400.
+        $requested = (int) $request->query->get('classroom', 0);
         if ($requested > 0 && ($own === null || $this->isGranted('ROLE_ADMIN'))) {
             $classroom = $this->em->getRepository(Classroom::class)->find($requested);
             if (!$classroom) {

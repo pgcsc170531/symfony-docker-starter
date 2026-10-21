@@ -260,13 +260,6 @@
                 {% endfor %}
             </div>
 
-            {# --- SAVE BUTTON (Situated below everything) --- #}
-            <div class="pt-4 border-t">
-                <button type="submit" class="w-full md:w-auto md:px-8 bg-indigo-600 text-white font-bold py-3 rounded hover:bg-indigo-700 transition-colors shadow-sm">
-                    💾 Save School Settings
-                </button>
-            </div>
-
             {# --- SECTION 5: APPLICATION MODE --- #}
             <h2 class="text-lg font-semibold text-gray-700 border-b pb-2 mb-4 mt-8">Application Mode — Online Applications</h2>
             <p class="text-sm text-gray-500 mb-4">
@@ -321,7 +314,45 @@
                 {{ form_errors(form.applicationInstructions) }}
             </div>
 
+            {# The charge on top of an online payment — one switch for every fee in
+               the system, because a parent should not be charged differently for a
+               form fee and a term's fees. The ₦500 ceiling is fixed in code. #}
+            <label class="mb-6 flex items-start gap-3 rounded-lg border border-gray-200 p-3 hover:bg-gray-50 cursor-pointer">
+                {{ form_widget(form.onlineProcessingFeeEnabled, {'attr': {'class': 'mt-0.5 h-4 w-4 rounded border-gray-300 text-accent-600 focus:ring-accent-500'}}) }}
+                <span>
+                    <span class="block text-sm font-medium text-gray-800">{{ form.onlineProcessingFeeEnabled.vars.label }}</span>
+                    {% if form.onlineProcessingFeeEnabled.vars.help %}
+                        <span class="block text-xs text-gray-500">{{ form.onlineProcessingFeeEnabled.vars.help }}</span>
+                    {% endif %}
+                </span>
+            </label>
+
+            {# --- SAVE BUTTON — last thing on the page, after every section --- #}
+            <div class="mt-8 border-t pt-5">
+                <button type="submit"
+                        class="min-h-[44px] w-full rounded-lg bg-accent-600 px-6 font-bold text-white shadow-sm transition-colors hover:bg-accent-700 md:w-auto md:px-8">
+                    💾 Save School Settings
+                </button>
+                <p class="mt-2 text-xs text-ink-500">
+                    Nothing on this page is stored until you press Save.
+                </p>
+            </div>
+
             {{ form_end(form) }}
+
+            {# Documents live outside this form: they are their own screen, and a
+               school should be able to edit the rules without touching a setting. #}
+            <div class="mt-6 rounded-lg border border-gray-200 bg-white p-4">
+                <p class="text-sm font-semibold text-gray-800">School documents</p>
+                <p class="mt-1 text-xs leading-relaxed text-gray-500">
+                    Rules and regulations, the fees policy, anything a parent should read. Written once,
+                    published on your website and attached to every admission letter.
+                </p>
+                <a href="{{ path('app_tenant_document_index') }}"
+                   class="mt-3 inline-flex min-h-[44px] items-center rounded-lg border border-gray-300 px-4 text-xs font-bold text-gray-700 hover:border-accent-400 hover:text-accent-700">
+                    Manage documents &rarr;
+                </a>
+            </div>
         </div>
 
         {# === RIGHT COLUMN: LIVE PREVIEW === #}

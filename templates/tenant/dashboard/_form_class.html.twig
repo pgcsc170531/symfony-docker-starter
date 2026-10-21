@@ -1,0 +1,99 @@
+{#
+    Form class panel — the teacher who owns a class for the term.
+
+    This is the paperwork checklist a form master is actually judged on at the end
+    of term: the register, behaviour, remarks and a clean set of results. Each row
+    links straight to the screen that finishes it.
+#}
+{% import 'tenant/dashboard/_kpi.html.twig' as kpi %}
+
+<section class="mb-8" aria-labelledby="form-class-heading">
+    <div class="mb-3 flex flex-wrap items-end justify-between gap-2">
+        <div class="min-w-0">
+            <h2 id="form-class-heading" class="text-sm font-semibold text-ink-900">Your class</h2>
+            <p class="text-sm text-ink-500">{{ formClass.classroom.name }}</p>
+        </div>
+        <span class="{{ formClass.released ? 'badge-paid' : 'badge-neutral' }} shrink-0">
+            {{ formClass.released ? 'Term released' : 'Term open' }}
+        </span>
+    </div>
+
+    <div class="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {{ kpi.kpi(learner.pluralCapital, formClass.pupilCount,
+            'On your class list', null, null, 'pupils') }}
+        {{ kpi.kpi('Registers taken', formClass.registersTaken ~ ' / ' ~ formClass.daysSoFar,
+            formClass.registersMissing > 0 ? formClass.registersMissing ~ ' day' ~ (formClass.registersMissing == 1 ? '' : 's') ~ ' missing' : 'Up to date',
+            path('app_tenant_my_class_attendance'), 'Attendance', 'clock') }}
+        {{ kpi.kpi('Remarks written', formClass.remarksWritten ~ ' / ' ~ formClass.pupilCount,
+            formClass.remarksOutstanding > 0 ? formClass.remarksOutstanding ~ ' still to write' : 'All written',
+            path('app_tenant_my_class_remarks'), 'Write remarks', 'receipt') }}
+        {{ kpi.kpi('Subjects to release', formClass.outstandingSubjects,
+            formClass.outstandingSubjects > 0 ? 'Still awaiting final approval' : 'All subjects approved',
+            null, null, 'check') }}
+    </div>
+
+    <div class="overflow-hidden rounded-lg border border-ink-200 bg-white shadow-card">
+        <ul class="divide-y divide-ink-100">
+            <li class="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-ink-900">Today’s attendance</p>
+                    <p class="text-xs text-ink-500">One register, once a day.</p>
+                </div>
+                <div class="flex shrink-0 items-center gap-2">
+                    <span class="{{ formClass.todayRegisterTaken ? 'badge-paid' : 'badge-pending' }}">
+                        {{ formClass.todayRegisterTaken ? 'Taken' : 'Not taken' }}
+                    </span>
+                    <a href="{{ path('app_tenant_my_class_attendance') }}"
+                       class="inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-600 hover:text-accent-700">
+                        {{ formClass.todayRegisterTaken ? 'Review' : 'Take register' }} &rarr;
+                    </a>
+                </div>
+            </li>
+            <li class="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-ink-900">Behaviour ratings</p>
+                    <p class="text-xs text-ink-500">Rate each pupil against the school’s traits.</p>
+                </div>
+                <a href="{{ path('app_tenant_my_class_behaviour') }}"
+                   class="inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-600 hover:text-accent-700">
+                    Open &rarr;
+                </a>
+            </li>
+            <li class="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-ink-900">End-of-term remarks</p>
+                    <p class="text-xs text-ink-500">
+                        {{ formClass.remarksOutstanding }} of {{ formClass.pupilCount }} pupils still need a remark.
+                    </p>
+                </div>
+                <a href="{{ path('app_tenant_my_class_remarks') }}"
+                   class="inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-600 hover:text-accent-700">
+                    {{ formClass.remarksOutstanding > 0 ? 'Write remarks' : 'Review' }} &rarr;
+                </a>
+            </li>
+            <li class="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-ink-900">Class results</p>
+                    <p class="text-xs text-ink-500">
+                        {{ formClass.outstandingSubjects }} subject{{ formClass.outstandingSubjects == 1 ? '' : 's' }}
+                        still waiting for final approval.
+                    </p>
+                </div>
+                <a href="{{ path('tenant_approval_hub') }}"
+                   class="inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-600 hover:text-accent-700">
+                    Approvals &rarr;
+                </a>
+            </li>
+            <li class="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-ink-900">Class overview</p>
+                    <p class="text-xs text-ink-500">Roster, contact details and term summary.</p>
+                </div>
+                <a href="{{ path('app_tenant_my_class') }}"
+                   class="inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-600 hover:text-accent-700">
+                    Open class &rarr;
+                </a>
+            </li>
+        </ul>
+    </div>
+</section>

@@ -1,0 +1,66 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}School documents{% endblock %}
+
+{% block body %}
+<div class="px-4 py-4 sm:py-6">
+
+    <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div class="min-w-0">
+            <a href="{{ path('app_tenant_school_settings') }}"
+               class="inline-flex min-h-[44px] items-center text-xs font-semibold text-accent-700 hover:underline">&larr; Settings</a>
+            <h1 class="mt-1 text-2xl font-black tracking-tight text-ink-900 sm:text-3xl">School documents</h1>
+            <p class="mt-1 text-sm leading-relaxed text-ink-600">
+                Rules and regulations, the fees policy, anything a parent should read. Written once here,
+                published on your website and <strong>attached to every admission letter</strong>.
+            </p>
+        </div>
+        <a href="{{ path('app_tenant_document_new') }}"
+           class="inline-flex min-h-[48px] w-full items-center justify-center rounded-lg bg-accent-600 px-5 text-sm font-semibold text-white hover:bg-accent-700 sm:w-auto">
+            + New document
+        </a>
+    </div>
+
+    {% if documents is empty %}
+        <div class="rounded-xl border border-dashed border-ink-300 bg-white p-6 text-center">
+            <p class="text-sm font-semibold text-ink-900">No documents yet</p>
+            <p class="mx-auto mt-1 max-w-md text-sm leading-relaxed text-ink-500">
+                An admission letter promises “the rules and regulations” — create that document here and
+                it will be printed after the letter automatically.
+            </p>
+        </div>
+    {% else %}
+        <ul class="space-y-3">
+            {% for document in documents %}
+                <li class="rounded-xl border border-ink-200 bg-white p-4 shadow-card">
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="min-w-0">
+                            <p class="break-words font-semibold text-ink-900">{{ document.title }}</p>
+                            <p class="mt-0.5 text-xs text-ink-500">
+                                <span class="badge-neutral">{{ document.category }}</span>
+                                {% if document.isPublished %}<span class="badge-paid">Published</span>{% else %}<span class="badge-failed">Hidden</span>{% endif %}
+                                {% if document.attachesToAdmissionLetter %}<span class="badge-pending">On admission letter</span>{% endif %}
+                                <span class="ml-1">/p/{{ document.slug }}</span>
+                            </p>
+                        </div>
+                        <div class="flex shrink-0 gap-2">
+                            <a href="{{ path('app_tenant_document_edit', {id: document.id}) }}"
+                               class="inline-flex min-h-[44px] items-center rounded-lg border border-ink-300 px-4 text-xs font-semibold text-ink-700 hover:border-accent-400 hover:text-accent-700">
+                                Edit
+                            </a>
+                            <form method="post" action="{{ path('app_tenant_document_delete', {id: document.id}) }}"
+                                  onsubmit="return confirm('Delete this document?');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete_document_' ~ document.id) }}">
+                                <button type="submit"
+                                        class="inline-flex min-h-[44px] items-center rounded-lg border border-failed/40 px-4 text-xs font-semibold text-failed hover:bg-failed/10">
+                                    Delete
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</div>
+{% endblock %}

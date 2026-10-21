@@ -88,8 +88,23 @@ security:
         ROLE_STORE:         ROLE_USER
         ROLE_BURSAR:        ROLE_USER
         ROLE_PARENT:        ROLE_USER
+
+        # The admissions desk. A plain staff seat: it opens /admission and the
+        # application queue, and is granted nothing else. It does NOT inherit
+        # ROLE_ADMIN, and ROLE_ADMIN does not need it (an administrator is
+        # already allowed in).
+        ROLE_ADMISSION_OFFICER: ROLE_USER
+
+        # A head of department is a teacher first: without this, an account
+        # given ROLE_HOD could not open /my-class or enter results at all.
+        ROLE_HOD:           ROLE_TEACHER
         
         ROLE_ADMIN:         [ROLE_BURSAR, ROLE_STORE, ROLE_TEACHER]
+
+        # The school's own overseer — created by its administrator, confined to
+        # that school. Inherits every school permission; the dashboard adds the
+        # whole-school view on top (see App\Service\Dashboard).
+        ROLE_TENANT_SUPER_ADMIN: [ROLE_ADMIN]
         
         # Agent has their own hierarchy
         ROLE_AGENT:         ROLE_USER 

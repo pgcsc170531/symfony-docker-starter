@@ -201,6 +201,8 @@
 
                                             <form action="{{ path('app_tenant_payment_confirm', {id: payment.id}) }}" method="post" 
                                                   onsubmit="return confirm('Is this EXACT amount confirmed in the bank account?');">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('payment_confirm_' ~ payment.id) }}">
+                                                <input type="hidden" name="return_to" value="terminal">
                                                 
                                                 <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Received Amount (₦)</label>
                                                 

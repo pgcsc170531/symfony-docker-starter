@@ -63,6 +63,9 @@ class PaymentGatewayController extends AbstractController
 
                 if ($result->isPaid()) {
                     $this->settlement->settle($intent, json_encode($result->raw) ?: '');
+                    if (!$this->em->isOpen()) {
+                        return $this->redirectToRoute('app_parent_payment_status', ['reference' => $intent->getReference()]);
+                    }
                 } elseif ($result->status === PaymentIntent::STATUS_FAILED) {
                     $intent->setStatus(PaymentIntent::STATUS_FAILED);
                     $intent->setRawPayload(json_encode($result->raw) ?: null);
@@ -141,6 +144,9 @@ class PaymentGatewayController extends AbstractController
 
                 if ($result->isPaid()) {
                     $this->settlement->settle($intent, $rawBody);
+                    if (!$this->em->isOpen()) {
+                        return new JsonResponse(['status' => 'ok']);
+                    }
                 } else {
                     $this->logger->warning(
                         'Webhook said success but verification did not confirm {reference}',

@@ -46,3 +46,6 @@ __pycache__/
 
 # Editor / local machine state
 /.vscode/
+
+# Working demo passwords — local only, never pushed
+docs/presentation/CREDENTIALS.md

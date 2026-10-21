@@ -70,6 +70,9 @@
                     {% for s in statuses %}
                         <option value="{{ s }}" {{ filters.status == s ? 'selected' }}>{{ s|capitalize }}</option>
                     {% endfor %}
+                    {% for value, label in billStatuses|default({}) %}
+                        <option value="{{ value }}" {{ filters.status == value ? 'selected' }}>{{ label }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div>
@@ -150,9 +153,22 @@
                             <td class="px-4 py-3">
                                 <span class="block font-mono text-xs text-ink-700">{{ payment.invoice.invoiceNumber }}</span>
                                 <span class="block text-[11px] uppercase tracking-wide text-ink-400">{{ payment.invoice.type }}</span>
+                                {# A part payment is only actionable if the row says how much is left. #}
+                                {% if payment.invoice.balanceDue > 0.005 %}
+                                    <span class="mt-1 block whitespace-nowrap text-[11px] font-semibold text-ink-500">
+                                        ₦{{ payment.invoice.balanceDue|number_format(2) }} owing
+                                    </span>
+                                {% endif %}
                             </td>
                             <td class="px-4 py-3 text-ink-700">{{ payment.method|replace({'_': ' '}) }}</td>
-                            <td class="px-4 py-3 font-mono text-xs text-ink-500">{{ payment.referenceCode ?: '—' }}</td>
+                            <td class="px-4 py-3 font-mono text-xs text-ink-500">
+                                {{ payment.referenceCode ?: '—' }}
+                                {# A draw-down from an advance says so here, so the
+                                   register stands on its own during a physical audit. #}
+                                {% if payment.note %}
+                                    <span class="mt-1 block max-w-[18rem] break-words font-sans text-[11px] leading-snug text-ink-400">{{ payment.note }}</span>
+                                {% endif %}
+                            </td>
                             <td class="money px-4 py-3 text-right font-semibold text-ink-900">₦{{ payment.amount|number_format(2) }}</td>
                             <td class="px-4 py-3">
                                 {% if payment.status == 'CONFIRMED' %}<span class="badge-paid">Paid</span>
@@ -188,6 +204,16 @@
                         {% else %}<span class="badge-failed">{{ payment.status|capitalize }}</span>{% endif %}
                         <span class="text-xs text-ink-500">{{ payment.invoice.type }}</span>
                     </div>
+                    {% if payment.invoice.balanceDue > 0.005 %}
+                        <p class="mt-1 text-[11px] font-semibold text-ink-600">
+                            ₦{{ payment.invoice.balanceDue|number_format(2) }} still owing on {{ payment.invoice.invoiceNumber }}
+                        </p>
+                    {% endif %}
+                    {% if payment.note %}
+                        <p class="mt-2 break-words rounded-lg bg-ink-50 px-2 py-1.5 text-[11px] leading-snug text-ink-500">
+                            {{ payment.note }}
+                        </p>
+                    {% endif %}
                 </div>
             {% endfor %}
         </div>

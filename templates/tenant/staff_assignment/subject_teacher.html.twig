@@ -3,6 +3,7 @@
 {% block title %}Subject Teachers{% endblock %}
 
 {% block body %}
+{% import 'tenant/_list_search.html.twig' as search %}
 <div class="px-4">
     <h1 class="text-2xl font-bold mb-6">🧑‍🏫 Subject Teacher Assignments</h1>
 
@@ -61,8 +62,10 @@
     </div>
 
     {# Existing assignments #}
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-        <table class="w-full text-sm">
+    {{ search.form(q, 'Search teacher, subject, class or term') }}
+
+    <div class="overflow-x-auto rounded-lg bg-white shadow">
+        <table class="w-full min-w-[720px] text-sm">
             <thead class="bg-gray-100 text-left text-gray-500">
                 <tr>
                     <th class="p-3">Staff</th>
@@ -88,7 +91,14 @@
                     </tr>
                 {% else %}
                     <tr class="border-t">
-                        <td class="p-3 text-gray-500" colspan="5">No subject teachers assigned yet.</td>
+                        <td class="p-3 text-gray-500" colspan="5">
+                            {% if q %}
+                                No assignment matches “{{ q }}”.
+                                <a href="{{ path('app_tenant_subject_teacher') }}" class="font-semibold text-blue-600">Clear the search</a>.
+                            {% else %}
+                                No subject teachers assigned yet.
+                            {% endif %}
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>

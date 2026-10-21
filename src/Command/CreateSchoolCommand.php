@@ -38,14 +38,17 @@ class CreateSchoolCommand extends Command
             ->addArgument('db_user', InputArgument::OPTIONAL, 'DB User', 'root')
             ->addArgument('db_pass', InputArgument::OPTIONAL, 'DB Password', 'root')
             ->addArgument('db_host', InputArgument::OPTIONAL, 'DB Host', 'database')
-            ->addOption('principal-name', null, InputOption::VALUE_REQUIRED, 'Principal full name (also creates the admin login)')
-            ->addOption('principal-email', null, InputOption::VALUE_REQUIRED, 'Principal email (also creates the admin login)')
-            ->addOption('principal-password', null, InputOption::VALUE_REQUIRED, 'Principal password', TenantProvisioner::DEFAULT_PRINCIPAL_PASSWORD)
+            ->addOption('principal-name', null, InputOption::VALUE_REQUIRED, 'Owner full name (creates the school\'s Super Admin login)')
+            ->addOption('principal-email', null, InputOption::VALUE_REQUIRED, 'Owner email (creates the school\'s Super Admin login)')
+            ->addOption('principal-password', null, InputOption::VALUE_REQUIRED, 'Owner password', TenantProvisioner::DEFAULT_PRINCIPAL_PASSWORD)
             ->addOption('landlord-only', null, InputOption::VALUE_NONE, 'Register the record only, without building the tenant database')
             ->setHelp(<<<'HELP'
 Registers the school in the landlord database and then builds everything it needs
 to operate: the tenant database, every table, the active session and first term,
-the A1-F9 grading scale and (optionally) the principal's login.
+the A1-F9 grading scale and (optionally) the owner's login.
+
+The account given here is the school's permanent Super Admin. It can create
+ordinary administrators (principals) from the Staff screen once it signs in.
 
   <info>php bin/console app:landlord:create-school "Royal Academy" royal \
       --principal-name "Musa Ibrahim" --principal-email head@royal.ng</info>

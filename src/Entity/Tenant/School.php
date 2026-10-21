@@ -14,7 +14,11 @@ class School
      * both a primary and a secondary section — it uses the secondary calendar
      * and the word "student", because only a pure primary school says "pupil".
      */
+    public const TYPE_NURSERY = 'nursery';
     public const TYPE_PRIMARY = 'primary';
+    public const TYPE_JUNIOR_SECONDARY = 'junior_secondary';
+    public const TYPE_SENIOR_SECONDARY = 'senior_secondary';
+    /** Legacy umbrella type: a school that runs both halves of secondary. */
     public const TYPE_SECONDARY = 'secondary';
     public const TYPE_COMBINED = 'combined';
     public const TYPE_TERTIARY = 'tertiary';
@@ -215,6 +219,19 @@ class School
     private ?string $paymentMethod = self::PAYMENT_BOTH;
 
     /**
+     * Does the parent pay the online payment charge on top of the fee?
+     *
+     * ON (default): the parent covers it — 1% capped at ₦300, plus 7.5% VAT on
+     * that, plus a ₦200 handling margin, and **never more than ₦500** — so the
+     * school receives its fee in full. OFF: the parent pays exactly the fee and
+     * the school's settlement is short by whatever the gateway takes.
+     *
+     * The number lives in ProcessingFeeCalculator; this flag is only the switch.
+     */
+    #[ORM\Column(name: 'online_processing_fee_enabled', options: ['default' => true])]
+    private ?bool $onlineProcessingFeeEnabled = true;
+
+    /**
      * How this school writes admission numbers, e.g. "ADM/{YEAR}/{SEQ}" or
      * "SMC/26/{SEQ:3}". Only the final integer increments; see
      * AdmissionNumberGenerator.
@@ -303,6 +320,10 @@ class School
         return in_array($this->paymentMethod, [self::PAYMENT_OFFLINE, self::PAYMENT_BOTH], true);
     }
 
+    /** Read by PaymentChargePolicy — the parent pays the capped online charge. */
+    public function isOnlineProcessingFeeEnabled(): bool { return (bool) $this->onlineProcessingFeeEnabled; }
+    public function setOnlineProcessingFeeEnabled(bool $enabled): static { $this->onlineProcessingFeeEnabled = $enabled; return $this; }
+
     public function isSmsOnApplication(): bool { return (bool) $this->smsOnApplication; }
     public function setSmsOnApplication(bool $smsOnApplication): static { $this->smsOnApplication = $smsOnApplication; return $this; }
 
@@ -379,6 +400,38 @@ class School
     public function setInstitutionType(string $institutionType): static { 
         $this->institutionType = $institutionType; 
         return $this; 
+    }
+
+    /**
+     * The line under the school name on a report card — "Secondary Section".
+     *
+     * A school's report sheet names the section the pupil sits in, not just the
+     * school. It is derived from the school type the owner already set, so no
+     * extra configuration is needed; an unknown type returns null and the line is
+     * simply omitted rather than printing something invented.
+     */
+    public function getSectionLabel(): ?string
+    {
+        return match ($this->institutionType) {
+            self::TYPE_NURSERY => 'Nursery Section',
+            self::TYPE_PRIMARY => 'Primary Section',
+            self::TYPE_JUNIOR_SECONDARY => 'Junior Secondary Section',
+            self::TYPE_SENIOR_SECONDARY => 'Senior Secondary Section',
+            self::TYPE_SECONDARY => 'Secondary Section',
+            self::TYPE_COMBINED => 'Primary & Secondary Section',
+            self::TYPE_TERTIARY => 'College Section',
+            default => null,
+        };
+    }
+
+    /**
+     * Young children are "pupils"; secondary and tertiary learners are "students".
+     * Nursery and primary share the wording, which is why this is one check and not
+     * a list repeated at every call site.
+     */
+    public function usesPupilWording(): bool
+    {
+        return \in_array($this->institutionType, [self::TYPE_NURSERY, self::TYPE_PRIMARY], true);
     }
 
     public function getAddress(): ?string { return $this->address; }

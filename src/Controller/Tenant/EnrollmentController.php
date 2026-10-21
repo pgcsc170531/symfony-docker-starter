@@ -10,6 +10,7 @@ use App\Entity\Tenant\InvoiceItem;
 use App\Entity\Tenant\FeeStructure;
 use App\Entity\Tenant\Term;
 use App\Service\Finance\DiscountCalculator; // 👈 ENSURE THIS IS HERE
+use App\Service\Finance\AdvancePaymentService;
 use App\Service\Finance\InvoiceNumberGenerator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -26,6 +27,7 @@ class EnrollmentController extends AbstractController
     public function __construct(
         private DiscountCalculator $discountCalculator,
         private InvoiceNumberGenerator $invoiceNumbers,
+        private AdvancePaymentService $advances,
     ) {}
 
     #[Route('/promote', name: 'app_tenant_enrollment_promote', methods: ['GET', 'POST'])]
@@ -203,8 +205,12 @@ class EnrollmentController extends AbstractController
         }
 
         if ($total > 0) {
-            // 5. Calculate Discount using the Service
-            $discountValue = $this->discountCalculator->calculateDiscount($student, $total);
+            // A scholarship is a TUITION waiver: the base is the tuition lines
+            // only, never the total of the bill.
+            $discountValue = $this->discountCalculator->calculateDiscount(
+                $student,
+                $this->discountCalculator->tuitionBaseFromStructures($fees)
+            );
 
             // `total_amount` is NET of the discount (Invoice::getNetBillable()).
             $invoice->setDiscountApplied((string) $discountValue);
@@ -212,6 +218,7 @@ class EnrollmentController extends AbstractController
             $invoice->setTotalAmount((string) max(0.0, $total - $discountValue));
 
             $em->persist($invoice);
+            $this->advances->applyTo($invoice);
         }
     }
 }

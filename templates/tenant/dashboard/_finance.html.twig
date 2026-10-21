@@ -1,0 +1,139 @@
+{#
+    Finance panel — bursar, administrator, super admin.
+
+    Only included when the persona may see money (DashboardPersona::canSeeFinance).
+    A teacher's request never reaches this file, so the school's debtors are never
+    rendered into a page a teacher can open.
+#}
+{% import 'tenant/dashboard/_kpi.html.twig' as kpi %}
+
+<section class="mb-8" aria-labelledby="finance-heading">
+    <h2 id="finance-heading" class="mb-3 text-sm font-semibold text-ink-900">Finance</h2>
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {{ kpi.kpi('Awaiting verification', finance.pendingVerifications,
+            '₦' ~ finance.pendingVerificationTotal|number_format(0) ~ ' claimed',
+            path('app_tenant_payment_verify'),
+            finance.pendingVerifications > 0 ? 'Check the bank' : 'Nothing waiting', 'check') }}
+        {{ kpi.kpi('Fees outstanding', '₦' ~ finance.outstanding|number_format(0),
+            'Invoices still open', path('app_tenant_invoice_index'), 'Open invoices', 'alert') }}
+        {{ kpi.kpi('Collected today', '₦' ~ finance.collectedToday|number_format(0),
+            'Confirmed payments', null, null, 'cash') }}
+        {{ kpi.kpi('Collected this term', '₦' ~ finance.collectedThisTerm|number_format(0),
+            'Against invoices for the active term', null, null, 'receipt') }}
+        {{ kpi.kpi('Billed this school', '₦' ~ finance.billed|number_format(0),
+            '₦' ~ finance.paid|number_format(0) ~ ' paid so far', null, null, 'chart') }}
+    </div>
+
+    {# The Edus subscription wallet belongs to System, which the manual reserves
+       for the Proprietor. Only the school owner sees it here — a principal or a
+       bursar keeps the school's money, not the school's Edus licence. #}
+    {% if persona.isSuperAdmin %}
+        <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-ink-200 bg-white p-4 shadow-card">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-wider text-ink-500">Edus wallet</p>
+                <p class="money mt-1 text-lg font-semibold text-ink-900">
+                    ₦{{ landlordSchool.walletBalance|default(0)|number_format(0) }}
+                </p>
+            </div>
+            <a href="{{ path('tenant_wallet_index') }}"
+               class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-ink-200 px-4 text-sm font-semibold text-accent-600 hover:bg-accent-50 sm:w-auto">
+                Top up or view history &rarr;
+            </a>
+        </div>
+    {% endif %}
+</section>
+
+<div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+
+    {# ── Highest debts ──────────────────────────────────────────────── #}
+    <section class="flex h-full flex-col overflow-hidden rounded-lg border border-ink-200 bg-white shadow-card">
+        <div class="flex items-center justify-between gap-3 border-b border-ink-200 px-5 py-3">
+            <h2 class="text-sm font-semibold text-ink-900">Highest debts</h2>
+            <a href="{{ path('app_tenant_report_debtors') }}"
+               class="inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-600 hover:text-accent-700">View all &rarr;</a>
+        </div>
+        <div class="flex-1 overflow-x-auto">
+            <table class="w-full min-w-[420px] text-left text-sm">
+                <thead>
+                    <tr class="border-b border-ink-200">
+                        <th scope="col" class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-500">{{ learner.capital }}</th>
+                        <th scope="col" class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-500">Invoice</th>
+                        <th scope="col" class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-ink-500">Owing</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-ink-100">
+                    {% for invoice in finance.debtors %}
+                        <tr>
+                            <td class="px-5 py-3">
+                                <a href="{{ path('app_tenant_invoice_show', {id: invoice.id}) }}"
+                                   class="inline-flex min-h-[44px] flex-col justify-center font-semibold text-ink-900 hover:text-accent-600">
+                                    {{ invoice.student ? invoice.student.fullName : invoice.buyerName }}
+                                    <span class="text-xs font-normal text-ink-500">{{ invoice.student ? invoice.student.admissionNumber : '' }}</span>
+                                </a>
+                            </td>
+                            <td class="px-5 py-3 text-xs text-ink-500">
+                                <span class="badge-neutral">{{ invoice.invoiceNumber }}</span>
+                            </td>
+                            <td class="money px-5 py-3 text-right font-semibold text-ink-900">
+                                ₦{{ (invoice.totalAmount - invoice.paidAmount)|number_format(2) }}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="3" class="px-5 py-8 text-center text-sm text-ink-500">
+                                Every invoice is settled.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="border-t border-ink-200 px-5 py-3 text-xs text-ink-500">
+            {{ finance.debtorCount }} invoice{{ finance.debtorCount == 1 ? '' : 's' }} still open
+            ({{ finance.unpaidInvoices }} unpaid, {{ finance.partialInvoices }} part-paid).
+        </p>
+    </section>
+
+    {# ── Latest payments ────────────────────────────────────────────── #}
+    <section class="flex h-full flex-col overflow-hidden rounded-lg border border-ink-200 bg-white shadow-card">
+        <div class="flex items-center justify-between gap-3 border-b border-ink-200 px-5 py-3">
+            <h2 class="text-sm font-semibold text-ink-900">Latest payments</h2>
+            <a href="{{ path('app_tenant_payment_index') }}"
+               class="inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-600 hover:text-accent-700">Terminal &rarr;</a>
+        </div>
+        <div class="flex-1 overflow-x-auto">
+            <table class="w-full min-w-[420px] text-left text-sm">
+                <thead>
+                    <tr class="border-b border-ink-200">
+                        <th scope="col" class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-500">{{ learner.capital }}</th>
+                        <th scope="col" class="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-ink-500">Method</th>
+                        <th scope="col" class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-ink-500">Amount</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-ink-100">
+                    {% for payment in finance.recentPayments %}
+                        <tr>
+                            <td class="px-5 py-3 font-medium text-ink-900">
+                                {{ payment.invoice and payment.invoice.student ? payment.invoice.student.fullName : (payment.invoice ? payment.invoice.buyerName : 'Store sale') }}
+                                <span class="block text-xs font-normal text-ink-500">{{ payment.createdAt ? payment.createdAt|date('M j, H:i') : '' }}</span>
+                            </td>
+                            <td class="px-5 py-3 text-xs text-ink-500">
+                                <span class="badge-neutral">{{ payment.method }}</span>
+                            </td>
+                            <td class="money px-5 py-3 text-right font-semibold text-ink-900">
+                                ₦{{ payment.amount|number_format(2) }}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="3" class="px-5 py-8 text-center text-sm text-ink-500">
+                                No payments recorded yet.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>

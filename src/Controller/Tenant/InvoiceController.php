@@ -11,6 +11,7 @@ use App\Entity\Tenant\Student;
 use App\Entity\Tenant\Term;
 use App\Entity\Tenant\School; // <--- 1. IMPORT ADDED
 use App\Service\Finance\DiscountCalculator;
+use App\Service\Finance\AdvancePaymentService;
 use App\Service\Finance\InvoiceNumberGenerator;
 use App\Service\SchoolMailer;
 use Symfony\Component\HttpFoundation\Request; // 🟢 ADD THIS LINE!
@@ -26,6 +27,7 @@ class InvoiceController extends AbstractController
     public function __construct(
         private readonly DiscountCalculator $discountCalculator,
         private readonly InvoiceNumberGenerator $invoiceNumbers,
+        private readonly AdvancePaymentService $advances,
     ) {
     }
 
@@ -206,8 +208,9 @@ class InvoiceController extends AbstractController
         }
 
         // 2. CHECK FOR DISCOUNTS
-        // One rule, one service: the same calculator the admission engine uses.
-        $discountAmount = $this->discountCalculator->calculateDiscount($student, (float) $totalAmount);
+        // One rule, one service. The base is the TUITION lines only — a waiver
+        // never reaches uniforms, ID cards or levies.
+        $discountAmount = $this->discountCalculator->discountFor($student, $invoice);
         $invoice->setDiscountApplied((string) $discountAmount);
         $invoice->setDiscountLabel($this->discountCalculator->describe($student));
 
@@ -217,6 +220,11 @@ class InvoiceController extends AbstractController
         
         // F. Save Everything
         $em->persist($invoice);
+
+        // Paid-ahead families: settle the new bill from their credit, with a
+        // real ADVANCE payment row carrying the audit remark.
+        $this->advances->applyTo($invoice);
+
         $em->flush();
 
         // Tell the parent what is owed. Skipped silently when the school has

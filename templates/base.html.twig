@@ -348,9 +348,13 @@
 
             <span class="hidden shrink-0 items-center rounded-full border border-ink-200 bg-ink-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-ink-600 sm:inline-flex">
                 {{- is_granted('ROLE_PARENT') ? 'Parent'
+                    : (is_granted('ROLE_TENANT_SUPER_ADMIN') ? 'Super Admin'
                     : (is_granted('ROLE_ADMIN') ? 'Admin'
+                    : (is_granted('ROLE_ADMISSION_OFFICER') ? 'Admissions'
                     : (is_granted('ROLE_BURSAR') ? 'Bursar'
-                    : (is_granted('ROLE_TEACHER') ? 'Teacher' : 'Staff'))) -}}
+                    : (is_granted('ROLE_STORE') ? 'Store'
+                    : (is_granted('ROLE_HOD') ? 'HOD'
+                    : (is_granted('ROLE_TEACHER') ? 'Teacher' : 'Staff'))))))) -}}
             </span>
 
             {# Contextual help. The manual lives on the platform domain, not this
@@ -542,12 +546,18 @@
                     {{ nav.item(path('app_tenant_dashboard'), 'home', 'Dashboard',
                                 (route == 'app_tenant_dashboard')) }}
 
-                    {% if is_granted('ROLE_BURSAR') or is_granted('ROLE_ADMIN') %}
+                    {% if is_granted('ROLE_BURSAR') or is_granted('ROLE_ADMIN') or is_granted('ROLE_ADMISSION_OFFICER') %}
                         {{ nav.section('Admissions') }}
-                        {{ nav.item(path('app_tenant_application_index'), 'document-text', 'Applications',
-                                    ('app_tenant_application_' in route)) }}
-                        {{ nav.item(path('app_tenant_admission_index'), 'user-plus', 'New Admission',
-                                    ('admission' in route)) }}
+                        {# Admitting a child — deciding, enrolling, choosing the arm —
+                           belongs to the administrator / principal, or the admissions
+                           officer. The bursar is shown the learner records and the
+                           bulk importer only. #}
+                        {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_ADMISSION_OFFICER') %}
+                            {{ nav.item(path('app_tenant_application_index'), 'document-text', 'Applications',
+                                        ('app_tenant_application_' in route)) }}
+                            {{ nav.item(path('app_tenant_admission_index'), 'user-plus', 'New Admission',
+                                        ('admission' in route)) }}
+                        {% endif %}
                         {{ nav.item(path('app_tenant_quick_enroll'), 'upload', 'Bulk Import',
                                     ('quick_enroll' in route)) }}
                         {{ nav.item(path('app_tenant_student_index'), 'academic-cap', learner.pluralCapital,
@@ -613,7 +623,13 @@
                         {{ nav.item(path('app_tenant_invoice_index'), 'receipt-percent', 'Invoices',
                                     (route == 'app_tenant_invoice_index' or 'academic_invoice' in route)) }}
                         {{ nav.item(path('app_tenant_payment_index'), 'clock', 'Payment Terminal',
-                                    ('payment' in route)) }}
+                                    (route == 'app_tenant_payment_index' or 'payment_terminal' in route)) }}
+                        {{ nav.item(path('app_tenant_payment_verify'), 'check-circle', 'Verify Payments',
+                                    (route == 'app_tenant_payment_verify')) }}
+                        {# Parents who pay a term or three sessions ahead. The credit
+                           is drawn against every invoice raised afterwards. #}
+                        {{ nav.item(path('app_tenant_advance_index'), 'banknotes', 'Advance Payments',
+                                    ('advance' in route)) }}
                         {# Was the one row in the menu with a two-line label and a help
                            caption under it — it looked like a section heading that had
                            accidentally become a link. It is a row like every other row. #}
@@ -626,10 +642,6 @@
                            say the same thing as this row. #}
                         {{ nav.item(path('app_tenant_report_profit_loss'), 'trending-up', 'Income & Expenditure',
                                     ('report' in route)) }}
-                        {# The school's own Edus bill: plan, roll, invoices, renewal. #}
-                        {{ nav.item(path('tenant_subscription_index'), 'receipt-percent', 'Subscription',
-                                    ('subscription' in route)) }}
-
                         {{ nav.section('Reports') }}
                         {{ nav.item(path('app_tenant_report_fees'), 'chart-pie', 'Fee Reports',
                                     (route == 'app_tenant_report_fees')) }}
@@ -665,8 +677,14 @@
                                     (route == 'app_tenant_invoice_store' or 'store_invoice' in route)) }}
                     {% endif %}
 
-                    {% if is_granted('ROLE_ADMIN') %}
+                    {# SYSTEM is the owner's section, not the principal's — see
+                       edus-official-user-manual.md §8: "restricted to the Proprietor
+                       or top-level Administrator". The school's licence, its SMS
+                       wallet and its core identity are not daily operations. #}
+                    {% if is_granted('ROLE_TENANT_SUPER_ADMIN') %}
                         {{ nav.section('System') }}
+                        {{ nav.item(path('tenant_subscription_index'), 'receipt-percent', 'My Subscription',
+                                    ('subscription' in route)) }}
                         {{ nav.item(path('tenant_wallet_index'), 'credit-card', 'My Wallet',
                                     ('wallet' in route)) }}
                         {{ nav.item(path('app_tenant_settings_general'), 'adjustments', 'Settings',
@@ -748,7 +766,7 @@
     #}
     <div class="flex-1 w-full">
     {% else %}
-    <main class="flex-1 {{ main_padding }} {% if app.user %}app-scroll md:ml-0{% else %}w-full max-w-7xl mx-auto{% endif %} overflow-y-auto overflow-x-hidden overscroll-contain">
+    <main class="flex-1 {{ main_padding }} {% if app.user %}app-scroll md:ml-0 overflow-y-auto overflow-x-hidden overscroll-contain{% else %}w-full max-w-7xl mx-auto{% endif %}">
     {% endif %}
         
         {# FLASH MESSAGES #}
@@ -770,10 +788,14 @@
             <div class="mx-4 mt-4 rounded-lg border border-pending/30 bg-pending/5 p-4" role="status">
                 <p class="text-sm font-semibold text-ink-900">Your subscription has ended — this account is read-only.</p>
                 <p class="mt-1 text-sm text-ink-700">You can still view and export your data. Register a term to restore full access.</p>
-                <a href="{{ path('tenant_subscription_index') }}"
-                   class="mt-2 inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 underline">
-                    Go to Subscription
-                </a>
+                {% if is_granted('ROLE_TENANT_SUPER_ADMIN') %}
+                    <a href="{{ path('tenant_subscription_index') }}"
+                       class="mt-2 inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 underline">
+                        Go to Subscription
+                    </a>
+                {% else %}
+                    <p class="mt-1 text-xs text-ink-500">Ask the school owner to register the term.</p>
+                {% endif %}
             </div>
         {% endif %}
 

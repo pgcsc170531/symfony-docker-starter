@@ -47,6 +47,7 @@ Existing documents — copy the nearest one:
 | Session transcript | `Results\TranscriptPdfRenderer` | `templates/tenant/reports/pdf/transcript.pdf.twig` |
 | Whole-school performance | `Results\SchoolPerformancePdfRenderer` | `templates/tenant/reports/pdf/performance.pdf.twig` |
 | Value & Billing statement | `Subscription\SubscriptionStatementPdfRenderer` | `templates/tenant/subscription/statement.pdf.twig` |
+| Provisional admission letter | `Admission\AdmissionLetterPdfRenderer` | `templates/tenant/admission/letter.pdf.twig` |
 | Subscription invoice | `Subscription\SubscriptionInvoicePdfRenderer` | `templates/tenant/subscription/invoice.pdf.twig` |
 | Subscription receipt | `Subscription\SubscriptionReceiptPdfRenderer` | `templates/tenant/subscription/receipt.pdf.twig` |
 

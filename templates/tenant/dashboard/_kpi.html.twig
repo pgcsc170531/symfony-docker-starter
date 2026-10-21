@@ -1,0 +1,75 @@
+{#
+    Shared KPI card for every role dashboard.
+
+    One card, one shape, whichever seat is looking at it: a label, a figure, and
+    exactly one place to go next. The figure is `tabular` so a column of money
+    does not wobble, and the card is a flex column so the link sits on the same
+    baseline across a row of cards of unequal text length.
+
+    Phone first: the grid that holds these starts at one column, and every link
+    inside is at least 44px tall because it is a thumb that will press it.
+#}
+
+{% macro icon(name) %}
+    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+        {%- if name == 'pupils' -%}
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.42A12 12 0 0112 21a12 12 0 01-6.16-10.42L12 14z"/>
+        {%- elseif name == 'staff' -%}
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4z"/>
+        {%- elseif name == 'classes' -%}
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.25v13m0-13C10.83 5.48 9.25 5 7.5 5S4.17 5.48 3 6.25v13C4.17 18.48 5.75 18 7.5 18s3.33.48 4.5 1.25m0-13C13.17 5.48 14.75 5 16.5 5s3.33.48 4.5 1.25v13C19.83 18.48 18.25 18 16.5 18s-3.33.48-4.5 1.25"/>
+        {%- elseif name == 'applications' -%}
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.59a1 1 0 01.7.29l5.42 5.42a1 1 0 01.29.7V19a2 2 0 01-2 2z"/>
+        {%- elseif name == 'cash' -%}
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z"/>
+            <path stroke-linecap="round" d="M16 13h.01"/>
+        {%- elseif name == 'receipt' -%}
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/>
+        {%- elseif name == 'chart' -%}
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        {%- elseif name == 'box' -%}
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/>
+        {%- elseif name == 'check' -%}
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        {%- elseif name == 'clock' -%}
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        {%- elseif name == 'alert' -%}
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+        {%- else -%}
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        {%- endif -%}
+    </svg>
+{% endmacro %}
+
+{% macro kpi(label, value, hint, href, linkLabel, iconName) %}
+    <div class="flex flex-col rounded-lg border border-ink-200 bg-white p-5 shadow-card">
+        <div class="flex items-start justify-between gap-3">
+            <p class="text-xs font-semibold uppercase tracking-wider text-ink-500">{{ label }}</p>
+            <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-ink-100 text-ink-600">
+                {{ _self.icon(iconName) }}
+            </span>
+        </div>
+        <p class="tabular mt-3 text-2xl font-semibold tracking-tight text-ink-900">{{ value }}</p>
+        {% if href %}
+            <a href="{{ href }}"
+               class="mt-auto inline-flex min-h-[44px] items-center pt-3 text-sm font-semibold text-accent-600 hover:text-accent-700">
+                {{ linkLabel }} &rarr;
+            </a>
+        {% elseif hint %}
+            <p class="mt-auto pt-3 text-sm text-ink-500">{{ hint }}</p>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+{% macro sectionTitle(title, href, linkLabel) %}
+    <div class="mb-3 flex items-end justify-between gap-3">
+        <h2 class="text-sm font-semibold text-ink-900">{{ title }}</h2>
+        {% if href %}
+            <a href="{{ href }}"
+               class="inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-600 hover:text-accent-700">
+                {{ linkLabel }} &rarr;
+            </a>
+        {% endif %}
+    </div>
+{% endmacro %}

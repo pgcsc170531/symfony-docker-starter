@@ -124,7 +124,19 @@ class Application
     #[ORM\Column(name: 'previous_class', length: 50, nullable: true)]
     private ?string $previousClass = null;
 
-    /** The class the parent is applying for — a request, not a guarantee. */
+    /**
+     * The class the parent is applying for — a request, not a guarantee.
+     *
+     * Parents choose a **level** (`JSS 1`), never an arm (`JSS 1A`). The arm is
+     * the principal's decision at admission, so `requestedYearGroup` is what the
+     * wizard collects. `requestedClassroom` is kept for applications created
+     * before that rule existed, and as the principal's chosen arm once enrolled.
+     */
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(name: 'requested_year_group_id', nullable: true, onDelete: 'SET NULL')]
+    private ?YearGroup $requestedYearGroup = null;
+
+    /** @deprecated legacy parent requests; the wizard now collects requestedYearGroup. */
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(name: 'requested_classroom_id', nullable: true, onDelete: 'SET NULL')]
     private ?Classroom $requestedClassroom = null;
@@ -317,8 +329,26 @@ class Application
     public function getPreviousClass(): ?string { return $this->previousClass; }
     public function setPreviousClass(?string $previousClass): static { $this->previousClass = $previousClass; return $this; }
 
+    public function getRequestedYearGroup(): ?YearGroup { return $this->requestedYearGroup; }
+    public function setRequestedYearGroup(?YearGroup $requestedYearGroup): static { $this->requestedYearGroup = $requestedYearGroup; return $this; }
+
     public function getRequestedClassroom(): ?Classroom { return $this->requestedClassroom; }
     public function setRequestedClassroom(?Classroom $requestedClassroom): static { $this->requestedClassroom = $requestedClassroom; return $this; }
+
+    /**
+     * What to show as "class applied for": the level the parent chose, or the
+     * arm recorded on an older application.
+     */
+    public function getRequestedClassName(): ?string
+    {
+        return $this->requestedYearGroup?->getName() ?? $this->requestedClassroom?->getName();
+    }
+
+    /** True when the fee no longer blocks the wizard. */
+    public function hasPassedFeeGate(): bool
+    {
+        return in_array($this->feeStatus, [self::FEE_PAID, self::FEE_WAIVED], true);
+    }
 
     // ── Guardian snapshot ──────────────────────────────────────────────
     public function getRelationshipToStudent(): ?string { return $this->relationshipToStudent; }

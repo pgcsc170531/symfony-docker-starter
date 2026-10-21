@@ -14,13 +14,14 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use App\Service\AdmissionService; // 🟢 shared admission engine (walk-in + online)
-use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\HttpFoundation\JsonResponse;use Symfony\Component\ExpressionLanguage\Expression;use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 #[Route('/admission')]
-#[IsGranted('ROLE_BURSAR')]
+// ADMISSION IS NOT A FINANCE DECISION — the principal/administrator or the
+// admissions officer (ROLE_ADMISSION_OFFICER), never the bursar.
+#[IsGranted(new Expression("is_granted('ROLE_ADMIN') or is_granted('ROLE_ADMISSION_OFFICER')"))]
 class AdmissionController extends AbstractController
 {
     #[Route('/', name: 'app_tenant_admission_index', methods: ['GET', 'POST'])]
@@ -131,18 +132,5 @@ class AdmissionController extends AbstractController
             $lgas[] = ['id' => $lga->getId(), 'name' => $lga->getName()];
         }
         return new JsonResponse($lgas);
-    }
-
-    #[Route('/student/{id}/print-letter', name: 'app_tenant_admission_print', methods: ['GET'])]
-    public function printLetter(Student $student): Response
-    {
-        /** @var \App\Entity\Tenant\User $user */
-        $user = $this->getUser();
-        $tenant = $user->getTenant();
-
-        return $this->render('tenant/admission/print_letter.html.twig', [
-            'student' => $student,
-            'tenant' => $tenant
-        ]);
     }
 }

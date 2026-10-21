@@ -26,6 +26,7 @@
             {% endif %}
             <div class="min-w-0">
                 <p class="truncate text-lg font-bold leading-tight">{{ school ? school.name : 'School' }}</p>
+                {% if school and school.sectionLabel %}<p class="truncate text-xs text-white/80">{{ school.sectionLabel }}</p>{% endif %}
                 {% if school and school.motto %}<p class="truncate text-xs text-white/80">{{ school.motto }}</p>{% endif %}
             </div>
             <p class="ml-auto hidden shrink-0 text-right text-[11px] uppercase tracking-wider text-white/80 sm:block">
@@ -68,7 +69,7 @@
         <div class="col-span-2 sm:col-span-3">
             <p class="text-sm font-semibold uppercase tracking-wide text-ink-500">Next term begins</p>
             <p class="font-bold text-ink-900">
-                {{ sheet.next_term and sheet.next_term.start ? sheet.next_term.start|date('j F Y') : 'To be announced' }}
+                {{ sheet.return_date ? sheet.return_date|date('j F Y') : 'To be announced' }}
             </p>
         </div>
     </div>
@@ -114,8 +115,7 @@
                             </div>
                         </div>
                         <p class="mt-1 text-sm text-ink-600">
-                            {% if s.position %}Position {{ s.position }} of {{ s.position_of }}{% else %}Not positioned{% endif %}
-                            {% if s.class_average is not null %} · average {{ s.class_average }}{% endif %}
+                            {% if s.class_average is not null %}Class average {{ s.class_average }}{% else %}No class average yet{% endif %}
                             {% if s.class_highest is not null %} · highest {{ s.class_highest }}{% endif %}
                         </p>
                     </li>
@@ -124,7 +124,11 @@
 
             {# Tablet and up #}
             <div class="hidden overflow-x-auto rounded-lg border border-ink-200 md:block">
-                <table class="w-full min-w-[880px] text-base">
+                {# A full grid, like the printed sheet: every cell boxed, text bold,
+                   so a mark can be followed along its row without losing the line. #}
+                <table class="w-full min-w-[880px] border-collapse text-base font-bold
+                              [&_th]:border [&_td]:border
+                              [&_th]:border-ink-300 [&_td]:border-ink-300">
                     <thead class="bg-ink-100 text-left text-xs uppercase tracking-wide text-ink-600">
                         <tr>
                             <th class="px-3 py-2.5 font-bold">Subject</th>
@@ -136,15 +140,14 @@
                             <th class="px-2 py-2.5 text-right font-bold">Total</th>
                             <th class="px-2 py-2.5 text-right font-bold">High</th>
                             <th class="px-2 py-2.5 text-right font-bold">Average</th>
-                            <th class="px-2 py-2.5 text-right font-bold">Position</th>
                             <th class="px-2 py-2.5 text-right font-bold">Grade</th>
                             <th class="px-3 py-2.5 font-bold">Remark</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-ink-100">
+                    <tbody>
                         {% for s in sheet.subjects %}
                             <tr>
-                                <td class="px-3 py-2.5 font-semibold text-ink-900">{{ s.name }}</td>
+                                <td class="px-3 py-2.5 text-ink-900">{{ s.name }}</td>
                                 {% for n in 1..maxCa %}
                                     <td class="px-2 py-2.5 text-right tabular text-ink-800">
                                         {{ n <= s.ca_count ? (s.components['ca' ~ n]|default('—')) : '' }}
@@ -154,14 +157,11 @@
                                 {% if hasDual %}
                                     <td class="px-2 py-2.5 text-right tabular text-ink-800">{{ s.components.practical|default('—') }}</td>
                                 {% endif %}
-                                <td class="px-2 py-2.5 text-right font-bold tabular text-ink-900">{{ s.total is null ? '—' : s.total }}</td>
-                                <td class="px-2 py-2.5 text-right tabular text-ink-700">{{ s.class_highest ?? '—' }}</td>
-                                <td class="px-2 py-2.5 text-right tabular text-ink-700">{{ s.class_average ?? '—' }}</td>
-                                <td class="px-2 py-2.5 text-right font-semibold tabular text-ink-800">
-                                    {{ s.position ? s.position ~ '/' ~ s.position_of : '—' }}
-                                </td>
-                                <td class="px-2 py-2.5 text-right text-base font-bold text-ink-900">{{ s.grade ?? '—' }}</td>
-                                <td class="px-3 py-2.5 text-ink-700">{{ s.remark ?? '' }}</td>
+                                <td class="px-2 py-2.5 text-right tabular text-ink-900">{{ s.total is null ? '—' : s.total }}</td>
+                                <td class="px-2 py-2.5 text-right tabular text-ink-800">{{ s.class_highest ?? '—' }}</td>
+                                <td class="px-2 py-2.5 text-right tabular text-ink-800">{{ s.class_average ?? '—' }}</td>
+                                <td class="px-2 py-2.5 text-right text-base text-ink-900">{{ s.grade ?? '—' }}</td>
+                                <td class="px-3 py-2.5 text-ink-800">{{ s.remark ?? '' }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>

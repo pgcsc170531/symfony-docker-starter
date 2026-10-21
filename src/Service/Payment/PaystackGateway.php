@@ -51,7 +51,8 @@ final class PaystackGateway implements PaymentGatewayInterface
     public function initialize(PaymentIntent $intent, School $school): GatewayResult
     {
         $invoice = $intent->getInvoice();
-        $guardian = $invoice?->getStudent()?->getGuardian();
+        $application = $intent->getApplication();
+        $guardian = $intent->getPayer();
 
         // Paystack wants an email; fall back to the school's own address so a
         // parent without one can still pay.
@@ -75,7 +76,9 @@ final class PaystackGateway implements PaymentGatewayInterface
                 UrlGeneratorInterface::ABSOLUTE_URL
             ),
             'metadata' => [
+                'purpose' => $intent->getPurpose(),
                 'invoice_number' => $invoice?->getInvoiceNumber(),
+                'application_reference' => $application?->getReference(),
                 'student' => $invoice?->getStudent()?->getFullName(),
                 'school' => $school->getName(),
                 'intent_reference' => $intent->getReference(),

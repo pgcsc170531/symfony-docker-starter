@@ -1,18 +1,79 @@
 {% extends 'base.html.twig' %}
-{% block title %}New Term{% endblock %}
+{% set editing = term is defined and term.id %}
+{% block title %}{{ editing ? 'Edit' : 'New' }} Term{% endblock %}
+
 {% block body %}
-<div class="container mx-auto mt-10 p-5">
-    <div class="max-w-md mx-auto bg-white p-8 rounded shadow">
-        <h1 class="text-2xl font-bold mb-6">Add Term to {{ session.name }}</h1>
-        {{ form_start(form) }}
-            <div class="mb-4">
-                {{ form_label(form.name, 'Name') }}
-                {{ form_widget(form.name, {'attr': {'class': 'border rounded w-full py-2 px-3'}}) }}
+<div class="px-4 py-4 sm:px-6 sm:py-6">
+
+    <a href="{{ path('app_tenant_academic_index') }}"
+       class="mb-4 inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 hover:underline">
+        &larr; Academic sessions
+    </a>
+
+    <div class="rounded-xl border border-ink-200 bg-white">
+        <div class="border-b border-ink-100 px-4 py-3">
+            <h1 class="text-lg font-black tracking-tight text-ink-900">
+                {{ editing ? 'Edit term' : 'Add term' }}
+            </h1>
+            <p class="mt-0.5 text-sm text-ink-500">
+                {{ session ? session.name : '' }}{% if editing and term.isActive %} · this is the active term{% endif %}
+            </p>
+        </div>
+
+        {{ form_start(form, {attr: {class: 'space-y-4 p-4'}}) }}
+
+            <div>
+                <label for="{{ form.session.vars.id }}" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Academic session</label>
+                {{ form_widget(form.session, {attr: {class: 'min-h-[44px] w-full rounded-lg border border-ink-300 bg-white px-3 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500'}}) }}
+                {{ form_errors(form.session) }}
             </div>
-            <div class="mb-4">
-                {{ form_widget(form.isActive) }} <span class="ml-2">Set as Active Term</span>
+
+            <div>
+                <label for="{{ form.name.vars.id }}" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Term name</label>
+                {{ form_widget(form.name, {attr: {class: 'min-h-[44px] w-full rounded-lg border border-ink-300 px-3 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500', placeholder: 'e.g. First Term'}}) }}
+                {{ form_errors(form.name) }}
             </div>
-            <button class="bg-blue-600 text-white font-bold py-2 px-4 rounded w-full">Save Term</button>
+
+            {# One column on a phone, two from `sm` — dates sit side by side on a
+               desktop and stack on the handset a bursar actually uses. #}
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                    <label for="{{ form.startDate.vars.id }}" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Term starts</label>
+                    {{ form_widget(form.startDate, {attr: {class: 'min-h-[44px] w-full rounded-lg border border-ink-300 px-3 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500'}}) }}
+                    {{ form_errors(form.startDate) }}
+                </div>
+                <div>
+                    <label for="{{ form.endDate.vars.id }}" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Term ends</label>
+                    {{ form_widget(form.endDate, {attr: {class: 'min-h-[44px] w-full rounded-lg border border-ink-300 px-3 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500'}}) }}
+                    {{ form_errors(form.endDate) }}
+                </div>
+            </div>
+
+            <div>
+                <label for="{{ form.resumptionDate.vars.id }}" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">
+                    Next term begins
+                </label>
+                {{ form_widget(form.resumptionDate, {attr: {class: 'min-h-[44px] w-full rounded-lg border border-ink-300 px-3 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500'}}) }}
+                <p class="mt-1 text-xs text-ink-500">
+                    Printed on every report card for this term. Leave it empty if the date is not decided yet —
+                    the card says so rather than guessing.
+                </p>
+                {{ form_errors(form.resumptionDate) }}
+            </div>
+
+            <div>
+                <label class="flex min-h-[44px] items-center gap-3 rounded-lg border border-ink-200 px-3 py-2">
+                    {{ form_widget(form.isActive, {attr: {class: 'h-5 w-5 rounded border-ink-300 text-accent-600 focus:ring-accent-500'}}) }}
+                    <span class="text-sm font-semibold text-ink-800">Set as the active term</span>
+                </label>
+                <p class="mt-1 text-xs text-ink-500">Fees, results and attendance default to the active term.</p>
+            </div>
+
+            <button type="submit"
+                    class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-accent-600 px-5 text-sm font-semibold text-white hover:bg-accent-700 sm:w-auto">
+                {{ editing ? 'Save changes' : 'Add term' }}
+            </button>
+
         {{ form_end(form) }}
     </div>
 </div>

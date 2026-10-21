@@ -3,6 +3,7 @@
 {% block title %}Class Subjects{% endblock %}
 
 {% block body %}
+{% import 'tenant/_list_search.html.twig' as search %}
 <div class="px-4">
     <h1 class="text-2xl font-bold mb-6">🗂️ Class Subjects</h1>
 
@@ -53,8 +54,10 @@
     </div>
 
     {# List #}
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-        <table class="w-full text-sm">
+    {{ search.form(q, 'Search subject, class, department or session') }}
+
+    <div class="overflow-x-auto rounded-lg bg-white shadow">
+        <table class="w-full min-w-[720px] text-sm">
             <thead class="bg-gray-100 text-left text-gray-500">
                 <tr>
                     <th class="p-3">Session</th>
@@ -87,7 +90,14 @@
                     </tr>
                 {% else %}
                     <tr class="border-t">
-                        <td class="p-3 text-gray-500" colspan="6">No class subjects registered yet.</td>
+                        <td class="p-3 text-gray-500" colspan="6">
+                            {% if q %}
+                                No class subject matches “{{ q }}”.
+                                <a href="{{ path('app_tenant_class_subject_index') }}" class="font-semibold text-blue-600">Clear the search</a>.
+                            {% else %}
+                                No class subjects registered yet.
+                            {% endif %}
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>

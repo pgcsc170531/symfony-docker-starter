@@ -103,7 +103,14 @@
                         {# Only show Verify if Pending AND Invoice is NOT Paid #}
                         {% elseif payment.status == 'PENDING' and payment.invoice.status != 'PAID' %}
                              {# Note: Using the POST form method is safer than a GET link for actions #}
-                             <form action="{{ path('app_tenant_payment_confirm', {id: payment.id}) }}" method="post" class="inline-block" onsubmit="return confirm('Verify this payment now?');">
+                             <form action="{{ path('app_tenant_payment_confirm', {id: payment.id}) }}" method="post" class="inline-flex flex-wrap items-center justify-end gap-1" onsubmit="return confirm('Verify this payment now?');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('payment_confirm_' ~ payment.id) }}">
+                                <input type="hidden" name="return_to" value="history">
+                                <label class="sr-only" for="hist-amount-{{ payment.id }}">Amount seen in the bank</label>
+                                <input id="hist-amount-{{ payment.id }}" name="actual_amount" type="number" step="0.01" min="0"
+                                       value="{{ payment.amount }}" required
+                                       class="w-24 rounded border border-gray-300 px-2 py-1 text-xs font-bold"
+                                       title="Amount you saw in the bank">
                                 <button type="submit" class="text-white bg-yellow-500 hover:bg-yellow-600 font-bold text-xs px-3 py-1 rounded transition-colors shadow-sm">
                                     Verify Now
                                 </button>

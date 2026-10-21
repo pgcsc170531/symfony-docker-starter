@@ -26,6 +26,13 @@
            class="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg bg-accent-600 px-5 text-sm font-bold text-white transition-colors hover:bg-accent-700 sm:w-auto">
             <span aria-hidden="true">⬇</span> Download statement (PDF)
         </a>
+
+        {# The offer letter, reprintable at any time — a parent should never have to
+           come to the office for a document the school already issued. #}
+        <a href="{{ path('app_parent_admission_letter', {id: student.id}) }}" target="_blank" rel="noopener"
+           class="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-ink-300 bg-white px-5 text-sm font-bold text-ink-700 transition-colors hover:border-accent-400 hover:text-accent-700 sm:w-auto">
+            <span aria-hidden="true">🖨️</span> Admission letter (PDF)
+        </a>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -35,6 +42,13 @@
             <h3 class="font-bold text-gray-700 border-b border-gray-200 pb-2 mb-4 flex items-center gap-2">
                 <span>📄</span> Invoices (Bills)
             </h3>
+
+            {% if onlinePaymentAvailable %}
+                {# Said before the button, not after: the channel is chosen on the
+                   provider's page and cannot be changed once it is open. #}
+                {% include 'tenant/parent/_channel_note.html.twig' %}
+                <div class="mb-4"></div>
+            {% endif %}
 
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                 {% if invoices|length > 0 %}
@@ -89,7 +103,7 @@
                                                     <input type="hidden" name="_token" value="{{ csrf_token('pay_start_' ~ invoice.id) }}">
                                                     <button type="submit"
                                                             class="inline-flex items-center justify-center min-h-[44px] px-4 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-xs rounded whitespace-nowrap">
-                                                        Pay online
+                                                        Pay ₦{{ (onlineTotals[invoice.id] ?? invoice.balanceDue)|number_format(2) }} online
                                                     </button>
                                                 </form>
                                             {% endif %}

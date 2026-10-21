@@ -25,6 +25,9 @@ class Payment
     public const METHOD_POS      = 'POS';
     public const METHOD_CHEQUE   = 'CHEQUE';
 
+    /** Settled from money the family paid ahead (see StudentAdvance). */
+    public const METHOD_ADVANCE  = 'ADVANCE';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -61,12 +64,31 @@ class Payment
     #[ORM\Column(name: 'proof_uploaded_at', nullable: true)]
     private ?\DateTimeImmutable $proofUploadedAt = null;
 
+    /**
+     * The auditor's line: why this payment exists, in plain words.
+     *
+     * A draw-down from an advance reads "Paid from advance ADV-2026-0003 —
+     * parent paid three sessions in advance on 12 Oct 2026 (cash)". Without it a
+     * settled invoice looks like a ghost, and a physical audit cannot reconcile it.
+     */
+    #[ORM\Column(name: 'note', type: Types::TEXT, nullable: true)]
+    private ?string $note = null;
+
     
 
     // RELATIONSHIP
+    //
+    // Nullable on purpose: an application fee is real money that has been
+    // received, but the applicant is not a pupil yet, so there is no invoice to
+    // attach it to. The `Application` holds that link (`feePayment`).
     #[ORM\ManyToOne(inversedBy: 'payments')]
-    #[ORM\JoinColumn(name: 'invoice_id', nullable: false)]
+    #[ORM\JoinColumn(name: 'invoice_id', nullable: true, onDelete: 'SET NULL')]
     private ?Invoice $invoice = null;
+
+    /** Set only when this payment was drawn from a prepaid advance. */
+    #[ORM\ManyToOne(targetEntity: StudentAdvance::class)]
+    #[ORM\JoinColumn(name: 'advance_id', nullable: true, onDelete: 'SET NULL')]
+    private ?StudentAdvance $advance = null;
 
     public function __construct()
     {
@@ -121,4 +143,10 @@ class Payment
 
     public function getInvoice(): ?Invoice { return $this->invoice; }
     public function setInvoice(?Invoice $invoice): static { $this->invoice = $invoice; return $this; }
+
+    public function getNote(): ?string { return $this->note; }
+    public function setNote(?string $note): static { $this->note = $note; return $this; }
+
+    public function getAdvance(): ?StudentAdvance { return $this->advance; }
+    public function setAdvance(?StudentAdvance $advance): static { $this->advance = $advance; return $this; }
 }

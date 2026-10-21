@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+{#
+    The document's one colour is the school's own — taken from Settings → General →
+    brand colour, and darkened only as far as it takes to keep white text readable
+    on it (BrandColor::onWhite, the same rule the public site follows). A school
+    that has never set a colour gets the neutral slate band.
+#}
+{% set brand = school.primaryColor ? school.primaryColor|brand_on_white : '#1F2937' %}
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ school.name ?? 'School' }} — Offer of Admission</title>
+{#
+    PRINT TEMPLATE. Modelled on the school's own Offer of Admission letter:
+
+        crest + school name + motto        ·        Date
+        addressee                                   Admission No
+                        OFFER OF ADMISSION  (centred, underlined)
+        "This is to inform you that … has offered you a provisional Admission into …
+         for the 2026/2027 Academic session."
+        "You are therefore required to proceed with the registration immediately …"
+        "Find attached the breakdown of school fees, rules and regulations."
+        "Accept our congratulations"
+        Yours faithfully, signature, name, title          · QR verification
+        ── contact banner ──
+
+    Plain CSS and tables only — Dompdf renders this file, and the identical file
+    is served for `?format=html`, so the screen proof cannot disagree with the paper
+    (.github/skills/pdf-documents).
+#}
+<style>
+    @page { size: A4 portrait; margin: 6mm 8mm 12mm 8mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "DejaVu Serif", serif; font-size: 10.4pt; color: #111827; line-height: 1.5; }
+
+    /* ── Letterhead ───────────────────────────────────────────────────── */
+    .lh { width: 100%; border-collapse: collapse; }
+    .lh td { vertical-align: middle; padding: 0; }
+    .lh-crest { width: 26mm; }
+    .lh-crest img { max-width: 24mm; max-height: 24mm; }
+    .lh-text { text-align: center; padding: 0 4mm; }
+    .lh-name {
+        margin: 0; font-family: "DejaVu Sans", sans-serif; font-size: 17pt; font-weight: bold;
+        letter-spacing: .09em; text-transform: uppercase; color: #111827; line-height: 1.15;
+    }
+    .lh-motto {
+        margin: 2pt 0 0; font-family: "DejaVu Sans", sans-serif; font-size: 7.6pt;
+        letter-spacing: .16em; text-transform: uppercase; color: #6B7280;
+    }
+    .lh-spacer { width: 26mm; }
+    .rule { border: 0; border-top: 1.6pt solid {{ brand }}; margin: 4pt 0 0; }
+    .rule-soft { border: 0; border-top: .5pt solid {{ brand }}; margin: 1.4pt 0 0; }
+
+    /* ── Date, addressee, admission number ────────────────────────────── */
+    .date { margin: 10pt 0 0; text-align: right; font-size: 10pt; }
+    .date-label { color: #4B5563; }
+
+    .to { margin: 12pt 0 0; }
+    .to-name { margin: 0; font-weight: bold; }
+    .to-line { margin: 0; color: #4B5563; font-size: 9.4pt; }
+
+    .adm { margin: 9pt 0 0; font-size: 10pt; }
+    .adm-label { font-weight: bold; letter-spacing: .04em; }
+    .adm-value { font-family: "DejaVu Sans Mono", monospace; font-weight: bold; }
+
+    /* ── Title ────────────────────────────────────────────────────────── */
+    .title {
+        margin: 14pt 0 12pt; text-align: center;
+        font-family: "DejaVu Sans", sans-serif; font-size: 12pt; font-weight: bold;
+        letter-spacing: .14em; text-transform: uppercase; text-decoration: underline;
+    }
+
+    p { margin: 0 0 8pt; text-align: justify; }
+    .fill { font-weight: bold; }
+
+    /* ── Signature + QR ───────────────────────────────────────────────── */
+    .sign { width: 100%; border-collapse: collapse; margin-top: 16pt; }
+    .sign td { vertical-align: bottom; padding: 0; }
+    .sign .who { width: 66%; }
+    .sign .qr-cell { width: 34%; text-align: right; }
+    .sig-img { max-height: 15mm; max-width: 48mm; margin-bottom: 1pt; }
+    .sig-line { width: 62mm; border-bottom: .8pt solid #111827; height: 15pt; }
+    .sig-name {
+        margin: 4pt 0 0; font-family: "DejaVu Sans", sans-serif; font-size: 10pt;
+        font-weight: bold; text-transform: uppercase; letter-spacing: .04em;
+    }
+    .sig-role { margin: 0; font-size: 9.4pt; color: #111827; }
+    .qr-box { text-align: center; display: inline-block; }
+    .qr-box img { width: 27mm; height: 27mm; }
+    .qr-caption { margin: 2pt 0 0; font-size: 6.4pt; line-height: 1.3; color: #6B7280; }
+    .qr-code { font-family: "DejaVu Sans Mono", monospace; font-weight: bold; color: #111827; }
+
+    /* ── Page footer ──────────────────────────────────────────────────────
+       `position: fixed` is the only way Dompdf puts something at the foot of a
+       page and repeats it on every page — a fixed-height table only works while
+       one page holds the content, and the rules appendix runs to two. The 12mm
+       bottom page margin keeps running text clear of the band. */
+    .page-footer { position: fixed; left: 0; right: 0; bottom: 0; }
+
+    body { padding-bottom: 2mm; }
+
+    .banner { width: 100%; border-collapse: collapse; background: {{ brand }}; }
+    .banner td { padding: 5pt 8pt; color: #F9FAFB; font-family: "DejaVu Sans", sans-serif; font-size: 7.2pt; line-height: 1.45; }
+    .banner .verify { text-align: right; color: #D1D5DB; }
+    .banner .verify .code { font-family: "DejaVu Sans Mono", monospace; font-weight: bold; color: #FFFFFF; }
+
+    /* ── Appendices ───────────────────────────────────────────────────────
+       Each appendix starts its own page: the letter is a letter, and a school
+       files the fee breakdown and the rules behind it. */
+    .appendix { page-break-before: always; padding-top: 2pt; }
+    .appendix-kicker {
+        margin: 0; font-family: "DejaVu Sans", sans-serif; font-size: 7.4pt; font-weight: bold;
+        text-transform: uppercase; letter-spacing: 1pt; color: #6B7280;
+    }
+    .appendix-title {
+        margin: 2pt 0 0; font-family: "DejaVu Sans", sans-serif; font-size: 13pt; font-weight: bold;
+        color: #111827; padding-bottom: 3pt; border-bottom: 1.4pt solid #111827;
+    }
+    .appendix-lede { margin: 5pt 0 8pt; font-size: 9.4pt; color: #4B5563; }
+    .appendix-body p { margin: 0 0 6pt; font-size: 9.8pt; text-align: justify; }
+    .appendix-note {
+        margin-top: 10pt; padding: 5pt 8pt; background: #F9FAFB; border-left: 2.4pt solid {{ brand }};
+        font-size: 8pt; color: #4B5563;
+    }
+
+    /* Fee table: three weights of rule, no outlines around the whole thing. */
+    table.fees { width: 100%; border-collapse: collapse; margin-bottom: 4pt; }
+    table.fees th {
+        background: #F3F4F6; border-top: .8pt solid #D1D5DB; border-bottom: .8pt solid #D1D5DB;
+        padding: 3pt 5pt; font-family: "DejaVu Sans", sans-serif; font-size: 7.6pt;
+        text-transform: uppercase; letter-spacing: .3pt; text-align: left;
+    }
+    table.fees td { border-bottom: .5pt solid #E5E7EB; padding: 2.6pt 5pt; font-size: 9.4pt; }
+    table.fees td.num, table.fees th.num { text-align: right; white-space: nowrap; }
+    table.fees tr.total td {
+        border-top: .8pt solid #D1D5DB; border-bottom: 0; font-weight: bold;
+        font-family: "DejaVu Sans", sans-serif; font-size: 9.6pt;
+    }
+</style>
+</head>
+<body>
+
+    {# ── LETTERHEAD ───────────────────────────────────────────────────── #}
+    <table class="lh">
+        <tr>
+            <td class="lh-crest">{% if logo %}<img src="{{ logo }}" alt="">{% endif %}</td>
+            <td class="lh-text">
+                <p class="lh-name">{{ school.name ?? 'School' }}</p>
+                {% if school.motto %}<p class="lh-motto">{{ school.motto }}</p>{% endif %}
+            </td>
+            <td class="lh-spacer"></td>
+        </tr>
+    </table>
+    <hr class="rule">
+    <hr class="rule-soft">
+
+    {# ── DATE ─────────────────────────────────────────────────────────── #}
+    <p class="date"><span class="date-label">Date:</span> {{ admitted_on|date('jS F, Y') }}</p>
+
+    {# ── ADDRESSEE ────────────────────────────────────────────────────── #}
+    <div class="to">
+        {% if guardian %}
+            <p class="to-name">{{ guardian.fullName }}</p>
+            {% if guardian.phoneNumber %}<p class="to-line">{{ guardian.phoneNumber }}</p>{% endif %}
+        {% else %}
+            <p class="to-name">The Parent / Guardian</p>
+            <p class="to-line">of {{ student.fullName }}</p>
+        {% endif %}
+    </div>
+
+    {# ── ADMISSION NUMBER ─────────────────────────────────────────────── #}
+    <p class="adm">
+        <span class="adm-label">ADMISSION No:</span>
+        <span class="adm-value">{{ reference }}</span>
+    </p>
+
+    {# ── TITLE ────────────────────────────────────────────────────────── #}
+    <p class="title">Offer of Admission</p>
+
+    {# ── BODY ─────────────────────────────────────────────────────────── #}
+    <p>
+        This is to inform you that <span class="fill">{{ school.name ?? 'the school' }}</span> has offered
+        <span class="fill">{{ student.fullName|upper }}</span> a <span class="fill">provisional Admission</span>
+        into <span class="fill">{{ placed_in ?: 'the class assigned by the school' }}</span>
+        for the <span class="fill">{{ session_name ?: 'current' }}</span> Academic session{{ term_name ? ', commencing ' ~ term_name : '' }}.
+    </p>
+
+    <p>
+        You are therefore required to proceed with the registration immediately at the school.
+    </p>
+
+    <p>
+        Find attached the breakdown of school fees, rules and regulations.
+    </p>
+
+    <p>Accept our congratulations.</p>
+
+    <p>Yours faithfully,</p>
+
+    {# ── SIGNATURE + VERIFICATION QR ──────────────────────────────────── #}
+    <table class="sign">
+        <tr>
+            <td class="who">
+                {% if signature %}
+                    <img class="sig-img" src="{{ signature }}" alt="">
+                    <div style="width:62mm; border-bottom:.8pt solid #111827; height:3pt;"></div>
+                {% else %}
+                    <div class="sig-line"></div>
+                {% endif %}
+                <p class="sig-name">{{ school.principalName ?: 'The Principal' }}</p>
+                <p class="sig-role">{{ school.principalTitle ?: 'Principal / Head Teacher' }}</p>
+            </td>
+            <td class="qr-cell">
+                {% if verification %}
+                    <div class="qr-box">
+                        <img src="{{ verification.qr }}" alt="Verification QR code">
+                        <p class="qr-caption">
+                            Scan to verify this letter<br>
+                            <span class="qr-code">{{ verification.code }}</span>
+                        </p>
+                    </div>
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+
+    {# ══════════════════════════════════════════════════════════════════
+       APPENDIX A — the school fees breakdown for the class admitted into.
+       "Find attached the breakdown of school fees" is a promise; this is it.
+    ═══════════════════════════════════════════════════════════════════ #}
+    {% if fees|length %}
+        <div class="appendix">
+            <p class="appendix-kicker">Appendix A</p>
+            <h2 class="appendix-title">Breakdown of school fees</h2>
+            <p class="appendix-lede">
+                {{ fee_class ?: 'Admitted class' }}{% if fee_term %} · {{ fee_term }}{% endif %}{% if fee_session %} · {{ fee_session }} academic session{% endif %}
+            </p>
+
+            <table class="fees">
+                <thead>
+                    <tr>
+                        <th style="width: 8%">S/N</th>
+                        <th>Fee item</th>
+                        <th class="num" style="width: 28%">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fee in fees %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ fee.name }}</td>
+                            <td class="num">₦{{ fee.amount|number_format(2) }}</td>
+                        </tr>
+                    {% endfor %}
+                    <tr class="total">
+                        <td colspan="2">Total payable</td>
+                        <td class="num">₦{{ fee_total|number_format(2) }}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p class="appendix-note">
+                Fees may be paid in full or in part at the school's bursary, or online where the school
+                offers it. A part payment does not clear the invoice; the balance remains payable for
+                the term, and a receipt is issued for every payment received.
+            </p>
+        </div>
+    {% endif %}
+
+    {# ══════════════════════════════════════════════════════════════════
+       APPENDIX B (and following) — the school's own documents: rules and
+       regulations first. Same words as the school's website, one source.
+    ═══════════════════════════════════════════════════════════════════ #}
+    {% for document in appendices %}
+        <div class="appendix">
+            <p class="appendix-kicker">Appendix {{ fees|length ? 'B' : 'A' }}{{ loop.index > 1 ? loop.index : '' }}</p>
+            <h2 class="appendix-title">{{ document.title }}</h2>
+            <div class="appendix-body">
+                {% for paragraph in document.paragraphs %}
+                    <p>{{ paragraph }}</p>
+                {% endfor %}
+            </div>
+            <p class="appendix-note">
+                This document is also published on the school's website. Ask the school office for a
+                printed copy if you need one.
+            </p>
+        </div>
+    {% endfor %}
+
+    {# ── PAGE FOOTER (repeats at the foot of every page) ──────────────── #}
+    <div class="page-footer">
+        <table class="banner">
+            <tr>
+                <td style="width: 62%">
+                    {{ school.address ?? '' }}{% if school.address %} ·{% endif %}
+                    {% if school.phoneNumber %} TEL: {{ school.phoneNumber }}{% endif %}{% if school.email %}, Email: {{ school.email }}{% endif %}
+                </td>
+                <td class="verify" style="width: 38%">
+                    {% if verification %}
+                        Verify: <span class="code">{{ verification.url }}</span>
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+    </div>
+
+</body>
+</html>

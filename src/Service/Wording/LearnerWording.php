@@ -61,7 +61,8 @@ final class LearnerWording
 
     public function isPrimary(): bool
     {
-        return $this->institutionType() === School::TYPE_PRIMARY;
+        // Nursery counts: a three-year-old is a pupil, not a student.
+        return \in_array($this->institutionType(), [School::TYPE_NURSERY, School::TYPE_PRIMARY], true);
     }
 
     /** `{{ learner }}` */

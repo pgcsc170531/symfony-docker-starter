@@ -24,7 +24,7 @@ final class ReportArchiveController extends AbstractController
     public function index(Request $request): Response
     {
         $terms = $this->em->getRepository(Term::class)->findBy([], ['startDate' => 'DESC', 'id' => 'DESC']);
-        $termId = $request->query->getInt('term');
+        $termId = (int) $request->query->get('term', 0);
         $term = $termId > 0
             ? $this->em->getRepository(Term::class)->find($termId)
             : ($this->em->getRepository(Term::class)->findOneBy(['isActive' => true]) ?: ($terms[0] ?? null));

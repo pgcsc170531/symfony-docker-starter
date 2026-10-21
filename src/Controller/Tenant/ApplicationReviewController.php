@@ -4,6 +4,7 @@ namespace App\Controller\Tenant;
 
 use App\Entity\Tenant\Application;
 use App\Entity\Tenant\ApplicationEvent;
+use App\Entity\Tenant\Classroom;
 use App\Entity\Tenant\Guardian;
 use App\Entity\Tenant\School;
 use App\Entity\Tenant\Student;
@@ -11,13 +12,15 @@ use App\Entity\Tenant\User;
 use App\Service\AdmissionService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * The bursar's application review queue — Phase 4 of
+ * The application review queue — Phase 4 of
  * `docs/parent-application/DESIGN.md` (§7.3).
  *
  * Until this existed, a parent could register, pay and submit an application
@@ -29,9 +32,16 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * The final action delegates to {@see AdmissionService::admit()} — the same
  * engine the walk-in form uses — so an online applicant and a walk-in student
  * get an identical admission number, Enrollment, invoice and SMS.
+ *
+ * ⚠️ **ROLE_ADMIN, not ROLE_BURSAR.** Deciding who is admitted and in which
+ * arm is the administrator's / principal's call (the principal signs the
+ * register, the bursar collects the money). A bursar who can approve an
+ * application can also enrol a child, raise their invoice and move a pupil into
+ * an arm — which is not a finance decision. The bursar keeps the *money* side:
+ * the payment verification queue, fee reports and the application-fees register.
  */
 #[Route('/admission/applications')]
-#[IsGranted('ROLE_BURSAR')]
+#[IsGranted(new Expression("is_granted('ROLE_ADMIN') or is_granted('ROLE_ADMISSION_OFFICER')"))]
 final class ApplicationReviewController extends AbstractController
 {
     /** Statuses that belong in the working queue (everything not final). */
@@ -59,6 +69,7 @@ final class ApplicationReviewController extends AbstractController
 
         $qb = $this->em->getRepository(Application::class)->createQueryBuilder('a')
             ->leftJoin('a.requestedClassroom', 'c')->addSelect('c')
+            ->leftJoin('a.requestedYearGroup', 'yg')->addSelect('yg')
             ->orderBy('a.createdAt', 'DESC')
             ->setMaxResults(200);
 
@@ -103,6 +114,15 @@ final class ApplicationReviewController extends AbstractController
 
         return $this->render('tenant/admission/applications/show.html.twig', [
             'application' => $application,
+            // The arm is the school's choice, so the enrol form offers every
+            // class and pre-selects the level the parent asked for.
+            'classrooms'  => $this->em->getRepository(Classroom::class)->findBy([], ['name' => 'ASC']),
+            'suggestedClassroom' => $application->getRequestedYearGroup()
+                ? $this->em->getRepository(Classroom::class)->findOneBy(
+                    ['yearGroup' => $application->getRequestedYearGroup()],
+                    ['name' => 'ASC']
+                )
+                : $application->getRequestedClassroom(),
             'siblings'    => $this->em->getRepository(Application::class)
                 ->createQueryBuilder('a')
                 ->andWhere('a.id != :id')
@@ -115,15 +135,20 @@ final class ApplicationReviewController extends AbstractController
     }
 
     /**
-     * Stream an uploaded document to a bursar only.
+     * Stream an uploaded document to a reviewer.
      *
      * `$applications_directory` sits under `public/`, so a bare link like
      * `/uploads/applications/abc123.jpg` is served by the web server to
      * anybody who guesses the name — fine for a school badge, not fine for a
      * child's birth certificate. This route keeps the check in the app.
+     *
+     * **Preview by default, download on request.** The review page opens the file
+     * in place, so the reviewer reads the certificate without losing the form they
+     * are reading it against; `?download=1` is the exception, for the odd case
+     * where the office needs the file on disk.
      */
     #[Route('/{id}/document/{kind}', name: 'app_tenant_application_document', methods: ['GET'], requirements: ['id' => '\d+'])]
-    public function document(Application $application, string $kind): Response
+    public function document(Application $application, string $kind, Request $request): Response
     {
         $files = [
             'photo'  => $application->getPassportPhotoFilename(),
@@ -146,7 +171,21 @@ final class ApplicationReviewController extends AbstractController
             throw $this->createNotFoundException('Document missing from disk.');
         }
 
-        return $this->file($path);
+        $response = $this->file($path);
+        $mime = (string) $response->getFile()->getMimeType();
+
+        // Only the two shapes a browser renders safely are ever shown inline; a
+        // stray .html or .svg is forced to download instead.
+        $previewable = $mime === 'application/pdf' || str_starts_with($mime, 'image/');
+        $inline = $previewable && !$request->query->getBoolean('download');
+
+        $response->setContentDisposition(
+            $inline ? ResponseHeaderBag::DISPOSITION_INLINE : ResponseHeaderBag::DISPOSITION_ATTACHMENT,
+            basename($filename)
+        );
+        $response->headers->set('X-Content-Type-Options', 'nosniff');
+
+        return $response;
     }
 
     // ──────────────────────────────────────────────────────────────────
@@ -169,9 +208,26 @@ final class ApplicationReviewController extends AbstractController
             return $this->redirectToRoute('app_tenant_application_show', ['id' => $application->getId()]);
         }
 
-        $classroom = $application->getRequestedClassroom();
+        // The parent applied for a LEVEL ("JSS 1"); the arm ("JSS 1A") is the
+        // principal's decision, taken here at the moment of admission.
+        $classroom = null;
+        $requestedClassroomId = (int) $request->request->get('classroom', 0);
+        if ($requestedClassroomId > 0) {
+            $classroom = $this->em->getRepository(Classroom::class)->find($requestedClassroomId);
+        }
+        $classroom ??= $application->getRequestedClassroom();
+
         if (!$classroom) {
-            $this->addFlash('error', 'Pick the class to admit into before enrolling.');
+            $this->addFlash('error', 'Choose the class and arm to admit into before enrolling.');
+            return $this->redirectToRoute('app_tenant_application_show', ['id' => $application->getId()]);
+        }
+
+        $level = $application->getRequestedYearGroup();
+        if ($level !== null && $classroom->getYearGroup()?->getId() !== $level->getId()) {
+            $this->addFlash('error', sprintf(
+                'The parent applied for %s. Choose an arm of that class.',
+                $level->getName()
+            ));
             return $this->redirectToRoute('app_tenant_application_show', ['id' => $application->getId()]);
         }
 
@@ -312,7 +368,7 @@ final class ApplicationReviewController extends AbstractController
         $this->em->flush();
 
         $this->addFlash('success', sprintf(
-            'Application fee of ₦%s confirmed. The application is now in the queue.',
+            'Application fee of ₦%s confirmed. The parent can now fill in the application form.',
             number_format((float) $application->getFeeAmount(), 2)
         ));
 
@@ -362,14 +418,17 @@ final class ApplicationReviewController extends AbstractController
 
         $this->em->flush();
 
-        $this->addFlash('success', 'Application fee waived.');
+        $this->addFlash('success', 'Application fee waived. The parent can now fill in the application form.');
 
         return $this->redirectToRoute('app_tenant_application_show', ['id' => $application->getId()]);
     }
 
     /**
-     * Once the fee gate is passed, an application waiting on payment becomes a
-     * real submission (or approved, if the school switched approval off).
+     * Once the fee is settled, the application opens for the parent to fill.
+     *
+     * Pay-first means this transition goes to `draft`, not to the school's
+     * queue: the money has been received, the child's details have not been
+     * entered yet. The parent's own submit is what puts it in the queue.
      */
     private function advancePastFeeGate(Application $application, string $note): void
     {
@@ -378,12 +437,11 @@ final class ApplicationReviewController extends AbstractController
             return;
         }
 
-        $school = $this->em->getRepository(School::class)->findOneBy([]);
-        $next = ($school?->isApplicationRequireApproval() ?? true)
-            ? Application::STATUS_SUBMITTED
-            : Application::STATUS_APPROVED;
-
-        $this->transition($application, $next, $note);
+        $this->transition(
+            $application,
+            Application::STATUS_DRAFT,
+            $note . ' The parent can now complete the application form.'
+        );
     }
 
     /** Record a timeline note without changing the workflow status. */

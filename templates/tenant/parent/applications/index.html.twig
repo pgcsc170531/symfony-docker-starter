@@ -85,7 +85,7 @@
                         <div class="min-w-0">
                             <div class="flex items-center gap-3 flex-wrap">
                                 <h2 class="font-bold text-gray-800 text-base truncate">
-                                    {{ application.fullName ?: 'Unnamed draft' }}
+                                    {{ application.fullName ?: (application.status == 'awaiting_payment' ? 'New application — awaiting payment' : 'Unnamed draft') }}
                                 </h2>
                                 {% include 'tenant/parent/applications/_status_badge.html.twig' with {
                                     status: application.status,
@@ -99,8 +99,8 @@
                                         <span class="font-mono font-bold text-gray-700">{{ application.reference }}</span>
                                     </span>
                                 {% endif %}
-                                {% if application.requestedClassroom %}
-                                    <span>Class applied for: <strong class="text-gray-700">{{ application.requestedClassroom.name }}</strong></span>
+                                {% if application.requestedClassName %}
+                                    <span>Class applied for: <strong class="text-gray-700">{{ application.requestedClassName }}</strong></span>
                                 {% endif %}
                                 {% if application.submittedAt %}
                                     <span>Submitted {{ application.submittedAt|date('d M Y') }}</span>
@@ -110,9 +110,9 @@
                             {# The one sentence a parent actually wants: what happens next #}
                             <p class="mt-3 text-xs text-gray-600 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 inline-block">
                                 {% if application.status == 'draft' %}
-                                    Not submitted yet — finish the form when you are ready.
+                                    Form open — not submitted yet. Finish it when you are ready.
                                 {% elseif application.status == 'awaiting_payment' %}
-                                    Waiting for the form fee of {{ application.feeAmount }}. Processing starts once it is confirmed.
+                                    Pay the form fee of ₦{{ application.feeAmount|number_format(2) }} to unlock the application form.
                                 {% elseif application.status == 'submitted' %}
                                     Received. The school will review it and get back to you.
                                 {% elseif application.status == 'under_review' %}

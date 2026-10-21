@@ -101,10 +101,10 @@
                                 <a href="{{ path('app_parent_applications_show', {id: application.id}) }}"
                                    class="flex items-center justify-between gap-3 p-3 rounded-lg border border-gray-200 hover:border-indigo-400 hover:bg-indigo-50/40 transition-colors">
                                     <div class="min-w-0">
-                                        <p class="font-bold text-gray-800 text-sm truncate">{{ application.fullName ?: 'Unnamed draft' }}</p>
+                                        <p class="font-bold text-gray-800 text-sm truncate">{{ application.fullName ?: (application.status == 'awaiting_payment' ? 'New application — awaiting payment' : 'Unnamed draft') }}</p>
                                         <p class="text-[11px] text-gray-500 mt-0.5">
                                             {{ application.reference ?: 'Not submitted yet' }}
-                                            {%- if application.requestedClassroom %} · {{ application.requestedClassroom.name }}{% endif -%}
+                                            {%- if application.requestedClassName %} · {{ application.requestedClassName }}{% endif -%}
                                         </p>
                                     </div>
                                     {% include 'tenant/parent/applications/_status_badge.html.twig' with {

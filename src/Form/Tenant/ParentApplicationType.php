@@ -3,10 +3,10 @@
 namespace App\Form\Tenant;
 
 use App\Entity\Tenant\Application;
-use App\Entity\Tenant\Classroom;
 use App\Entity\Tenant\Country;
 use App\Entity\Tenant\LGA;
 use App\Entity\Tenant\State;
+use App\Entity\Tenant\YearGroup;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
@@ -76,11 +76,16 @@ class ParentApplicationType extends AbstractType
                 'required' => false,
                 'attr' => ['class' => self::INPUT],
             ])
-            ->add('requestedClassroom', EntityType::class, [
-                'class' => Classroom::class,
+            // A parent chooses a class LEVEL ("JSS 1"), never an arm. The arm
+            // ("JSS 1A") is the principal's decision at admission — choosing it
+            // here would let a parent allocate their own child to a stream.
+            ->add('requestedYearGroup', EntityType::class, [
+                'class' => YearGroup::class,
                 'choice_label' => 'name',
                 'label' => 'Class applying for',
                 'placeholder' => 'Select class',
+                'query_builder' => static fn (\Doctrine\ORM\EntityRepository $repo) => $repo->createQueryBuilder('y')
+                    ->orderBy('y.id', 'ASC'),
                 'attr' => ['class' => self::INPUT],
             ])
 

@@ -180,6 +180,17 @@ class PaymentRepository extends ServiceEntityRepository
     // ──────────────────────────────────────────────────────────────────
 
     /**
+     * Register filters that describe the BILL a receipt settled, not the
+     * receipt itself.
+     *
+     * "Part payment" cannot be answered by `payment.status`: a ₦20,000
+     * receipt against a ₦62,500 bill is a perfectly CONFIRMED payment of a
+     * part-paid bill, and those are the rows the bursar chases. So the filter
+     * looks at the invoice's balance, not at the receipt's status.
+     */
+    public const FILTER_PART_PAYMENT = 'PART_PAYMENT';
+
+    /**
      * @param array{from?: ?\DateTimeInterface, to?: ?\DateTimeInterface, classroom?: ?Classroom, q?: string, method?: string, status?: string, type?: string, cashier?: string} $filters
      */
     private function applyFilters(\Doctrine\ORM\QueryBuilder $qb, array $filters): void
@@ -196,7 +207,17 @@ class PaymentRepository extends ServiceEntityRepository
             $qb->andWhere('p.method = :method')->setParameter('method', $filters['method']);
         }
         if (!empty($filters['status'])) {
-            $qb->andWhere('p.status = :status')->setParameter('status', $filters['status']);
+            $status = (string) $filters['status'];
+
+            if ($status === self::FILTER_PART_PAYMENT) {
+                // Money in, but the bill it settled still owes something.
+                $qb->andWhere('p.status = :settled_status')
+                   ->andWhere('i.paidAmount > 0')
+                   ->andWhere('i.paidAmount < i.totalAmount - 0.005')
+                   ->setParameter('settled_status', Payment::STATUS_CONFIRMED);
+            } else {
+                $qb->andWhere('p.status = :status')->setParameter('status', $status);
+            }
         }
         if (!empty($filters['type'])) {
             $qb->andWhere('i.type = :type')->setParameter('type', $filters['type']);

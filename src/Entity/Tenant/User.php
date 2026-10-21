@@ -16,6 +16,28 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public const ROLE_TEACHER = 'ROLE_TEACHER';
     public const ROLE_HOD = 'ROLE_HOD';
 
+    /**
+     * The admissions desk — the second person, beside the principal, who may
+     * admit a child.
+     *
+     * A school usually has a principal who signs the register and an admissions
+     * officer who runs it. Either may review, approve and enrol a new intake.
+     * Deliberately OUTSIDE the ROLE_ADMIN hierarchy: this seat opens the
+     * admissions screens and nothing else, so it cannot touch fees, results,
+     * staff or the school's settings.
+     */
+    public const ROLE_ADMISSION_OFFICER = 'ROLE_ADMISSION_OFFICER';
+
+    /**
+     * The overseer of one school, created by that school's administrator.
+     *
+     * Deliberately NOT the same constant as the landlord's ROLE_SUPER_ADMIN:
+     * that one is a platform account that lives in landlord_db, carries
+     * ROLE_ALLOWED_TO_SWITCH and gets the landlord navigation in the shell.
+     * A school's overseer is a tenant account and must keep the school shell.
+     */
+    public const ROLE_TENANT_SUPER_ADMIN = 'ROLE_TENANT_SUPER_ADMIN';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]

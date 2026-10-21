@@ -21,7 +21,9 @@
         <p class="mt-5 text-2xl font-bold text-gray-900 whitespace-nowrap tabular-nums sm:text-4xl">₦{{ intent.amount|number_format(2) }}</p>
         <p class="text-xs text-gray-500 mt-1">
             ₦{{ intent.invoiceAmount|number_format(2) }} fees
-            + ₦{{ intent.processingFee|number_format(2) }} processing
+            {% if intent.processingFee > 0 %}
+                + ₦{{ intent.processingFee|number_format(2) }} processing
+            {% endif %}
         </p>
 
         <p class="mt-3 font-mono text-xs text-gray-400 break-all">{{ intent.reference }}</p>
@@ -36,6 +38,10 @@
                 Simulate a decline
             </button>
         </form>
+
+        {# The real Paystack page is where the channel is chosen, so the advice
+           repeats where a parent would actually be looking. #}
+        {% include 'tenant/parent/_channel_note.html.twig' %}
     </div>
 </div>
 {% endblock %}

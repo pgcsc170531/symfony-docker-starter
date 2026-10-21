@@ -29,7 +29,7 @@ class CreateTenantUserCommand extends Command
         $this
             ->addArgument('email', InputArgument::REQUIRED, 'The email of the user')
             ->addArgument('password', InputArgument::REQUIRED, 'The password')
-            ->addArgument('role', InputArgument::OPTIONAL, 'The role (admin, bursar, store)', 'admin');
+            ->addArgument('role', InputArgument::OPTIONAL, 'The role (super, admin, bursar, store, teacher, hod, parent)', 'admin');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -40,9 +40,13 @@ class CreateTenantUserCommand extends Command
 
         // Map simple names to Symfony Roles
         $roleMap = [
+            'super' => 'ROLE_TENANT_SUPER_ADMIN',
+            'superadmin' => 'ROLE_TENANT_SUPER_ADMIN',
             'admin' => 'ROLE_ADMIN',
             'bursar' => 'ROLE_BURSAR',
             'store' => 'ROLE_STORE',
+            'teacher' => 'ROLE_TEACHER',
+            'hod' => 'ROLE_HOD',
             'parent' => 'ROLE_PARENT'
         ];
         

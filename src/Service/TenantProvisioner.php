@@ -52,7 +52,7 @@ class TenantProvisioner
         ['F9', 0, 29, '9.00', 'Fail'],
     ];
 
-    /** Usable password for a fresh install; the principal is forced to change it later. */
+    /** Usable password for a fresh install; the owner is forced to change it later. */
     public const DEFAULT_PRINCIPAL_PASSWORD = 'password123';
 
     public function __construct(
@@ -158,7 +158,17 @@ class TenantProvisioner
         // ── 5. Default grading scale ─────────────────────────────────────
         $gradingScaleSeeded = $this->seedGradingScale($em);
 
-        // ── 6. The principal's account ───────────────────────────────────
+        // ── 6. The owner's account ────────────────────────────────
+        //
+        // The person whose details were used to sign the school up IS the
+        // school's super admin, permanently. From here they can create ordinary
+        // administrators (principals) to run the school day to day, but those
+        // administrators cannot create or outrank them.
+        //
+        // ROLE_ADMIN and ROLE_BURSAR are kept alongside the super admin role on
+        // purpose: several services and queries test the stored roles directly
+        // with `in_array()` rather than through `is_granted()`, and the owner
+        // must keep receiving those reports.
         $adminCreated = null;
         if ($principalEmail !== null && $principalEmail !== '') {
             $existing = $em->getRepository(User::class)->findOneBy(['email' => $principalEmail]);
@@ -166,8 +176,8 @@ class TenantProvisioner
             if ($existing === null) {
                 $user = new User();
                 $user->setEmail($principalEmail);
-                $user->setFullName($principalName ?: $schoolName . ' Principal');
-                $user->setRoles(['ROLE_ADMIN', 'ROLE_BURSAR']);
+                $user->setFullName($principalName ?: $schoolName . ' Owner');
+                $user->setRoles([User::ROLE_TENANT_SUPER_ADMIN, User::ROLE_ADMIN, 'ROLE_BURSAR']);
                 $user->setSchool($school);
                 $user->setPassword($this->passwordHasher->hashPassword(
                     $user,

@@ -16,7 +16,10 @@ use Symfony\Component\String\Slugger\SluggerInterface;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
 
 #[Route('/settings')]
-#[IsGranted('ROLE_ADMIN')]
+// System ▸ Settings is the school's core identity (name, motto, contacts, logo).
+// The manual puts the whole System section with the Proprietor / top-level
+// administrator — a principal runs operations, not the school's own identity.
+#[IsGranted('ROLE_TENANT_SUPER_ADMIN')]
 class SettingsController extends AbstractController
 {
     #[Route('/general', name: 'app_tenant_settings_general')]

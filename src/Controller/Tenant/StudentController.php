@@ -34,7 +34,7 @@ class StudentController extends AbstractController
         $classId = $request->query->get('class_id', ''); 
         $financeStatus = $request->query->get('finance_status', ''); 
         
-        $currentPage = max(1, $request->query->getInt('page', 1));
+        $currentPage = max(1, (int) $request->query->get('page', 1));
         $limit = 20; 
 
         $classrooms = $em->getRepository(Classroom::class)->findAll();

@@ -84,7 +84,7 @@
             <div class="space-y-6">
                 {# Principal Name #}
                 <div>
-                    {{ form_label(form.principalName, 'Principal Full Name', {'label_attr': {'class': 'block text-sm font-bold text-gray-700 mb-2'}}) }}
+                    {{ form_label(form.principalName, 'Owner Full Name', {'label_attr': {'class': 'block text-sm font-bold text-gray-700 mb-2'}}) }}
                     {{ form_widget(form.principalName, {'attr': {'class': 'w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 p-3 border', 'placeholder': 'e.g. Dr. John Doe'}}) }}
                     <div class="text-red-500 text-xs mt-1">{{ form_errors(form.principalName) }}</div>
                 </div>

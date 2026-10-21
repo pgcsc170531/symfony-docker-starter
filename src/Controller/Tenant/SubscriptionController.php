@@ -28,12 +28,18 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\String\Slugger\SluggerInterface;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
 
 #[Route('/subscription')]
+// System ▸ My Subscription — the Edus licence is the owner's, not a daily
+// operating screen. Closing this also closes the page to teachers and parents:
+// it carried no access rule at all before, so any signed-in account could open
+// the school's billing home.
+#[IsGranted('ROLE_TENANT_SUPER_ADMIN')]
 class SubscriptionController extends AbstractController
 {
     public function __construct(private readonly TermQuoteService $quoteService)

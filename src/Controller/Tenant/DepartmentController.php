@@ -42,8 +42,19 @@ class DepartmentController extends AbstractController
             return $this->redirectToRoute('app_tenant_department_index');
         }
 
+        $q = trim((string) $request->query->get('q', ''));
+
+        $qb = $this->em->getRepository(Department::class)->createQueryBuilder('d')
+            ->orderBy('d.name', 'ASC');
+
+        if ($q !== '') {
+            $qb->andWhere('LOWER(d.name) LIKE :q OR LOWER(d.description) LIKE :q')
+                ->setParameter('q', '%' . mb_strtolower($q) . '%');
+        }
+
         return $this->render('tenant/department/index.html.twig', [
-            'departments' => $this->em->getRepository(Department::class)->findBy([], ['name' => 'ASC']),
+            'departments' => $qb->getQuery()->getResult(),
+            'q' => $q,
         ]);
     }
 

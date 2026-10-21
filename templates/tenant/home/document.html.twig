@@ -1,0 +1,53 @@
+{% extends 'tenant/home/layout.html.twig' %}
+
+{% block title %}{{ document.title }} — {{ school_name }}{% endblock %}
+
+{% block tenant_public_content %}
+
+<section class="border-b border-ink-200 bg-ink-50">
+    <div class="mx-auto max-w-4xl px-4 py-12 sm:px-6 sm:py-16">
+        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-ink-500">
+            {{ document.category == 'rules' ? 'Rules and regulations' : (document.category == 'fees' ? 'Fees' : 'School document') }}
+        </p>
+        <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">
+            {{ document.title }}
+        </h1>
+        <p class="mt-2 text-sm text-ink-500">Last updated {{ document.updatedAt|date('j F Y') }}</p>
+    </div>
+</section>
+
+<section class="bg-white py-10 sm:py-14">
+    <div class="mx-auto max-w-4xl px-4 sm:px-6">
+
+        {# One paragraph per blank line — the same text the PDF prints, so the
+           website and the admission letter can never disagree. #}
+        <div class="space-y-4 text-base leading-relaxed text-ink-700">
+            {% for paragraph in document.paragraphs %}
+                <p class="break-words">{{ paragraph|nl2br }}</p>
+            {% endfor %}
+        </div>
+
+        {% if documents|length > 1 %}
+            <div class="mt-10 border-t border-ink-200 pt-6">
+                <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">Other school documents</p>
+                <ul class="mt-3 space-y-2">
+                    {% for other in documents %}
+                        {% if other.id != document.id %}
+                            <li>
+                                <a href="{{ path('app_tenant_public_document', {slug: other.slug}) }}"
+                                   class="inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 hover:underline">
+                                    {{ other.title }} &rarr;
+                                </a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        <p class="mt-10 text-xs text-ink-400">
+            Ask the school office if you need this document in another language or a printed copy.
+        </p>
+    </div>
+</section>
+{% endblock %}

@@ -56,7 +56,12 @@ class DiscountRepricer
             $paid = (float) $invoice->getPaidAmount();
             $oldTotal = (float) $invoice->getTotalAmount();
             $gross = $this->gross($invoice);
-            $discount = $this->calculator->calculateDiscount($student, $gross);
+            // A waiver is a TUITION waiver, so the base is the tuition lines on
+            // this invoice — not the gross bill.
+            $discount = $this->calculator->calculateDiscount(
+                $student,
+                $this->calculator->tuitionBaseFromItems($invoice->getItems())
+            );
 
             // Never bill less than the family has already handed over.
             $newTotal = max($paid, max(0.0, $gross - $discount));
@@ -125,7 +130,10 @@ class DiscountRepricer
         }
 
         $gross = $this->gross($open);
-        $discount = $this->calculator->calculateDiscount($student, $gross);
+        $discount = $this->calculator->calculateDiscount(
+            $student,
+            $this->calculator->tuitionBaseFromItems($open->getItems())
+        );
         $net = max((float) $open->getPaidAmount(), max(0.0, $gross - $discount));
         $stored = (float) $open->getDiscountApplied();
 

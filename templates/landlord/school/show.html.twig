@@ -41,7 +41,7 @@
             <div class="mt-4 flex space-x-3 md:mt-0">
                 <a href="{{ path('app_landlord_school_fix_schema', {id: school.id}) }}"
                    class="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-                   title="Rebuilds the tenant database: schema, session, term, grading scale and principal login">
+                   title="Rebuilds the tenant database: schema, session, term, grading scale and the owner login">
                     <svg class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
@@ -72,9 +72,9 @@
             <p class="text-xs text-gray-400 mt-2">Database: <span class="font-mono text-gray-600">{{ school.databaseName }}</span></p>
         </div>
 
-        {# B. PRINCIPAL INFO #}
+        {# B. OWNER INFO #}
         <div class="bg-white shadow-sm rounded-lg p-6 border border-gray-200">
-            <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider">Principal Contact</h3>
+            <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider">Owner / Super Admin</h3>
             <div class="mt-3">
                 <p class="text-lg font-bold text-gray-900">{{ school.principalName }}</p>
                 <p class="text-sm text-gray-500 truncate">{{ school.principalEmail }}</p>

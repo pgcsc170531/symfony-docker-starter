@@ -35,6 +35,10 @@ class PaymentIntent
     public const PROVIDER_PAYSTACK = 'paystack';
     public const PROVIDER_FAKE     = 'fake';
 
+    /** What the attempt is for. Settlement branches on this. */
+    public const PURPOSE_INVOICE         = 'invoice';          // school fees for a pupil
+    public const PURPOSE_APPLICATION_FEE = 'application_fee';  // the form fee that gates an application
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -49,6 +53,17 @@ class PaymentIntent
 
     #[ORM\Column(length: 30, options: ['default' => self::PROVIDER_FAKE])]
     private string $provider = self::PROVIDER_FAKE;
+
+    /**
+     * One intent table, two journeys.
+     *
+     * An application fee has no invoice — the applicant is not a pupil yet — so
+     * the ledger row it creates carries the amount and the reference, and the
+     * `Application` holds the link (`feePayment`). Keeping one intent table means
+     * the gateway, the callback, the webhook and the status screen are shared.
+     */
+    #[ORM\Column(length: 30, options: ['default' => self::PURPOSE_INVOICE])]
+    private string $purpose = self::PURPOSE_INVOICE;
 
     /** What the parent is charged: the invoice balance plus our processing fee. */
     #[ORM\Column(type: Types::DECIMAL, precision: 12, scale: 2)]
@@ -95,9 +110,15 @@ class PaymentIntent
 
     // === RELATIONSHIPS ===
 
+    /** Null for an application fee: there is no invoice until the child is enrolled. */
     #[ORM\ManyToOne]
-    #[ORM\JoinColumn(name: 'invoice_id', nullable: false)]
+    #[ORM\JoinColumn(name: 'invoice_id', nullable: true, onDelete: 'SET NULL')]
     private ?Invoice $invoice = null;
+
+    /** Set when `purpose = application_fee`. */
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(name: 'application_id', nullable: true, onDelete: 'SET NULL')]
+    private ?Application $application = null;
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(name: 'student_id', nullable: true)]
@@ -158,6 +179,14 @@ class PaymentIntent
     public function setStatus(string $status): static { $this->status = $status; return $this; }
 
     public function getProvider(): string { return $this->provider; }
+
+    public function getPurpose(): string { return $this->purpose; }
+    public function setPurpose(string $purpose): static { $this->purpose = $purpose; return $this; }
+
+    public function isApplicationFee(): bool { return $this->purpose === self::PURPOSE_APPLICATION_FEE; }
+
+    public function getApplication(): ?Application { return $this->application; }
+    public function setApplication(?Application $application): static { $this->application = $application; return $this; }
     public function setProvider(string $provider): static { $this->provider = $provider; return $this; }
 
     public function getAmount(): ?string { return $this->amount; }
@@ -201,6 +230,15 @@ class PaymentIntent
 
     public function getStudent(): ?Student { return $this->student; }
     public function setStudent(?Student $student): static { $this->student = $student; return $this; }
+
+    /**
+     * Who is paying: the guardian of the applicant, or of the pupil.
+     * Used by the gateway for the receipt address and by the screens for copy.
+     */
+    public function getPayer(): ?Guardian
+    {
+        return $this->application?->getGuardian() ?? $this->student?->getGuardian();
+    }
 
     public function getPayment(): ?Payment { return $this->payment; }
     public function setPayment(?Payment $payment): static { $this->payment = $payment; return $this; }

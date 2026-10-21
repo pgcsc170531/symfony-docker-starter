@@ -176,6 +176,9 @@ final class ResultSheetBuilder
             // can never forward figures the school has not signed off.
             'released' => $this->release->isReleased($classroom, $term),
             'next_term' => $this->nextTerm($term),
+            // What the parents actually ask: the day the next term starts. A
+            // school that sets one term at a time records it on the term itself.
+            'return_date' => $this->nextTerm($term)['start'] ?? $term->getResumptionDate(),
             'pupil_count' => count($roster),
             'trend' => $this->trend->build($student, $term),
         ];
@@ -185,7 +188,15 @@ final class ResultSheetBuilder
     //  Internals
     // ──────────────────────────────────────────────────────────────────
 
-    private function classroomFor(Student $student, Term $term): ?Classroom
+    /**
+     * The class a pupil sat the term in: the enrolment for that session first,
+     * then the class on the pupil record.
+     *
+     * Public because the report gate must ask the same question the report does —
+     * otherwise a pupil whose enrolment carries the class is refused a card that
+     * the builder would happily produce.
+     */
+    public function classroomFor(Student $student, Term $term): ?Classroom
     {
         $session = $term->getSession();
         if ($session) {

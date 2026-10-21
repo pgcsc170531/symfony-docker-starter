@@ -35,9 +35,11 @@ final class FeeReportVerificationController extends AbstractController
         $response = $this->render('tenant/report/fees/verify.html.twig', [
             'verification' => $verification,
             'school'       => $em->getRepository(School::class)->findOneBy([]),
-            'document'     => $verification->getKind() === 'fee-statement'
-                ? 'Statement of account'
-                : 'Term fee summary',
+            'document'     => match ($verification->getKind()) {
+                'fee-statement' => 'Statement of account',
+                'admission-letter' => 'Provisional admission letter',
+                default => 'Term fee summary',
+            },
         ]);
         $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
         $response->headers->set('Cache-Control', 'private, no-store');

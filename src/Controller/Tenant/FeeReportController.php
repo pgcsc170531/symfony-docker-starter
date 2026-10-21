@@ -231,7 +231,7 @@ final class FeeReportController extends AbstractController
         [$from, $to] = $this->dateRange($request);
         $filters = $this->paymentFilters($request, $from, $to);
 
-        $register = $this->reports->paymentRegister($filters, max(1, $request->query->getInt('page', 1)));
+        $register = $this->reports->paymentRegister($filters, max(1, (int) $request->query->get('page', 1)));
 
         return $this->render('tenant/report/fees/payments.html.twig', [
             'filters'     => $filters,
@@ -242,6 +242,11 @@ final class FeeReportController extends AbstractController
             'classrooms'  => $this->em->getRepository(Classroom::class)->findBy([], ['name' => 'ASC']),
             'methods'     => [Payment::METHOD_CASH, Payment::METHOD_TRANSFER, Payment::METHOD_POS, Payment::METHOD_CHEQUE],
             'statuses'    => [Payment::STATUS_CONFIRMED, Payment::STATUS_PENDING, Payment::STATUS_DECLINED, Payment::STATUS_CANCELLED],
+            // One more "status" the bursar asks for: not the state of the
+            // receipt, but of the bill it settled (see PaymentRepository).
+            'billStatuses' => [
+                \App\Repository\Tenant\PaymentRepository::FILTER_PART_PAYMENT => 'Part payment',
+            ],
         ]);
     }
 
@@ -343,7 +348,7 @@ final class FeeReportController extends AbstractController
             'filters'    => $filters,
             'from'       => $from,
             'to'         => $to,
-            'register'   => $this->reports->expenseRegister($filters, max(1, $request->query->getInt('page', 1))),
+            'register'   => $this->reports->expenseRegister($filters, max(1, (int) $request->query->get('page', 1))),
             'totals'     => $this->reports->expenseRegisterTotals($filters),
             'categories' => $this->em->getRepository(ExpenseCategory::class)->findBy([], ['name' => 'ASC']),
         ]);
@@ -491,7 +496,8 @@ final class FeeReportController extends AbstractController
 
     private function currentTerm(Request $request): ?Term
     {
-        $id = $request->query->getInt('term');
+        // Same trap as the class filter: an empty select is '', not absent.
+        $id = (int) $request->query->get('term', 0);
         if ($id > 0) {
             $term = $this->em->getRepository(Term::class)->find($id);
             if ($term !== null) {
@@ -505,7 +511,11 @@ final class FeeReportController extends AbstractController
 
     private function selectedClassroom(Request $request): ?Classroom
     {
-        $id = $request->query->getInt('classroom');
+        // "All classes" is the default option and submits an EMPTY string.
+        // `getInt()` rejects that with a 400, so the whole Payment Register
+        // filter form used to fail the moment it was applied. Cast instead:
+        // empty means every class.
+        $id = (int) $request->query->get('classroom', 0);
 
         return $id > 0 ? $this->em->getRepository(Classroom::class)->find($id) : null;
     }
@@ -556,7 +566,7 @@ final class FeeReportController extends AbstractController
     /** @return array<string, mixed> */
     private function expenseFilters(Request $request, \DateTimeInterface $from, \DateTimeInterface $to): array
     {
-        $categoryId = $request->query->getInt('category');
+        $categoryId = (int) $request->query->get('category', 0);
         $min = $request->query->get('min');
 
         return [

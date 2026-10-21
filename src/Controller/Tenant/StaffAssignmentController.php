@@ -229,7 +229,7 @@ class StaffAssignmentController extends AbstractController
 
     private function isStaffAccount(User $user): bool
     {
-        foreach (['ROLE_ADMIN', 'ROLE_BURSAR', 'ROLE_STORE', 'ROLE_TEACHER'] as $role) {
+        foreach (['ROLE_TENANT_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_BURSAR', 'ROLE_STORE', 'ROLE_TEACHER', 'ROLE_HOD'] as $role) {
             if (in_array($role, $user->getRoles(), true)) {
                 return true;
             }
@@ -300,12 +300,34 @@ class StaffAssignmentController extends AbstractController
             return $this->redirectToRoute('app_tenant_subject_teacher');
         }
 
+        $q = trim((string) $request->query->get('q', ''));
+
+        // Match the row, not a table: staff name or email, subject, class or term.
+        $qb = $this->em->getRepository(SubjectTeacher::class)->createQueryBuilder('st')
+            ->join('st.staff', 'staff')->addSelect('staff')
+            ->join('staff.user', 'u')->addSelect('u')
+            ->join('st.subject', 'sub')->addSelect('sub')
+            ->join('st.classroom', 'classroom')->addSelect('classroom')
+            ->join('st.term', 't')->addSelect('t')
+            ->orderBy('t.id', 'DESC')
+            ->addOrderBy('u.fullName', 'ASC');
+
+        if ($q !== '') {
+            $qb->andWhere('LOWER(u.fullName) LIKE :q'
+                    . ' OR LOWER(u.email) LIKE :q'
+                    . ' OR LOWER(sub.name) LIKE :q'
+                    . ' OR LOWER(classroom.name) LIKE :q'
+                    . ' OR LOWER(t.name) LIKE :q')
+                ->setParameter('q', '%' . mb_strtolower($q) . '%');
+        }
+
         return $this->render('tenant/staff_assignment/subject_teacher.html.twig', [
             'staffOptions' => $this->staffOptions(),
             'subjectGroups' => $this->subjectGroups(),
             'classrooms' => $this->em->getRepository(Classroom::class)->findBy([], ['name' => 'ASC']),
             'terms' => $this->em->getRepository(Term::class)->findBy([], ['id' => 'DESC']),
-            'assignments' => $this->em->getRepository(SubjectTeacher::class)->findBy([], ['term' => 'DESC']),
+            'assignments' => $qb->getQuery()->getResult(),
+            'q' => $q,
         ]);
     }
 

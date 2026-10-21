@@ -13,6 +13,7 @@ use App\Entity\Tenant\Student;
 use App\Entity\Tenant\Term;
 use App\Service\Finance\DiscountCalculator;
 use App\Service\Admissions\AdmissionNumberGenerator;
+use App\Service\Finance\AdvancePaymentService;
 use App\Service\Finance\InvoiceNumberGenerator;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -41,6 +42,7 @@ final class AdmissionService
         private SchoolMailer $mailer,
         private InvoiceNumberGenerator $invoiceNumbers,
         private readonly AdmissionNumberGenerator $admissionNumbers,
+        private readonly AdvancePaymentService $advances,
     ) {
     }
 
@@ -152,7 +154,10 @@ final class AdmissionService
             return null;
         }
 
-        $discount = (float) $this->discountCalculator->calculateDiscount($student, $total);
+        $discount = $this->discountCalculator->calculateDiscount(
+            $student,
+            $this->discountCalculator->tuitionBaseFromStructures($fees)
+        );
 
         // `total_amount` is NET of the discount; `discount_applied` is kept
         // separately so reports can show what the school waived.
@@ -160,6 +165,10 @@ final class AdmissionService
         $invoice->setDiscountLabel($this->discountCalculator->describe($student));
         $invoice->setTotalAmount((string) max(0.0, $total - $discount));
         $this->em->persist($invoice);
+
+        // A family that paid ahead should not be shown a bill they already
+        // settled. This writes a real ADVANCE payment with the audit remark.
+        $this->advances->applyTo($invoice);
 
         return $invoice;
     }

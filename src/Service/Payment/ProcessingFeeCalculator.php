@@ -91,6 +91,40 @@ final class ProcessingFeeCalculator
         return round($invoiceAmount + $this->feeFor($invoiceAmount), 2);
     }
 
+    /** "₦500" — the ceiling, for copy that must not drift from MAX_FEE. */
+    public function maxFeeLabel(): string
+    {
+        return '₦' . number_format(self::MAX_FEE, 2, '.', '');
+    }
+
+    /**
+     * What each channel costs the SCHOOL, in words, straight from the constants.
+     *
+     * A parent chooses the channel on the provider's own page, so this is the only
+     * lever we have: tell them before they get there. Card is materially dearer
+     * (1.5% + ₦100, capped at ₦2,000 against 1% capped at ₦300 for a transfer), and
+     * on a ₦68,600 invoice that is the difference between ₦1,136 and ₦322 — money
+     * that comes out of the school's fee, because the parent's charge is capped.
+     *
+     * @return array{card: string, transfer: string}
+     */
+    public function channelRates(): array
+    {
+        return [
+            'card' => sprintf(
+                '%s%% + ₦%s (up to ₦%s)',
+                rtrim(rtrim(number_format(self::CARD_PERCENT * 100, 1), '0'), '.'),
+                number_format(self::CARD_FLAT, 0),
+                number_format(self::CARD_CAP, 0)
+            ),
+            'transfer' => sprintf(
+                '%s%% (capped at ₦%s)',
+                rtrim(rtrim(number_format(self::TRANSFER_CAP_PERCENT * 100, 1), '0'), '.'),
+                number_format(self::TRANSFER_CAP_AMOUNT, 0)
+            ),
+        ];
+    }
+
     /**
      * Human-readable explanation, shown on the pay screen.
      *

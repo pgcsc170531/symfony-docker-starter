@@ -12,10 +12,12 @@
             <p class="mt-1 text-sm text-ink-600">Money taken before a child becomes a pupil — collected, waived and still owed.</p>
         </div>
         <div class="flex flex-wrap gap-2 no-print">
-            <a href="{{ path('app_tenant_application_index') }}"
-               class="inline-flex min-h-[44px] items-center rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white hover:bg-accent-700">
-                Applications queue
-            </a>
+            {% if is_granted('ROLE_ADMIN') %}
+                <a href="{{ path('app_tenant_application_index') }}"
+                   class="inline-flex min-h-[44px] items-center rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white hover:bg-accent-700">
+                    Applications queue
+                </a>
+            {% endif %}
             <button type="button" onclick="window.print()"
                     class="inline-flex min-h-[44px] items-center rounded-lg border border-ink-300 px-4 text-sm font-semibold text-ink-700 hover:border-accent-400 hover:text-accent-700">
                 Print
@@ -130,8 +132,10 @@
                             <td class="px-4 py-3 text-ink-700">{{ application.feeChannel ? application.feeChannel|replace({'_': ' '}) : '—' }}</td>
                             <td class="whitespace-nowrap px-4 py-3 text-ink-600">{{ application.feePaidAt ? application.feePaidAt|date('j M Y') : '—' }}</td>
                             <td class="px-4 py-3 text-right no-print">
-                                <a href="{{ path('app_tenant_application_show', {id: application.id}) }}"
-                                   class="inline-flex min-h-[44px] items-center text-xs font-semibold text-accent-700 hover:underline">Open</a>
+                                {% if is_granted('ROLE_ADMIN') %}
+                                    <a href="{{ path('app_tenant_application_show', {id: application.id}) }}"
+                                       class="inline-flex min-h-[44px] items-center text-xs font-semibold text-accent-700 hover:underline">Open</a>
+                                {% endif %}
                             </td>
                         </tr>
                     {% endfor %}
@@ -154,9 +158,10 @@
                         {% elseif application.feeStatus == 'awaiting_confirmation' %}<span class="badge-pending">Awaiting</span>
                         {% elseif application.feeStatus == 'waived' %}<span class="badge-neutral">Waived</span>
                         {% else %}<span class="badge-failed">Unpaid</span>{% endif %}
-                        <a href="{{ path('app_tenant_application_show', {id: application.id}) }}"
-                           class="inline-flex min-h-[44px] items-center text-xs font-semibold text-accent-700">Open</a>
-                    </div>
+                        {% if is_granted('ROLE_ADMIN') %}
+                            <a href="{{ path('app_tenant_application_show', {id: application.id}) }}"
+                               class="inline-flex min-h-[44px] items-center text-xs font-semibold text-accent-700">Open</a>
+                        {% endif %}
                 </div>
             {% endfor %}
         </div>

@@ -32,12 +32,15 @@ class SchoolWebsiteType extends AbstractType
                 'label' => 'School type',
                 'required' => true,
                 'choices' => [
-                    'Primary / Nursery — calls children “pupils”' => School::TYPE_PRIMARY,
-                    'Secondary — calls them “students”' => School::TYPE_SECONDARY,
+                    'Nursery — calls children “pupils”' => School::TYPE_NURSERY,
+                    'Primary — calls children “pupils”' => School::TYPE_PRIMARY,
+                    'Junior Secondary (JSS 1–3)' => School::TYPE_JUNIOR_SECONDARY,
+                    'Senior Secondary (SS 1–3)' => School::TYPE_SENIOR_SECONDARY,
+                    'Secondary — both junior and senior' => School::TYPE_SECONDARY,
                     'Primary & Secondary (combined)' => School::TYPE_COMBINED,
                     'College / Polytechnic' => School::TYPE_TERTIARY,
                 ],
-                'help' => 'Combined and secondary schools use “student” everywhere. Only a pure primary school says “pupil”.',
+                'help' => 'This decides the section printed on the report card and whether children are called “pupils” or “students”.',
             ])
             ->add('motto', TextType::class, [
                 'label' => 'Motto',

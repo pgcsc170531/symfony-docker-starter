@@ -14,7 +14,8 @@ use Symfony\Component\String\Slugger\SluggerInterface;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
 
 #[Route('/wallet')]
-#[IsGranted('ROLE_ADMIN')]
+// System ▸ My Wallet — SMS/communication credits are the owner's to fund.
+#[IsGranted('ROLE_TENANT_SUPER_ADMIN')]
 class WalletController extends AbstractController
 {
     #[Route('/', name: 'tenant_wallet_index', methods: ['GET'])]

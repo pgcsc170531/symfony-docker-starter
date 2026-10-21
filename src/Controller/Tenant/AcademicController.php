@@ -84,6 +84,41 @@ class AcademicController extends AbstractController
         ]);
     }
 
+    /**
+     * Edit a term.
+     *
+     * Exists because the dates on a term are not always known when it is created:
+     * the resumption day in particular is usually decided late in the holidays, and
+     * the report card prints it. Without this, a school could only ever print
+     * "to be announced".
+     */
+    #[Route('/term/{id}/edit', name: 'app_tenant_term_edit', methods: ['GET', 'POST'])]
+    public function editTerm(Request $request, Term $term, EntityManagerInterface $em): Response
+    {
+        $form = $this->createForm(TermType::class, $term);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            if ($term->isActive()) {
+                $this->deactivateAll($em, Term::class, $term->getId());
+                $term->getSession()?->setIsActive(true);
+                $this->deactivateAll($em, Session::class, $term->getSession()?->getId());
+            }
+
+            $em->flush();
+
+            $this->addFlash('success', 'Term updated.');
+
+            return $this->redirectToRoute('app_tenant_academic_index');
+        }
+
+        return $this->render('tenant/academic/new_term.html.twig', [
+            'form' => $form,
+            'session' => $term->getSession(),
+            'term' => $term,
+        ]);
+    }
+
     // UPDATED: Using SQL UPDATE is safer than looping through PHP objects
     private function deactivateAll(EntityManagerInterface $em, string $entityClass, ?int $excludeId = null): void
     {

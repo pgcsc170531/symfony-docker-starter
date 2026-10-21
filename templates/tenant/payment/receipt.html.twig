@@ -112,6 +112,66 @@
             </div>
         </div>
 
+        {#
+            ── ACCOUNT POSITION ─────────────────────────────────────────────
+            Many families pay in instalments. A receipt that shows only the
+            amount handed over proves the payment but says nothing about what is
+            still owed — so from the FIRST receipt the parent can see the balance
+            and knows exactly what is left to clear.
+
+            Printed and filed, so it is plain markup with no interactive parts.
+        #}
+        {% set invoiceTotal = invoice.totalAmount|default(0) %}
+        {% set discount = invoice.discountApplied|default(0) %}
+        {% set paidToDate = invoice.paidAmount|default(0) %}
+        {% set balanceLeft = invoice.balanceDue %}
+
+        <div class="border border-gray-300 rounded mb-8 relative z-10 overflow-hidden">
+            <p class="bg-gray-800 text-white text-xs font-bold uppercase tracking-widest px-4 py-2">
+                Account position{% if invoice.term %} — {{ invoice.term.name }} {{ invoice.session ? invoice.session.name : '' }}{% endif %}
+            </p>
+            <table class="w-full text-sm">
+                <tbody class="divide-y divide-gray-200">
+                    <tr>
+                        <td class="px-4 py-3 text-gray-600">Invoice total</td>
+                        <td class="px-4 py-3 text-right font-bold text-gray-800 tabular-nums">₦{{ invoiceTotal|number_format(2) }}</td>
+                    </tr>
+                    {% if discount > 0 %}
+                        <tr>
+                            <td class="px-4 py-3 text-gray-600">Scholarship / discount</td>
+                            <td class="px-4 py-3 text-right font-bold text-green-700 tabular-nums">−₦{{ discount|number_format(2) }}</td>
+                        </tr>
+                    {% endif %}
+                    <tr>
+                        <td class="px-4 py-3 text-gray-600">
+                            Paid to date
+                            <span class="block text-xs text-gray-400">includes this receipt</span>
+                        </td>
+                        <td class="px-4 py-3 text-right font-bold text-gray-800 tabular-nums">₦{{ paidToDate|number_format(2) }}</td>
+                    </tr>
+                    <tr class="bg-gray-50">
+                        <td class="px-4 py-3 font-black text-gray-900">Balance remaining</td>
+                        <td class="px-4 py-3 text-right font-black tabular-nums sm:text-lg {{ balanceLeft > 0 ? 'text-red-600' : 'text-green-700' }}">
+                            {% if balanceLeft > 0 %}
+                                ₦{{ balanceLeft|number_format(2) }}
+                            {% else %}
+                                ₦0.00 — fully settled
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <p class="px-4 py-3 text-xs leading-relaxed text-gray-500 border-t border-gray-200">
+                {% if balanceLeft > 0 %}
+                    ₦{{ balanceLeft|number_format(2) }} is still to be paid to clear this invoice.
+                    Pay it any time from the parent portal, or transfer to the school account and upload the receipt.
+                    Part payments are accepted.
+                {% else %}
+                    This invoice is fully paid. Nothing further is owed.
+                {% endif %}
+            </p>
+        </div>
+
         {# FOOTER #}
         <div class="flex justify-between items-end relative z-10 mt-12">
             <div class="text-center">

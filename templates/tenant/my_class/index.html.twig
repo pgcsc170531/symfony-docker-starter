@@ -177,6 +177,50 @@
                 </a>
             </div>
         </section>
+
+        {# Fees — the question a form teacher is asked first on the phone. #}
+        {% if fees is defined %}
+            <section class="rounded-xl border border-ink-200 bg-white p-5 shadow-card">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <h2 class="text-base font-bold text-ink-900">Fees</h2>
+                        <p class="mt-0.5 text-sm text-ink-500">What this class has paid</p>
+                    </div>
+                    <span class="shrink-0 rounded px-2 py-0.5 text-[11px] font-semibold {{ fees.outstanding > 0 ? 'bg-pending/10 text-pending' : 'bg-paid/10 text-paid' }}">
+                        {{ fees.outstanding > 0 ? 'Owing' : 'All cleared' }}
+                    </span>
+                </div>
+
+                <dl class="mt-4 grid grid-cols-2 gap-y-2 text-sm">
+                    {% if is_granted('ROLE_BURSAR') %}
+                        <dt class="text-ink-500">Collected</dt>
+                        <dd class="text-right font-bold text-paid tabular">₦{{ fees.collected|number_format(0) }}</dd>
+                        <dt class="text-ink-500">Outstanding</dt>
+                        <dd class="text-right font-bold {{ fees.outstanding > 0 ? 'text-pending' : 'text-ink-900' }} tabular">₦{{ fees.outstanding|number_format(0) }}</dd>
+                    {% else %}
+                        <dt class="text-ink-500">Still owing</dt>
+                        <dd class="text-right font-bold {{ fees.owing > 0 ? 'text-pending' : 'text-ink-900' }} tabular">{{ fees.owing }}</dd>
+                    {% endif %}
+                    <dt class="text-ink-500">Cleared</dt>
+                    <dd class="text-right font-bold text-ink-900 tabular">{{ fees.cleared }} / {{ fees.rows|length }}</dd>
+                </dl>
+
+                {% if fees.rows|length > 0 %}
+                    <div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-ink-100" role="img"
+                         aria-label="{{ fees.cleared }} of {{ fees.rows|length }} pupils cleared">
+                        <div class="h-full rounded-full bg-paid"
+                             style="width: {{ min(100, (fees.cleared / fees.rows|length * 100)|round) }}%"></div>
+                    </div>
+                {% endif %}
+
+                <div class="mt-4">
+                    <a href="{{ path('app_tenant_my_class_fees', {classroom: classroom.id}) }}"
+                       class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-ink-300 px-4 font-semibold text-ink-700 transition hover:border-accent-400 hover:text-accent-700">
+                        See who has paid
+                    </a>
+                </div>
+            </section>
+        {% endif %}
     </div>
 
     {% if pupilCount == 0 %}

@@ -167,7 +167,16 @@ class Student
     // Relationships
     public function getEnrollments(): Collection { return $this->enrollments; }
 
-    public function getCurrentClass(): ?Classroom { return $this->currentClass; }
+    /**
+     * The pupil's class.
+     *
+     * `currentClass` is the legacy column and is NULL for every pupil created
+     * since enrolment started writing `currentClassroom`, so reading it alone
+     * told parents "results not released", showed "Unassigned" in the bursary
+     * list and left the class out of emails. Fall back instead of duplicating
+     * the null-check at every call site.
+     */
+    public function getCurrentClass(): ?Classroom { return $this->currentClass ?? $this->currentClassroom; }
     public function setCurrentClass(?Classroom $currentClass): static { $this->currentClass = $currentClass; return $this; }
 
     public function getGuardian(): ?Guardian { return $this->guardian; }

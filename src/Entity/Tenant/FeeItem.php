@@ -19,6 +19,17 @@ class FeeItem
    #[ORM\Column(name: 'is_optional')]
     private ?bool $isOptional = false;
 
+    /**
+     * Is this the tuition line?
+     *
+     * A scholarship is a waiver of tuition, never of uniforms, ID cards or
+     * levies — so the discount engine has to know which line it may touch. The
+     * flag is explicit, but a school that already has an item called "Tuition
+     * Fee" needs no migration of habit: the name matches as well.
+     */
+    #[ORM\Column(name: 'is_tuition', options: ['default' => false])]
+    private bool $isTuition = false;
+
     #[ORM\Column(type: 'integer', nullable: true)]
     private ?int $position = 0; // Default to 0
 
@@ -37,6 +48,26 @@ class FeeItem
     public function getName(): ?string
     {
         return $this->name;
+    }
+
+    public function isTuition(): bool
+    {
+        return $this->isTuition || self::looksLikeTuition((string) $this->name);
+    }
+
+    /**
+     * The name test, usable on a line that carries no fee-item link — older
+     * invoices and importer-created bills store only a description.
+     */
+    public static function looksLikeTuition(?string $name): bool
+    {
+        return $name !== null && stripos($name, 'tuition') !== false;
+    }
+
+    public function setIsTuition(bool $isTuition): static
+    {
+        $this->isTuition = $isTuition;
+        return $this;
     }
 
     public function setName(string $name): static

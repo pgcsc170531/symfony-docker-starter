@@ -1,0 +1,79 @@
+{#
+    Whole-school panel — administrator and super admin.
+
+    This is the page the principal opens in the morning: how many pupils, what is
+    owed, whether the term's results are actually finished, and what is waiting
+    on a decision. Finance and store detail follow underneath, because an
+    administrator is accountable for both.
+#}
+{% import 'tenant/dashboard/_kpi.html.twig' as kpi %}
+
+{% if persona.isSuperAdmin %}
+    <div class="mb-6 rounded-lg border border-accent-200 bg-accent-50 p-4">
+        <p class="text-sm font-semibold text-accent-800">You are signed in as Super Admin</p>
+        <p class="mt-1 text-sm leading-relaxed text-accent-700">
+            You oversee this school. Every panel below is open to you — admissions,
+            finance, results, the store and staffing — and so is every screen in the menu.
+        </p>
+    </div>
+{% endif %}
+
+<section class="mb-8" aria-labelledby="pulse-heading">
+    <h2 id="pulse-heading" class="mb-3 text-sm font-semibold text-ink-900">School pulse</h2>
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {{ kpi.kpi(learner.pluralCapital, overview.studentCount,
+            'On the register', path('app_tenant_student_index'), 'View directory', 'pupils') }}
+        {{ kpi.kpi('Staff', overview.staffCount,
+            'Accounts with a job title', path('app_tenant_staff_index'), 'Manage staff', 'staff') }}
+        {{ kpi.kpi('Classes', overview.classCount,
+            overview.subjectCount ~ ' subject' ~ (overview.subjectCount == 1 ? '' : 's') ~ ' registered',
+            path('app_tenant_classroom_index'), 'View classes', 'classes') }}
+        {{ kpi.kpi('Applications', overview.pendingApplications,
+            overview.pendingApplications > 0 ? 'Waiting for a decision' : 'Nothing waiting',
+            path('app_tenant_application_index'), 'Review', 'applications') }}
+    </div>
+</section>
+
+{# ── Term readiness ──────────────────────────────────────────────────── #}
+<section class="mb-8 rounded-lg border border-ink-200 bg-white p-5 shadow-card" aria-labelledby="readiness-heading">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+        <div class="min-w-0">
+            <h2 id="readiness-heading" class="text-sm font-semibold text-ink-900">Term readiness</h2>
+            <p class="mt-1 text-sm leading-relaxed text-ink-500">
+                A subject is finished when its sheet has passed the form teacher, the HOD
+                and the year group master. The term cannot be released before then.
+            </p>
+        </div>
+        {% if overview.resultPercent is not null %}
+            <span class="{{ overview.resultPercent == 100 ? 'badge-paid' : 'badge-pending' }} shrink-0">
+                {{ overview.resultPercent }}% approved
+            </span>
+        {% endif %}
+    </div>
+
+    <div class="mt-4">
+        {% if overview.resultSubjects > 0 %}
+            <div class="h-2 w-full overflow-hidden rounded-full bg-ink-100" role="img"
+                 aria-label="{{ overview.resultApproved }} of {{ overview.resultSubjects }} subjects approved">
+                <div class="h-2 rounded-full bg-accent-600" style="width: {{ overview.resultPercent }}%"></div>
+            </div>
+            <div class="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm text-ink-600">
+                <span>{{ overview.resultApproved }} of {{ overview.resultSubjects }} subjects approved</span>
+                <a href="{{ path('tenant_approval_hub') }}"
+                   class="inline-flex min-h-[44px] items-center font-semibold text-accent-600 hover:text-accent-700">
+                    Open approvals &rarr;
+                </a>
+            </div>
+        {% else %}
+            <p class="text-sm text-ink-500">
+                No subjects have been registered for this session yet.
+                <a href="{{ path('app_tenant_class_subject_index') }}"
+                   class="inline-flex min-h-[44px] items-center font-semibold text-accent-600">Register class subjects &rarr;</a>
+            </p>
+        {% endif %}
+    </div>
+</section>
+
+{% include 'tenant/dashboard/_finance.html.twig' %}
+{% include 'tenant/dashboard/_store.html.twig' %}

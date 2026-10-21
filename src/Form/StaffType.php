@@ -36,13 +36,8 @@ class StaffType extends AbstractType
                 'label' => 'Job Title / Role',
                 'required' => true,
                 'multiple' => false, // Dropdown select
-                'expanded' => false, 
-                'choices'  => [
-                    'School Administrator (Principal)' => 'ROLE_ADMIN',
-                    'Bursar (Finance Officer)' => 'ROLE_BURSAR',
-                    'Store Keeper' => 'ROLE_STORE',
-                    'Class Teacher' => 'ROLE_TEACHER',
-                ],
+                'expanded' => false,
+                'choices'  => $this->roleChoices($options['allow_super_admin']),
             ])
         ;
 
@@ -62,6 +57,31 @@ class StaffType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => User::class,
+            // Only the school's owner (the account created at sign-up) may mint
+            // another super admin. For everyone else the choice is absent from
+            // the dropdown AND from the accepted values, so a hand-crafted POST
+            // cannot escalate an account either.
+            'allow_super_admin' => false,
         ]);
+
+        $resolver->setAllowedTypes('allow_super_admin', 'bool');
+    }
+
+    /** @return array<string, string> */
+    private function roleChoices(bool $allowSuperAdmin): array
+    {
+        $choices = [
+            'School Administrator (Principal)' => 'ROLE_ADMIN',
+            'Admission Officer' => 'ROLE_ADMISSION_OFFICER',
+            'Bursar (Finance Officer)' => 'ROLE_BURSAR',
+            'Store Keeper' => 'ROLE_STORE',
+            'Class Teacher' => 'ROLE_TEACHER',
+        ];
+
+        if ($allowSuperAdmin) {
+            $choices = ['Super Admin (School Owner)' => 'ROLE_TENANT_SUPER_ADMIN'] + $choices;
+        }
+
+        return $choices;
     }
 }

@@ -1,0 +1,83 @@
+{#
+    Teaching panel — subject teacher (and anyone who also teaches: a form
+    teacher, an HOD, an administrator who carries a timetable).
+
+    A sheet is only "waiting" once marks exist, so the counts here match what the
+    teacher actually has left to do rather than everything ever assigned to them.
+
+    The list is rows, not a table. Four columns — subject, class, status, action —
+    do not fit 360px, and a table would have pushed the status off the right edge
+    exactly where the teacher needs to read it. Rows wrap instead, and nothing
+    scrolls sideways.
+#}
+{% import 'tenant/dashboard/_kpi.html.twig' as kpi %}
+
+<section class="mb-8" aria-labelledby="teaching-heading">
+    <h2 id="teaching-heading" class="mb-3 text-sm font-semibold text-ink-900">My teaching</h2>
+
+    {% if teaching.total == 0 %}
+        <div class="rounded-lg border border-dashed border-ink-300 bg-white p-6 text-center">
+            <p class="text-sm font-semibold text-ink-900">No subjects are assigned to you this term</p>
+            <p class="mx-auto mt-1 max-w-md text-sm leading-relaxed text-ink-500">
+                An administrator assigns subject teachers under
+                <span class="font-medium text-ink-700">Administration &rsaquo; Subject Teachers</span>.
+                Once that is done, your classes and mark sheets appear here.
+            </p>
+        </div>
+    {% else %}
+        <div class="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {{ kpi.kpi('Subjects this term', teaching.total,
+                'Classes you teach', path('tenant_result_entry_index'), 'Open result entry', 'classes') }}
+            {{ kpi.kpi('Marks submitted', teaching.submitted,
+                'Submitted and awaiting approval', null, null, 'check') }}
+            {{ kpi.kpi('Awaiting marks', teaching.waiting,
+                'No scores entered yet', null, null, 'clock') }}
+            {{ kpi.kpi('Returned', teaching.returned,
+                teaching.returned > 0 ? 'Fix and re-submit' : 'Nothing sent back', null, null, 'alert') }}
+        </div>
+
+        <div class="overflow-hidden rounded-lg border border-ink-200 bg-white shadow-card">
+            <div class="flex items-center justify-between gap-3 border-b border-ink-200 px-4 py-3 sm:px-5">
+                <h3 class="text-sm font-semibold text-ink-900">Your sheets</h3>
+                <a href="{{ path('tenant_result_entry_index') }}"
+                   class="inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-600 hover:text-accent-700">
+                    All assignments &rarr;
+                </a>
+            </div>
+
+            <ul class="divide-y divide-ink-100">
+                {% for row in teaching.rows %}
+                    {% set status = row.status %}
+                    <li class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3 sm:px-5">
+                        <div class="min-w-0 flex-1 basis-40">
+                            <p class="break-words text-sm font-semibold text-ink-900">
+                                {{ row.subject ? row.subject.name : '—' }}
+                            </p>
+                            <p class="text-xs text-ink-500">
+                                {{ row.classroom ? row.classroom.name : '—' }}
+                                {%- if row.status == 'returned' and row.reason %} &middot; {{ row.reason }}{% endif %}
+                            </p>
+                        </div>
+
+                        <div class="flex shrink-0 items-center gap-2">
+                            {% if status == 'approved' %}
+                                <span class="badge-paid">Approved</span>
+                            {% elseif status == 'returned' %}
+                                <span class="badge-failed">Returned</span>
+                            {% elseif status == 'submitted' %}
+                                <span class="badge-neutral">Submitted</span>
+                            {% else %}
+                                <span class="badge-pending">No marks yet</span>
+                            {% endif %}
+
+                            <a href="{{ path('tenant_result_entry_form', {id: row.assignment.id}) }}"
+                               class="inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-600 hover:text-accent-700">
+                                {{ status == 'not_started' ? 'Enter marks' : 'Open sheet' }} &rarr;
+                            </a>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+</section>

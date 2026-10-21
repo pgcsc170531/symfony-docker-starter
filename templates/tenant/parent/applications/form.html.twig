@@ -186,7 +186,7 @@
                     {{ ui.field(form.religion, false, {'class': inputClass}) }}
                 </div>
 
-                {{ ui.field(form.requestedClassroom, 'Choose the class you are applying for. The school may change it after review.', {'class': inputClass, '@change': "vals.className = $event.target.options[$event.target.selectedIndex].text"}) }}
+                {{ ui.field(form.requestedYearGroup, 'Choose the class. The school assigns the arm (A, B, C) when your child is admitted.', {'class': inputClass, '@change': "vals.className = $event.target.options[$event.target.selectedIndex].text"}) }}
 
                 {{ ui.upload('passportPhoto', "Child's passport photograph", 'JPG, PNG or PDF · up to 4 MB. You can add this later.', application.passportPhotoFilename, 'image/*,application/pdf') }}
             </div>
@@ -304,13 +304,19 @@
                     <p class="text-xs text-red-600 font-medium">{{ form.declaration.vars.errors|first.message }}</p>
                 {% endif %}
 
+                {#
+                    Pay-first: a parent only reaches step 5 once the fee gate is
+                    open, so this is a receipt, not a warning. The old copy told
+                    them to pay "on the next screen" — there is no next screen now.
+                #}
                 {% if school and school.applicationFeeAmount and school.applicationFeeAmount > 0 %}
-                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-900">
-                        <strong class="font-bold">Application fee: {{ school.applicationFeeAmount }}</strong>
-                        <p class="text-xs mt-1">
-                            This school charges a form fee. Your application is received immediately, but review
-                            starts once the fee is {{ school.acceptsOfflinePayment ? 'confirmed' : 'paid' }} — you will
-                            see how to pay on the next screen.
+                    <div class="rounded-xl border border-accent-200 bg-accent-50 p-4 text-sm text-accent-900">
+                        <strong class="font-bold">
+                            Application fee: ₦{{ application.feeAmount|number_format(2) }}
+                            — {{ application.feeStatus == 'waived' ? 'waived' : 'paid' }}
+                        </strong>
+                        <p class="mt-1 text-xs">
+                            Nothing more to pay now. Submitting sends your application straight to the school for review.
                         </p>
                     </div>
                 {% endif %}
