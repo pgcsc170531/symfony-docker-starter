@@ -51,18 +51,33 @@ final class AdmissionLetterPdfRenderer
 
         // The term of entry is the term the pupil was first billed for; the
         // enrolment itself carries only the session.
-        $entryTerm = $this->em->getRepository(Invoice::class)->createQueryBuilder('i')
+        $entryInvoice = $this->em->getRepository(Invoice::class)->createQueryBuilder('i')
             ->leftJoin('i.term', 't')->addSelect('t')
+            ->leftJoin('i.classroom', 'ic')->addSelect('ic')
             ->where('i.student = :student')
             ->setParameter('student', $student)
             ->orderBy('i.id', 'ASC')
             ->setMaxResults(1)
             ->getQuery()
-            ->getOneOrNullResult()?->getTerm();
+            ->getOneOrNullResult();
+
+        $entryTerm = $entryInvoice?->getTerm();
 
         $session = $entry?->getSession() ?? $entryTerm?->getSession();
 
-        $placedIn = $entry?->getClassroom()?->getName()
+        /*
+         * "Placed in" and the fee breakdown must name the SAME class — the class
+         * the child was admitted into. The admission invoice is the record of what
+         * the school actually billed for that class, so it is the first source; a
+         * pupil who has since been promoted must not be quoted next year's fees on
+         * a letter about admission.
+         */
+        $admittedClassroom = $entryInvoice?->getClassroom()
+            ?? $entry?->getClassroom()
+            ?? $student->getCurrentClassroom()
+            ?? $student->getCurrentClass();
+
+        $placedIn = $admittedClassroom?->getName()
             ?? $student->getCurrentClassroom()?->getName()
             ?? $student->getCurrentClass()?->getName();
 
@@ -70,15 +85,27 @@ final class AdmissionLetterPdfRenderer
 
         /*
          * The letter says "find attached the breakdown of school fees, rules and
-         * regulations" — so it has to actually carry them. The fees come from the
-         * fee structure for the class the child was admitted into; the rules come
-         * from the school's own documents, which the same text also publishes on
-         * the website. Nothing is typed twice.
+         * regulations" — so it has to actually carry them.
+         *
+         * A new intake pays two things, and the school's own fee matrix says so:
+         *   A. what EVERY pupil of the class pays this term (TERM, plus SESSION
+         *      items in the first term), and
+         *   B. the one-off items only a new pupil pays (ONETIME: uniform, books,
+         *      ID card…).
+         * A + B is "the exact fee structure" for this child.
+         *
+         * One one-off is deliberately NOT quoted: the admission / form fee. The
+         * family already paid it with the application, and printing it here would
+         * ask them for it twice. It is shown as a note instead, so the arithmetic on
+         * the page still adds up.
          */
-        $classroom = $entry?->getClassroom() ?? $student->getCurrentClassroom() ?? $student->getCurrentClass();
+        $classroom = $admittedClassroom;
         $feeTerm = $entryTerm ?? $this->em->getRepository(Term::class)->findOneBy(['isActive' => true]);
 
-        $fees = [];
+        $recurringFees = [];
+        $newIntakeFees = [];
+        $alreadyPaid = [];
+
         if ($classroom !== null && $feeTerm !== null) {
             $rows = $this->em->getRepository(FeeStructure::class)->createQueryBuilder('f')
                 ->leftJoin('f.feeItem', 'fi')->addSelect('fi')
@@ -91,12 +118,28 @@ final class AdmissionLetterPdfRenderer
                 ->getResult();
 
             foreach ($rows as $row) {
-                $fees[] = [
-                    'name' => $row->getFeeItem()?->getName() ?? 'Fee',
+                $item = $row->getFeeItem();
+                if ($item === null || $item->isOptional()) {
+                    continue;
+                }
+
+                $line = [
+                    'name' => $item->getName() ?? 'Fee',
                     'amount' => (float) ($row->getAmount() ?? 0),
                 ];
+
+                if ($item->getFrequency() !== 'ONETIME') {
+                    $recurringFees[] = $line;
+                } elseif ($this->isApplicationFormFee($item->getName())) {
+                    // Paid at application — never re-billed on the letter.
+                    $alreadyPaid[] = $line;
+                } else {
+                    $newIntakeFees[] = $line;
+                }
             }
         }
+
+        $fees = array_merge($recurringFees, $newIntakeFees);
 
         $appendices = $this->em->getRepository(SchoolDocument::class)->findBy(
             ['isPublished' => true, 'attachToAdmissionLetter' => true],
@@ -133,6 +176,9 @@ final class AdmissionLetterPdfRenderer
             'admitted_on' => $admittedOn,
             'reference' => $student->getAdmissionNumber() ?: sprintf('ADM-%d', (int) $student->getId()),
             'fees' => $fees,
+            'fees_recurring' => $recurringFees,
+            'fees_new_intake' => $newIntakeFees,
+            'fees_already_paid' => $alreadyPaid,
             'fee_total' => array_sum(array_column($fees, 'amount')),
             'fee_class' => $placedIn,
             'fee_term' => $feeTerm?->getName(),
@@ -151,5 +197,20 @@ final class AdmissionLetterPdfRenderer
     public function render(array $context): string
     {
         return $this->pdf->render('tenant/admission/letter.pdf.twig', $context);
+    }
+
+    /**
+     * Is this one-off item the admission / application form fee?
+     *
+     * That fee is paid with the application, before the child is admitted, so a
+     * letter that quotes it again asks the family to pay twice. Matched on the name
+     * because a school is free to call the item whatever it likes — the seeded
+     * default is "Admission / Form Fee", and schools commonly write "Application
+     * Fee" or "Form Fee".
+     */
+    private function isApplicationFormFee(?string $name): bool
+    {
+        return $name !== null
+            && preg_match('/admission|application|form\s*fee/i', $name) === 1;
     }
 }

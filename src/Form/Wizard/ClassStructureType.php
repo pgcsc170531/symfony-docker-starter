@@ -3,35 +3,45 @@
 namespace App\Form\Wizard;
 
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\Form\Extension\Core\Type\TextType;
-use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
+/**
+ * The class structure: a list of editable rows, one per class.
+ *
+ * Each row carries its own arms, so "JSS 1 with A, B, C" and "SS 1 with A, B" can
+ * be built on the same screen — and a school that does not use arms (a nursery, a
+ * single-stream primary) simply leaves the arms box empty.
+ */
 class ClassStructureType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
-        // We get the suggestions passed from the controller
-        $suggestions = $options['data']['suggestions'] ?? [];
+        $suggestions = $options['suggestions'] ?? [];
 
-        $builder
-            ->add('selectedClasses', ChoiceType::class, [
-                'label' => 'Select Classes to Create',
-                'choices' => array_combine($suggestions, $suggestions), // Key=Value
-                'expanded' => true, // Checkboxes
-                'multiple' => true, // Allow multiple selection
-                'data' => $suggestions, // Select all by default
-                'attr' => ['class' => 'grid grid-cols-2 gap-4'],
-                'label_attr' => ['class' => 'font-bold text-gray-700 mb-2 block']
-            ])
-            ->add('arms', TextType::class, [
-                'label' => 'Divisions / Arms (Comma Separated)',
-                'data' => 'A, B, C', // Default
-                'help' => 'Leave blank if you have no divisions. Examples: "A, B, C" or "Gold, Silver, Bronze"',
-                'required' => false
-            ])
-          ;
+        $rows = [];
+        foreach ($suggestions as $name) {
+            $rows[] = ['checked' => true, 'name' => $name, 'arms' => ''];
+        }
+
+        $builder->add('classes', CollectionType::class, [
+            'entry_type' => ClassRowType::class,
+            'allow_add' => true,
+            'allow_delete' => true,
+            'by_reference' => false,
+            'data' => $rows,
+            'prototype' => true,
+        ]);
+    }
+
+    public function configureOptions(OptionsResolver $resolver): void
+    {
+        $resolver->setDefaults([
+            'suggestions' => [],
+            'data_class' => null,
+        ]);
+
+        $resolver->setAllowedTypes('suggestions', 'array');
     }
 }

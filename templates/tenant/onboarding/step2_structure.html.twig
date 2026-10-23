@@ -83,21 +83,9 @@
 
                         {# Show Form Fields #}
                         <div class="bg-blue-50/50 border border-blue-100 rounded-xl p-5 md:p-6 mb-6">
-                            <h3 class="font-bold text-gray-800 mb-4 text-sm md:text-base">1. Which levels exist in your school?</h3>
-                            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-                                {% for child in form.selectedClasses %}
-                                    <label class="flex items-center space-x-3 bg-white p-3 rounded-lg border border-gray-200 hover:border-blue-400 cursor-pointer shadow-sm transition-colors">
-                                        {{ form_widget(child, {'attr': {'class': 'h-5 w-5 text-blue-600 rounded focus:ring-blue-500 border-gray-300'}}) }}
-                                        <span class="text-gray-700 font-medium text-sm select-none">{{ child.vars.label }}</span>
-                                    </label>
-                                {% endfor %}
-                            </div>
-                        </div>
-
-                        <div class="mb-4">
-                            <h3 class="font-bold text-gray-800 mb-2 text-sm md:text-base">2. Do you have Arms or Sub-divisions?</h3>
-                            <p class="text-xs md:text-sm text-gray-500 mb-3">e.g. If you have "JSS 1A" and "JSS 1B", enter <strong>A, B</strong> below.</p>
-                            {{ form_widget(form.arms, {'attr': {'class': 'w-full text-base md:text-lg p-3 md:p-4 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition-shadow', 'placeholder': 'A, B, C'}}) }}
+                            <h3 class="font-bold text-gray-800 mb-1 text-sm md:text-base">Your classes</h3>
+                            <p class="mb-4 text-xs text-gray-500">Rename anything, and give each class the arms it actually has.</p>
+                            {% include 'tenant/onboarding/_class_rows.html.twig' with {form: form} %}
                         </div>
 
                         {# Wipe Footer #}
@@ -118,21 +106,9 @@
                     
                     {# Show Form Fields #}
                     <div class="bg-blue-50/50 border border-blue-100 rounded-xl p-5 md:p-6 mb-6">
-                        <h3 class="font-bold text-gray-800 mb-4 text-sm md:text-base">1. Which levels exist in your school?</h3>
-                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-                            {% for child in form.selectedClasses %}
-                                <label class="flex items-center space-x-3 bg-white p-3 rounded-lg border border-gray-200 hover:border-blue-400 cursor-pointer shadow-sm transition-colors">
-                                    {{ form_widget(child, {'attr': {'class': 'h-5 w-5 text-blue-600 rounded focus:ring-blue-500 border-gray-300'}}) }}
-                                    <span class="text-gray-700 font-medium text-sm select-none">{{ child.vars.label }}</span>
-                                </label>
-                            {% endfor %}
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <h3 class="font-bold text-gray-800 mb-2 text-sm md:text-base">2. Do you have Arms or Sub-divisions?</h3>
-                        <p class="text-xs md:text-sm text-gray-500 mb-3">e.g. If you have "JSS 1A" and "JSS 1B", enter <strong>A, B</strong> below.</p>
-                        {{ form_widget(form.arms, {'attr': {'class': 'w-full text-base md:text-lg p-3 md:p-4 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition-shadow', 'placeholder': 'A, B, C'}}) }}
+                        <h3 class="font-bold text-gray-800 mb-1 text-sm md:text-base">Your classes</h3>
+                        <p class="mb-4 text-xs text-gray-500">Rename anything, drop what you do not run, and add your own. Each class carries its own arms.</p>
+                        {% include 'tenant/onboarding/_class_rows.html.twig' with {form: form} %}
                     </div>
 
                     {# Fresh Generation Footer #}

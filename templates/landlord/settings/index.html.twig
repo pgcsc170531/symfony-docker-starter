@@ -14,6 +14,25 @@
     </div>
 
     {# 1b. PLATFORM PAYMENTS SWITCH #}
+    <div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <a href="{{ path('landlord_settings_payments') }}"
+           class="flex min-h-[44px] items-center justify-between gap-3 rounded-xl border border-ink-200 bg-white px-4 py-3 hover:border-accent-400">
+            <span>
+                <span class="block text-sm font-bold text-ink-900">Paystack keys</span>
+                <span class="block text-xs text-ink-500">Secret + public key, live/test, check the key</span>
+            </span>
+            <span class="text-sm font-semibold text-accent-700">&rarr;</span>
+        </a>
+        <a href="{{ path('landlord_settings_email') }}"
+           class="flex min-h-[44px] items-center justify-between gap-3 rounded-xl border border-ink-200 bg-white px-4 py-3 hover:border-accent-400">
+            <span>
+                <span class="block text-sm font-bold text-ink-900">Email / SMTP</span>
+                <span class="block text-xs text-ink-500">Host, password, sender — with a test send</span>
+            </span>
+            <span class="text-sm font-semibold text-accent-700">&rarr;</span>
+        </a>
+    </div>
+
     <div class="mb-6 rounded-xl border {{ onlinePaymentsEnabled ? 'border-paid/40 bg-paid/5' : 'border-failed/40 bg-failed/5' }} p-4">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>

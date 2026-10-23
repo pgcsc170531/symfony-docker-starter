@@ -20,10 +20,19 @@ parameters:
     default_base_domain: 'localhost'
 
     # Paystack. Empty by default, which is what keeps the app on the local
-    # payment simulator — see App\Service\Payment\GatewayFactory. Add the real
-    # key to the container environment (compose.yaml / VPS .env) to go live.
+    # payment simulator — see App\Service\Payment\GatewayFactory. The effective
+    # key comes from the landlord settings screen first, then this environment
+    # variable (see App\Service\Settings\PlatformSettings); either way it is read
+    # at call time, so a key pasted into the admin takes effect immediately.
     paystack_secret_key: "%env(default:paystack_secret_key_fallback:PAYSTACK_SECRET_KEY)%"
     paystack_secret_key_fallback: ''
+
+    # Encrypts the secrets stored in the landlord database (Paystack key, SMTP
+    # password). Generate one with: php bin/console app:platform:make-key
+    # Deliberately NOT APP_SECRET: rotating the session secret must not make every
+    # stored key unreadable.
+    app.encryption_key: "%env(default:encryption_key_fallback:APP_ENCRYPTION_KEY)%"
+    encryption_key_fallback: ''
 
     # Edus's own collection account, printed on the payment page and on every
     # invoice PDF. Empty by default ON PURPOSE: the page then says "ask us for
@@ -47,6 +56,18 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+    # The class that turns secrets into `enc:v1:…` before they reach the database.
+    # The key is a parameter, not a constructor string, so it can be generated and
+    # dropped into the server environment without touching this file.
+    App\Service\Settings\SecretCipher:
+        arguments:
+            $appEncryptionKey: '%app.encryption_key%'
+
+    # `MAILER_DSN=platform://default` resolves to this transport, which reads the
+    # real DSN from the landlord settings screen on every send.
+    App\Service\Mail\PlatformMailerTransportFactory:
+        tags: ['mailer.transport_factory']
 
     # The payment provider is chosen at runtime: Paystack once PAYSTACK_SECRET_KEY
     # is set, otherwise the local simulator. See App\Service\Payment\GatewayFactory.

@@ -1,0 +1,212 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Payments — Paystack{% endblock %}
+
+{% macro badge(text, tone) %}
+    {% set tones = {
+        paid: 'border-paid/40 bg-paid/10 text-paid',
+        pending: 'border-pending/40 bg-pending/10 text-pending',
+        failed: 'border-failed/40 bg-failed/10 text-failed',
+        neutral: 'border-ink-300 bg-ink-100 text-ink-600'
+    } %}
+    <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide {{ tones[tone] ?? tones.neutral }}">{{ text }}</span>
+{% endmacro %}
+
+{% import _self as ui %}
+
+{% block body %}
+<div class="px-4 py-4 sm:px-6 sm:py-6">
+
+    <a href="{{ path('landlord_settings_index') }}"
+       class="mb-4 inline-flex min-h-[44px] items-center text-sm font-semibold text-ink-500 hover:text-ink-900">
+        &larr; Global settings
+    </a>
+
+    <div class="mb-5">
+        <h1 class="text-xl font-black tracking-tight text-ink-900 sm:text-2xl">Payments — Paystack</h1>
+        <p class="mt-1 text-sm text-ink-500">
+            The key the whole platform pays with. A change takes effect on the next payment — no deploy,
+            no restart.
+        </p>
+    </div>
+
+    {# ── Where the effective value comes from ─────────────────────────── #}
+    <div class="mb-5 rounded-xl border border-ink-200 bg-white p-4">
+        <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs font-bold uppercase tracking-wide text-ink-400">Current mode</span>
+            {% if mode == 'live' %}
+                {{ ui.badge('LIVE — real money moves', 'failed') }}
+            {% elseif mode == 'test' %}
+                {{ ui.badge('TEST — no real money', 'pending') }}
+            {% else %}
+                {{ ui.badge('No key — transfers only', 'neutral') }}
+            {% endif %}
+            <span class="text-xs font-bold uppercase tracking-wide text-ink-400 sm:ml-4">Key from</span>
+            {% if secretSource == 'database' %}
+                {{ ui.badge('this database', 'paid') }}
+            {% elseif secretSource == 'environment' %}
+                {{ ui.badge('server environment', 'neutral') }}
+            {% else %}
+                {{ ui.badge('not set', 'neutral') }}
+            {% endif %}
+        </div>
+
+        <dl class="mt-3 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+            <div class="flex justify-between gap-3 rounded-lg bg-ink-50 px-3 py-2">
+                <dt class="text-ink-500">Secret key</dt>
+                <dd class="font-mono font-semibold text-ink-900">{{ secretHint ?: 'not set' }}</dd>
+            </div>
+            <div class="flex flex-between gap-3 rounded-lg bg-ink-50 px-3 py-2">
+                <span class="text-ink-500">Last changed</span>
+                <span class="font-semibold text-ink-900">{{ rotatedAt ? rotatedAt|date('j M Y, H:i') : 'never from this screen' }}</span>
+            </div>
+        </dl>
+
+        {% if mode == 'live' %}
+            <p class="mt-3 rounded-lg border border-failed/30 bg-failed/5 px-3 py-2 text-sm font-semibold text-failed">
+                Live key. Every parent payment now moves real money into the school's account. Check the
+                school's subaccount code before you advertise online payment.
+            </p>
+        {% elseif mode == 'test' %}
+            <p class="mt-3 rounded-lg border border-pending/30 bg-pending/5 px-3 py-2 text-sm text-pending">
+                Test key: the flow works end to end, but no money moves. Swap in the <code class="font-mono">sk_live_…</code>
+                key when you are ready to collect.
+            </p>
+        {% elseif mode == 'none' %}
+            <p class="mt-3 rounded-lg border border-ink-200 bg-ink-50 px-3 py-2 text-sm text-ink-600">
+                Without a key, online payment stays off and parents see bank transfer only. The local
+                payment simulator is used in development — see <code class="font-mono">GatewayFactory</code>.
+            </p>
+        {% endif %}
+    </div>
+
+    {% if not canEncrypt %}
+        <div class="mb-5 rounded-xl border border-failed/40 bg-failed/5 p-4">
+            <p class="text-sm font-bold text-failed">Secrets cannot be saved yet.</p>
+            <p class="mt-1 text-sm text-ink-700">
+                <code class="font-mono">APP_ENCRYPTION_KEY</code> is not set, so anything typed below would be refused
+                rather than stored in the clear. Generate one and add it to the server environment:
+            </p>
+            <p class="mt-2 overflow-x-auto rounded-lg bg-ink-900 px-3 py-2 font-mono text-xs text-white">
+                php bin/console app:platform:make-key
+            </p>
+        </div>
+    {% endif %}
+
+    {# ── Save / replace ───────────────────────────────────────────────── #}
+    <form method="post" action="{{ path('landlord_settings_payments') }}" class="mb-5 rounded-xl border border-ink-200 bg-white">
+        <input type="hidden" name="_token" value="{{ csrf_token('platform_payments') }}">
+        <input type="hidden" name="action" value="save">
+
+        <div class="border-b border-ink-100 px-4 py-3">
+            <h2 class="text-sm font-bold text-ink-900">Replace the keys</h2>
+            <p class="mt-0.5 text-xs text-ink-500">Leave a field blank to keep the current value. What is saved can never be read back.</p>
+        </div>
+
+        <div class="space-y-4 p-4 {{ canEncrypt ? '' : 'pointer-events-none opacity-50' }}">
+            <div>
+                <label for="paystack_secret" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">
+                    Secret key <span class="normal-case text-ink-400">(sk_live_… / sk_test_…)</span>
+                </label>
+                <input id="paystack_secret" name="paystack_secret" type="password" autocomplete="new-password" spellcheck="false"
+                       placeholder="{{ secretHint ? 'Currently ' ~ secretHint ~ ' — type to replace' : 'sk_test_…' }}"
+                       class="min-h-[44px] w-full rounded-lg border border-ink-300 px-3 font-mono text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500">
+                <p class="mt-1 text-xs text-ink-500">
+                    Signs every API call <em>and</em> every webhook — Paystack has no separate webhook secret. Never paste it
+                    into chat, email or a ticket.
+                </p>
+            </div>
+
+            <div>
+                <label for="paystack_public" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">
+                    Public key <span class="normal-case text-ink-400">(optional)</span>
+                </label>
+                <input id="paystack_public" name="paystack_public" type="text" autocomplete="off" spellcheck="false"
+                       placeholder="{{ publicHint ?: 'pk_test_…' }}"
+                       class="min-h-[44px] w-full rounded-lg border border-ink-300 px-3 font-mono text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500">
+                <p class="mt-1 text-xs text-ink-500">Only needed if we ever switch to inline checkout. Hosted checkout does not use it.</p>
+            </div>
+        </div>
+
+        <div class="border-t border-ink-100 p-4">
+            <button type="submit" {{ canEncrypt ? '' : 'disabled' }}
+                    class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-accent-600 px-5 text-sm font-semibold text-white hover:bg-accent-700 disabled:opacity-50 sm:w-auto">
+                Save keys
+            </button>
+        </div>
+    </form>
+
+    {# ── Verify + clear ───────────────────────────────────────────────── #}
+    <div class="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div class="rounded-xl border border-ink-200 bg-white p-4">
+            <h2 class="text-sm font-bold text-ink-900">Check the key</h2>
+            <p class="mt-1 text-sm text-ink-500">Calls Paystack and prints the account balance. Do this before you close the ticket.</p>
+            <form method="post" action="{{ path('landlord_settings_payments_check') }}" class="mt-3">
+                <input type="hidden" name="_token" value="{{ csrf_token('platform_payments_check') }}">
+                <button type="submit"
+                        class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-ink-300 px-4 text-sm font-semibold text-ink-700 hover:border-accent-400 hover:text-accent-700">
+                    Check with Paystack
+                </button>
+            </form>
+        </div>
+
+        <div class="rounded-xl border border-ink-200 bg-white p-4">
+            <h2 class="text-sm font-bold text-ink-900">Clear</h2>
+            <p class="mt-1 text-sm text-ink-500">Falls back to the environment value, then to transfers only.</p>
+            <div class="mt-3 flex flex-col gap-2">
+                <form method="post" action="{{ path('landlord_settings_payments') }}"
+                      onsubmit="return confirm('Clear the Paystack secret key?');">
+                    <input type="hidden" name="_token" value="{{ csrf_token('platform_payments') }}">
+                    <input type="hidden" name="action" value="clear_secret">
+                    <button type="submit"
+                            class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-failed/40 px-4 text-sm font-semibold text-failed hover:bg-failed/5">
+                        Clear secret key
+                    </button>
+                </form>
+                <form method="post" action="{{ path('landlord_settings_payments') }}"
+                      onsubmit="return confirm('Clear the Paystack public key?');">
+                    <input type="hidden" name="_token" value="{{ csrf_token('platform_payments') }}">
+                    <input type="hidden" name="action" value="clear_public">
+                    <button type="submit"
+                            class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-ink-300 px-4 text-sm font-semibold text-ink-600 hover:border-ink-400">
+                        Clear public key
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {# ── Webhook + bank + the switch above it ─────────────────────────── #}
+    <div class="rounded-xl border border-ink-200 bg-white">
+        <div class="border-b border-ink-100 px-4 py-3">
+            <h2 class="text-sm font-bold text-ink-900">Dashboard details</h2>
+        </div>
+        <dl class="divide-y divide-ink-100 text-sm">
+            <div class="px-4 py-3">
+                <dt class="text-xs font-bold uppercase tracking-wide text-ink-400">Webhook URL</dt>
+                <dd class="mt-1 break-all font-mono text-ink-900">{{ webhookUrl }}</dd>
+                <dd class="mt-1 text-xs text-ink-500">Paste this into Paystack → Settings → API Keys &amp; Webhooks. It is what turns a closed browser tab into a confirmed payment.</dd>
+            </div>
+            <div class="px-4 py-3">
+                <dt class="text-xs font-bold uppercase tracking-wide text-ink-400">Edus collection account</dt>
+                <dd class="mt-1 text-ink-900">
+                    {% if bank.configured %}
+                        <span class="font-semibold">{{ bank.name }}</span> · <span class="font-mono">{{ bank.account }}</span>
+                        {% if bank.accountName %} · {{ bank.accountName }}{% endif %}
+                    {% else %}
+                        <span class="text-ink-500">Not configured — the payment page says “ask us for transfer details” rather than printing a placeholder.</span>
+                    {% endif %}
+                </dd>
+            </div>
+            <div class="px-4 py-3">
+                <dt class="text-xs font-bold uppercase tracking-wide text-ink-400">Platform switch</dt>
+                <dd class="mt-1 text-ink-700">
+                    A working key does not turn payments on by itself. The platform-wide switch on
+                    <a href="{{ path('landlord_settings_index') }}" class="font-semibold text-accent-700 hover:underline">Global settings</a>
+                    overrides every school.
+                </dd>
+            </div>
+        </dl>
+    </div>
+</div>
+{% endblock %}

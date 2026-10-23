@@ -136,6 +136,12 @@
         border-top: .8pt solid #D1D5DB; border-bottom: 0; font-weight: bold;
         font-family: "DejaVu Sans", sans-serif; font-size: 9.6pt;
     }
+    /* Part B of the school's fee matrix: one-off items a new pupil pays once. */
+    table.fees tr.group td {
+        background: #F3F4F6; border-bottom: 0; padding-top: 4pt; padding-bottom: 3pt;
+        font-size: 7.6pt; font-weight: bold; text-transform: uppercase; letter-spacing: .4pt;
+        color: #4B5563;
+    }
 </style>
 </head>
 <body>
@@ -245,19 +251,48 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for fee in fees %}
+                    {% for fee in fees_recurring|default([]) %}
                         <tr>
                             <td>{{ loop.index }}</td>
                             <td>{{ fee.name }}</td>
                             <td class="num">₦{{ fee.amount|number_format(2) }}</td>
                         </tr>
                     {% endfor %}
+
+                    {% if fees_new_intake|default([])|length %}
+                        {# The school's own fee matrix calls this Part B — what only a
+                           new pupil pays, once. Keeping it visibly separate is what
+                           lets a parent compare the letter with the poster on the wall. #}
+                        <tr class="group">
+                            <td colspan="3">New intake — one-off</td>
+                        </tr>
+                        {% for fee in fees_new_intake %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ fee.name }}</td>
+                                <td class="num">₦{{ fee.amount|number_format(2) }}</td>
+                            </tr>
+                        {% endfor %}
+                    {% endif %}
+
                     <tr class="total">
                         <td colspan="2">Total payable</td>
                         <td class="num">₦{{ fee_total|number_format(2) }}</td>
                     </tr>
                 </tbody>
             </table>
+
+            {% if fees_already_paid|default([])|length %}
+                {# The form fee was paid with the application. Saying so keeps the
+                   arithmetic on the page honest instead of silently dropping a line. #}
+                <p class="appendix-note" style="margin-top: 3pt;">
+                    The admission / application form fee
+                    {% for fee in fees_already_paid %}
+                        (₦{{ fee.amount|number_format(2) }}{% if not loop.last %}, {% endif %})
+                    {% endfor %}
+                    has already been paid with your application and is <strong>not</strong> included above.
+                </p>
+            {% endif %}
 
             <p class="appendix-note">
                 Fees may be paid in full or in part at the school's bursary, or online where the school

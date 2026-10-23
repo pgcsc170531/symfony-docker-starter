@@ -5,7 +5,7 @@ namespace App\Service\Payment;
 use App\Entity\Tenant\PaymentIntent;
 use App\Entity\Tenant\School;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use App\Service\Settings\PlatformSettings;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
@@ -33,8 +33,7 @@ final class PaystackGateway implements PaymentGatewayInterface
         private HttpClientInterface $httpClient,
         private LoggerInterface $logger,
         private UrlGeneratorInterface $urlGenerator,
-        #[Autowire('%paystack_secret_key%')]
-        private string $secretKey = '',
+        private PlatformSettings $settings,
     ) {
     }
 
@@ -43,9 +42,19 @@ final class PaystackGateway implements PaymentGatewayInterface
         return PaymentIntent::PROVIDER_PAYSTACK;
     }
 
+    /**
+     * The key is read on every call, not injected once: a Super Admin pasting a new
+     * key into the landlord settings screen must take effect on the next payment,
+     * without a cache clear, a rebuild or a deploy.
+     */
+    private function secretKey(): string
+    {
+        return (string) ($this->settings->paystackSecretKey() ?? '');
+    }
+
     public function isConfigured(): bool
     {
-        return trim($this->secretKey) !== '';
+        return $this->secretKey() !== '';
     }
 
     public function initialize(PaymentIntent $intent, School $school): GatewayResult
@@ -172,11 +181,11 @@ final class PaystackGateway implements PaymentGatewayInterface
     public function parseWebhook(string $rawBody, array $headers): ?array
     {
         $signature = $this->header($headers, 'x-paystack-signature');
-        if ($signature === null || trim($this->secretKey) === '') {
+        if ($signature === null || $this->secretKey() === '') {
             return null;
         }
 
-        $expected = hash_hmac('sha512', $rawBody, $this->secretKey);
+        $expected = hash_hmac('sha512', $rawBody, $this->secretKey());
 
         // Constant-time compare, and it happens BEFORE the body is parsed.
         if (!hash_equals($expected, $signature)) {
@@ -223,7 +232,7 @@ final class PaystackGateway implements PaymentGatewayInterface
     private function headers(): array
     {
         return [
-            'Authorization' => 'Bearer ' . trim($this->secretKey),
+            'Authorization' => 'Bearer ' . $this->secretKey(),
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',
         ];

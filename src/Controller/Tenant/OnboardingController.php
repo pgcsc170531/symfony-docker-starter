@@ -84,12 +84,12 @@ class OnboardingController extends AbstractController
         $type = $school->getInstitutionType() ?? 'secondary';
         
         $suggestions = match($type) {
-            School::TYPE_NURSERY => ['Nursery 1', 'Nursery 2', 'KG 1', 'KG 2'],
+            School::TYPE_NURSERY => ['Pre-Nursery', 'Nursery 1', 'Nursery 2', 'Nursery 3'],
             School::TYPE_PRIMARY => ['Nursery 1', 'Nursery 2', 'KG 1', 'KG 2', 'Primary 1', 'Primary 2', 'Primary 3', 'Primary 4', 'Primary 5', 'Primary 6'],
             School::TYPE_JUNIOR_SECONDARY => ['JSS 1', 'JSS 2', 'JSS 3'],
             School::TYPE_SENIOR_SECONDARY => ['SS 1', 'SS 2', 'SS 3'],
             School::TYPE_COMBINED => [
-                'Nursery 1', 'Nursery 2', 'KG 1', 'KG 2',
+                'Pre-Nursery', 'Nursery 1', 'Nursery 2', 'Nursery 3',
                 'Primary 1', 'Primary 2', 'Primary 3', 'Primary 4', 'Primary 5', 'Primary 6',
                 'JSS 1', 'JSS 2', 'JSS 3', 'SS 1', 'SS 2', 'SS 3',
             ],
@@ -97,8 +97,8 @@ class OnboardingController extends AbstractController
             default => ['JSS 1', 'JSS 2', 'JSS 3', 'SS 1', 'SS 2', 'SS 3'],
         };
 
-        $form = $this->createForm(ClassStructureType::class, [
-            'suggestions' => $suggestions
+        $form = $this->createForm(ClassStructureType::class, null, [
+            'suggestions' => $suggestions,
         ]);
         
         $form->handleRequest($request);
@@ -130,31 +130,51 @@ class OnboardingController extends AbstractController
 
             // CASE C: Proceed with Generation (First time, or after wipe)
             $data = $form->getData();
-            $classes = $data['selectedClasses'];
-            $arms = $data['arms'] ? array_map('trim', explode(',', $data['arms'])) : [];
+            $rows = $data['classes'] ?? [];
 
-            // A school with no classes cannot bill, register or report. The form
-            // ships with the suggested levels pre-checked, so an empty selection
-            // means somebody deliberately cleared them — refuse instead of
-            // flashing "Success! 0 classrooms generated" and moving on.
-            if ($classes === []) {
-                $this->addFlash('error', 'Select at least one class level to continue.');
+            /*
+             * Every row is a class the school may rename, with its own arms.
+             * "JSS 1" + "A, B, C" makes JSS 1A/1B/1C; "SS 1" + "A, B" makes SS 1A/1B;
+             * blank arms makes the single class as typed. A row that is unticked or
+             * whose name was cleared is skipped rather than creating a nameless room.
+             */
+            $created = [];
+            foreach ($rows as $row) {
+                if (empty($row['checked'])) {
+                    continue;
+                }
+
+                $className = trim((string) ($row['name'] ?? ''));
+                if ($className === '') {
+                    continue;
+                }
+
+                $arms = array_values(array_filter(array_map(
+                    static fn (string $arm): string => trim($arm),
+                    explode(',', (string) ($row['arms'] ?? ''))
+                ), static fn (string $arm): bool => $arm !== ''));
+
+                if ($arms === []) {
+                    $created[] = $className;
+                } else {
+                    foreach ($arms as $arm) {
+                        $created[] = $className . ' ' . $arm;
+                    }
+                }
+            }
+
+            // A school with no classes cannot bill, register or report. Refuse
+            // instead of flashing "Success! 0 classrooms generated" and moving on.
+            if ($created === []) {
+                $this->addFlash('error', 'Tick at least one class and give it a name to continue.');
 
                 return $this->redirectToRoute('app_tenant_onboarding_structure');
             }
-            
+
             $count = 0;
-            foreach ($classes as $className) {
-                if (empty($arms)) {
-                    $this->createClass($em, $className);
-                    $count++;
-                } else {
-                    foreach ($arms as $arm) {
-                        if (empty($arm)) continue; 
-                        $this->createClass($em, "$className $arm");
-                        $count++;
-                    }
-                }
+            foreach (array_unique($created) as $className) {
+                $this->createClass($em, $className);
+                $count++;
             }
 
             $em->flush();
