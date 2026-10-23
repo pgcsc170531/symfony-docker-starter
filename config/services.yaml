@@ -18,6 +18,14 @@ parameters:
     receipts_directory: '%kernel.project_dir%/public/uploads/receipts'
     app.base_domain: "%env(default:default_base_domain:BASE_DOMAIN)%"
     default_base_domain: 'localhost'
+    # The domain a school's public site actually answers on (edus.ng), as opposed
+    # to BASE_DOMAIN, which is the host this box happens to serve (localhost in
+    # development). The Paystack webhook URL printed on /admin/settings/payments
+    # must use the public one — `<school>.localhost` would never reach the server.
+    # Without this parameter the env fallback cannot resolve and BOTH settings
+    # screens threw 500 on load.
+    public_domain: "%env(default:public_domain_fallback:PUBLIC_BASE_DOMAIN)%"
+    public_domain_fallback: 'edus.ng'
 
     # Paystack. Empty by default, which is what keeps the app on the local
     # payment simulator — see App\Service\Payment\GatewayFactory. The effective

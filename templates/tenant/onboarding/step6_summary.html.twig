@@ -174,29 +174,31 @@
 
         {# === SECTION 2: CASHIER SUMMARY === #}
         <div class="break-inside-avoid mt-8">
-            <h3 class="text-lg font-bold text-gray-800 mb-2 border-l-4 border-green-600 pl-2 uppercase">💰 Payment Summary</h3>
-            
-            <div class="overflow-hidden border border-gray-300 rounded-lg">
-                <table class="min-w-full divide-y divide-gray-300">
-                    <thead class="bg-gray-800 text-white">
+            <h3 class="mb-2 border-l-4 border-accent-600 pl-2 text-lg font-bold uppercase text-ink-800">💰 Payment Summary</h3>
+
+            {# `overflow-hidden` clipped the last 48px of this table on a 320px phone,
+               and the two money columns are the whole point of the step. #}
+            <div class="overflow-x-auto rounded-lg border border-ink-200">
+                <table class="min-w-full divide-y divide-ink-200">
+                    <thead class="bg-ink-800 text-white">
                         <tr>
-                            <th class="px-4 py-3 text-left font-bold uppercase w-1/3 text-gray-600">Class Level</th>
-                            <th class="px-4 py-3 text-right font-bold uppercase w-1/3 text-blue-800">Returning {{ learner.capital }} Pays <br><span class="text-xs text-blue-200 opacity-75">(Total A)</span></th>
-                            <th class="px-4 py-3 text-right font-bold uppercase w-1/3 text-purple-800">New Intake Pays <br><span class="text-xs text-purple-200 opacity-75">(Total A + Total B)</span></th>
+                            <th class="w-1/3 px-4 py-3 text-left font-bold uppercase text-ink-100">Class Level</th>
+                            <th class="w-1/3 px-4 py-3 text-right font-bold uppercase text-white">Returning {{ learner.capital }} Pays <br><span class="text-xs font-normal text-ink-300">(Total A)</span></th>
+                            <th class="w-1/3 px-4 py-3 text-right font-bold uppercase text-white">New Intake Pays <br><span class="text-xs font-normal text-ink-300">(Total A + Total B)</span></th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-200 bg-white">
+                    <tbody class="divide-y divide-ink-200 bg-white">
                         {% for level in levels %}
                             {% set rec = totals[level]['recurring'] %}
                             {% set one = totals[level]['onetime'] %}
                             {% set totalNew = rec + one %}
                             
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-4 py-3 font-bold text-gray-900 border-r">{{ level }}</td>
-                                <td class="px-4 py-3 text-right font-mono text-base font-bold text-blue-700 border-r">
+                            <tr class="hover:bg-ink-50">
+                                <td class="border-r px-4 py-3 font-bold text-ink-900">{{ level }}</td>
+                                <td class="border-r px-4 py-3 text-right font-mono text-base font-bold text-ink-900">
                                     ₦{{ rec|number_format(2) }}
                                 </td>
-                                <td class="px-4 py-3 text-right font-mono text-base font-bold text-purple-700">
+                                <td class="px-4 py-3 text-right font-mono text-base font-bold text-ink-900">
                                     ₦{{ totalNew|number_format(2) }}
                                 </td>
                             </tr>
@@ -206,7 +208,7 @@
             </div>
         </div>
         
-        <div class="mt-12 text-center text-sm text-gray-500">
+        <div class="mt-12 text-center text-sm text-ink-500">
             <p>Generated via School Software on {{ "now"|date("d M Y") }}. Authorized Signature: _______________________</p>
         </div>
 

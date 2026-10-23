@@ -502,6 +502,12 @@
                     {{ nav.item(path('landlord_plan_index'), 'ticket', 'Pricing Plans',
                                 ('plan' in route)) }}
 
+                    {# Platform configuration (Paystack keys, SMTP) shipped as routes
+                       with no way in — the only route to them was a typed URL. #}
+                    {{ nav.section('Platform') }}
+                    {{ nav.item(path('landlord_settings_index'), 'adjustments', 'Settings',
+                                ('landlord_settings' in route)) }}
+
                 {# ── PART B · AGENT (sales partner) ─────────────────────────────────── #}
                 {% elseif is_granted('ROLE_AGENT') %}
                     {{ nav.section('Agency') }}

@@ -65,6 +65,10 @@ class OnboardingController extends AbstractController
 
         return $this->render('tenant/onboarding/step1_identity.html.twig', [
             'form' => $form->createView(),
+            // The subtitle greets the school by name. It used to be the string
+            // "Gobarau Academy", so every new school was onboarded under someone
+            // else's name.
+            'school' => $school,
         ]);
     }
 
@@ -355,8 +359,17 @@ class OnboardingController extends AbstractController
             $submittedIds = [];
 
             foreach ($data['items'] as $row) {
-                // Only save checked or named items
-                if (($row['isSelected'] === true || !empty($row['name'])) && !empty($row['name'])) {
+                /*
+                 * The tick is the only thing that keeps an item.
+                 *
+                 * This used to read "checked OR has a name", and every row arrives
+                 * with its name already filled in — so all eleven seeded items were
+                 * saved even when the school ticked two of them. The price matrix
+                 * then showed nine unpriced rows, and the master fee schedule the
+                 * principal signs off printed them as "-".
+                 */
+                $itemName = trim((string) ($row['name'] ?? ''));
+                if (!empty($row['isSelected']) && $itemName !== '') {
                     
                     $freq = $row['frequency'];
                     
@@ -371,7 +384,7 @@ class OnboardingController extends AbstractController
                     $savedId = $this->saveOrUpdateFeeItem(
                         $em, 
                         $row['id'], 
-                        $row['name'], 
+                        $itemName, 
                         $freq, 
                         $row['isOptional'], 
                         (int)$row['position']

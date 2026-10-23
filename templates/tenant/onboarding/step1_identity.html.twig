@@ -23,7 +23,7 @@
                 <div class="relative bg-accent-600 p-6 text-white md:p-10">
                     <div class="relative z-10">
                         <h1 class="text-xl font-bold tracking-tight md:text-3xl">School Identity</h1>
-                        <p class="mt-1 text-sm text-accent-100 md:text-base">Step 1: Build your brand for Gobarau Academy.</p>
+                        <p class="mt-1 text-sm text-accent-100 md:text-base">Step 1: Build your brand for {{ school.name ?: 'your school' }}.</p>
                     </div>
                 </div>
 
@@ -45,14 +45,18 @@
 
                         {# C. Institution Type #}
                         <div class="space-y-2">
-                            <label class="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest px-1">Institution Type</label>
-                            <div class="flex flex-row gap-3 md:gap-4 w-full justify-center items-stretch">
+                            <label class="text-[10px] md:text-xs font-black text-ink-400 uppercase tracking-widest px-1">Institution Type</label>
+                            {# Seven options used to sit in a single non-wrapping row of
+                               280px cards: 207px of horizontal overflow on a 360px phone,
+                               with the labels clipped to "OR DARY 3 ( RS)". A grid wraps
+                               instead — two columns from 320px, more as the screen grows. #}
+                            <div class="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
                                 {% for child in form.institutionType %}
-                                    <label class="flex-1 max-w-[280px] cursor-pointer group">
+                                    <label class="group min-w-0 cursor-pointer">
                                         {{ form_widget(child, {'attr': {'class': 'sr-only peer'}}) }}
-                                        <div class="h-full flex flex-col items-center justify-center p-4 md:p-8 border-4 border-gray-100 rounded-2xl bg-white peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all shadow-md active:scale-95">
-                                            <span class="text-4xl md:text-6xl mb-2">{% if 'College' in child.vars.label %}🎓{% else %}🏫{% endif %}</span>
-                                            <span class="font-black text-[10px] md:text-sm text-gray-700 peer-checked:text-blue-600 uppercase text-center leading-tight">{{ child.vars.label }}</span>
+                                        <div class="flex h-full min-h-[92px] flex-col items-center justify-center gap-1 rounded-2xl border-2 border-ink-200 bg-white p-3 text-center shadow-sm transition-all peer-checked:border-accent-600 peer-checked:bg-accent-50 active:scale-95 md:min-h-[120px] md:p-5">
+                                            <span class="text-2xl md:text-4xl" aria-hidden="true">{% if 'College' in child.vars.label %}🎓{% else %}🏫{% endif %}</span>
+                                            <span class="text-[11px] font-bold uppercase leading-tight text-ink-700 peer-checked:text-accent-700 md:text-sm">{{ child.vars.label }}</span>
                                         </div>
                                     </label>
                                 {% endfor %}

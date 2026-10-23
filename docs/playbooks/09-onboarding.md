@@ -16,7 +16,7 @@ run this on `demo`, its wizard is already complete.
 | 1 | Open the new school's address and sign in with the principal account | Redirected into onboarding, not the dashboard |
 | 2 | Submit **Identity** (`/onboarding/identity`) with the name empty | Validation error; nothing saved |
 | 3 | Fill identity: name, motto, institution type, brand colour, email, phone, address, logo | Advances to class structure |
-| 4 | **Structure** (`/onboarding/structure`): the suggested levels arrive **pre-checked** with arms `A, B, C` | 18 classes, named `JSS 1 A` … `SS 3 C` (a space before the arm) |
+| 4 | **Structure** (`/onboarding/structure`): the suggested levels arrive **pre-checked**, each with an **empty arms field** (placeholder `A, B, C`) | Type `A, B, C` on each row → 18 classes, named `JSS 1 A` … `SS 3 C` (a space before the arm). Leave arms blank → one class per level (`JSS 1`, `JSS 2`, …) |
 | 4b | Clear every level and submit | Refused with "Select at least one class level to continue" (a school with no classes cannot bill or register) |
 | 4c | Re-visit the structure step once classes exist | Offers **Keep existing** / **Wipe & regenerate**; wipe is refused while pupils are enrolled |
 | 5 | **Calendar** (`/onboarding/calendar`): session `2026/2027`, First Term, resumption and vacation dates | Term saved and active |
@@ -126,4 +126,36 @@ so the guard only fires on the generate path.)
 **Observation, not a defect:** the wizard names classes with a space (`JSS 1 A`) while the
 CSV template examples use `JSS 1A`. The importer normalises both sides, so an import works
 either way — recorded so nobody "fixes" the importer later.
+
+---
+
+### Run 2026-10-23 — onboarding — agent (school `hikmah2`)
+
+Fresh tenant from `app:landlord:create-school`, principal `principal@hikmah2.ng` · viewports
+360 + 320 + 288 (the integrated browser does not scale here: window width = CSS width).
+
+| Step | Result | Note |
+|---|---|---|
+| 1 Identity page | **pass** | Login → `/onboarding/identity`; subtitle now names the school (P-ONBOARD-03) |
+| 1 @ 320/360 | **pass** | Institution grid wraps; page overflow **0px** (was 207px, P-ONBOARD-04) |
+| 2 Empty name submit | **pass** | HTML5 `required` blocks it, field focused, nothing saved |
+| 4 Structure, all levels cleared | **pass** | *“Tick at least one class and give it a name to continue.”* |
+| 4 Structure, arms `A, B` × 6 | **pass** | 12 classes `JSS 1 A` … `SS 3 B`; year groups created |
+| 5 Calendar | **pass** | Term saved and active |
+| 6 Fee items: only Tuition + PTA ticked | **pass** | Exactly **2** `fee_item` rows afterwards (was 11, P-ONBOARD-02) |
+| 7 Fee prices ₦55,000 / ₦5,000 | **pass** | 24 `fee_structure` rows across 12 classes; summary reads ₦60,000 |
+| 8 Summary @ 320 | **pass** | Payment Summary scrolls inside its own box (P-ONBOARD-05) |
+| 8 Confirm Fees | **pass** | → `/quick-enroll/?wizard=true`, *“Fee Structure Confirmed!”* |
+| 9 Identity replay | **pass** | Name and motto reload; nothing wiped |
+| 10 `/dashboard` with 0 pupils | **pass (by design)** | Redirects to onboarding until the first pupil exists |
+| 12 Public site | **pass** | `<h1>` is the school name, motto and address present, Apply → `/apply` |
+
+**Defects found and fixed during this run:** P-ONBOARD-02 (unticked fee items were still
+saved — the fee schedule printed nine `-` rows), P-ONBOARD-03 (step 1 named another
+school), P-ONBOARD-04 (207px horizontal overflow on a 360px phone), P-ONBOARD-05 (the
+Payment Summary table was clipped at 320px). Details in `DEFECT-LOG.md`.
+
+**Still open, not a defect:** the wizard never asks for the school's **bank account**,
+though every payment slip and statement prints it (handout, “five things to do
+immediately after”, item 1). Worth deciding whether it belongs in step 1.
 

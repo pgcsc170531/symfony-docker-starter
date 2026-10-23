@@ -33,7 +33,7 @@ class PlatformSettingsController extends AbstractController
         private readonly SecretCipher $cipher,
         #[\Symfony\Component\DependencyInjection\Attribute\Autowire('%app.base_domain%')]
         private readonly string $baseDomain = 'edus.ng',
-        #[\Symfony\Component\DependencyInjection\Attribute\Autowire('%env(default:public_domain_fallback:PUBLIC_BASE_DOMAIN)%')]
+        #[\Symfony\Component\DependencyInjection\Attribute\Autowire('%public_domain%')]
         private readonly string $publicDomain = 'edus.ng',
     ) {
     }
