@@ -108,4 +108,6 @@ jobs:
             # (we run as root) and rebuild it in one pass instead.
             docker compose exec -e APP_ENV=prod -T php rm -rf var/cache/prod
             docker compose exec -e APP_ENV=prod -T php bin/console cache:warmup
-            docker compose exec -T php chown -R www-data:www-data var/cache var/log
+            # var/log does not always exist on the bind mount — create it rather
+            # than letting `chown` fail the whole deploy.
+            docker compose exec -T php sh -c 'mkdir -p var/log && chown -R www-data:www-data var/cache var/log'
