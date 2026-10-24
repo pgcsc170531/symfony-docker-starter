@@ -89,6 +89,13 @@ jobs:
             # Run your Landlord and Tenant updates
             docker compose exec -e APP_ENV=prod -T php bin/console app:landlord:update-schema
             docker compose exec -e APP_ENV=prod -T php bin/console app:tenant:update-schema
+
+            # 💰 Prices live in the landlord `plan` table, not in code alone.
+            # /pricing reads App\Service\Pricing\PricingCatalog, but quotes,
+            # invoices and /admin/plan read Plan::getImplementationFee() — so a
+            # changed price used to deploy in the code and never reach billing.
+            # Idempotent: refreshes Standard + Enterprise, never deletes a plan.
+            docker compose exec -e APP_ENV=prod -T php bin/console app:landlord:seed-plans
             
             # Final cache wipe
             docker compose exec -e APP_ENV=prod -T php bin/console cache:clear
