@@ -265,6 +265,9 @@ class SchoolController extends AbstractController
             'bank_name' => trim((string) $request->request->get('bank_name')),
             'account_number' => trim((string) $request->request->get('account_number')),
             'account_name' => trim((string) $request->request->get('account_name')),
+            // Kept so a payout can be sent later without guessing which bank the
+            // account belongs to — Paystack needs the code, not the name.
+            'bank_code' => trim((string) $request->request->get('bank_code')),
         ];
 
         // Two buttons, one form: fix the bank details, or fix them and ask

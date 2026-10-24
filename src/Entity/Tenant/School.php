@@ -68,6 +68,21 @@ class School
     #[ORM\Column(name: 'paystack_subaccount_code', length: 100, nullable: true)]
     private ?string $paystackSubaccountCode = null;
 
+    /**
+     * The settlement bank **code** (058 GTBank, 033 UBA…). Paystack identifies a
+     * bank by code, not name, and the payout cannot be sent without it.
+     */
+    #[ORM\Column(name: 'paystack_bank_code', length: 12, nullable: true)]
+    private ?string $paystackBankCode = null;
+
+    /**
+     * Paystack's transfer recipient (RCP_xxxx) for the account above. Created once
+     * and reused, so a payout is one API call instead of two — and so the account
+     * cannot silently change between payouts.
+     */
+    #[ORM\Column(name: 'paystack_recipient_code', length: 100, nullable: true)]
+    private ?string $paystackRecipientCode = null;
+
     #[ORM\Column(name: 'logo_filename', length: 255, nullable: true)]
     private ?string $logoFilename = null;
 
@@ -487,6 +502,12 @@ class School
 
     public function getPaystackSubaccountCode(): ?string { return $this->paystackSubaccountCode; }
     public function setPaystackSubaccountCode(?string $code): static { $this->paystackSubaccountCode = $code; return $this; }
+
+    public function getPaystackBankCode(): ?string { return $this->paystackBankCode; }
+    public function setPaystackBankCode(?string $code): static { $this->paystackBankCode = $code; return $this; }
+
+    public function getPaystackRecipientCode(): ?string { return $this->paystackRecipientCode; }
+    public function setPaystackRecipientCode(?string $code): static { $this->paystackRecipientCode = $code; return $this; }
 
     public function getLandlordSchoolId(): ?int 
     { 

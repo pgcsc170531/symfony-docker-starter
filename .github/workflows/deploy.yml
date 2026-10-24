@@ -38,7 +38,40 @@ jobs:
           script: |
             cd /root/projects
             export TERMII_API_KEY=${{ secrets.TERMII_API_KEY }}
-            
+
+            # ── Secrets that must reach the app ───────────────────────────────
+            # `.env.local` is gitignored on purpose, and the compose file mounts
+            # `./:/app`, so THIS file on the VPS *is* the app's `.env.local`.
+            # Anything written here survives deploys and needs no rebuild.
+            #
+            # Written from GitHub Secrets so a key can be rotated in one place
+            # instead of by SSH-ing into the box. Empty secrets are skipped, which
+            # means "leave whatever the server already has".
+            #
+            # Upsert without sed escaping (a DSN can contain |, &, #):
+            set_kv() {
+              key="$1"; value="$2"; file="/root/projects/.env.local"
+              [ -z "$value" ] && return 0
+              touch "$file"; chmod 600 "$file"
+              grep -v "^${key}=" "$file" > "${file}.tmp" 2>/dev/null || true
+              printf '%s="%s"\n' "$key" "$value" >> "${file}.tmp"
+              mv "${file}.tmp" "$file"
+            }
+
+            set_kv PAYSTACK_SECRET_KEY     '${{ secrets.PAYSTACK_SECRET_KEY }}'
+            set_kv PAYSTACK_PUBLIC_KEY     '${{ secrets.PAYSTACK_PUBLIC_KEY }}'
+            set_kv MAILER_DSN              '${{ secrets.MAILER_DSN }}'
+            set_kv BREVO_SMTP_LOGIN        '${{ secrets.BREVO_SMTP_LOGIN }}'
+            set_kv BREVO_SMTP_KEY          '${{ secrets.BREVO_SMTP_KEY }}'
+            set_kv MAILER_FROM             '${{ secrets.MAILER_FROM }}'
+            set_kv MAILER_REPLY_TO         '${{ secrets.MAILER_REPLY_TO }}'
+
+            # ⚠ APP_ENCRYPTION_KEY must never change once secrets are stored in the
+            # landlord database: it decrypts them. Set only if the server has none.
+            if ! grep -q '^APP_ENCRYPTION_KEY=' /root/projects/.env.local 2>/dev/null; then
+              set_kv APP_ENCRYPTION_KEY '${{ secrets.APP_ENCRYPTION_KEY }}'
+            fi
+
             # Pass the variable directly so the warning disappears
             TERMII_API_KEY=$TERMII_API_KEY docker compose pull
             TERMII_API_KEY=$TERMII_API_KEY docker compose up -d --force-recreate

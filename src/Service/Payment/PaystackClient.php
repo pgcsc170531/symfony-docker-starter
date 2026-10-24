@@ -2,8 +2,8 @@
 
 namespace App\Service\Payment;
 
+use App\Service\Settings\PlatformSettings;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
@@ -15,6 +15,12 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  * the landlord database. Sharing the entity-bound gateway would mean faking a
  * tenant invoice, so this client exists instead.
  *
+ * **The key comes from `PlatformSettings`** — the landlord settings screen first,
+ * then the environment — which is the same source `PaystackGateway` uses. It used
+ * to read `%paystack_secret_key%` directly, and that split the app in two: a key
+ * pasted into the admin screen drove card checkout and webhook verification while
+ * dedicated accounts, subaccounts and payouts kept using a stale environment key.
+ *
  * Same rule as everywhere else: the callback is a hint, `verify()` is the proof.
  */
 final class PaystackClient
@@ -24,14 +30,19 @@ final class PaystackClient
     public function __construct(
         private HttpClientInterface $httpClient,
         private LoggerInterface $logger,
-        #[Autowire('%paystack_secret_key%')]
-        private string $secretKey = '',
+        private PlatformSettings $settings,
     ) {
+    }
+
+    /** Empty when no key is configured anywhere. */
+    private function secretKey(): string
+    {
+        return trim((string) ($this->settings->paystackSecretKey() ?? ''));
     }
 
     public function isConfigured(): bool
     {
-        return trim($this->secretKey) !== '';
+        return $this->secretKey() !== '';
     }
 
     /**
@@ -129,11 +140,11 @@ final class PaystackClient
     {
         $signature = $this->header($headers, 'x-paystack-signature');
 
-        if ($signature === null || trim($this->secretKey) === '') {
+        if ($signature === null || $this->secretKey() === '') {
             return null;
         }
 
-        if (!hash_equals(hash_hmac('sha512', $rawBody, $this->secretKey), $signature)) {
+        if (!hash_equals(hash_hmac('sha512', $rawBody, $this->secretKey()), $signature)) {
             $this->logger->warning('Subscription Paystack webhook rejected: bad signature.');
 
             return null;
@@ -389,6 +400,107 @@ final class PaystackClient
     }
 
     /**
+     * Register the school's bank account as a transfer recipient (RCP_…).
+     *
+     * Paystack validates the account against the bank before creating it, which
+     * is exactly the check we want once: get the account wrong here and every
+     * payout afterwards is wrong. Cached on the school row afterwards.
+     *
+     * @return array{ok: bool, code?: string, message?: string}
+     */
+    public function createTransferRecipient(string $name, string $bankCode, string $accountNumber): array
+    {
+        if (!$this->isConfigured()) {
+            return ['ok' => false, 'message' => 'No Paystack key is configured.'];
+        }
+
+        if ($bankCode === '' || $accountNumber === '') {
+            return ['ok' => false, 'message' => 'The school needs a bank code and account number before it can be paid.'];
+        }
+
+        try {
+            $body = $this->httpClient->request('POST', self::BASE_URL . '/transferrecipient', [
+                'headers' => $this->headers(),
+                'json' => [
+                    'type' => 'nuban',
+                    'name' => $name,
+                    'account_number' => $accountNumber,
+                    'bank_code' => $bankCode,
+                    'currency' => 'NGN',
+                ],
+            ])->toArray(false);
+        } catch (\Throwable $e) {
+            $this->logger->error('Paystack createTransferRecipient failed: {message}', ['message' => $e->getMessage()]);
+
+            return ['ok' => false, 'message' => 'We could not reach Paystack to register the school account.'];
+        }
+
+        $code = (string) ($body['data']['recipient_code'] ?? '');
+
+        if (($body['status'] ?? false) === true && $code !== '') {
+            return ['ok' => true, 'code' => $code];
+        }
+
+        $message = (string) ($body['message'] ?? 'Paystack rejected that bank account.');
+        $this->logger->warning('Paystack createTransferRecipient rejected: {message}', ['message' => $message]);
+
+        return ['ok' => false, 'message' => $message];
+    }
+
+    /**
+     * Send money to a recipient, from the Paystack balance.
+     *
+     * The `reference` is the payout's own reference, so a retry after a timeout
+     * cannot pay twice — Paystack rejects a duplicate reference.
+     *
+     * @return array{ok: bool, transferCode?: string, status?: string, message?: string}
+     */
+    public function initiateTransfer(string $recipientCode, int $amountMinor, string $reason, string $reference): array
+    {
+        if (!$this->isConfigured()) {
+            return ['ok' => false, 'message' => 'No Paystack key is configured.'];
+        }
+
+        if ($amountMinor <= 0) {
+            return ['ok' => false, 'message' => 'Nothing to transfer.'];
+        }
+
+        try {
+            $body = $this->httpClient->request('POST', self::BASE_URL . '/transfer', [
+                'headers' => $this->headers(),
+                'json' => [
+                    'source' => 'balance',
+                    'amount' => $amountMinor,
+                    'recipient' => $recipientCode,
+                    'reason' => $reason,
+                    'reference' => $reference,
+                    'currency' => 'NGN',
+                ],
+            ])->toArray(false);
+        } catch (\Throwable $e) {
+            $this->logger->error('Paystack initiateTransfer failed: {message}', ['message' => $e->getMessage()]);
+
+            // Not marked failed by the caller: an unknown outcome must never be
+            // retried blindly — Paystack's reference check protects us, but the
+            // operator has to look.
+            return ['ok' => false, 'message' => 'We could not reach Paystack; the transfer status is unknown.'];
+        }
+
+        if (($body['status'] ?? false) !== true) {
+            $message = (string) ($body['message'] ?? 'Paystack refused the transfer.');
+            $this->logger->warning('Paystack initiateTransfer rejected: {message}', ['message' => $message]);
+
+            return ['ok' => false, 'message' => $message];
+        }
+
+        return [
+            'ok' => true,
+            'transferCode' => (string) ($body['data']['transfer_code'] ?? ''),
+            'status' => (string) ($body['data']['status'] ?? 'pending'),
+        ];
+    }
+
+    /**
      * Create the subaccount a school's money settles into.
      *
      * Edus runs one Paystack account; a subaccount is only a **record** holding
@@ -488,7 +600,7 @@ final class PaystackClient
     private function headers(): array
     {
         return [
-            'Authorization' => 'Bearer ' . trim($this->secretKey),
+            'Authorization' => 'Bearer ' . $this->secretKey(),
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',
         ];

@@ -193,15 +193,26 @@ final class SchoolSubaccountService
     }
 
     /**
-     * @param array{bank_name: string, account_number: string, account_name: string} $details
+     * @param array{bank_name: string, account_number: string, account_name: string, bank_code?: string} $details
      */
     private function applyDetails(TenantSchool $tenant, array $details): void
     {
         $bankName = trim($details['bank_name']);
         $accountName = trim($details['account_name']);
+        $bankCode = trim((string) ($details['bank_code'] ?? ''));
+
+        // A changed account invalidates the transfer recipient: paying the old
+        // RCP_… would send money to the account we just replaced.
+        if ($tenant->getAccountNumber() !== trim($details['account_number']) || $tenant->getPaystackBankCode() !== $bankCode) {
+            $tenant->setPaystackRecipientCode(null);
+        }
 
         $tenant->setBankName($bankName !== '' ? $bankName : null);
         $tenant->setAccountNumber(trim($details['account_number']));
         $tenant->setAccountName($accountName !== '' ? $accountName : null);
+
+        if ($bankCode !== '') {
+            $tenant->setPaystackBankCode($bankCode);
+        }
     }
 }

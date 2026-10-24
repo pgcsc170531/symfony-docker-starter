@@ -48,7 +48,8 @@ final class PayoutCommand extends Command
         $this
             ->addOption('school', null, InputOption::VALUE_REQUIRED, 'Only this school subdomain')
             ->addOption('min', null, InputOption::VALUE_REQUIRED, 'Skip schools holding less than this', '0')
-            ->addOption('simulate', null, InputOption::VALUE_NONE, 'Post the ledger entries without moving money');
+            ->addOption('simulate', null, InputOption::VALUE_NONE, 'Post the ledger entries without moving money')
+            ->addOption('live', null, InputOption::VALUE_NONE, 'Actually transfer money to the school (requires --simulate to be absent)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -58,6 +59,7 @@ final class PayoutCommand extends Command
         $subdomain = (string) $input->getOption('school');
         $minimum = (float) $input->getOption('min');
         $simulate = (bool) $input->getOption('simulate');
+        $live = (bool) $input->getOption('live') && !$simulate;
 
         $criteria = ['isActive' => true];
         if ($subdomain !== '') {
@@ -73,8 +75,12 @@ final class PayoutCommand extends Command
             return Command::FAILURE;
         }
 
-        if (!$simulate) {
-            $io->warning('Real payouts are not enabled yet. Re-run with --simulate to prove the cycle.');
+        if (!$simulate && !$live) {
+            $io->warning('Nothing will move: pass --live to transfer money, or --simulate to post the books only.');
+        }
+
+        if ($live) {
+            $io->caution('LIVE: money will leave the Paystack balance for each school below.');
         }
 
         $paid = 0;
@@ -84,7 +90,7 @@ final class PayoutCommand extends Command
             $this->switcher->switchTo($school);
 
             try {
-                $result = $this->payouts->run($minimum, $simulate);
+                $result = $this->payouts->run($minimum, $simulate, $live);
 
                 if ($result['ok'] && isset($result['payout'])) {
                     ++$paid;
