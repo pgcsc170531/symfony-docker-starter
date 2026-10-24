@@ -97,5 +97,15 @@ jobs:
             # Idempotent: refreshes Standard + Enterprise, never deletes a plan.
             docker compose exec -e APP_ENV=prod -T php bin/console app:landlord:seed-plans
             
-            # Final cache wipe
-            docker compose exec -e APP_ENV=prod -T php bin/console cache:clear
+            # 🧹 Final cache wipe.
+            #
+            # `cache:clear` deletes var/cache/prod file-by-file and then rmdirs it.
+            # On this setup the directory is a bind mount shared with the freshly
+            # recreated FrankenPHP worker, so the rmdir loses the race and fails
+            # with "Failed to remove directory /app/var/cache/prod". The deploy
+            # then exits 1 with the app left on a HALF-BUILT cache — which is what
+            # took the site down on 2026-10-24. Remove the directory outright
+            # (we run as root) and rebuild it in one pass instead.
+            docker compose exec -e APP_ENV=prod -T php rm -rf var/cache/prod
+            docker compose exec -e APP_ENV=prod -T php bin/console cache:warmup
+            docker compose exec -T php chown -R www-data:www-data var/cache var/log
