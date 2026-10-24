@@ -87,6 +87,7 @@ Add these in **GitHub → repo → Settings → Secrets and variables → Action
 | `MAILER_DSN` or `BREVO_SMTP_LOGIN` + `BREVO_SMTP_KEY` | parent emails, receipts, reminders |
 | `MAILER_FROM`, `MAILER_REPLY_TO` | sender identity |
 | `APP_ENCRYPTION_KEY` | decrypting DB-stored secrets — **write-once** |
+| `APP_SECRET` | signing sessions/CSRF; **production refuses to boot without it** |
 | `TERMII_API_KEY`, `TERMII_SENDER_ID` | SMS (already wired) |
 
 Rotation is then: change the secret in GitHub → re-run the workflow. The container is

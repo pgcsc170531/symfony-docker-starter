@@ -66,6 +66,13 @@ jobs:
             set_kv MAILER_FROM             '${{ secrets.MAILER_FROM }}'
             set_kv MAILER_REPLY_TO         '${{ secrets.MAILER_REPLY_TO }}'
 
+            # APP_SECRET signs sessions and CSRF tokens — it is not an encryption
+            # key. Production will not boot with an empty kernel.secret
+            # ("A non-empty value for the parameter kernel.secret is required"),
+            # and nothing in .env / compose.yaml supplies one, so it has to come
+            # from here. Rotating it only logs everyone out.
+            set_kv APP_SECRET              '${{ secrets.APP_SECRET }}'
+
             # ⚠ APP_ENCRYPTION_KEY must never change once secrets are stored in the
             # landlord database: it decrypts them. Set only if the server has none.
             if ! grep -q '^APP_ENCRYPTION_KEY=' /root/projects/.env.local 2>/dev/null; then
