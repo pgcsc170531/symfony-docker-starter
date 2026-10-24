@@ -192,6 +192,44 @@ final class LedgerPoster
     }
 
     /**
+     * Paystack's fee on one transfer, VAT included.
+     *
+     *   Dr 5000 Gateway cost   ₦322.50
+     *      Cr 1000 Cash at Paystack        ₦322.50
+     *
+     * It comes out of the platform's balance — the school is never charged it —
+     * which is why the two sides of the books differ by exactly this amount by the
+     * end of the day. Posted once per credit, keyed on the credit id.
+     */
+    public function postGatewayCost(int $creditId, int $feeMinor, string $reference): ?LedgerEntry
+    {
+        if ($feeMinor <= 0) {
+            return null;
+        }
+
+        return $this->post(
+            LedgerEntry::SOURCE_GATEWAY_COST,
+            $creditId,
+            $reference,
+            'Bank & API cost on this transfer',
+            [
+                LedgerLine::debit(self::GATEWAY_COST, $feeMinor),
+                LedgerLine::credit(self::CASH_AT_PAYSTACK, $feeMinor),
+            ],
+            'system:fees',
+        );
+    }
+
+    /** Whether a credit has already had its fee posted. */
+    public function hasGatewayCost(int $creditId): bool
+    {
+        return $this->em->getRepository(LedgerEntry::class)->findOneBy([
+            'sourceType' => LedgerEntry::SOURCE_GATEWAY_COST,
+            'sourceId' => $creditId,
+        ]) !== null;
+    }
+
+    /**
      * Debit and credit totals for one account, in kobo.
      *
      * Balances alone cannot answer "how much was ever collected" once money has

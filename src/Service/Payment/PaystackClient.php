@@ -400,6 +400,73 @@ final class PaystackClient
     }
 
     /**
+     * The fee Paystack actually charged on a transaction, in kobo.
+     *
+     * Used to post the gateway cost from the provider's own figure rather than an
+     * estimate: the schedule (1% capped ₦300 + VAT) is a prediction, and this is
+     * the invoice.
+     *
+     * @return array{ok: bool, feesMinor?: int, message?: string}
+     */
+    public function fetchTransactionFees(string $reference): array
+    {
+        if (!$this->isConfigured() || trim($reference) === '') {
+            return ['ok' => false, 'message' => 'Nothing to look up.'];
+        }
+
+        try {
+            $body = $this->httpClient->request(
+                'GET',
+                self::BASE_URL . '/transaction/verify/' . rawurlencode(trim($reference)),
+                ['headers' => $this->headers(), 'timeout' => 8]
+            )->toArray(false);
+        } catch (\Throwable $e) {
+            $this->logger->warning('Paystack verify for fees failed: {message}', ['message' => $e->getMessage()]);
+
+            return ['ok' => false, 'message' => 'Paystack could not be reached.'];
+        }
+
+        if (($body['status'] ?? false) !== true) {
+            return ['ok' => false, 'message' => (string) ($body['message'] ?? 'Transaction not found.')];
+        }
+
+        $data = $body['data'] ?? [];
+
+        // Newer responses carry `fees`; fall back to the older `fees_breakdown`
+        // sum so we do not depend on one shape.
+        $fees = (int) ($data['fees'] ?? 0);
+
+        if ($fees === 0 && is_array($data['fees_breakdown'] ?? null)) {
+            foreach ($data['fees_breakdown'] as $line) {
+                $fees += (int) ($line['amount'] ?? 0);
+            }
+        }
+
+        if ($fees <= 0) {
+            $fees = $this->estimateFeeMinor((int) ($data['amount'] ?? 0));
+        }
+
+        return $fees > 0
+            ? ['ok' => true, 'feesMinor' => $fees]
+            : ['ok' => false, 'message' => 'Paystack reported no fee for that transaction.'];
+    }
+
+    /**
+     * Our own calculation, used only when Paystack reports nothing: transfers are
+     * 1% capped at ₦300, plus 7.5% VAT.
+     */
+    private function estimateFeeMinor(int $amountMinor): int
+    {
+        if ($amountMinor <= 0) {
+            return 0;
+        }
+
+        $fee = min($amountMinor * 0.01, 30000);
+
+        return (int) round($fee * 1.075);
+    }
+
+    /**
      * Register the school's bank account as a transfer recipient (RCP_…).
      *
      * Paystack validates the account against the bank before creating it, which

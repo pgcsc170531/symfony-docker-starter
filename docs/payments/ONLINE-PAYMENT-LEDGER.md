@@ -289,8 +289,9 @@ Refunds (6.7), application fees (6.8), opening balances, landlord-book reuse (D1
 | Payout row + reference | `App\Entity\Tenant\Payout` (`simulated` flag) | ✅ |
 | Refusal to overpay | `PayoutService::run()` **and** `LedgerPoster::payout()` | ✅ two independent gates |
 | Posting the payout | Dr `2000` / Cr `1000` | ✅ balanced, idempotent by payout id |
-| Command | `app:payments:payout [--school=] [--min=] [--simulate]` | ✅ |
-| **The actual bank transfer** | `PayoutService::run()` with `$simulate = false` | ⛔ **refuses**: *"Real payouts are not enabled yet."* |
+| Bank/API cost | `postGatewayCost()` + `app:payments:gateway-costs` (asks Paystack for the fee per transaction) | ✅ posted from Paystack's own figure, never estimated silently |
+| Command | `app:payments:payout [--school=] [--min=] [--simulate] [--live]` | ✅ |
+| The actual bank transfer | `PayoutService::run()` with `--live` | ✅ recipient created once, transferred with the payout reference |
 
 The provider call is deliberately absent until `transferrecipient` + `transfer` are exercised against a test school. What has to be added:
 

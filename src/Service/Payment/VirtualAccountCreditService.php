@@ -113,6 +113,13 @@ final class VirtualAccountCreditService
             $this->ledger->creditApplied($credit);
         }
 
+        // Paystack includes `fees` on the transaction; when it does, the cost is
+        // booked now rather than waiting for the nightly sweep.
+        $fees = (int) ($data['fees'] ?? 0);
+        if ($fees > 0) {
+            $this->ledger->postGatewayCost((int) $credit->getId(), $fees, $reference);
+        }
+
         $this->em->flush();
 
         return $credit;

@@ -53,6 +53,7 @@ final class SimulateCreditCommand extends Command
         $this
             ->addOption('school', null, InputOption::VALUE_REQUIRED, 'School subdomain')
             ->addOption('amount', null, InputOption::VALUE_REQUIRED, 'Amount in naira, e.g. 65250')
+            ->addOption('fees', null, InputOption::VALUE_REQUIRED, 'Provider fee in naira, as Paystack would report it', '0')
             ->addOption('reference', null, InputOption::VALUE_REQUIRED, 'Reference for this simulated transfer (defaults to SIM-<time>)');
     }
 
@@ -96,6 +97,9 @@ final class SimulateCreditCommand extends Command
             $payload = [
                 'reference' => $reference,
                 'amount' => (int) round($amount * 100),
+                // Paystack includes its fee on the transaction; the ledger books it
+                // as soon as it sees it, so the simulator can carry one too.
+                'fees' => (int) round(((float) $input->getOption('fees')) * 100),
                 'paid_at' => (new \DateTimeImmutable())->format(\DATE_ATOM),
                 'customer' => ['customer_code' => $account->getPaystackCustomerCode()],
                 'authorization' => [
