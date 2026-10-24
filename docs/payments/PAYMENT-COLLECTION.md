@@ -4,6 +4,13 @@
 > **₦200 handling**, with the **transfer total capped at ₦500**; card fees are
 > shown separately. The ₦400 figures below are the earlier decision and are kept
 > for history. See `SUBSCRIPTION-AND-TERM-REGISTRATION.md` §6 for the current rule.
+>
+> **Decided in discussion 23 Oct 2026 (not built):** **term-fee** online payments move to
+> a **flat ₦650 transfer charge** — Paystack takes its fee out of it, the rest is Edus
+> revenue, and the school still nets its full fee. The **application fee** (paid before
+> the form) keeps standard checkout with Paystack's fee passed through **then + ₦350**.
+> The ₦200/₦500 rule above is what the code does today. See `VIRTUAL-ACCOUNTS-DESIGN.md`
+> §8 and §9.
 
 
 > **Status:** � DIRECTION AGREED 25 Sep 2026 — see §8. Provider integration not yet built.> 🔴 **OPEN ITEMS TO CONFIRM BEFORE THE FINAL DECISION → §10.** The mechanism is now identified

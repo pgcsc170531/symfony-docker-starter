@@ -6,10 +6,13 @@ use App\Entity\Tenant\PaymentIntent;
 use App\Entity\Tenant\School;
 use App\Service\Payment\FakeGateway;
 use App\Service\Payment\PaymentGatewayInterface;
+use App\Service\Payment\PlatformWebhookService;
 use App\Service\Payment\SettlementService;
+use App\Service\Payment\VirtualAccountCreditService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,7 +34,11 @@ class PaymentGatewayController extends AbstractController
         private EntityManagerInterface $em,
         private PaymentGatewayInterface $gateway,
         private SettlementService $settlement,
+        private VirtualAccountCreditService $credits,
+        private PlatformWebhookService $platformWebhook,
         private LoggerInterface $logger,
+        #[Autowire('%app.base_domain%')]
+        private string $baseDomain = 'localhost',
     ) {
     }
 
@@ -115,6 +122,34 @@ class PaymentGatewayController extends AbstractController
             'reference' => $reference,
         ]);
 
+        /*
+         * One webhook URL for the whole Paystack account. When the provider calls
+         * the PUBLIC domain there is no school host to switch on, so the tenant is
+         * resolved from the customer code and its connection switched before any
+         * tenant table is read (PlatformWebhookService).
+         */
+        if ($this->isPlatformHost($request)) {
+            $this->platformWebhook->handle($data);
+
+            return new JsonResponse(['status' => 'ok']);
+        }
+
+        /*
+         * A transfer into a family's dedicated account has no Edus reference —
+         * the parent simply sent money to their own number. It must be
+         * recognised BEFORE the intent lookup, which would find nothing.
+         *
+         * `ingest()` is idempotent on the provider reference and settles the one
+         * open intent whose total matches; anything else becomes a visible
+         * unassigned credit (VIRTUAL-ACCOUNTS-DESIGN.md §5).
+         */
+        if ($event === 'charge.success') {
+            $credit = $this->credits->ingest($data);
+            if ($credit !== null) {
+                return new JsonResponse(['status' => 'ok', 'credit' => $credit->getStatus()]);
+            }
+        }
+
         // Acknowledge immediately — slow work here causes provider retry storms.
         if ($reference === '') {
             return new JsonResponse(['status' => 'ok']);
@@ -169,6 +204,20 @@ class PaymentGatewayController extends AbstractController
         }
 
         return new JsonResponse(['status' => 'ok']);
+    }
+
+    /**
+     * Is this request aimed at the platform itself (no school subdomain)?
+     *
+     * Mirrors the rule in TenantListener: the bare domain, `www.`, and localhost
+     * are the landlord/platform host and never a school.
+     */
+    private function isPlatformHost(Request $request): bool
+    {
+        $host = strtolower($request->getHost());
+        $base = strtolower($this->baseDomain);
+
+        return $host === $base || $host === 'www.' . $base || $host === 'localhost';
     }
 
     /**

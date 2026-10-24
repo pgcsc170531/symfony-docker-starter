@@ -23,7 +23,12 @@ final class PaymentExtension extends AbstractExtension
     public function getFunctions(): array
     {
         return [
+            // The flat charge on every invoice payment (₦750). `payment_cap` is
+            // kept as an alias so older templates do not break.
+            new TwigFunction('payment_transfer_charge', fn (): string => $this->calculator->maxFeeLabel()),
             new TwigFunction('payment_cap', fn (): string => $this->calculator->maxFeeLabel()),
+            // Our net on the online application fee, added after Paystack's cut.
+            new TwigFunction('payment_application_margin', fn (): string => '₦' . number_format(\App\Service\Payment\ProcessingFeeCalculator::APPLICATION_MARGIN, 0)),
             new TwigFunction('payment_channels', fn (): array => $this->calculator->channelRates()),
         ];
     }

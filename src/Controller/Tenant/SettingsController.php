@@ -50,6 +50,14 @@ class SettingsController extends AbstractController
         }
 
         $form = $this->createForm(SchoolSettingsType::class, $tenant);
+
+        // Captured before the form binds: what the school's account was on the way
+        // in. Once online payment is live, a change here splits the two destinations
+        // apart — Paystack keeps paying the old account until Edus re-registers it —
+        // so the school has to be told in the same breath as "saved".
+        $accountBefore = (string) $tenant->getAccountNumber();
+        $bankBefore = (string) $tenant->getBankName();
+
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -88,6 +96,20 @@ class SettingsController extends AbstractController
             }
 
             $em->flush();
+
+            // A settlement account that moved while online payment is live is the one
+            // change here that can send money to the wrong bank. Warn instead of
+            // silently accepting it.
+            if ($tenant->getPaystackSubaccountCode()
+                && ((string) $tenant->getAccountNumber() !== $accountBefore
+                    || (string) $tenant->getBankName() !== $bankBefore)) {
+                $this->addFlash('warning', sprintf(
+                    'Saved — but your online payment account has NOT changed. Paystack will keep settling parents’ online payments into %s %s until Edus re-registers it. Tell Edus about this change today.',
+                    $bankBefore !== '' ? $bankBefore : 'the previous bank',
+                    $accountBefore !== '' ? $accountBefore : 'account'
+                ));
+            }
+
             $this->addFlash('success', 'School settings updated successfully!');
             return $this->redirectToRoute('app_tenant_settings_general');
         }

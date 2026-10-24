@@ -6,6 +6,12 @@
 > filled — see §3.8. §3.4–§3.6 keep the reasoning and the decisions that shaped it.> **The ₦500 ceiling + the per-school switch (owner, 21 Oct 2026):** every online
 > payment in the system — school fees and the form fee alike — is charged the same
 > way, and a school can switch the charge off. See §4.> **Last traced:** 21 Oct 2026, against the code in `src/Service/Payment/`.
+> ⚠️ **Superseded in discussion (23 Oct 2026, not built):** **term fees** move to a
+> **flat ₦650 transfer charge** (Paystack takes 1% capped ₦300 + VAT out of it, Edus
+> keeps the rest), while the **application fee** — paid *before* the form — keeps
+> standard checkout with Paystack's fee passed through **then + ₦350**. The ₦200/₦500
+> rule in §2.6 and §4 is still what the code does today. Numbers and open items:
+> `VIRTUAL-ACCOUNTS-DESIGN.md` §8 and §9.
 > **Read alongside:** `PAYMENT-COLLECTION.md` (the commercial rules),
 > `PAYMENT-FLOW-DESIGN.md` (the original application-fee design),
 > `SUBSCRIPTION-AND-TERM-REGISTRATION.md` (what a *school* pays Edus).

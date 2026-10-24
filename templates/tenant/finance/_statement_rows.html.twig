@@ -1,0 +1,41 @@
+{% if lines is empty %}
+    <tr>
+        <td colspan="4" class="px-4 py-6 text-center">
+            <p class="text-sm font-semibold text-ink-700">No online payments for that search</p>
+            <p class="mt-1 text-xs text-ink-500">
+                {% if filters is defined and (filters.q or filters.from or filters.to) %}
+                    Try a wider date range, or clear the search.
+                {% else %}
+                    A line appears here as soon as a parent pays a bill online — by card, or by transferring to their own account number.
+                {% endif %}
+            </p>
+        </td>
+    </tr>
+{% else %}
+    {% for line in lines %}
+        {% set entry = line.entry %}
+        {% set isCredit = line.direction == 'C' %}
+        <tr>
+            <td class="px-4 py-3 whitespace-nowrap text-ink-600">{{ entry.occurredAt|date('j M Y') }}</td>
+            <td class="px-4 py-3">
+                <p class="font-semibold text-ink-800">
+                    {{ isCredit ? entry.memo|replace({'Matched to invoice': 'Fees paid for invoice'}) : "Paid to the school's bank account" }}
+                </p>
+                {% if not isCredit and school and school.accountNumber %}
+                    <p class="mt-1 break-words text-xs text-ink-600">
+                        {{ school.bankName ?: 'Bank' }} · <span class="font-mono break-all">{{ school.accountNumber }}</span>
+                    </p>
+                {% endif %}
+                {% if entry.sourceRef %}
+                    <p class="mt-1 break-all font-mono text-xs text-ink-400">{{ entry.sourceRef }}</p>
+                {% endif %}
+            </td>
+            <td class="money px-4 py-3 text-right font-semibold {{ isCredit ? 'text-ink-900' : 'text-ink-300' }}">
+                {{ isCredit ? '₦' ~ (line.amountMinor / 100)|number_format(2) : '—' }}
+            </td>
+            <td class="money px-4 py-3 text-right font-semibold {{ isCredit ? 'text-ink-300' : 'text-paid' }}">
+                {{ isCredit ? '—' : '₦' ~ (line.amountMinor / 100)|number_format(2) }}
+            </td>
+        </tr>
+    {% endfor %}
+{% endif %}

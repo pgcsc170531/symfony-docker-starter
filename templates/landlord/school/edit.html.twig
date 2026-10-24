@@ -92,6 +92,132 @@
 
     {{ form_end(form) }}
 
+    {# ── Payments: the school's Paystack subaccount ───────────────────────
+       Operator-only. Edus holds the single Paystack account; a subaccount is a
+       record on it holding the school's settlement bank and our split. The
+       school never logs into Paystack — it only enters its bank details in its
+       own settings, and we create the subaccount here. #}
+    <div class="mt-8 rounded-xl border border-ink-200 bg-white">
+        <div class="border-b border-ink-100 px-4 py-3">
+            <h2 class="text-sm font-bold text-ink-900">Payments</h2>
+            <p class="mt-1 text-xs text-ink-500">Where this school's fees settle inside our Paystack account.</p>
+        </div>
+
+        <div class="space-y-4 p-4">
+            {% if payments.code and payments.paystack_found is same as(false) %}
+                {# A code that exists only in the other Paystack mode. Test and live
+                   are separate worlds: a test ACCT_ is invisible to live, and a
+                   school switched over keeps a code that resolves nowhere. #}
+                <div class="rounded-lg border-2 border-failed/50 bg-failed/5 p-3">
+                    <p class="text-xs font-bold uppercase tracking-wide text-failed">This code is not recognised by Paystack</p>
+                    <p class="mt-1 text-xs leading-relaxed text-ink-700">
+                        <span class="font-mono">{{ payments.code }}</span> was not found — most likely it was created in
+                        <strong>test mode</strong> and we are now on a live key (or the reverse).
+                        {% if payments.paystack_message %}<span class="block mt-1 text-ink-500">Paystack said: {{ payments.paystack_message }}</span>{% endif %}
+                        Create a new subaccount below to replace it.
+                    </p>
+                </div>
+            {% elseif payments.code %}
+                <div class="rounded-lg border border-paid/30 bg-paid/5 p-3">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-paid">Subaccount set</p>
+                    <p class="mt-1 font-mono text-sm text-ink-900">{{ payments.code }}</p>
+                    <p class="mt-1 text-xs text-ink-600">Parents at this school can pay online.</p>
+                </div>
+            {% else %}
+                <div class="rounded-lg border border-pending/40 bg-pending/5 p-3">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-pending">No subaccount yet</p>
+                    <p class="mt-1 text-xs text-ink-700">“Pay online” is hidden for this school's parents until a subaccount exists.</p>
+                </div>
+            {% endif %}
+
+            {% if payments.paystack_account_number and payments.account_number
+                  and payments.paystack_account_number != payments.account_number %}
+                {# The school changed its bank details after the subaccount was made.
+                   Paystack still pays the old account — this is the only place that
+                   divergence is visible. #}
+                <div class="rounded-lg border-2 border-failed/50 bg-failed/5 p-3">
+                    <p class="text-xs font-bold uppercase tracking-wide text-failed">Out of sync — money is going to the old account</p>
+                    <p class="mt-1 text-xs leading-relaxed text-ink-700">
+                        Paystack settles into <strong class="font-mono">{{ payments.paystack_account_number }}</strong>
+                        ({{ payments.paystack_bank ?: 'the bank on record' }}), but the school has since changed its
+                        details to <strong class="font-mono">{{ payments.account_number }}</strong>.
+                        Press <em>Save &amp; replace subaccount</em> below to move online payments to the new account.
+                    </p>
+                </div>
+            {% endif %}
+
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">Settlement account</p>
+                <p class="mt-1 text-xs text-ink-600">
+                    Where this school's fees are paid. The school can also set these under its own
+                    Settings → General; whoever saves last wins. Editable here because at onboarding the
+                    operator usually has the account letter, not the bursar.
+                </p>
+            </div>
+
+            <form method="post" action="{{ path('landlord_school_subaccount', {id: school.id}) }}" class="space-y-3">
+                <input type="hidden" name="_token" value="{{ csrf_token('subaccount_' ~ school.id) }}">
+
+                <div>
+                    <label for="bank_name" class="mb-1 block text-sm font-medium text-ink-700">Bank name</label>
+                    <input type="text" id="bank_name" name="bank_name" autocomplete="off"
+                           value="{{ payments.bank_name }}"
+                           placeholder="e.g. Zenith Bank"
+                           class="min-h-[44px] w-full rounded-lg border border-ink-300 bg-white px-3 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500">
+                </div>
+
+                <div>
+                    <label for="account_number" class="mb-1 block text-sm font-medium text-ink-700">Account number</label>
+                    <input type="text" id="account_number" name="account_number" required inputmode="numeric" autocomplete="off"
+                           value="{{ payments.account_number }}"
+                           placeholder="10 digits"
+                           class="min-h-[44px] w-full rounded-lg border border-ink-300 bg-white px-3 font-mono text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500">
+                    <p class="mt-1 text-xs text-ink-500">Must be a real, active account at the bank below — Paystack resolves it against the bank's records.</p>
+                </div>
+
+                <div>
+                    <label for="account_name" class="mb-1 block text-sm font-medium text-ink-700">Account name</label>
+                    <input type="text" id="account_name" name="account_name" autocomplete="off"
+                           value="{{ payments.account_name }}"
+                           placeholder="As printed on the statement"
+                           class="min-h-[44px] w-full rounded-lg border border-ink-300 bg-white px-3 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500">
+                </div>
+
+                <div>
+                    <label for="bank_code" class="mb-1 block text-sm font-medium text-ink-700">Settlement bank code</label>
+                    <input type="text" id="bank_code" name="bank_code" inputmode="numeric" autocomplete="off"
+                           placeholder="e.g. 058"
+                           class="min-h-[44px] w-full rounded-lg border border-ink-300 bg-white px-3 font-mono text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500">
+                    <p class="mt-1 text-xs text-ink-500">
+                        Paystack identifies a bank by code, not name — 058 GTBank, 011 First Bank, 044 Access, 057 Zenith.
+                        Only needed to create the subaccount.
+                    </p>
+                </div>
+
+                <div>
+                    <label for="percentage_charge" class="mb-1 block text-sm font-medium text-ink-700">Our split (%)</label>
+                    <input type="number" id="percentage_charge" name="percentage_charge" min="0" max="100" step="0.1" value="0"
+                           class="min-h-[44px] w-full rounded-lg border border-ink-300 bg-white px-3 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500">
+                    <p class="mt-1 text-xs text-ink-500">
+                        Leave at 0. The school is paid its fee in full; Edus earns on the subscription and the
+                        transfer charge, not by shaving the school's money.
+                    </p>
+                </div>
+
+                <div class="flex flex-col gap-2 border-t border-ink-100 pt-4 sm:flex-row">
+                    <button type="submit" name="intent" value="create"
+                            class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-accent-600 px-5 text-sm font-semibold text-white hover:bg-accent-700 sm:w-auto">
+                        {{ payments.code ? 'Save & replace subaccount' : 'Save & create subaccount' }}
+                    </button>
+                    <button type="submit" name="intent" value="save"
+                            class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-ink-300 bg-white px-5 text-sm font-semibold text-ink-700 hover:bg-ink-50 sm:w-auto">
+                        Save details only
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     {# ── Danger zone ───────────────────────────────────────────────────── #}
     <div class="mt-8 rounded-xl border border-failed/30 bg-white">
         <div class="border-b border-ink-100 px-4 py-3">

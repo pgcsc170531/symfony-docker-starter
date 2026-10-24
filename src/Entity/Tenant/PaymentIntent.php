@@ -124,6 +124,17 @@ class PaymentIntent
     #[ORM\JoinColumn(name: 'student_id', nullable: true)]
     private ?Student $student = null;
 
+    /**
+     * The family account this payment is expected to arrive on, when the parent
+     * pays by transfer. Null on the hosted-checkout path.
+     *
+     * The intent carries the invoice, so a transfer matched to it settles **that**
+     * invoice — never a sibling's (VIRTUAL-ACCOUNTS-DESIGN.md §5.3).
+     */
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(name: 'virtual_account_id', nullable: true, onDelete: 'SET NULL')]
+    private ?VirtualAccount $virtualAccount = null;
+
     /** Set once, when the intent settles — the link to the ledger. */
     #[ORM\OneToOne]
     #[ORM\JoinColumn(name: 'payment_id', nullable: true)]
@@ -230,6 +241,9 @@ class PaymentIntent
 
     public function getStudent(): ?Student { return $this->student; }
     public function setStudent(?Student $student): static { $this->student = $student; return $this; }
+
+    public function getVirtualAccount(): ?VirtualAccount { return $this->virtualAccount; }
+    public function setVirtualAccount(?VirtualAccount $account): static { $this->virtualAccount = $account; return $this; }
 
     /**
      * Who is paying: the guardian of the applicant, or of the pupil.

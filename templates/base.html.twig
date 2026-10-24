@@ -499,6 +499,15 @@
                                 ('subscription_registrations' in route)) }}
                     {{ nav.item(path('landlord_credit_request_index'), 'credit-card', 'Credit Requests',
                                 ('credit_request' in route)) }}
+                    {# Paystack gives one merchant 1,000 dedicated accounts in total,
+                       raised only on request. Without this row the operator had no way
+                       to see how much of that allowance was spent until issuing failed. #}
+                    {{ nav.item(path('landlord_virtual_accounts'), 'identification', 'Family Accounts',
+                                ('virtual_accounts' in route)) }}
+                    {# Float held is a liability across every school — the one number
+                       that must be right before any payout runs. #}
+                    {{ nav.item(path('landlord_payment_ledger'), 'banknotes', 'Payment Ledger',
+                                ('payment_ledger' in route)) }}
                     {{ nav.item(path('landlord_plan_index'), 'ticket', 'Pricing Plans',
                                 ('plan' in route)) }}
 
@@ -632,6 +641,10 @@
                                     (route == 'app_tenant_payment_index' or 'payment_terminal' in route)) }}
                         {{ nav.item(path('app_tenant_payment_verify'), 'check-circle', 'Verify Payments',
                                     (route == 'app_tenant_payment_verify')) }}
+                        {# Money that reached a family's dedicated account but could not be
+                           tied to a bill — the bursar places it (§5.5). #}
+                        {{ nav.item(path('app_finance_credits'), 'banknotes', 'Unmatched Transfers',
+                                    ('finance_credit' in route)) }}
                         {# Parents who pay a term or three sessions ahead. The credit
                            is drawn against every invoice raised afterwards. #}
                         {{ nav.item(path('app_tenant_advance_index'), 'banknotes', 'Advance Payments',
@@ -661,6 +674,12 @@
                                     (route in ['app_tenant_report_payments', 'app_tenant_report_payments_csv'])) }}
                         {{ nav.item(path('app_tenant_report_reconciliation'), 'check-circle', 'Reconciliation',
                                     (route == 'app_tenant_report_reconciliation')) }}
+                        {# Money the school collected online and what we paid out to its
+                           bank. The payer's charge and the bank's fee are deliberately
+                           absent: the school is charged nothing, and a "charge" row here
+                           only invites a dispute. #}
+                        {{ nav.item(path('app_tenant_ledger_index'), 'banknotes', 'Online Payments',
+                                    (route == 'app_tenant_ledger_index')) }}
                         {{ nav.item(path('app_tenant_report_matrix'), 'clipboard-list', 'Class Fee Status',
                                     (route == 'app_tenant_report_matrix')) }}
                         {{ nav.item(path('app_tenant_report_expenses'), 'receipt-percent', 'Expense Register',

@@ -1,0 +1,92 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Money we are holding{% endblock %}
+
+{#
+    Unassigned credits (docs/payments/VIRTUAL-ACCOUNTS-DESIGN.md §5.5).
+
+    Money that reached the family's account but could not be tied to a bill. The
+    parent says which bill it was; we never guess across children.
+#}
+
+{% block body %}
+<div class="mt-6 px-4 pb-12 sm:mt-8">
+
+    <a href="{{ path('app_parent_dashboard') }}"
+       class="inline-flex min-h-[44px] items-center text-sm font-bold text-ink-500 hover:text-ink-800">
+        &larr; Back to dashboard
+    </a>
+
+    <h1 class="mt-2 text-2xl font-bold tracking-tight text-ink-900">Money we are holding</h1>
+    <p class="mt-1 text-sm leading-relaxed text-ink-600">
+        These transfers reached your account but did not match a bill exactly — maybe the amount was rounded,
+        or two bills were added together. Nothing is lost: choose the bill each one should pay.
+    </p>
+
+    {% if credits is empty %}
+        <div class="mt-6 rounded-xl border border-ink-200 bg-white p-5 text-center">
+            <p class="text-sm font-bold text-ink-900">Nothing is being held.</p>
+            <p class="mt-1 text-sm text-ink-600">Every transfer we received has been matched to a bill.</p>
+            <a href="{{ path('app_parent_dashboard') }}"
+               class="mt-3 inline-flex min-h-[44px] items-center text-sm font-bold text-accent-700">
+                Back to your dashboard &rarr;
+            </a>
+        </div>
+    {% else %}
+        <div class="mt-6 space-y-4">
+            {% for credit in credits %}
+                <div class="rounded-2xl border border-ink-200 bg-white p-4 shadow-card">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="money text-xl font-black text-ink-900">₦{{ credit.amount|number_format(2) }}</p>
+                            <p class="mt-0.5 text-xs text-ink-500">
+                                {{ credit.paidAt|date('j M Y, g:ia') }}
+                                {% if credit.senderName %} · from {{ credit.senderName }}{% endif %}
+                                {% if credit.senderBank %} ({{ credit.senderBank }}){% endif %}
+                            </p>
+                        </div>
+                        <span class="rounded-full bg-pending/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-pending">
+                            Unassigned
+                        </span>
+                    </div>
+
+                    {% if openInvoices is empty %}
+                        <p class="mt-3 rounded-lg bg-ink-50 p-3 text-xs leading-relaxed text-ink-600">
+                            You have no open bills right now. Keep this page — it can be applied when the next bill is issued.
+                        </p>
+                    {% else %}
+                        <form method="post" action="{{ path('app_parent_credit_apply', {id: credit.id}) }}" class="mt-4 space-y-3">
+                            <input type="hidden" name="_token" value="{{ csrf_token('apply_credit_' ~ credit.id) }}">
+
+                            <div>
+                                <label for="invoice-{{ credit.id }}" class="text-xs font-bold uppercase tracking-wide text-ink-500">
+                                    Apply to
+                                </label>
+                                <select id="invoice-{{ credit.id }}" name="invoice_id" required
+                                        class="mt-1 min-h-[44px] w-full rounded-lg border border-ink-300 px-3 text-base text-ink-900">
+                                    {% for invoice in openInvoices %}
+                                        <option value="{{ invoice.id }}">
+                                            {{ invoice.invoiceNumber }}
+                                            {% if invoice.student %} · {{ invoice.student.firstName }}{% endif %}
+                                            · ₦{{ invoice.balanceDue|number_format(2) }} due
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <button type="submit"
+                                    class="inline-flex min-h-[48px] w-full items-center justify-center rounded-xl bg-accent-600 px-5 text-sm font-bold text-white transition-colors hover:bg-accent-700">
+                                Apply this payment
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+
+        <p class="mt-4 text-xs leading-relaxed text-ink-500">
+            A payment larger than the bill cannot be applied here — ask the school office to split it.
+        </p>
+    {% endif %}
+</div>
+{% endblock %}

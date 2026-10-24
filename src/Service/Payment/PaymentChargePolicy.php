@@ -7,11 +7,13 @@ use App\Entity\Tenant\School;
 /**
  * The switch on top of the charge: does the parent pay it at all?
  *
- * `ProcessingFeeCalculator` owns the maths — 1% capped at ₦300, plus 7.5% VAT on
- * that, plus a ₦200 handling margin, and **never more than ₦500 whatever the
- * amount**. That ceiling is the owner's rule and it is the same for every fee in
- * the system: an application form fee and a term's school fees are charged the
- * same way, because the gateway's own cut stops growing long before ours does.
+ * `ProcessingFeeCalculator` owns the maths — two schedules, deliberately
+ * different (see its docblock, and VIRTUAL-ACCOUNTS-DESIGN.md §8/§9):
+ *
+ *   • invoice payments — a flat **₦750** transfer charge on every payment,
+ *     part or full (it funds Paystack's incoming cut *and* the payout to the
+ *     school the next morning);
+ *   • the online application fee — Paystack's card cost, **then + ₦350**.
  *
  * This class is only the per-school decision:
  *
@@ -38,15 +40,27 @@ final class PaymentChargePolicy
         return $school === null || $school->isOnlineProcessingFeeEnabled();
     }
 
-    /** The charge the parent pays on top of `$amount` — 0 when the school absorbs it. */
+    /** The charge on an INVOICE payment — 0 when the school absorbs it. */
     public function feeFor(?School $school, float $amount): float
     {
         return $this->isEnabled($school) ? $this->calculator->feeFor($amount) : 0.0;
     }
 
-    /** Exactly what the parent is charged. */
+    /** Exactly what the parent transfers for an invoice. */
     public function totalFor(?School $school, float $amount): float
     {
         return round($amount + $this->feeFor($school, $amount), 2);
+    }
+
+    /** The charge on the online APPLICATION FEE, paid before the form. */
+    public function applicationFeeFor(?School $school, float $formFee): float
+    {
+        return $this->isEnabled($school) ? $this->calculator->applicationFeeFor($formFee) : 0.0;
+    }
+
+    /** Exactly what the parent pays at checkout for an application. */
+    public function applicationTotalFor(?School $school, float $formFee): float
+    {
+        return round($formFee + $this->applicationFeeFor($school, $formFee), 2);
     }
 }

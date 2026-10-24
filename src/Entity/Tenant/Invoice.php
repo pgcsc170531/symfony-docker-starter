@@ -76,7 +76,9 @@ class Invoice
     // === RELATIONSHIPS ===
 
     // 🟢 UPDATED: nullable is now TRUE so walk-ins can buy without an ID!
-    #[ORM\ManyToOne]
+    // `inversedBy` is what makes Student::$invoices the working inverse side —
+    // without it Doctrine reports the mapping as invalid.
+    #[ORM\ManyToOne(inversedBy: 'invoices')]
     #[ORM\JoinColumn(name: 'student_id', nullable: true)]
     private ?Student $student = null;
 

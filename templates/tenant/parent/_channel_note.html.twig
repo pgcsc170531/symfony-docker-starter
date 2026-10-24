@@ -1,21 +1,16 @@
 {#
-    The channel advice — the one place we say it, so every pay button says the same thing.
+    What the extra charge is — said once, so every pay button says the same thing.
 
-    A parent picks card / transfer / USSD on the provider's page, not ours, so this
-    note is the only chance to steer them. Card pricing is materially worse for the
-    school (1.5% + ₦100, capped at ₦2,000) than a transfer (1% capped at ₦300), and
-    because the parent's own charge is capped at ₦500 the difference is paid by the
-    school out of its fee.
-
-    Numbers come from ProcessingFeeCalculator via the `payment_channels` Twig
-    function — never hard-code a rate in this file.
+    The parent's total does not depend on the channel they choose: the school
+    receives its fee in full and the charge on top covers the bank's fee plus our
+    API charge. Only what Edus pays the provider changes behind the scenes — never
+    the parent's figure and never the school's settlement.
 #}
-{% set rates = payment_channels() %}
 <div class="mt-2 rounded-lg border border-ink-200 bg-ink-50 p-3">
     <p class="text-xs leading-relaxed text-ink-700">
-        <strong class="font-semibold text-ink-900">Bank transfer is cheaper than card.</strong>
-        A card costs the school {{ rates.card }}; a transfer costs {{ rates.transfer }}.
-        Your total is the same either way — the extra comes out of the school&rsquo;s fee,
-        so choose <strong>transfer</strong> (or USSD) when the payment page asks.
+        <strong class="font-semibold text-ink-900">The school receives its fee in full.</strong>
+        The transfer charge on top covers the bank&rsquo;s fee and our API charge.
+        It is never taken out of the school&rsquo;s money, and your total does not change
+        whichever way you pay.
     </p>
 </div>

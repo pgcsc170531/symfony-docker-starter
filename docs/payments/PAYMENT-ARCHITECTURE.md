@@ -62,6 +62,11 @@ That limit sits on **Edus'** account, **across every school on the platform**.
 > (a temporary account per payment, §7.3) sidesteps the 1,000 limit entirely — so for a high-volume
 > one-off application fee it is likely the better mechanism.
 
+> 🗣️ **Under discussion (23 Oct 2026):** a **dedicated account per guardian (family)**, which keeps the
+> identity benefit without one account per child, plus the allocation rules for installments across
+> siblings and a ₦350 handling fee that does not fit under the current ₦500 cap. See
+> `VIRTUAL-ACCOUNTS-DESIGN.md` — nothing there is built yet.
+
 ---
 
 ## 3. Reconciling many parents against one school account

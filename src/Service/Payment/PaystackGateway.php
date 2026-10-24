@@ -92,7 +92,7 @@ final class PaystackGateway implements PaymentGatewayInterface
                 'school' => $school->getName(),
                 'intent_reference' => $intent->getReference(),
             ],
-        ] + $this->splitParameters($school);
+        ] + $this->splitParameters($intent, $school);
 
         try {
             $response = $this->httpClient->request('POST', self::BASE_URL . '/transaction/initialize', [
@@ -200,30 +200,52 @@ final class PaystackGateway implements PaymentGatewayInterface
     }
 
     /**
-     * Route the money to the school's subaccount.
+     * Route the money: the school gets its fee, Edus keeps the transfer charge.
      *
-     * `bearer: account` means Edus absorbs Paystack's fee out of the processing
-     * fee the parent paid, so the school nets its full invoice.
+     * Paystack's `transaction_charge` is the **flat amount that goes to the main
+     * account** and the subaccount takes the rest — which is exactly our model for
+     * a card payment:
      *
-     * ⚠️ The precise split (percentage vs flat `transaction_charge`) is set on
-     * the subaccount in the Paystack dashboard and must be confirmed for each
-     * school before go-live. Everything above this line is unaffected by that
-     * decision, which is exactly why it is isolated here.
+     *   total ₦63,250  →  main (Edus) ₦650 flat, subaccount (school) ₦62,600
      *
-     * @return array<string, string>
+     * That is only available on `transaction/initialize`, i.e. the card rail. An
+     * incoming transfer to a dedicated account has no such parameter, which is why
+     * the transfer rail settles to Edus and pays the school out instead
+     * (docs/payments/ONLINE-PAYMENT-LEDGER.md §6).
+     *
+     * `bearer: account` keeps Paystack's own fee on Edus, out of the ₦650, so the
+     * school still nets its full invoice.
+     *
+     * An **application fee** is Edus's own money end to end — no school, no split.
+     *
+     * @return array<string, string|int>
      */
-    private function splitParameters(School $school): array
+    private function splitParameters(PaymentIntent $intent, School $school): array
     {
+        if ($intent->getPurpose() !== PaymentIntent::PURPOSE_INVOICE) {
+            return [];
+        }
+
         $subaccount = trim((string) $school->getPaystackSubaccountCode());
 
         if ($subaccount === '') {
             return [];
         }
 
-        return [
+        $params = [
             'subaccount' => $subaccount,
             'bearer' => 'account',
         ];
+
+        // The charge, in kobo, as the flat share that stays with Edus. Zero means
+        // the school takes the whole payment.
+        $chargeMinor = (int) round(((float) $intent->getProcessingFee()) * 100);
+
+        if ($chargeMinor > 0 && $chargeMinor < $intent->getAmountInMinorUnits()) {
+            $params['transaction_charge'] = $chargeMinor;
+        }
+
+        return $params;
     }
 
     /**

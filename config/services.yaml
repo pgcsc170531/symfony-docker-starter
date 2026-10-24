@@ -35,6 +35,13 @@ parameters:
     paystack_secret_key: "%env(default:paystack_secret_key_fallback:PAYSTACK_SECRET_KEY)%"
     paystack_secret_key_fallback: ''
 
+    # How many dedicated virtual accounts Paystack lets this merchant hold. It
+    # ships at 1,000 and is raised by Paystack on request, so the number lives in
+    # configuration, not in code: when they raise it, this changes and the
+    # operator screen's "approaching the limit" warning moves with it.
+    paystack_dva_limit: "%env(default:paystack_dva_limit_fallback:PAYSTACK_DVA_LIMIT)%"
+    paystack_dva_limit_fallback: 1000
+
     # Encrypts the secrets stored in the landlord database (Paystack key, SMTP
     # password). Generate one with: php bin/console app:platform:make-key
     # Deliberately NOT APP_SECRET: rotating the session secret must not make every

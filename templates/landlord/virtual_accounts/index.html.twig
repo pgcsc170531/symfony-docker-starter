@@ -1,0 +1,122 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Family payment accounts{% endblock %}
+
+{% block body %}
+    <div class="px-4 py-4 sm:px-6 sm:py-6">
+
+        <div class="mb-4">
+            <h1 class="text-xl font-bold text-ink-900 sm:text-2xl">Family payment accounts</h1>
+            <p class="mt-1 text-sm text-ink-600">
+                Every dedicated account Edus has issued to a parent, across all schools.
+                Paystack allows {{ limit|number_format }} in total.
+            </p>
+        </div>
+
+        {# ── The budget ─────────────────────────────────────────────────────
+           The one number that matters: how much of Paystack's allowance is spent.
+           Colour states a fact, and the wording says it too — never colour alone. #}
+        <div class="rounded-xl border p-4
+            {% if state == 'critical' %}border-failed/40 bg-failed/5
+            {% elseif state == 'warning' %}border-pending/40 bg-pending/5
+            {% else %}border-ink-200 bg-white{% endif %}">
+            <div class="flex flex-wrap items-end justify-between gap-2">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">Accounts issued</p>
+                    <p class="mt-1 text-3xl font-bold text-ink-900">{{ used|number_format }}
+                        <span class="text-base font-semibold text-ink-500">of {{ limit|number_format }}</span>
+                    </p>
+                </div>
+                <p class="text-sm font-semibold
+                    {% if state == 'critical' %}text-failed{% elseif state == 'warning' %}text-pending{% else %}text-paid{% endif %}">
+                    {{ percent }}% used · {{ remaining|number_format }} left
+                </p>
+            </div>
+
+            <div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-ink-100">
+                <div class="h-full rounded-full
+                    {% if state == 'critical' %}bg-failed{% elseif state == 'warning' %}bg-pending{% else %}bg-accent-600{% endif %}"
+                     style="width: {{ percent > 100 ? 100 : percent }}%"></div>
+            </div>
+
+            {% if state == 'critical' %}
+                <p class="mt-3 rounded-lg bg-white/70 p-3 text-sm font-semibold text-failed">
+                    ⚠ Nearly full. Ask Paystack to raise the limit now — a parent cannot be issued an account
+                    once the allowance is gone, and they will have no way to pay by transfer.
+                </p>
+            {% elseif state == 'warning' %}
+                <p class="mt-3 rounded-lg bg-white/70 p-3 text-sm font-semibold text-pending">
+                    ⚠ Over two thirds used. Request a limit increase from Paystack before it runs out.
+                </p>
+            {% else %}
+                <p class="mt-3 text-xs text-ink-600">
+                    Accounts are only issued when a parent chooses to pay by bank transfer, so this figure grows
+                    with real demand — not with enrolment.
+                </p>
+            {% endif %}
+        </div>
+
+        {# ── Per school ───────────────────────────────────────────────────── #}
+        {% if perSchool %}
+            <div class="mt-6 rounded-xl border border-ink-200 bg-white">
+                <div class="border-b border-ink-100 px-4 py-3">
+                    <h2 class="text-sm font-bold text-ink-900">By school</h2>
+                </div>
+                <ul class="divide-y divide-ink-100">
+                    {% for school, count in perSchool %}
+                        <li class="flex items-center justify-between gap-3 px-4 py-3">
+                            <span class="min-w-0 break-words text-sm text-ink-800">{{ school }}</span>
+                            <span class="money shrink-0 text-sm font-bold text-ink-900">{{ count|number_format }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        {# ── The accounts ─────────────────────────────────────────────────── #}
+        <div class="mt-6 rounded-xl border border-ink-200 bg-white">
+            <div class="border-b border-ink-100 px-4 py-3">
+                <h2 class="text-sm font-bold text-ink-900">Accounts</h2>
+                <p class="mt-1 text-xs text-ink-500">Newest first. The account number is the parent's NUBAN; the customer code is what a webhook carries.</p>
+            </div>
+
+            {% if accounts is empty %}
+                <div class="p-6 text-center">
+                    <p class="text-sm font-semibold text-ink-700">No accounts yet</p>
+                    <p class="mt-1 text-xs text-ink-500">
+                        One appears here the first time a parent ticks consent and asks for a transfer account on a bill.
+                    </p>
+                </div>
+            {% else %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-[640px] w-full text-left text-sm">
+                        <thead class="bg-ink-50 text-xs uppercase tracking-wide text-ink-500">
+                            <tr>
+                                <th class="px-4 py-2 font-semibold">Account</th>
+                                <th class="px-4 py-2 font-semibold">School</th>
+                                <th class="px-4 py-2 font-semibold">Customer code</th>
+                                <th class="px-4 py-2 font-semibold">Issued</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-ink-100">
+                            {% for account in accounts %}
+                                <tr>
+                                    <td class="px-4 py-3 font-mono font-semibold text-ink-900">{{ account.accountNumber }}</td>
+                                    <td class="px-4 py-3 text-ink-700">{{ account.school ? account.school.name : '—' }}</td>
+                                    <td class="px-4 py-3 font-mono text-xs text-ink-500">{{ account.customerCode }}</td>
+                                    <td class="px-4 py-3 text-ink-600">{{ account.createdAt|date('j M Y') }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+
+        <p class="mt-4 text-xs leading-relaxed text-ink-500">
+            Accounts are never deleted, here or at Paystack — deletion would leave a NUBAN that still accepts money
+            with nothing in Edus able to attribute it. Closing one is a status change, and it is always the
+            operator's decision.
+        </p>
+    </div>
+{% endblock %}

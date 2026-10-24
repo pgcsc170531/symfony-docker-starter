@@ -208,7 +208,7 @@ class ParentApplicationController extends AbstractController
         // The parent must see the exact total before leaving for the provider —
         // the same rule the school-fee payment screen follows.
         $fee = (float) ($application->getFeeAmount() ?? $school?->getApplicationFeeAmount() ?? 0);
-        $feeProcessing = $this->charges->feeFor($school, $fee);
+        $feeProcessing = $this->charges->applicationFeeFor($school, $fee);
 
         return $this->render('tenant/parent/applications/show.html.twig', [
             'application' => $application,

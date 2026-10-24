@@ -8,8 +8,8 @@ use App\Service\Payment\ProcessingFeeCalculator;
 use PHPUnit\Framework\TestCase;
 
 /**
- * The owner's rule: the parent-paid online charge never exceeds ₦500, for any
- * amount, and a school can switch it off entirely.
+ * The owner's rule: a flat ₦750 on every invoice payment, the application fee
+ * charged as Paystack's cost plus ₦350, and a school can switch either off.
  */
 final class PaymentChargePolicyTest extends TestCase
 {
@@ -20,28 +20,24 @@ final class PaymentChargePolicyTest extends TestCase
         $this->policy = new PaymentChargePolicy(new ProcessingFeeCalculator());
     }
 
-    public function testTheChargeIsNeverMoreThanFiveHundred(): void
+    public function testTheInvoiceChargeIsFlatAtSevenHundredAndFifty(): void
     {
         $school = (new School())->setName('Test');
 
         foreach ([1_000, 5_000, 25_000, 52_500, 250_000, 1_000_000] as $amount) {
-            $fee = $this->policy->feeFor($school, (float) $amount);
-
-            self::assertLessThanOrEqual(500.0, $fee, sprintf('Charge on ₦%s must not exceed ₦500', number_format($amount)));
+            self::assertSame(750.0, $this->policy->feeFor($school, (float) $amount));
         }
     }
 
-    public function testTheChargeHitsTheCeilingAndStops(): void
+    public function testTheApplicationFeeUsesItsOwnSchedule(): void
     {
         $school = (new School())->setName('Test');
 
-        // 1% of ₦5,000 = ₦50 → +7.5% VAT + ₦200 handling.
-        self::assertSame(253.75, $this->policy->feeFor($school, 5_000.0));
+        self::assertSame(546.94, $this->policy->applicationFeeFor($school, 5_000.0));
+        self::assertSame(5_546.94, $this->policy->applicationTotalFor($school, 5_000.0));
 
-        // Past ₦30,000 the gateway cut is already at its ₦300 cap, so the
-        // parent's charge is pinned at ₦500 and a bigger fee costs no more.
-        self::assertSame(500.0, $this->policy->feeFor($school, 30_000.0));
-        self::assertSame(500.0, $this->policy->feeFor($school, 300_000.0));
+        // It must NOT be the invoice charge.
+        self::assertNotSame($this->policy->feeFor($school, 5_000.0), $this->policy->applicationFeeFor($school, 5_000.0));
     }
 
     public function testTheSchoolCanAbsorbTheCharge(): void
@@ -51,11 +47,14 @@ final class PaymentChargePolicyTest extends TestCase
         self::assertFalse($this->policy->isEnabled($school));
         self::assertSame(0.0, $this->policy->feeFor($school, 5_000.0));
         self::assertSame(5_000.0, $this->policy->totalFor($school, 5_000.0));
+        self::assertSame(0.0, $this->policy->applicationFeeFor($school, 5_000.0));
+        self::assertSame(5_000.0, $this->policy->applicationTotalFor($school, 5_000.0));
     }
 
     public function testAnUnknownSchoolKeepsTheCharge(): void
     {
         self::assertTrue($this->policy->isEnabled(null));
-        self::assertSame(253.75, $this->policy->feeFor(null, 5_000.0));
+        self::assertSame(750.0, $this->policy->feeFor(null, 5_000.0));
+        self::assertSame(546.94, $this->policy->applicationFeeFor(null, 5_000.0));
     }
 }

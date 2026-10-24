@@ -173,6 +173,22 @@
                 🏦 Banking Details <span class="text-xs font-normal text-gray-500">(For Payment Slips)</span>
             </h2>
 
+            {% if form.vars.data.paystackSubaccountCode %}
+                {# Editable on purpose — a school must be able to change its own bank
+                   account. But once online payment is live, this account is also
+                   where Paystack settles, and Paystack keeps paying to the number
+                   Edus registered until we replace the subaccount. Saying that
+                   plainly is the whole point of this box. #}
+                <div class="mb-4 rounded-lg border-2 border-pending/50 bg-pending/5 p-3 sm:p-4">
+                    <p class="text-sm font-bold text-pending">⚠ Changing this account does not change how parents pay online</p>
+                    <ul class="mt-2 list-disc space-y-1 pl-5 text-xs leading-relaxed text-ink-700">
+                        <li>Online payments (card and bank transfer) are settled by Edus through Paystack into the account you entered when it was <strong>created</strong>. If you change the number below, Paystack <strong>keeps paying the previous account</strong> until Edus re-registers it.</li>
+                        <li>Cash and direct bank transfers by parents go wherever you write here — that is why you can change it.</li>
+                        <li>So: change it only if the account has genuinely changed, then <strong>tell Edus the same day</strong>. Until they confirm, treat online money as going to the old account.</li>
+                    </ul>
+                </div>
+            {% endif %}
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                 <div>
                     {{ form_label(form.bankName, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
@@ -188,6 +204,32 @@
                     {{ form_label(form.accountName, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
                     {{ form_widget(form.accountName, {'attr': {'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'}}) }}
                     {{ form_errors(form.accountName) }}
+                </div>
+
+                {# Where Paystack sends the money. Read-only on purpose: the school
+                   has no Paystack account and never sees a key — Edus creates the
+                   subaccount from these bank details (landlord → school → Payments). #}
+                <div class="md:col-span-2">
+                    <div class="rounded-lg border border-ink-200 bg-ink-50 p-3">
+                        <p class="text-sm font-bold text-ink-800">Online payment</p>
+                        {% if form.vars.data.paystackSubaccountCode %}
+                            <p class="mt-1 text-xs font-semibold text-paid">
+                                ✓ Online payment is live for this school (set up by Edus).
+                            </p>
+                            <p class="mt-1 font-mono text-xs text-ink-500">{{ form.vars.data.paystackSubaccountCode }}</p>
+                            <p class="mt-1 text-xs text-ink-600">
+                                Online money settles into the account Edus registered. If you change the details above, tell Edus so they can re-register.
+                            </p>
+                        {% else %}
+                            <p class="mt-1 text-xs font-semibold text-pending">
+                                ⚠ Online payment is not set up yet — the “Pay online” button is hidden until Edus enables it.
+                            </p>
+                            <p class="mt-1 text-xs text-ink-600">
+                                Make sure the bank details above are correct; Edus uses them to create your payment account.
+                                Nothing else is needed from you.
+                            </p>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
 

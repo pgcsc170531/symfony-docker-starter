@@ -8,6 +8,7 @@ use App\Entity\Landlord\Subscription;
 use App\Service\SubscriptionService;
 use App\Service\TenantProvisioner;
 use App\Service\WalletService; // 🟢 1. IMPORT WALLET SERVICE
+use App\Service\Payment\SchoolSubaccountService;
 use App\Form\SchoolEditType;
 use App\Form\SchoolType;
 
@@ -212,10 +213,10 @@ class SchoolController extends AbstractController
         Request $request,
         #[Autowire(service: 'doctrine.orm.landlord_entity_manager')]
         EntityManagerInterface $em,
+        SchoolSubaccountService $subaccounts,
     ): Response {
         $form = $this->createForm(SchoolEditType::class, $school);
         $form->handleRequest($request);
-
         if ($form->isSubmitted() && $form->isValid()) {
             $newPassword = (string) $form->get('newPassword')->getData();
             if ($newPassword !== '') {
@@ -237,7 +238,62 @@ class SchoolController extends AbstractController
             'school' => $school,
             'form' => $form,
             'subscriptions' => $subscribed,
+            'payments' => $subaccounts->details($school),
         ]);
+    }
+
+    /**
+     * Create the Paystack subaccount this school's money settles into.
+     *
+     * Operator-only, and deliberately not a school-facing setting: Edus holds the
+     * single Paystack account, so a school that could type its own ACCT_ code could
+     * also point its fees at another school's bank account.
+     */
+    #[Route('/{id}/subaccount', name: 'landlord_school_subaccount', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function createSubaccount(
+        School $school,
+        Request $request,
+        SchoolSubaccountService $subaccounts,
+    ): Response {
+        if (!$this->isCsrfTokenValid('subaccount_' . $school->getId(), (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'That confirmation expired. Try again.');
+
+            return $this->redirectToRoute('landlord_school_edit', ['id' => $school->getId()]);
+        }
+
+        $details = [
+            'bank_name' => trim((string) $request->request->get('bank_name')),
+            'account_number' => trim((string) $request->request->get('account_number')),
+            'account_name' => trim((string) $request->request->get('account_name')),
+        ];
+
+        // Two buttons, one form: fix the bank details, or fix them and ask
+        // Paystack for a subaccount in the same breath.
+        if ($request->request->get('intent') === 'save') {
+            $result = $subaccounts->saveBankDetails($school, $details);
+
+            $this->addFlash(
+                $result['ok'] ? 'success' : 'error',
+                $result['ok'] ? 'Bank details saved.' : (string) ($result['message'] ?? 'Those details could not be saved.')
+            );
+
+            return $this->redirectToRoute('landlord_school_edit', ['id' => $school->getId()]);
+        }
+
+        $result = $subaccounts->create(
+            $school,
+            $details,
+            trim((string) $request->request->get('bank_code')),
+            (float) $request->request->get('percentage_charge', 0),
+        );
+
+        if ($result['ok']) {
+            $this->addFlash('success', sprintf('Subaccount %s is set — parents at %s can now pay online.', $result['code'], $school->getName()));
+        } else {
+            $this->addFlash('error', (string) $result['message']);
+        }
+
+        return $this->redirectToRoute('landlord_school_edit', ['id' => $school->getId()]);
     }
 
     /**

@@ -1,0 +1,256 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Online payments{% endblock %}
+
+{% block body %}
+    <div class="px-4 py-4 sm:px-6 sm:py-6"
+         data-rows-url="{{ path('app_tenant_ledger_rows') }}"
+         data-page="{{ filters.page }}">
+
+        <div class="mb-4">
+            <h1 class="text-xl font-bold text-ink-900 sm:text-2xl">Online payments</h1>
+            <p class="mt-1 text-sm text-ink-600">
+                Money parents paid online for this school, and what we have paid into the school's bank account.
+            </p>
+        </div>
+
+        {# Only the school's money appears here. The payer's online charge and the
+           bank's fee are the platform's business, not the school's: the school is
+           charged nothing, and showing a "charge" invites a dispute about a fee
+           that was never taken from it. #}
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div class="rounded-xl border border-ink-200 bg-white p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">Collected for the school</p>
+                <p id="op-collected" class="money mt-1 text-2xl font-bold text-ink-900">
+                    ₦{{ (collectedMinor / 100)|number_format(2) }}
+                </p>
+                <p class="mt-1 text-xs text-ink-600">Fees paid online, credited to the school in full.</p>
+            </div>
+
+            <div class="rounded-xl border border-ink-200 bg-white p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">Held for the school</p>
+                <p id="op-held" class="money mt-1 text-2xl font-bold {{ heldMinor > 0 ? 'text-pending' : 'text-ink-900' }}">
+                    ₦{{ (heldMinor / 100)|number_format(2) }}
+                </p>
+                <p class="mt-1 text-xs text-ink-600">Waiting for the next payout to the bank account below.</p>
+            </div>
+
+            <div class="rounded-xl border border-ink-200 bg-white p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">Paid to your bank</p>
+                <p id="op-paidout" class="money mt-1 text-2xl font-bold text-paid">
+                    ₦{{ (paidOutMinor / 100)|number_format(2) }}
+                </p>
+                {% if school and school.accountNumber %}
+                    {# Named, not "your bank": the bursar reconciles this against a
+                       bank statement, and needs to see which account was credited. #}
+                    <p class="mt-1 break-words text-xs text-ink-700">
+                        To <strong>{{ school.bankName ?: 'the bank on file' }}</strong>
+                        · <strong class="font-mono break-all">{{ school.accountNumber }}</strong>
+                        {% if school.accountName %}<span class="block text-ink-500">{{ school.accountName }}</span>{% endif %}
+                    </p>
+                {% else %}
+                    <p class="mt-1 text-xs text-pending">
+                        No bank account on file yet — add it in Settings → General → Banking details, or payouts cannot be sent.
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="mt-6 rounded-xl border border-ink-200 bg-white">
+            <div class="border-b border-ink-100 px-4 py-3">
+                <h2 class="text-sm font-bold text-ink-900">Statement</h2>
+                <p class="mt-1 text-xs text-ink-500">Each line is money collected for the school, or money paid out to it.</p>
+            </div>
+
+            {# Filters work as a plain GET (JavaScript off), and are intercepted to
+               refresh the table in place when JavaScript is available. #}
+            <form id="op-form"
+                  class="grid grid-cols-1 gap-3 border-b border-ink-100 bg-ink-50 px-4 py-3 sm:grid-cols-4"
+                  method="get"
+                  action="{{ path('app_tenant_ledger_index') }}">
+
+                <div class="sm:col-span-2">
+                    <label for="q" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Search</label>
+                    <input type="search" id="q" name="q" value="{{ filters.q }}"
+                           placeholder="Invoice number, payout reference…"
+                           autocomplete="off"
+                           class="min-h-[44px] w-full rounded-lg border border-ink-300 bg-white px-3 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500">
+                </div>
+
+                <div>
+                    <label for="from" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">From</label>
+                    <input type="date" id="from" name="from" value="{{ filters.from ?? '' }}"
+                           class="min-h-[44px] w-full rounded-lg border border-ink-300 bg-white px-3 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500">
+                </div>
+
+                <div>
+                    <label for="to" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">To</label>
+                    <input type="date" id="to" name="to" value="{{ filters.to ?? '' }}"
+                           class="min-h-[44px] w-full rounded-lg border border-ink-300 bg-white px-3 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500">
+                </div>
+
+                <div class="flex flex-col gap-2 sm:col-span-4 sm:flex-row">
+                    <button type="submit"
+                            class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-accent-600 px-5 text-sm font-semibold text-white hover:bg-accent-700 sm:w-auto">
+                        Search
+                    </button>
+                    <a href="{{ path('app_tenant_ledger_index') }}"
+                       class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-ink-300 bg-white px-5 text-sm font-semibold text-ink-700 hover:bg-ink-50 sm:w-auto">
+                        Clear
+                    </a>
+                </div>
+            </form>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-[640px] w-full text-left text-sm">
+                    <thead class="bg-white text-xs uppercase tracking-wide text-ink-500">
+                        <tr>
+                            <th class="px-4 py-2 font-semibold">Date</th>
+                            <th class="px-4 py-2 font-semibold">Description</th>
+                            <th class="px-4 py-2 font-semibold text-right">Collected</th>
+                            <th class="px-4 py-2 font-semibold text-right">Paid out</th>
+                        </tr>
+                    </thead>
+                    <tbody id="op-body" class="divide-y divide-ink-100">
+                        {% include 'tenant/finance/_statement_rows.html.twig' with {'lines': lines, 'school': school, 'filters': filters} %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-3 border-t border-ink-100 px-4 py-3">
+                <p class="text-xs text-ink-500"><span id="op-summary">{{ total }} line{{ total == 1 ? '' : 's' }}</span></p>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="op-prev"
+                            class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-ink-300 bg-white px-4 text-sm font-semibold text-ink-700 hover:bg-ink-50 disabled:cursor-not-allowed disabled:opacity-40"
+                            {{ filters.page <= 1 ? 'disabled' : '' }}>
+                        Previous
+                    </button>
+                    <span id="op-page" class="text-sm font-semibold text-ink-700">Page {{ filters.page }} of {{ pageCount }}</span>
+                    <button type="button" id="op-next"
+                            class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-ink-300 bg-white px-4 text-sm font-semibold text-ink-700 hover:bg-ink-50 disabled:cursor-not-allowed disabled:opacity-40"
+                            {{ filters.page >= pageCount ? 'disabled' : '' }}>
+                        Next
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <p class="mt-4 text-xs leading-relaxed text-ink-500">
+            The school receives its fee in full — nothing is deducted from it.
+        </p>
+
+        {#
+            Filtering and paging without a reload.
+
+            Written as a plain script on purpose: `base.html.twig` does not load the
+            importmap, so no Stimulus controller in this app runs — the existing
+            `assets/controllers/*` files are inert. Turning the importmap on would
+            also activate Turbo app-wide, which is a product-wide change, not a
+            side-effect of adding a search box.
+
+            The rows themselves are always filtered and paged by the server; this
+            only swaps the table body from JSON, so a term's worth of payments is
+            never shipped to a phone to paginate 25 rows.
+        #}
+        <script>
+            (function () {
+                var root = document.querySelector('[data-rows-url]');
+                if (!root) { return; }
+
+                var rowsUrl = root.getAttribute('data-rows-url');
+                var form = document.getElementById('op-form');
+                var body = document.getElementById('op-body');
+                var summary = document.getElementById('op-summary');
+                var pageLabel = document.getElementById('op-page');
+                var prev = document.getElementById('op-prev');
+                var next = document.getElementById('op-next');
+                var collected = document.getElementById('op-collected');
+                var held = document.getElementById('op-held');
+                var paidOut = document.getElementById('op-paidout');
+
+                var page = parseInt(root.getAttribute('data-page'), 10) || 1;
+                var timer = null;
+                var inFlight = null;
+
+                function currentParams(targetPage) {
+                    var params = new URLSearchParams();
+                    ['q', 'from', 'to'].forEach(function (key) {
+                        var value = (form.querySelector('[name="' + key + '"]').value || '').trim();
+                        if (value) { params.set(key, value); }
+                    });
+                    params.set('page', String(targetPage));
+
+                    return params;
+                }
+
+                function load(targetPage) {
+                    var params = currentParams(targetPage);
+
+                    if (inFlight) { inFlight.abort(); }
+                    inFlight = new AbortController();
+
+                    body.classList.add('opacity-50');
+
+                    fetch(rowsUrl + '?' + params.toString(), {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        signal: inFlight.signal,
+                    })
+                        .then(function (response) {
+                            if (!response.ok) { throw new Error('HTTP ' + response.status); }
+                            return response.json();
+                        })
+                        .then(function (data) {
+                            page = data.page;
+
+                            body.innerHTML = data.html;
+                            summary.textContent = data.total + (data.total === 1 ? ' line' : ' lines');
+                            pageLabel.textContent = 'Page ' + data.page + ' of ' + data.pageCount;
+                            collected.textContent = '₦' + data.collected;
+                            held.textContent = '₦' + data.held;
+                            paidOut.textContent = '₦' + data.paidOut;
+
+                            prev.disabled = data.page <= 1;
+                            next.disabled = data.page >= data.pageCount;
+
+                            // Keep the address bar shareable: a refresh shows the same search.
+                            var url = new URL(window.location.href);
+                            ['q', 'from', 'to'].forEach(function (key) {
+                                if (params.get(key)) { url.searchParams.set(key, params.get(key)); }
+                                else { url.searchParams.delete(key); }
+                            });
+                            url.searchParams.set('page', String(data.page));
+                            window.history.replaceState({}, '', url);
+                        })
+                        .catch(function (error) {
+                            if (error.name === 'AbortError') { return; }
+                            // Fail visibly: reload into the server-rendered answer
+                            // rather than leaving stale rows looking correct.
+                            window.location.href = form.action + '?' + params.toString();
+                        })
+                        .finally(function () {
+                            if (!inFlight || !inFlight.signal.aborted) { body.classList.remove('opacity-50'); }
+                        });
+                }
+
+                form.addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    clearTimeout(timer);
+                    load(1);
+                });
+
+                // Typing: wait for a pause. Never one request per keystroke.
+                form.querySelector('[name="q"]').addEventListener('input', function () {
+                    clearTimeout(timer);
+                    timer = setTimeout(function () { load(1); }, 350);
+                });
+
+                ['from', 'to'].forEach(function (key) {
+                    form.querySelector('[name="' + key + '"]').addEventListener('change', function () { load(1); });
+                });
+
+                prev.addEventListener('click', function () { if (page > 1) { load(page - 1); } });
+                next.addEventListener('click', function () { load(page + 1); });
+            })();
+        </script>
+    </div>
+{% endblock %}

@@ -1,0 +1,208 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Pay by transfer{% endblock %}
+
+{#
+    The parent's payment screen (docs/payments/VIRTUAL-ACCOUNTS-DESIGN.md §5.8).
+
+    Mobile-first, because this is opened one-handed at a bank app: the account
+    number is the biggest thing on the page, the total is the second, and the
+    charge is itemised *before* the parent commits — never a surprise at the bank.
+
+    When the family has no account yet, the same screen collects consent (the bank
+    requires it) and, only where Paystack demands validation, a BVN.
+#}
+
+{% block body %}
+<div class="mt-6 px-4 pb-12 sm:mt-8">
+
+    <a href="{{ invoice and invoice.student ? path('app_parent_finance_view', {id: invoice.student.id}) : path('app_parent_dashboard') }}"
+       class="inline-flex min-h-[44px] items-center text-sm font-bold text-ink-500 hover:text-ink-800">
+        &larr; Back to bills
+    </a>
+
+    <h1 class="mt-2 text-2xl font-bold tracking-tight text-ink-900">Pay by transfer</h1>
+    <p class="mt-1 text-sm text-ink-600">
+        Transfer from your own bank app. The bill is marked paid as soon as the money lands — usually within seconds.
+    </p>
+
+    {% if unassignedCount|default(0) > 0 %}
+        <a href="{{ path('app_parent_credits') }}"
+           class="mt-4 flex min-h-[52px] items-center justify-between gap-3 rounded-xl border border-pending/40 bg-white px-4 py-3">
+            <span class="text-sm font-bold text-ink-900">
+                ₦{{ unassignedTotal|number_format(2) }} of your money is waiting to be assigned
+            </span>
+            <span class="text-sm font-bold text-accent-700">Assign it &rarr;</span>
+        </a>
+    {% endif %}
+
+    {# ── What is being paid ─────────────────────────────────────────────── #}
+    <div class="mt-6 overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-card">
+        <div class="border-b border-ink-100 bg-ink-50 px-4 py-3">
+            <p class="text-xs font-bold uppercase tracking-wide text-ink-500">
+                {{ student ? student.fullName : 'School fees' }}
+                {% if invoice and invoice.term %} · {{ invoice.term.name }}{% endif %}
+            </p>
+            {% if invoice %}
+                <p class="mt-0.5 font-mono text-sm font-bold text-ink-800">{{ invoice.invoiceNumber }}</p>
+            {% endif %}
+        </div>
+
+        <dl class="divide-y divide-ink-100">
+            <div class="flex items-center justify-between px-4 py-3">
+                <dt class="text-sm text-ink-600">School fees</dt>
+                <dd class="money text-sm font-bold text-ink-900">₦{{ intent.invoiceAmount|number_format(2) }}</dd>
+            </div>
+            <div class="flex items-center justify-between px-4 py-3">
+                <dt class="text-sm text-ink-600">
+                    Transfer charge
+                    <span class="block text-xs text-ink-400">Bank &amp; API charges</span>
+                </dt>
+                <dd class="money text-sm font-bold text-ink-900">₦{{ intent.processingFee|number_format(2) }}</dd>
+            </div>
+            <div class="flex items-center justify-between bg-accent-50 px-4 py-4">
+                <dt class="text-sm font-bold text-accent-900">Total to transfer</dt>
+                <dd class="money text-lg font-black text-accent-900 sm:text-xl">₦{{ intent.amount|number_format(2) }}</dd>
+            </div>
+        </dl>
+    </div>
+
+    {% if intent.status == 'paid' %}
+        <div class="mt-4 rounded-xl border border-paid/30 bg-white p-4">
+            <p class="text-sm font-bold text-ink-900">This payment is already confirmed.</p>
+            <a href="{{ path('app_parent_payment_status', {reference: intent.reference}) }}"
+               class="mt-2 inline-flex min-h-[44px] items-center text-sm font-bold text-accent-700">
+                See the receipt &rarr;
+            </a>
+        </div>
+    {% elseif account %}
+        {# ── The account — the biggest thing on the page ────────────────── #}
+        <div class="mt-4 rounded-2xl border-2 border-accent-200 bg-white p-4">
+            <p class="text-xs font-bold uppercase tracking-wide text-ink-500">Transfer to your account</p>
+
+            <div class="mt-2 flex items-center justify-between gap-3">
+                <p id="account-number" class="font-mono text-2xl font-black tracking-wider text-ink-900 sm:text-3xl">
+                    {{ account.accountNumber }}
+                </p>
+                <button type="button"
+                        id="copy-account"
+                        aria-label="Copy your account number"
+                        class="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-ink-300 px-3 text-sm font-bold text-ink-700 hover:border-accent-400 hover:text-accent-700">
+                    Copy
+                </button>
+            </div>
+
+            <p class="mt-1 text-sm font-semibold text-ink-700">{{ account.bankName ?: 'Your bank' }}</p>
+            {% if account.accountName %}
+                <p class="text-xs text-ink-500">{{ account.accountName }}</p>
+            {% endif %}
+        </div>
+
+        <div class="mt-3 rounded-xl border border-pending/30 bg-white p-4">
+            <p class="text-sm font-bold text-ink-900">Transfer exactly ₦{{ intent.amount|number_format(2) }}</p>
+            <p class="mt-1 text-xs leading-relaxed text-ink-600">
+                If you send a different amount, we hold it and ask you which bill it was — nothing is lost, but it will not clear this bill straight away.
+            </p>
+        </div>
+
+        <p class="mt-3 text-xs text-ink-500">
+            This figure is held until <strong>{{ expiresAt|date('j M Y, g:ia') }}</strong>.
+            After that, start the payment again to get a fresh total.
+        </p>
+
+        <script>
+            (function () {
+                var button = document.getElementById('copy-account');
+                var number = document.getElementById('account-number');
+                if (!button || !number) { return; }
+
+                button.addEventListener('click', function () {
+                    var text = number.textContent.trim();
+
+                    var done = function () {
+                        button.textContent = 'Copied';
+                        setTimeout(function () { button.textContent = 'Copy'; }, 2000);
+                    };
+
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(text).then(done);
+                    } else {
+                        var range = document.createRange();
+                        range.selectNodeContents(number);
+                        window.getSelection().removeAllRanges();
+                        window.getSelection().addRange(range);
+                        done();
+                    }
+                });
+            })();
+        </script>
+    {% elseif dvaAvailable %}
+        {# ── No account yet: consent, then the bank issues one ─────────── #}
+        <div class="mt-4 rounded-2xl border border-ink-200 bg-white p-4">
+            <h2 class="text-lg font-bold text-ink-900">Get your transfer account</h2>
+            <p class="mt-1 text-sm leading-relaxed text-ink-600">
+                We will ask the bank for a dedicated account number in your name, so this bill is matched to you
+                automatically. It is used for school payments only — it is not a wallet and holds no balance.
+            </p>
+
+            <form method="post" action="{{ path('app_parent_transfer_account_setup') }}" class="mt-4 space-y-4">
+                <input type="hidden" name="_token" value="{{ csrf_token('transfer_account') }}">
+                <input type="hidden" name="reference" value="{{ intent.reference }}">
+
+                <label class="flex items-start gap-3 rounded-xl border border-ink-200 p-3">
+                    <input type="checkbox" name="consent" value="1" required
+                           class="mt-0.5 h-5 w-5 rounded border-ink-300 text-accent-600 focus:ring-accent-500">
+                    <span class="text-sm leading-relaxed text-ink-700">
+                        I agree that Edus and the school may share my name, email, phone and the details below with
+                        Paystack so a bank account can be opened in my name for school payments.
+                    </span>
+                </label>
+
+                <details class="rounded-xl border border-ink-200 p-3">
+                    <summary class="min-h-[44px] cursor-pointer text-sm font-bold text-ink-700">
+                        Identity details (only if your bank asks for them)
+                    </summary>
+                    <p class="mt-2 text-xs leading-relaxed text-ink-500">
+                        Your bank asks for these only in some cases. When it does, the account is opened as
+                        <strong>your own personal account</strong>, in your name — that is why the details have to be yours.
+                        If you leave it blank we try without it, and tell you if the bank refuses.
+                    </p>
+
+                    <div class="mt-3 space-y-3">
+                        <div>
+                            <label for="bvn" class="text-xs font-bold uppercase tracking-wide text-ink-500">BVN</label>
+                            <input id="bvn" name="bvn" inputmode="numeric" autocomplete="off" maxlength="11"
+                                   class="mt-1 min-h-[44px] w-full rounded-lg border border-ink-300 px-3 text-base text-ink-900">
+                        </div>
+                        <div>
+                            <label for="account_number" class="text-xs font-bold uppercase tracking-wide text-ink-500">Your bank account number</label>
+                            <input id="account_number" name="account_number" inputmode="numeric" autocomplete="off" maxlength="10"
+                                   class="mt-1 min-h-[44px] w-full rounded-lg border border-ink-300 px-3 text-base text-ink-900">
+                        </div>
+                        <div>
+                            <label for="bank_code" class="text-xs font-bold uppercase tracking-wide text-ink-500">Bank code</label>
+                            <input id="bank_code" name="bank_code" inputmode="numeric" autocomplete="off" maxlength="6"
+                                   class="mt-1 min-h-[44px] w-full rounded-lg border border-ink-300 px-3 text-base text-ink-900">
+                            <p class="mt-1 text-xs text-ink-400">Three digits, e.g. 058 for GTBank — your bank's code.</p>
+                        </div>
+                    </div>
+                </details>
+
+                <button type="submit"
+                        class="inline-flex min-h-[52px] w-full items-center justify-center rounded-xl bg-accent-600 px-5 text-base font-bold text-white shadow transition-colors hover:bg-accent-700">
+                    Create my transfer account
+                </button>
+            </form>
+        </div>
+    {% else %}
+        <div class="mt-4 rounded-xl border border-ink-200 bg-white p-4">
+            <p class="text-sm font-bold text-ink-900">Online transfer is not switched on for this school yet.</p>
+            <p class="mt-1 text-sm text-ink-600">Use the bank transfer slip and upload your proof, or pay at the school office.</p>
+            <a href="{{ invoice and invoice.student ? path('app_parent_finance_view', {id: invoice.student.id}) : path('app_parent_dashboard') }}"
+               class="mt-3 inline-flex min-h-[44px] items-center text-sm font-bold text-accent-700">
+                Back to your bills &rarr;
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
