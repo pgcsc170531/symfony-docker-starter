@@ -5,90 +5,158 @@
 {% block body %}
 <div class="mt-6 px-4 pb-12">
     
-    <div class="flex justify-between items-center mb-6">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-800">📚 Academic Classrooms</h1>
-            <p class="text-gray-500 text-sm">Create and manage your class levels and arms.</p>
-        </div>
+    <div class="mb-5 min-w-0">
+        <h1 class="text-xl font-bold text-ink-900 sm:text-2xl">Academic classrooms</h1>
+        <p class="mt-1 text-sm text-ink-500">Create class levels, name their arms, and rename an arm when the school changes its mind.</p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <div class="grid grid-cols-1 gap-5 lg:grid-cols-3">
         
         {# LEFT COLUMN: SMART ADD FORM #}
-        <div class="md:col-span-1">
-            <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 sticky top-6">
-                <h2 class="text-lg font-bold text-indigo-700 mb-4 flex items-center gap-2">
-                    <span>✨ Smart Creator</span>
-                </h2>
+        <div class="space-y-4 lg:col-span-1">
+            <div class="rounded-xl border border-ink-200 bg-white p-4 shadow-card">
+                <h2 class="text-sm font-semibold text-ink-900">Add classes</h2>
                 
-                <form method="POST">
-                    <div class="mb-4">
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Class Level Name</label>
-                        {# 🟢 UPDATED CLASS: Matches standard form theme #}
-                        <input type="text" name="name" required placeholder="e.g. JSS 1" 
-                               class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3">
-                        <p class="text-xs text-gray-500 mt-1">Do not include 'A' or 'B'. Just the main name.</p>
+                <form method="POST" class="mt-3 space-y-4">
+                    <input type="hidden" name="mode" value="bulk">
+                    <div>
+                        <label for="class-level" class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-500">Class level</label>
+                        <input id="class-level" type="text" name="name" required placeholder="JSS 1" autocomplete="off"
+                               class="min-h-[44px] w-full rounded-lg border border-ink-300 px-3 text-base text-ink-900 placeholder:text-ink-400 focus:border-accent-500 focus:ring-accent-500">
+                        <p class="mt-1 text-xs text-ink-500">Just the level — leave the arm out.</p>
                     </div>
 
-                    <div class="mb-6">
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Number of Arms</label>
-                        {# 🟢 UPDATED CLASS: Matches standard form theme #}
-                        <select name="arms" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3">
-                            <option value="0">No Arms (Single Class)</option>
-                            <option value="1">1 Arm (A)</option>
-                            <option value="2">2 Arms (A - B)</option>
-                            <option value="3">3 Arms (A - C)</option>
-                            <option value="4" selected>4 Arms (A - D)</option>
-                            <option value="5">5 Arms (A - E)</option>
-                            <option value="6">6 Arms (A - F)</option>
-                            <option value="7">7 Arms (A - G)</option>
-                            <option value="8">8 Arms (A - H)</option>
-                        </select>
-                        <p class="text-xs text-gray-500 mt-1">We will generate the letters automatically.</p>
+                    <div>
+                        <label for="class-arms" class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-500">
+                            Arms <span class="normal-case text-ink-400">(optional)</span>
+                        </label>
+                        <input id="class-arms" type="text" name="arms" placeholder="A, B, C" autocomplete="off"
+                               class="min-h-[44px] w-full rounded-lg border border-ink-300 px-3 text-base text-ink-900 placeholder:text-ink-400 focus:border-accent-500 focus:ring-accent-500">
+                        <p class="mt-1 text-xs leading-relaxed text-ink-500">
+                            Type the arm names your school uses, separated by commas —
+                            <span class="font-mono">A, B, C</span> or <span class="font-mono">Gold, Silver</span>.
+                            Leave it empty for a single class with no arm.
+                        </p>
                     </div>
 
-                    <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-2.5 px-4 rounded shadow hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 text-sm">
-                        <span>🚀 Generate Classes</span>
+                    <button type="submit" class="min-h-[44px] w-full rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white hover:bg-accent-700 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:ring-offset-2">
+                        Create classes
+                    </button>
+                </form>
+            </div>
+
+            <div class="rounded-xl border border-ink-200 bg-white p-4 shadow-card">
+                <h2 class="text-sm font-semibold text-ink-900">Add one class</h2>
+                <p class="mt-1 text-xs text-ink-500">Manual entry — one class and its arm, exactly as the school names them.</p>
+
+                <form method="POST" class="mt-3 space-y-4">
+                    <input type="hidden" name="mode" value="manual">
+
+                    <div>
+                        <label for="manual-level" class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-500">Class</label>
+                        <input id="manual-level" type="text" name="name" required placeholder="JSS 1" autocomplete="off"
+                               class="min-h-[44px] w-full rounded-lg border border-ink-300 px-3 text-base text-ink-900 placeholder:text-ink-400 focus:border-accent-500 focus:ring-accent-500">
+                    </div>
+
+                    <div>
+                        <label for="manual-arm" class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-500">
+                            Arm <span class="normal-case text-ink-400">(optional)</span>
+                        </label>
+                        <input id="manual-arm" type="text" name="arm" placeholder="Gold" autocomplete="off"
+                               class="min-h-[44px] w-full rounded-lg border border-ink-300 px-3 text-base text-ink-900 placeholder:text-ink-400 focus:border-accent-500 focus:ring-accent-500">
+                        <p class="mt-1 text-xs text-ink-500">Leave it empty to add the class with no arm.</p>
+                    </div>
+
+                    <button type="submit" class="min-h-[44px] w-full rounded-lg border border-accent-600 px-4 text-sm font-semibold text-accent-700 hover:bg-accent-50 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:ring-offset-2">
+                        Add this class
                     </button>
                 </form>
             </div>
         </div>
 
-        {# RIGHT COLUMN: EXISTING CLASSES LIST #}
-        <div class="md:col-span-2 space-y-6">
-            
-            {% if groupedClassrooms|length == 0 %}
-                <div class="bg-gray-50 rounded-lg p-12 text-center border-2 border-dashed border-gray-300">
-                    <div class="text-5xl mb-4">🏫</div>
-                    <h3 class="text-lg font-medium text-gray-900">No Classrooms Yet</h3>
-                    <p class="text-gray-500">Use the Smart Creator on the left to add your first level.</p>
+        {# RIGHT COLUMN: EXISTING CLASSES #}
+        <div class="space-y-4 lg:col-span-2">
+            {% if groupedClassrooms is empty %}
+                <div class="rounded-xl border border-dashed border-ink-300 bg-ink-50 p-6 text-center sm:p-8">
+                    <p class="text-sm font-semibold text-ink-900">No classrooms yet</p>
+                    <p class="mt-1 text-sm text-ink-500">
+                        Add your first level on the left — <span class="font-mono">JSS 1</span> with arms
+                        <span class="font-mono">A, B, C</span>, for example.
+                    </p>
                 </div>
             {% else %}
-
                 {% for level, classes in groupedClassrooms %}
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                        <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-                            <h3 class="font-bold text-gray-800">{{ level }}</h3>
-                            <span class="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded-full font-bold">
-                                {{ classes|length }} Arm{{ classes|length > 1 ? 's' : '' }}
-                            </span>
+                    <div class="overflow-hidden rounded-xl border border-ink-200 bg-white">
+                        <div class="flex items-center justify-between gap-2 border-b border-ink-200 bg-ink-50 px-4 py-2.5">
+                            <h3 class="min-w-0 break-words text-sm font-semibold text-ink-900">{{ level }}</h3>
+                            <span class="badge-neutral shrink-0">{{ classes|length }} arm{{ classes|length > 1 ? 's' : '' }}</span>
                         </div>
+                        <ul class="divide-y divide-ink-100">
                         
-                        <div class="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                             {% for classroom in classes %}
-                                <div class="relative group bg-white border border-gray-200 rounded p-3 hover:border-indigo-300 hover:shadow-md transition-all text-center">
-                                    <div class="font-medium text-gray-800">{{ classroom.name }}</div>
-                                    
-                                    {# 🟢 DELETE BUTTON: Logic checks out. Form submits to delete route. #}
-                                    <form method="post" action="{{ path('app_tenant_classroom_delete', {'id': classroom.id}) }}" onsubmit="return confirm('Are you sure you want to delete {{ classroom.name }}? This cannot be undone.');" class="absolute -top-2 -right-2 hidden group-hover:block">
-                                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ classroom.id) }}">
-                                        <button class="bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-600 hover:text-white shadow-sm transition-colors border border-red-200">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                        </button>
-                                    </form>
-                                </div>
+                                {% set fullName = classroom.name ?? '' %}
+                                {% set levelName = classroom.yearGroup ? classroom.yearGroup.name : null %}
+                                {% set arm = (levelName and fullName starts with levelName) ? fullName|slice(levelName|length)|trim : fullName %}
+                                <li class="px-4 py-3">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div class="min-w-0">
+                                            <p class="break-words text-sm font-semibold text-ink-900">{{ fullName }}</p>
+                                            {% if levelName and arm != '' %}
+                                                <p class="mt-0.5 text-xs text-ink-500">Arm <span class="font-mono">{{ arm }}</span> of {{ levelName }}</p>
+                                            {% endif %}
+                                        </div>
+
+                                        <form method="post" action="{{ path('app_tenant_classroom_delete', {'id': classroom.id}) }}"
+                                              onsubmit="return confirm('Delete {{ fullName|e('js') }}? This cannot be undone.');"
+                                              class="shrink-0">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ classroom.id) }}">
+                                            <button type="submit" aria-label="Delete {{ fullName }}"
+                                                    class="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-ink-200 text-ink-500 hover:border-ink-400 hover:text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-500">
+                                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                            </button>
+                                        </form>
+                                    </div>
+
+                                    <details class="mt-1">
+                                        <summary class="inline-flex min-h-[44px] cursor-pointer list-none items-center text-sm font-semibold text-accent-600 hover:text-accent-700">Rename arm</summary>
+                                        <form method="post" action="{{ path('app_tenant_classroom_edit', {'id': classroom.id}) }}" class="mt-1 flex flex-col gap-2 sm:flex-row sm:items-end">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('edit' ~ classroom.id) }}">
+                                            {% if levelName %}
+                                                <div class="min-w-0 flex-1">
+                                                    <label class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-500">Arm name</label>
+                                                    <div class="flex items-stretch">
+                                                        <span class="inline-flex shrink-0 items-center rounded-l-lg border border-r-0 border-ink-300 bg-ink-50 px-3 text-sm text-ink-600">{{ levelName }}</span>
+                                                        <input type="text" name="arm" value="{{ arm }}" placeholder="A" autocomplete="off"
+                                                               class="min-h-[44px] w-full min-w-0 rounded-r-lg border border-ink-300 px-3 text-base text-ink-900 placeholder:text-ink-400 focus:border-accent-500 focus:ring-accent-500">
+                                                    </div>
+                                                </div>
+                                            {% else %}
+                                                <div class="min-w-0 flex-1">
+                                                    <label class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-500">Class name</label>
+                                                    <input type="text" name="name" value="{{ fullName }}" required autocomplete="off"
+                                                           class="min-h-[44px] w-full rounded-lg border border-ink-300 px-3 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500">
+                                                </div>
+                                            {% endif %}
+                                            <button type="submit" class="min-h-[44px] rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white hover:bg-accent-700 focus:outline-none focus:ring-2 focus:ring-accent-500 sm:w-auto">
+                                                Save
+                                            </button>
+                                        </form>
+                                        <p class="mt-1 text-xs text-ink-500">Renames this class only. Leave it empty to drop the arm.</p>
+                                    </details>
+                                </li>
                             {% endfor %}
-                        </div>
+                        </ul>
+
+                        <form method="POST" class="flex flex-col gap-2 border-t border-ink-100 px-4 py-3 sm:flex-row sm:items-center">
+                            <input type="hidden" name="mode" value="append">
+                            <input type="hidden" name="name" value="{{ level }}">
+                            <label class="sr-only" for="append-arm-{{ loop.index }}">Add an arm to {{ level }}</label>
+                            <input id="append-arm-{{ loop.index }}" type="text" name="arm" placeholder="Add arm — e.g. D or Gold" autocomplete="off"
+                                   class="min-h-[44px] w-full min-w-0 rounded-lg border border-ink-300 px-3 text-base text-ink-900 placeholder:text-ink-400 focus:border-accent-500 focus:ring-accent-500">
+                            <button type="submit" class="min-h-[44px] shrink-0 rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white hover:bg-accent-700 focus:outline-none focus:ring-2 focus:ring-accent-500">
+                                Add arm
+                            </button>
+                        </form>
                     </div>
                 {% endfor %}
 
