@@ -11,9 +11,11 @@ use App\Entity\Tenant\User;
 use App\Entity\Tenant\YearGroupMaster;
 use App\Form\StaffEditType;
 use App\Form\StaffType;
+use App\Service\Staff\StaffImporter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormError;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -97,32 +99,70 @@ class StaffController extends AbstractController
         UserPasswordHasherInterface $passwordHasher
     ): Response {
         $user = new User();
+
+        // Everyone starts as a class teacher. The office can promote the person
+        // afterwards; the role dropdown no longer starts on an empty option that
+        // only failed after the form was submitted.
+        $user->setRoles([User::ROLE_TEACHER]);
+
         $form = $this->createForm(StaffType::class, $user, [
             'allow_super_admin' => $this->isGranted('ROLE_TENANT_SUPER_ADMIN'),
         ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $phone = preg_replace('/\D+/', '', (string) $form->get('phone')->getData()) ?? '';
             $email = mb_strtolower(trim((string) $user->getEmail()));
-            $user->setEmail($email);
 
-            if ($entityManager->getRepository(User::class)->findOneBy(['email' => $email]) !== null) {
-                $form->get('email')->addError(new FormError('Another account already uses that email address.'));
+            // The phone is the login when no inbox was given — same derivation
+            // the student importer uses for parents.
+            if ($email === '') {
+                if ($phone === '') {
+                    $form->get('email')->addError(new FormError(
+                        'Give a phone number or an email address — the account signs in with one of them.'
+                    ));
+                } else {
+                    $email = $phone . '@edus.ng';
+                }
+            }
+
+            if ($email === '') {
+                // Already reported above; fall through to re-render.
+            } elseif ($entityManager->getRepository(User::class)->findOneBy(['email' => $email]) !== null) {
+                $form->get('email')->addError(new FormError(sprintf('Another account already uses %s.', $email)));
             } else {
-                // Hash the password
-                $plainPassword = $form->get('plainPassword')->getData();
-                $user->setPassword($passwordHasher->hashPassword($user, $plainPassword));
+                $user->setEmail($email);
+
+                $plainPassword = trim((string) $form->get('plainPassword')->getData());
+                $usingDefault = $plainPassword === '';
+
+                // A password the person did not choose is a doorway, not a
+                // credential: they are stopped at the door and asked for their own.
+                $user->setMustChangePassword($usingDefault);
+                $user->setPassword($passwordHasher->hashPassword(
+                    $user,
+                    $usingDefault ? StaffImporter::DEFAULT_PASSWORD : $plainPassword
+                ));
 
                 $entityManager->persist($user);
 
+                $role = current(array_filter($user->getRoles(), static fn (string $r): bool => $r !== 'ROLE_USER'))
+                    ?: User::ROLE_TEACHER;
+
                 // Link a Staff profile so the user appears in academic assignments.
                 $staff = new Staff();
-                $staff->setUser($user);
+                $staff->setUser($user)
+                    ->setPhone($phone !== '' ? $phone : null)
+                    ->setAddress($this->cleanOrNull($form->get('address')->getData(), 255))
+                    ->setEmployeeNumber($this->cleanOrNull($form->get('employeeNumber')->getData(), 50))
+                    ->setTitle(StaffImporter::titleFor('', $role));
                 $entityManager->persist($staff);
 
                 $entityManager->flush();
 
-                $this->addFlash('success', 'New staff member created successfully!');
+                $this->addFlash('success', $usingDefault
+                    ? sprintf('%s created. Sign in as %s with the default password %s — they will be asked to change it.', $user->getFullName(), $email, StaffImporter::DEFAULT_PASSWORD)
+                    : sprintf('%s created.', $user->getFullName()));
 
                 return $this->redirectToRoute('app_tenant_staff_index');
             }
@@ -130,6 +170,84 @@ class StaffController extends AbstractController
 
         return $this->render('tenant/staff/new.html.twig', [
             'form' => $form,
+        ]);
+    }
+
+    /**
+     * Bulk registration from a CSV file.
+     *
+     * The same idea as the student import: one file, one click, every account
+     * created with the shared default password, and a report of exactly which
+     * rows were left alone and why. Staff are forced to change that password on
+     * first sign-in (MustChangePasswordSubscriber), so handing out the same
+     * password to a whole school is not the security problem it looks like.
+     */
+    #[Route('/import', name: 'app_tenant_staff_import', methods: ['GET', 'POST'])]
+    public function import(Request $request, StaffImporter $importer): Response
+    {
+        $result = null;
+
+        if ($request->isMethod('POST')) {
+            if (!$this->isCsrfTokenValid('staff_import', (string) $request->request->get('_token'))) {
+                $this->addFlash('error', 'That form expired. Please try again.');
+
+                return $this->redirectToRoute('app_tenant_staff_import');
+            }
+
+            $file = $request->files->get('csv_file');
+
+            if (!$file instanceof UploadedFile || !$file->isValid()) {
+                $this->addFlash('error', 'Choose a CSV file to upload.');
+
+                return $this->redirectToRoute('app_tenant_staff_import');
+            }
+
+            try {
+                $result = $importer->import($file);
+
+                if ($result->created > 0) {
+                    $this->addFlash('success', sprintf(
+                        '%d staff account%s created. Everyone signs in with %s and is asked to change it.',
+                        $result->created,
+                        $result->created === 1 ? '' : 's',
+                        StaffImporter::DEFAULT_PASSWORD
+                    ));
+                }
+
+                if ($result->skipped !== []) {
+                    $this->addFlash('warning', sprintf(
+                        '%d row%s skipped — see the list below.',
+                        $result->skippedCount(),
+                        $result->skippedCount() === 1 ? '' : 's'
+                    ));
+                }
+            } catch (\Throwable $e) {
+                $this->addFlash('error', $e->getMessage());
+            }
+        }
+
+        return $this->render('tenant/staff/import.html.twig', [
+            'result' => $result,
+            'default_password' => StaffImporter::DEFAULT_PASSWORD,
+            'columns' => StaffImporter::templateHeader(),
+        ]);
+    }
+
+    /** The CSV to fill in — same header the importer parses. */
+    #[Route('/import/template', name: 'app_tenant_staff_import_template', methods: ['GET'])]
+    public function importTemplate(): Response
+    {
+        $handle = fopen('php://temp', 'r+');
+        fputcsv($handle, StaffImporter::templateHeader(), ',', '"', '\\');
+        fputcsv($handle, ['Aisha Bello', '08031234567', '', '12 Kofar Kaura, Katsina', 'Class Teacher', 'STF-001'], ',', '"', '\\');
+        fputcsv($handle, ['Musa Ibrahim', '08037654321', 'musa@school.com', '5 Sabon Gari, Katsina', 'Bursar', 'STF-002'], ',', '"', '\\');
+        rewind($handle);
+        $csv = (string) stream_get_contents($handle);
+        fclose($handle);
+
+        return new Response($csv, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="staff-template.csv"',
         ]);
     }
 
@@ -149,6 +267,7 @@ class StaffController extends AbstractController
         $form = $this->createForm(StaffEditType::class, $user, [
             'allow_super_admin' => $this->isGranted('ROLE_TENANT_SUPER_ADMIN'),
             'lock_role' => $isSelf,
+            'staff' => $user->getStaff(),
         ]);
         $form->handleRequest($request);
 
@@ -164,6 +283,20 @@ class StaffController extends AbstractController
                 if (is_string($plainPassword) && $plainPassword !== '') {
                     $user->setPassword($passwordHasher->hashPassword($user, $plainPassword));
                 }
+
+                // Phone, home address and staff number live on the Staff profile.
+                // A user without one (an old account) gets it here rather than
+                // silently dropping what the office typed.
+                $staff = $user->getStaff();
+                if ($staff === null) {
+                    $staff = new Staff();
+                    $staff->setUser($user);
+                    $entityManager->persist($staff);
+                }
+
+                $staff->setPhone(preg_replace('/\D+/', '', (string) $form->get('phone')->getData()) ?: null)
+                    ->setAddress($this->cleanOrNull($form->get('address')->getData(), 255))
+                    ->setEmployeeNumber($this->cleanOrNull($form->get('employeeNumber')->getData(), 50));
 
                 $entityManager->flush();
 
@@ -183,6 +316,14 @@ class StaffController extends AbstractController
     // ──────────────────────────────────────────────────────────────────
     //  Who may edit whom
     // ──────────────────────────────────────────────────────────────────
+
+    /** Blank text from an optional field means "nothing", not an empty string. */
+    private function cleanOrNull(mixed $value, int $maxLength): ?string
+    {
+        $value = trim((string) $value);
+
+        return $value === '' ? null : mb_substr($value, 0, $maxLength);
+    }
 
     private function assertCanManage(User $target): void
     {

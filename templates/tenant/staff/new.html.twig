@@ -3,35 +3,35 @@
 {% block title %}Add New Staff{% endblock %}
 
 {% block body %}
-<div class="max-w-xl mx-auto mt-6">
-    <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
-        <h1 class="text-2xl font-bold mb-6 text-gray-800">New Employee Account</h1>
-        
+<div class="px-4 py-4 sm:px-6 sm:py-6">
+    <div class="mb-6">
+        <a href="{{ path('app_tenant_staff_index') }}"
+           class="inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 hover:underline">
+            &larr; Back to the staff directory
+        </a>
+        <h1 class="mt-1 text-xl font-bold text-ink-900 sm:text-2xl">New staff account</h1>
+        <p class="mt-1 text-sm text-ink-600">
+            Adding one person? Use this form. Adding the whole school?
+            <a href="{{ path('app_tenant_staff_import') }}" class="font-semibold text-accent-700 underline">import a CSV file</a> instead.
+        </p>
+    </div>
+
+    <div class="max-w-2xl rounded-lg bg-white p-4 shadow-card sm:p-6">
+        {# The global form theme renders the label, the field, its errors and its
+           help text together — the old hand-written widgets rendered neither the
+           errors nor the help, so a duplicate email failed silently. #}
         {{ form_start(form) }}
-            <div class="space-y-4">
-                <div>
-                    {{ form_label(form.fullName, null, {'label_attr': {'class': 'block font-bold text-gray-700 mb-1'}}) }}
-                    {{ form_widget(form.fullName, {'attr': {'class': 'w-full border p-2 rounded'}}) }}
-                </div>
-                
-                <div>
-                    {{ form_label(form.email, null, {'label_attr': {'class': 'block font-bold text-gray-700 mb-1'}}) }}
-                    {{ form_widget(form.email, {'attr': {'class': 'w-full border p-2 rounded'}}) }}
-                </div>
-                
-                <div>
-                    {{ form_label(form.roles, null, {'label_attr': {'class': 'block font-bold text-gray-700 mb-1'}}) }}
-                    {{ form_widget(form.roles, {'attr': {'class': 'w-full border p-2 rounded bg-gray-50'}}) }}
-                </div>
+            {{ form_row(form.fullName) }}
+            {{ form_row(form.roles) }}
+            {{ form_row(form.phone) }}
+            {{ form_row(form.email) }}
+            {{ form_row(form.address) }}
+            {{ form_row(form.employeeNumber) }}
+            {{ form_row(form.plainPassword) }}
 
-                <div>
-                    {{ form_label(form.plainPassword, null, {'label_attr': {'class': 'block font-bold text-gray-700 mb-1'}}) }}
-                    {{ form_widget(form.plainPassword, {'attr': {'class': 'w-full border p-2 rounded'}}) }}
-                </div>
-            </div>
-
-            <button type="submit" class="mt-6 w-full bg-blue-600 text-white font-bold py-3 rounded hover:bg-blue-700">
-                Create Account
+            <button type="submit"
+                    class="mt-2 min-h-[44px] w-full rounded-lg bg-accent-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-accent-700 sm:w-auto">
+                Create account
             </button>
         {{ form_end(form) }}
     </div>

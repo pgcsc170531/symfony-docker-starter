@@ -36,6 +36,28 @@
                     {{ form_errors(form.email) }}
                 </div>
 
+                {# Phone, home address and staff number live on the Staff profile.
+                   Rendered explicitly here so they sit with the other identity
+                   fields rather than after the Save button (form_end's form_rest
+                   would otherwise drop them at the bottom of the form). #}
+                <div>
+                    {{ form_label(form.phone, null, {'label_attr': {'class': 'mb-1 block text-sm font-semibold text-ink-800'}}) }}
+                    {{ form_widget(form.phone, {'attr': {'class': 'min-h-[44px] w-full rounded-lg border border-ink-200 px-3 text-sm text-ink-900 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-200'}}) }}
+                    {{ form_errors(form.phone) }}
+                </div>
+
+                <div>
+                    {{ form_label(form.address, null, {'label_attr': {'class': 'mb-1 block text-sm font-semibold text-ink-800'}}) }}
+                    {{ form_widget(form.address, {'attr': {'class': 'w-full rounded-lg border border-ink-200 px-3 py-2 text-sm text-ink-900 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-200'}}) }}
+                    {{ form_errors(form.address) }}
+                </div>
+
+                <div>
+                    {{ form_label(form.employeeNumber, null, {'label_attr': {'class': 'mb-1 block text-sm font-semibold text-ink-800'}}) }}
+                    {{ form_widget(form.employeeNumber, {'attr': {'class': 'min-h-[44px] w-full rounded-lg border border-ink-200 px-3 text-sm text-ink-900 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-200'}}) }}
+                    {{ form_errors(form.employeeNumber) }}
+                </div>
+
                 <div>
                     {{ form_label(form.roles, null, {'label_attr': {'class': 'mb-1 block text-sm font-semibold text-ink-800'}}) }}
                     {{ form_widget(form.roles, {'attr': {'class': 'min-h-[44px] w-full rounded-lg border border-ink-200 bg-white px-3 text-sm text-ink-900 disabled:bg-ink-50 disabled:text-ink-500'}}) }}

@@ -1,0 +1,78 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}My Account{% endblock %}
+
+{% block body %}
+<div class="px-4 py-4 sm:px-6 sm:py-6">
+
+    <div class="mb-6">
+        <h1 class="text-xl font-bold text-ink-900 sm:text-2xl">My Account</h1>
+        <p class="mt-1 text-sm text-ink-600">Your details and your password.</p>
+    </div>
+
+    {% if forced %}
+        {# Shown when MustChangePasswordSubscriber intercepted the sign-in: the
+           account was created with a password somebody else chose. #}
+        <div class="mb-6 rounded-lg border border-pending/40 bg-pending/5 p-4" role="status">
+            <p class="text-sm font-semibold text-ink-900">Choose your own password to continue</p>
+            <p class="mt-1 text-sm text-ink-700">
+                This account was created for you with a temporary password.
+                Set a new one below — everything else in the portal stays locked until you do.
+            </p>
+        </div>
+    {% endif %}
+
+    <div class="grid gap-4 lg:grid-cols-2">
+
+        {# ── Details ─────────────────────────────────────────────────── #}
+        <section class="rounded-lg bg-white p-4 shadow-card sm:p-6">
+            <h2 class="font-semibold text-ink-900">Your details</h2>
+            <p class="mt-1 text-sm text-ink-600">
+                {% if isStaff %}
+                    Your name, email, phone and home address. The office keeps your role and staff number.
+                {% else %}
+                    Your name and email. The school office keeps the rest of your record.
+                {% endif %}
+            </p>
+
+            {{ form_start(profileForm, {'action': path('app_tenant_account_profile'), 'method': 'POST'}) }}
+                <div class="mt-4">
+                    {{ form_row(profileForm.fullName) }}
+                    {{ form_row(profileForm.email) }}
+                    {{ form_row(profileForm.currentPassword) }}
+                    {% if isStaff %}
+                        {{ form_row(profileForm.phone) }}
+                        {{ form_row(profileForm.address) }}
+                    {% endif %}
+                </div>
+
+                <button type="submit"
+                        class="mt-2 min-h-[44px] w-full rounded-lg bg-accent-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-accent-700 sm:w-auto">
+                    Save details
+                </button>
+            {{ form_end(profileForm) }}
+        </section>
+
+        {# ── Password ────────────────────────────────────────────────── #}
+        <section class="rounded-lg bg-white p-4 shadow-card sm:p-6">
+            <h2 class="font-semibold text-ink-900">Change password</h2>
+            <p class="mt-1 text-sm text-ink-600">
+                Use at least 8 characters. You will stay signed in on this device.
+            </p>
+
+            {{ form_start(passwordForm, {'action': path('app_tenant_account_password'), 'method': 'POST'}) }}
+                <div class="mt-4">
+                    {{ form_row(passwordForm.currentPassword) }}
+                    {{ form_row(passwordForm.newPassword.first) }}
+                    {{ form_row(passwordForm.newPassword.second) }}
+                </div>
+
+                <button type="submit"
+                        class="mt-2 min-h-[44px] w-full rounded-lg bg-accent-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-accent-700 sm:w-auto">
+                    Change password
+                </button>
+            {{ form_end(passwordForm) }}
+        </section>
+    </div>
+</div>
+{% endblock %}

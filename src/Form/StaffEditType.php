@@ -2,12 +2,14 @@
 
 namespace App\Form;
 
+use App\Entity\Tenant\Staff;
 use App\Entity\Tenant\User;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\CallbackTransformer;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -31,9 +33,13 @@ class StaffEditType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        /** @var Staff|null $staff */
+        $staff = $options['staff'];
+
         $builder
             ->add('fullName', TextType::class, [
                 'label' => 'Full Name',
+                'constraints' => [new NotBlank()],
                 'attr' => ['placeholder' => 'e.g. Mr. John Doe'],
             ])
             ->add('email', EmailType::class, [
@@ -41,12 +47,32 @@ class StaffEditType extends AbstractType
                 'constraints' => [new NotBlank(), new Email()],
                 'attr' => ['placeholder' => 'staff@school.com', 'autocomplete' => 'email'],
             ])
+            ->add('phone', TextType::class, [
+                'mapped' => false,
+                'required' => false,
+                'label' => 'Phone Number',
+                'data' => $staff?->getPhone(),
+                'attr' => ['placeholder' => 'e.g. 08031234567', 'inputmode' => 'tel'],
+            ])
+            ->add('address', TextareaType::class, [
+                'mapped' => false,
+                'required' => false,
+                'label' => 'Home Address',
+                'data' => $staff?->getAddress(),
+                'attr' => ['rows' => 2, 'placeholder' => 'e.g. 12 Kofar Kaura, Katsina'],
+            ])
+            ->add('employeeNumber', TextType::class, [
+                'mapped' => false,
+                'required' => false,
+                'label' => 'Staff / Employee Number',
+                'data' => $staff?->getEmployeeNumber(),
+            ])
             ->add('plainPassword', PasswordType::class, [
                 'mapped' => false,
                 'required' => false,
                 'label' => 'New password',
                 'help' => 'Leave blank to keep the current password.',
-                'constraints' => [new Length(['min' => 6])],
+                'constraints' => [new Length(['min' => 8])],
                 'attr' => ['autocomplete' => 'new-password'],
             ])
             ->add('roles', ChoiceType::class, [
@@ -73,10 +99,12 @@ class StaffEditType extends AbstractType
             'data_class' => User::class,
             'allow_super_admin' => false,
             'lock_role' => false,
+            'staff' => null,
         ]);
 
         $resolver->setAllowedTypes('allow_super_admin', 'bool');
         $resolver->setAllowedTypes('lock_role', 'bool');
+        $resolver->setAllowedTypes('staff', ['null', Staff::class]);
     }
 
     /** @return array<string, string> */

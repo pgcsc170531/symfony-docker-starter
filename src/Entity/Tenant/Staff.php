@@ -31,6 +31,10 @@ class Staff
     #[ORM\Column(name: 'employee_number', length: 50, nullable: true)]
     private ?string $employeeNumber = null;
 
+    /** Home address — the staff form asks for it, the directory never prints it. */
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $address = null;
+
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $qualification = null;
 
@@ -53,6 +57,9 @@ class Staff
 
     public function getEmployeeNumber(): ?string { return $this->employeeNumber; }
     public function setEmployeeNumber(?string $employeeNumber): static { $this->employeeNumber = $employeeNumber; return $this; }
+
+    public function getAddress(): ?string { return $this->address; }
+    public function setAddress(?string $address): static { $this->address = $address; return $this; }
 
     public function getQualification(): ?string { return $this->qualification; }
     public function setQualification(?string $qualification): static { $this->qualification = $qualification; return $this; }

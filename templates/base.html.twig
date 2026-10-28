@@ -381,6 +381,19 @@
                 </a>
             {% endif %}
 
+            {# My account — the only route a teacher, bursar or parent can use to
+               change their own password. Landlord and agent accounts live in a
+               different database and have no tenant profile, so they keep just
+               the sign-out button. #}
+            {% if not is_granted('ROLE_SUPER_ADMIN') and not is_granted('ROLE_AGENT') %}
+                <a href="{{ path('app_tenant_account') }}" aria-label="My account" title="My account"
+                   class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-ink-500 hover:bg-ink-100 hover:text-ink-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                </a>
+            {% endif %}
+
             <a href="{{ path('app_logout') }}" aria-label="Sign out" title="Sign out"
                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-ink-500 hover:bg-ink-100 hover:text-ink-800">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">

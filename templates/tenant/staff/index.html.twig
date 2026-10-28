@@ -19,9 +19,15 @@
                     {% endif %}
                 </p>
             </div>
-            <a href="{{ path('app_tenant_staff_new') }}" class="flex min-h-[44px] items-center rounded bg-blue-600 px-4 py-2 font-bold text-white shadow hover:bg-blue-700">
-                <span class="mr-2">+</span> Add New Staff
-            </a>
+            <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                <a href="{{ path('app_tenant_staff_import') }}"
+                   class="flex min-h-[44px] items-center justify-center rounded border border-accent-200 bg-accent-50 px-4 py-2 font-semibold text-accent-700 hover:bg-accent-100">
+                    Import CSV
+                </a>
+                <a href="{{ path('app_tenant_staff_new') }}" class="flex min-h-[44px] items-center justify-center rounded bg-blue-600 px-4 py-2 font-bold text-white shadow hover:bg-blue-700">
+                    <span class="mr-2">+</span> Add New Staff
+                </a>
+            </div>
         </div>
 
         {#

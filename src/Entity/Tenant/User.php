@@ -83,6 +83,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(name: 'totp_recovery_codes', type: 'text', nullable: true)]
     private ?string $totpRecoveryCodes = null;
 
+    /**
+     * Set when the account was created with a password somebody else chose —
+     * a staff member added by the office, or a CSV import using the shared
+     * default. The person is stopped at the door and asked to pick their own
+     * before they can use the portal; see MustChangePasswordSubscriber.
+     */
+    #[ORM\Column(name: 'must_change_password', options: ['default' => false])]
+    private bool $mustChangePassword = false;
+
     public function getId(): ?int { return $this->id; }
 
     public function getEmail(): ?string { return $this->email; }
@@ -111,6 +120,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getStaff(): ?Staff { return $this->staff; }
     public function setStaff(?Staff $staff): static { $this->staff = $staff; return $this; }
+
+    public function isMustChangePassword(): bool { return $this->mustChangePassword; }
+    public function setMustChangePassword(bool $mustChangePassword): static { $this->mustChangePassword = $mustChangePassword; return $this; }
 
     // ── Two-factor authentication (TOTP) ──────────────────────────────
     public function getTotpSecret(): ?string { return $this->totpSecret; }
