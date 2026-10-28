@@ -73,11 +73,12 @@ final class ApplicationMailer
             ->from($this->from)
             ->to(new Address($guardian->getEmail(), (string) $guardian->getFullName()))
             ->replyTo($this->replyTo)
-            ->subject($copy['subject'] . ' — ' . $school->getName())
+            ->subject($copy['subject'] . ' — ' . $school->getDisplayName())
             ->htmlTemplate('emails/parent/access_link.html.twig')
             ->context([
                 'guardian_name'   => $guardian->getFullName(),
                 'school_name'     => $school->getName(),
+                'school_tag'      => $school->getTypeTag(),
                 'school_motto'    => $school->getMotto(),
                 'school_phone'    => $school->getPhoneNumber(),
                 'school_address'  => $school->getAddress(),

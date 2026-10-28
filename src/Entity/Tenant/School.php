@@ -440,6 +440,49 @@ class School
     }
 
     /**
+     * The short category tag that rides with the school's name — "Nursery",
+     * "Primary", "Junior Secondary", "Senior Secondary", "Secondary",
+     * "Primary & Secondary", "College".
+     *
+     * A group that runs one tenant per section has four schools whose names all
+     * begin with the same words, and nothing on the screen tells them apart: a
+     * parent who lands on the wrong subdomain, a bursar printing the wrong
+     * receipt, a report card stapled into the wrong file. So the tag is printed
+     * wherever the name is, not only on the report card.
+     *
+     * Deliberately shorter than getSectionLabel(): no "Section" suffix, because
+     * this one sits in a 14px app header and inside document titles. It also says
+     * nothing about terms or semesters — how many terms a school runs is not part
+     * of what kind of school it is.
+     */
+    public function getTypeTag(): ?string
+    {
+        return match ($this->institutionType) {
+            self::TYPE_NURSERY => 'Nursery',
+            self::TYPE_PRIMARY => 'Primary',
+            self::TYPE_JUNIOR_SECONDARY => 'Junior Secondary',
+            self::TYPE_SENIOR_SECONDARY => 'Senior Secondary',
+            self::TYPE_SECONDARY => 'Secondary',
+            self::TYPE_COMBINED => 'Primary & Secondary',
+            self::TYPE_TERTIARY => 'College',
+            default => null,
+        };
+    }
+
+    /**
+     * "Gobarau Academy (Nursery)" — the name with its category attached, for the
+     * one-line places that cannot stack two lines: document titles, "Back to …"
+     * links, a receipt's plain-text name.
+     */
+    public function getDisplayName(): string
+    {
+        $name = (string) $this->name;
+        $tag = $this->getTypeTag();
+
+        return $tag === null || $tag === '' ? $name : sprintf('%s (%s)', $name, $tag);
+    }
+
+    /**
      * Young children are "pupils"; secondary and tertiary learners are "students".
      * Nursery and primary share the wording, which is why this is one check and not
      * a list repeated at every call site.

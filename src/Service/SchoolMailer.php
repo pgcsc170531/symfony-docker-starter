@@ -292,11 +292,12 @@ final class SchoolMailer
                 // Replies go to the school, not to Edus — that is what a parent expects.
                 ->replyTo($school->getEmail() ?: $this->replyTo)
                 ->to(new Address($toEmail, (string) ($toName ?? '')))
-                ->subject($subject . ' — ' . $school->getName())
+                ->subject($subject . ' — ' . $school->getDisplayName())
                 ->htmlTemplate($template)
                 ->context($context + [
                     'guardian_name' => $toName,
                     'school_name' => $school->getName(),
+                    'school_tag' => $school->getTypeTag(),
                     'school_motto' => $school->getMotto(),
                     'school_phone' => $school->getPhoneNumber(),
                     'school_address' => $school->getAddress(),

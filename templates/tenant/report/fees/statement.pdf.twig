@@ -62,6 +62,7 @@
                 {% if logo %}<img src="{{ logo }}" alt="" style="height: 26pt; vertical-align: middle; margin-right: 5pt;">{% endif %}
                 <span class="brand">{{ school.name ?? 'School' }}</span>
                 <span class="tagline">
+                    {% if school.typeTag %}{{ school.typeTag }}{% if school.address or school.phoneNumber %} · {% endif %}{% endif %}
                     {% if school.address %}{{ school.address }}{% endif %}
                     {% if school.phoneNumber %}{% if school.address %} · {% endif %}{{ school.phoneNumber }}{% endif %}
                 </span>

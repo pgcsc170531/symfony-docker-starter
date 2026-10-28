@@ -58,6 +58,9 @@
         <header class="flex flex-wrap items-start justify-between gap-4 border-b border-ink-200 pb-4">
             <div class="min-w-0">
                 <p class="text-2xl font-black tracking-tight text-ink-900">{{ school ? school.name : 'School' }}</p>
+                {% if school and school.typeTag %}
+                    <p class="text-[11px] font-semibold uppercase tracking-wide text-ink-500">{{ school.typeTag }}</p>
+                {% endif %}
                 {% if school %}
                     <p class="mt-0.5 text-xs text-ink-500">
                         {% if school.address %}{{ school.address }}{% endif %}

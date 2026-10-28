@@ -40,6 +40,10 @@ class HomeController extends AbstractController
         $fields = [
             'name',
             'institutionType',
+            // The short category tag ("Nursery", "Junior Secondary"…) that is printed
+            // under the school's name on every public page. Derived, not a column —
+            // listed here so the whitelist loop below resolves getTypeTag().
+            'typeTag',
             'motto',
             'logoFilename',
             'address',

@@ -74,6 +74,7 @@
         </td>
         <td>
             <div class="school-name">{{ schoolName }}</div>
+            {% if school and school.typeTag %}<div class="school-meta">{{ school.typeTag }}</div>{% endif %}
             {% if school and school.motto %}<div class="school-meta">{{ school.motto }}</div>{% endif %}
             {% if school and (school.address or school.phoneNumber) %}
                 <div class="school-meta">{{ school.address }}{% if school.address and school.phoneNumber %} · {% endif %}{{ school.phoneNumber }}</div>

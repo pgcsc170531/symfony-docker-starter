@@ -343,6 +343,15 @@
                     <span class="block truncate text-sm font-semibold leading-tight text-ink-900">
                         {{ shell_school ? shell_school.name : 'Edus' }}
                     </span>
+                    {# The school's category under its own name. A group running one
+                       tenant per section has four schools whose names begin with the
+                       same words; without this line the header is identical in all
+                       four and the wrong receipt gets printed. #}
+                    {% if shell_school and shell_school.typeTag %}
+                        <span class="block truncate text-[10px] font-semibold uppercase leading-tight tracking-wide text-ink-500">
+                            {{ shell_school.typeTag }}
+                        </span>
+                    {% endif %}
                 </span>
             </a>
 

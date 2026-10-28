@@ -10,6 +10,8 @@
 {# White text on the school's colour — darkened only as far as WCAG AA needs. #}
 {% set brand_ink = brand|brand_on_white %}
 {% set school_name = school ? school.name : 'School Portal' %}
+{# The school's category, attached to its name — see the public website shell. #}
+{% set school_tag = school and school.typeTag ? school.typeTag : null %}
 {# The subdomain attribute only exists on tenant-hosted routes; stay defensive
    so this public shell can never 500 while generating a link. #}
 {% set subdomain = app.request.attributes.get('subdomain') %}
@@ -51,7 +53,12 @@
                     {{ school_name|first|upper }}
                 </span>
             {% endif %}
-            <span class="text-lg font-black tracking-tight text-gray-900">{{ school_name }}</span>
+            <span class="min-w-0">
+                <span class="block truncate text-lg font-black tracking-tight text-gray-900">{{ school_name }}</span>
+                {% if school_tag %}
+                    <span class="block truncate text-[11px] font-semibold uppercase tracking-wide text-gray-500">{{ school_tag }}</span>
+                {% endif %}
+            </span>
         </a>
 
         <span class="rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide text-white" style="background-color: {{ brand_ink }};">

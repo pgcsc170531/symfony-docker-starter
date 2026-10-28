@@ -10,6 +10,9 @@
    white text and for links on white. `brand` itself stays for tints. #}
 {% set brand_ink = brand|brand_on_white %}
 {% set school_name = school is defined and school and school.name ? school.name : 'School Portal' %}
+{# The category that rides with the name everywhere it is shown — a group with one
+   tenant per section has several schools whose names begin identically. #}
+{% set school_tag = school is defined and school and school.typeTag ? school.typeTag : null %}
 {% set school_motto = school is defined and school and school.motto ? school.motto : null %}
 {% set school_logo = school is defined and school and school.logoFilename ? school.logoFilename : null %}
 {% set school_address = school is defined and school and school.address ? school.address : null %}
@@ -111,6 +114,9 @@
                 {% endif %}
                 <span class="min-w-0">
                     <span class="block truncate text-base font-bold leading-tight text-ink-900 sm:text-lg">{{ school_name }}</span>
+                    {% if school_tag %}
+                        <span class="block truncate text-[11px] font-semibold uppercase leading-tight tracking-wide text-ink-500">{{ school_tag }}</span>
+                    {% endif %}
                     {% if school_motto %}
                         <span class="hidden truncate text-xs text-ink-500 sm:block">{{ school_motto }}</span>
                     {% endif %}

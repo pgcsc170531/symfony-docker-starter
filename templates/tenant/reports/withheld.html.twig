@@ -15,6 +15,7 @@
         <div class="w-full max-w-md overflow-hidden rounded-xl border border-ink-200 bg-white shadow-card">
             <div class="px-6 py-5 text-white" style="background-color: {{ school and school.primaryColor ? school.primaryColor : '#16223C' }}">
                 <p class="text-lg font-bold leading-tight">{{ school ? school.name : 'School' }}</p>
+                {% if school and school.typeTag %}<p class="mt-0.5 text-[11px] font-semibold uppercase tracking-wide text-white/70">{{ school.typeTag }}</p>{% endif %}
                 {% if term %}<p class="mt-0.5 text-xs text-white/80">{{ term.name }}{% if term.session %} · {{ term.session.name }}{% endif %}</p>{% endif %}
             </div>
 

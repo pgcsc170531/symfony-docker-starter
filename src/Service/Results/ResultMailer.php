@@ -54,6 +54,7 @@ final class ResultMailer
                     'term_name' => $term->getName(),
                     'session_name' => $term->getSession()?->getName(),
                     'school_name' => $school->getName(),
+                    'school_tag' => $school->getTypeTag(),
                     'school_motto' => $school->getMotto(),
                     'school_phone' => $school->getPhoneNumber(),
                     'school_address' => $school->getAddress(),

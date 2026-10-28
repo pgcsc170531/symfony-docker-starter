@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ school is defined and school ? school.name : 'School Portal Login' }}</title>
+    <title>{{ school is defined and school ? school.displayName : 'School Portal Login' }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
 
     {# This page is a standalone document — it does not extend base.html.twig, so it
@@ -60,6 +60,11 @@
             <h2 class="text-4xl font-bold mb-4">
                 {{ school is defined and school ? school.name : 'Welcome Back' }}
             </h2>
+            {% if school is defined and school and school.typeTag %}
+                <p class="mb-4 -mt-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
+                    {{ school.typeTag }}
+                </p>
+            {% endif %}
             <p class="text-lg text-white/80">
                 {% if school is defined and school and school.motto %}
                     "{{ school.motto }}"
@@ -92,6 +97,9 @@
                     <div class="min-w-0">
                         {% if school is defined and school %}
                             <p class="truncate text-lg font-semibold leading-tight text-ink-900">{{ school.name }}</p>
+                            {% if school.typeTag %}
+                                <p class="truncate text-[11px] font-semibold uppercase tracking-wide text-ink-500">{{ school.typeTag }}</p>
+                            {% endif %}
                             {% if school.motto %}
                                 <p class="truncate text-xs text-ink-500">{{ school.motto }}</p>
                             {% endif %}
@@ -170,7 +178,7 @@
                 {% if school is defined and school %}
                     <a href="{{ app.request.schemeAndHttpHost }}/"
                        class="mt-4 inline-flex min-h-[44px] items-center gap-1 text-sm font-semibold text-ink-700 hover:text-ink-900">
-                        <span aria-hidden="true">&larr;</span> Back to {{ school.name }}
+                        <span aria-hidden="true">&larr;</span> Back to {{ school.displayName }}
                     </a>
                 {% endif %}
                 

@@ -42,6 +42,9 @@
 {% set address = invoice.schoolAddress|default(liveSchool ? liveSchool.address : '') %}
 {% set email = invoice.schoolEmail|default(liveSchool ? liveSchool.email : '') %}
 {% set logo = invoice.schoolLogo|default(liveSchool ? liveSchool.logoFilename : null) %}
+{# The school's category, so a receipt from the Nursery tenant cannot be mistaken
+   for one from the Primary tenant of the same group. #}
+{% set typeTag = liveSchool ? liveSchool.typeTag : null %}
 
 
     {# TOOLS (Hidden when printing) #}
@@ -73,6 +76,9 @@
                 {% endif %}
                 <div>
                     <h1 class="font-black text-lg uppercase tracking-tighter sm:text-2xl">{{ name }}</h1>
+                    {% if typeTag %}
+                        <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">{{ typeTag }}</p>
+                    {% endif %}
                     <p class="text-xs text-gray-500">{{ address }}</p>
                     <p class="text-xs text-gray-500">{{ email }}</p>
                 </div>

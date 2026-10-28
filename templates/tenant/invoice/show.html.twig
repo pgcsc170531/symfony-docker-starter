@@ -13,6 +13,8 @@
 {% set address = invoice.schoolAddress|default(liveSchool ? liveSchool.address : '') %}
 {% set email = invoice.schoolEmail|default(liveSchool ? liveSchool.email : '') %}
 {% set logo = invoice.schoolLogo|default(liveSchool ? liveSchool.logoFilename : null) %}
+{# The school's category, under its name on the invoice letterhead. #}
+{% set typeTag = liveSchool ? liveSchool.typeTag : null %}
 
 <div class="mt-10 px-4">
     
@@ -39,6 +41,9 @@
                     <h1 class="text-base font-bold uppercase tracking-wider sm:text-xl">
                         {{ name }}
                     </h1>
+                    {% if typeTag %}
+                        <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">{{ typeTag }}</p>
+                    {% endif %}
                     <p class="text-gray-400 text-sm">
                         {{ address }}
                     </p>

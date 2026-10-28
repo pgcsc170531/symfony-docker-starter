@@ -38,6 +38,7 @@
         <td style="width: 46pt;"><div class="logo">{% if logo %}<img src="{{ logo }}" alt="">{% endif %}</div></td>
         <td>
             <div class="school-name">{{ school ? school.name : 'School' }}</div>
+            {% if school and school.typeTag %}<div class="meta">{{ school.typeTag }}</div>{% endif %}
             {% if school and school.motto %}<div class="meta">{{ school.motto }}</div>{% endif %}
             {% if school and (school.address or school.phoneNumber) %}
                 <div class="meta">{{ school.address }}{% if school.address and school.phoneNumber %} · {% endif %}{{ school.phoneNumber }}</div>

@@ -19,6 +19,11 @@
                         <p style="margin:0;color:#ffffff;font-size:18px;font-weight:700;letter-spacing:-.01em;">
                             {{ school_name|default('Edus') }}
                         </p>
+                        {# The school's category, under its name — a group with one tenant
+                           per section has several schools whose names begin identically. #}
+                        {% if school_tag is defined and school_tag %}
+                            <p style="margin:2px 0 0;color:rgba(255,255,255,.75);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;">{{ school_tag }}</p>
+                        {% endif %}
                         {% if school_motto is defined and school_motto %}
                             <p style="margin:4px 0 0;color:rgba(255,255,255,.85);font-size:12px;">{{ school_motto }}</p>
                         {% endif %}

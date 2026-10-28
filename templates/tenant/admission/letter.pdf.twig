@@ -151,7 +151,7 @@
         <tr>
             <td class="lh-crest">{% if logo %}<img src="{{ logo }}" alt="">{% endif %}</td>
             <td class="lh-text">
-                <p class="lh-name">{{ school.name ?? 'School' }}</p>
+                <p class="lh-name">{{ school ? school.displayName : 'School' }}</p>
                 {% if school.motto %}<p class="lh-motto">{{ school.motto }}</p>{% endif %}
             </td>
             <td class="lh-spacer"></td>
