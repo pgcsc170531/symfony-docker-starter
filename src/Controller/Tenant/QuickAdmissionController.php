@@ -15,6 +15,7 @@ use App\Service\Finance\DiscountCalculator;
 use App\Service\Finance\AdvancePaymentService;
 use App\Service\Admissions\AdmissionNumberGenerator;
 use App\Service\Finance\InvoiceNumberGenerator;
+use App\Service\Phone\PhoneNumber;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -287,26 +288,18 @@ class QuickAdmissionController extends AbstractController
     /**
      * One canonical form for a phone number, so the same parent always matches.
      *
-     * The template asks for a 10-digit number with no leading zero, the website
-     * form takes whatever the parent types, and the office will happily type
-     * "+234 803 999 0001". All three are the same subscriber:
+     * Stored WITHOUT the trunk zero — 8039658200, not 08039658200 — because that
+     * is one step from the 234… form the SMS gateway uses, and it is the form the
+     * import template and the demo data already use.
      *
-     *   8039990001 · 08039990001 · +234-803-999-0001  →  08039990001
+     *   8039658200 · 08039658200 · +234-803-965-8200 · '08039658200  →  8039658200
+     *
+     * @see \App\Service\Phone\PhoneNumber — the same rule, shared with the login
+     *      provider and the SMS transport.
      */
     private function normalisePhone(string $value): string
     {
-        $digits = preg_replace('/\D+/', '', $value) ?? '';
-
-        if (mb_strlen($digits) === 13 && str_starts_with($digits, '234')) {
-            return '0' . mb_substr($digits, 3);
-        }
-
-        // A 10-digit Nigerian mobile number typed without its trunk zero.
-        if (mb_strlen($digits) === 10 && preg_match('/^[7-9]/', $digits) === 1) {
-            return '0' . $digits;
-        }
-
-        return $digits;
+        return PhoneNumber::national($value);
     }
 
     /**
@@ -347,13 +340,11 @@ class QuickAdmissionController extends AbstractController
             }
         }
 
-        $loginEmail = $phone . '@edus.ng';
+        $loginEmail = PhoneNumber::loginEmail($phone);
 
-        // (c) The same login already exists under a different phone spelling.
-        $candidates = [$loginEmail];
-        if (str_starts_with($phone, '0')) {
-            $candidates[] = '234' . mb_substr($phone, 1) . '@edus.ng';
-        }
+        // (c) The same login already exists under another spelling — an older
+        //     record created with the trunk zero, or one typed with +234.
+        $candidates = PhoneNumber::loginCandidates($loginEmail);
 
         $guardian = $em->getRepository(Guardian::class)->findBy(['email' => $candidates], null, 1)[0] ?? null;
         if ($guardian !== null) {

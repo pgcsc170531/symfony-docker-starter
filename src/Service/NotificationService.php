@@ -7,6 +7,7 @@ use App\Entity\Landlord\WalletTransaction;
 use App\Entity\Landlord\GlobalSetting;
 use App\Entity\Tenant\School as TenantSchool; 
 use App\Entity\Tenant\NotificationLog;
+use App\Service\Phone\PhoneNumber;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -76,10 +77,17 @@ class NotificationService
         }
 
         // 5. THE ACTION (Termii API)
+        //
+        // The gateway wants 2348039658200 and rejects or silently misroutes the
+        // 0803… form. Numbers reach this method from a dozen callers — guardian
+        // phones, staff phones, school settings — so the conversion happens here
+        // once, not at every call site.
+        $termiiRecipient = PhoneNumber::international($recipient);
+
         try {
             $response = $this->client->request('POST', 'https://api.ng.termii.com/api/sms/send', [
                 'json' => [
-                    'to' => $recipient,
+                    'to' => $termiiRecipient,
                     'from' => $this->termiiSenderId,
                     'sms' => $message,
                     'type' => 'plain',

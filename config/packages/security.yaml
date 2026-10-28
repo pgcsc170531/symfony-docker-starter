@@ -19,11 +19,14 @@ security:
                 manager_name: landlord # Agents live in the landlord DB
 
         # 3. TENANT PROVIDER (School Staff)
+        #
+        # Not the stock `entity:` provider: it compares the email exactly, and a
+        # parent whose login is derived from their phone will type the number
+        # without the leading zero (8039658200@edus.ng instead of
+        # 08039658200@edus.ng). App\Security\TenantUserProvider normalises that
+        # before the lookup. Uses the default/tenant manager.
         app_tenant_provider:
-            entity:
-                class: App\Entity\Tenant\User
-                property: email
-                # uses default/tenant manager
+            id: App\Security\TenantUserProvider
 
     firewalls:
         dev:
