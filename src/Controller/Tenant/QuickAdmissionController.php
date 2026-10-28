@@ -38,6 +38,22 @@ class QuickAdmissionController extends AbstractController
      */
     private array $guardianCache = [];
 
+    /**
+     * Every guardian already on file, keyed by phone with everything that is not
+     * a digit removed. Built once per upload.
+     *
+     * A phone number is the same number however it is typed — "0803 999 0001",
+     * "+234-803-999-0001" and "08039990001" are one parent. Matching the stored
+     * string exactly meant that a parent added through the website, or by a
+     * previous upload that used a different spacing, was not recognised: the
+     * importer tried to create the family a second time and the unique
+     * guardian/user email killed the whole batch. That is the "same phone
+     * number" error when uploading a second child.
+     *
+     * @var array<string, int>|null  digits → guardian id
+     */
+    private ?array $guardianPhoneIndex = null;
+
     public function __construct(
         private readonly DiscountCalculator $discountCalculator,
         private readonly InvoiceNumberGenerator $invoiceNumbers,
@@ -68,8 +84,12 @@ class QuickAdmissionController extends AbstractController
 
             $count = 0;
             foreach ($data as $row) {
-                // Skip empty rows
-                if (empty($row['student_name']) || empty($row['parent_phone'])) continue;
+                // Skip empty rows — and rows whose parent phone is blank, because
+                // the phone is what identifies the family.
+                if (empty($row['student_name'])
+                    || $this->normalisePhone((string) ($row['parent_phone'] ?? '')) === '') {
+                    continue;
+                }
 
                 $classId = $row['class_id'];
                 $classroom = $em->getRepository(Classroom::class)->find($classId);
@@ -138,8 +158,9 @@ class QuickAdmissionController extends AbstractController
             $classMap[$this->normalizeString($c->getName())] = $c;
         }
 
-        // Fresh cache for this upload: a previous request's guardians must not leak in.
+        // Fresh caches for this upload: a previous request's guardians must not leak in.
         $this->guardianCache = [];
+        $this->guardianPhoneIndex = null;
 
         $rowsToSave = [];
         $errors = [];
@@ -176,6 +197,15 @@ class QuickAdmissionController extends AbstractController
                     continue;
                 }
 
+                // The parent's phone is what links siblings to one family, so a
+                // row without one cannot be placed. Two such rows used to collide
+                // on the generated '@edus.ng' address and stop the whole upload.
+                $parentPhone = $this->normalisePhone((string) ($row[12] ?? ''));
+                if ($parentPhone === '') {
+                    $errors[] = "Row $rowNumber: no parent phone number — the phone is how we match a pupil to their family.";
+                    continue;
+                }
+
                $rowsToSave[] = [
                 'data' => [
                     'first_name'       => trim($row[0]),
@@ -189,7 +219,7 @@ class QuickAdmissionController extends AbstractController
                     'home_town'        => trim($row[8]),
                     'admission_number' => trim($row[9]),  // 👈 NEW: Index 9
                     'parent_name'      => trim($row[11]), // 👈 SHIFTED: Index 11
-                    'parent_phone'     => trim($row[12]), // 👈 SHIFTED: Index 12
+                    'parent_phone'     => $parentPhone, // 👈 SHIFTED: Index 12
                 ],
                     'classroom' => $classMap[$cleanClass]
                 ];
@@ -253,41 +283,165 @@ class QuickAdmissionController extends AbstractController
     // ==========================================
     // 3. SHARED HELPER FUNCTIONS
     // ==========================================
+
+    /**
+     * One canonical form for a phone number, so the same parent always matches.
+     *
+     * The template asks for a 10-digit number with no leading zero, the website
+     * form takes whatever the parent types, and the office will happily type
+     * "+234 803 999 0001". All three are the same subscriber:
+     *
+     *   8039990001 · 08039990001 · +234-803-999-0001  →  08039990001
+     */
+    private function normalisePhone(string $value): string
+    {
+        $digits = preg_replace('/\D+/', '', $value) ?? '';
+
+        if (mb_strlen($digits) === 13 && str_starts_with($digits, '234')) {
+            return '0' . mb_substr($digits, 3);
+        }
+
+        // A 10-digit Nigerian mobile number typed without its trunk zero.
+        if (mb_strlen($digits) === 10 && preg_match('/^[7-9]/', $digits) === 1) {
+            return '0' . $digits;
+        }
+
+        return $digits;
+    }
+
+    /**
+     * The family this pupil belongs to, or a brand-new one.
+     *
+     * The office adds children one file at a time, and the same parent comes back
+     * for the second, third and fourth child. "Same phone" therefore has to mean
+     * the same parent however the number was typed: a second upload used to miss
+     * the family that the first one created (different spacing, +234, or a parent
+     * who registered on the website with their own email), try to create it again,
+     * and kill the batch on the unique guardian/user email. That is the "same
+     * phone number" error.
+     */
+    private function resolveGuardian(
+        EntityManagerInterface $em,
+        string $phone,
+        string $parentName,
+        UserPasswordHasherInterface $hasher,
+        ?string $defaultParentHash,
+    ): Guardian {
+        // (a) A sibling earlier in this same file — created, not flushed yet.
+        if (isset($this->guardianCache[$phone])) {
+            return $this->guardianCache[$phone];
+        }
+
+        // (b) Already on file, in whatever spelling the office used last time.
+        $id = $this->guardianPhoneIndex($em)[$phone] ?? null;
+        if ($id !== null) {
+            $guardian = $em->find(Guardian::class, $id);
+            if ($guardian !== null) {
+                // An auto-created "Parent" record should take the real name the
+                // school is typing now; a real name is never overwritten.
+                if ($this->looksAnonymous($guardian->getFullName()) && $parentName !== '') {
+                    $guardian->setFullName($parentName);
+                }
+
+                return $guardian;
+            }
+        }
+
+        $loginEmail = $phone . '@edus.ng';
+
+        // (c) The same login already exists under a different phone spelling.
+        $candidates = [$loginEmail];
+        if (str_starts_with($phone, '0')) {
+            $candidates[] = '234' . mb_substr($phone, 1) . '@edus.ng';
+        }
+
+        $guardian = $em->getRepository(Guardian::class)->findBy(['email' => $candidates], null, 1)[0] ?? null;
+        if ($guardian !== null) {
+            return $guardian;
+        }
+
+        // (d) A new family. The parent-portal account may still exist already
+        //     (a parent who registered on the website), so reuse it rather than
+        //     letting the unique email index abort the upload.
+        $guardian = new Guardian();
+        $guardian->setFullName($parentName !== '' ? $parentName : 'Parent');
+        $guardian->setPhoneNumber($phone);
+        $guardian->setEmail($loginEmail);
+
+        $user = $em->getRepository(User::class)->findOneBy(['email' => $loginEmail]);
+        if ($user === null) {
+            $user = new User();
+            $user->setEmail($loginEmail);
+            $user->setFullName($guardian->getFullName());
+            $user->setRoles(['ROLE_PARENT']);
+            // Default Password: 12345678 (pre-hashed once for bulk imports for speed)
+            $user->setPassword($defaultParentHash ?? $hasher->hashPassword($user, '12345678'));
+            $em->persist($user);
+        }
+
+        $guardian->setUser($user);
+        $em->persist($guardian);
+
+        return $guardian;
+    }
+
+    /**
+     * Every guardian on file, keyed by the digits of their phone number.
+     *
+     * One query per upload instead of one per row, and the comparison ignores
+     * spacing, dashes and the country code — which an exact string match does not.
+     *
+     * @return array<string, int> digits → guardian id
+     */
+    private function guardianPhoneIndex(EntityManagerInterface $em): array
+    {
+        if ($this->guardianPhoneIndex !== null) {
+            return $this->guardianPhoneIndex;
+        }
+
+        $this->guardianPhoneIndex = [];
+
+        foreach ($em->createQuery('SELECT g.id, g.phoneNumber FROM ' . Guardian::class . ' g')->getArrayResult() as $row) {
+            $digits = $this->normalisePhone((string) ($row['phoneNumber'] ?? ''));
+
+            if ($digits !== '' && !isset($this->guardianPhoneIndex[$digits])) {
+                $this->guardianPhoneIndex[$digits] = (int) $row['id'];
+            }
+        }
+
+        return $this->guardianPhoneIndex;
+    }
+
+    /** "Parent", "Guardian", "Guardian of …" and blank are placeholders, not names. */
+    private function looksAnonymous(?string $name): bool
+    {
+        $name = mb_strtolower(trim((string) $name));
+
+        return $name === '' || $name === 'parent' || $name === 'guardian' || str_starts_with($name, 'guardian of');
+    }
     private function processStudentRow($em, $hasher, $data, $classroom, $term, $generateInvoice, ?string $defaultParentHash = null)
 {
     // 1. GUARDIAN LOGIC (Find or Create Parent)
-    $phone = trim(str_replace([' ', '-', '+'], '', $data['parent_phone'])); 
+    $phone = $this->normalisePhone((string) ($data['parent_phone'] ?? ''));
 
-    // Siblings in one file share a phone number, and a guardian created earlier in
-    // this loop is not flushed yet — so the database lookup below cannot see it.
-    // Without this cache the second sibling tried to create a second guardian and
-    // the batch died on a unique violation that was reported as "duplicate
-    // admission number". The cache is reset at the start of each import.
-    $guardian = $this->guardianCache[$phone] ?? null;
-
-    if ($guardian === null) {
-        $guardian = $em->getRepository(Guardian::class)->findOneBy(['phoneNumber' => $phone]);
+    /*
+     * No parent phone, no record — not the child and not the parent.
+     *
+     * The phone is the only thing that ties a pupil to a family and the only
+     * contact the school has. Writing the row anyway would create a parent with
+     * no number, and two of them would collide on the same placeholder login and
+     * abort the whole upload. Every caller skips the row instead: the CSV parser
+     * reports it with its row number before it gets this far, and the manual grid
+     * drops it without counting it.
+     */
+    if ($phone === '') {
+        return;
     }
 
-    if (!$guardian) {
-        $guardian = new Guardian();
-        $guardian->setFullName($data['parent_name'] ?: 'Parent');
-        $guardian->setPhoneNumber($phone);
-        $guardian->setEmail($phone . '@edus.ng'); 
-        
-        $user = new User();
-        $user->setEmail($guardian->getEmail());
-        $user->setFullName($guardian->getFullName());
-        $user->setRoles(['ROLE_PARENT']);
-        
-        // Default Password: 12345678 (pre-hashed once for bulk imports for speed)
-        $user->setPassword($defaultParentHash ?? $hasher->hashPassword($user, '12345678'));
-        
-        $em->persist($user);
-        $guardian->setUser($user);
-        $em->persist($guardian);
-    }
+    $guardian = $this->resolveGuardian($em, $phone, (string) ($data['parent_name'] ?? ''), $hasher, $defaultParentHash);
 
+    // Siblings in one file share a phone number, and the guardian is not flushed
+    // until the end of the batch — the cache is what links them to one parent.
     $this->guardianCache[$phone] = $guardian;
 
     // 2. STUDENT LOGIC
