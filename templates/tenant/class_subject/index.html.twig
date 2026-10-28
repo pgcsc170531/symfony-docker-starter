@@ -4,17 +4,28 @@
 
 {% block body %}
 {% import 'tenant/_list_search.html.twig' as search %}
-<div class="px-4">
-    <h1 class="text-2xl font-bold mb-6">🗂️ Class Subjects</h1>
+<div class="px-4 py-4 sm:px-6 sm:py-6">
+    <div class="mb-6">
+        <h1 class="text-xl font-bold text-ink-900 sm:text-2xl">Class Subjects</h1>
+        <p class="mt-1 text-sm text-ink-600">Which subjects are taught, in which classes, for which session.</p>
+    </div>
 
-    {# Create form #}
-    <div class="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 class="font-semibold mb-4">Register a Subject for a Class</h2>
-        <form method="post" class="grid gap-4 md:grid-cols-4 items-end">
-            <div>
-                <label class="block text-sm font-medium mb-1">Subject</label>
-                <select name="subject" required class="w-full border rounded p-2 text-sm">
-                    <option value="">— Select Subject —</option>
+    {# ── Register: one subject, many classes ──────────────────────────────── #}
+    <section class="mb-6 rounded-lg bg-white p-4 shadow-card sm:p-6">
+        <h2 class="font-semibold text-ink-900">Register a subject</h2>
+        <p class="mt-1 text-sm text-ink-600">
+            Choose the subject, then every class that teaches it. Each ticked class is registered in one
+            submission — there is no need to repeat the form arm by arm.
+        </p>
+
+        <form method="post" class="mt-4 grid gap-4 sm:grid-cols-2">
+            <input type="hidden" name="_token" value="{{ csrf_token('class_subject_bulk') }}">
+
+            <div class="sm:col-span-2">
+                <label for="cs-subject" class="mb-1 block text-sm font-medium text-ink-800">Subject</label>
+                <select id="cs-subject" name="subject" required
+                        class="min-h-[44px] w-full rounded-lg border border-ink-200 bg-white px-3 text-sm text-ink-900 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-200">
+                    <option value="">Select a subject</option>
                     {% for deptName, deptSubjects in subjectGroups %}
                         <optgroup label="{{ deptName }}">
                             {% for s in deptSubjects %}
@@ -24,84 +35,206 @@
                     {% endfor %}
                 </select>
             </div>
+
             <div>
-                <label class="block text-sm font-medium mb-1">Classroom</label>
-                <select name="classroom" required class="w-full border rounded p-2 text-sm">
-                    <option value="">— Select Class —</option>
-                    {% for c in classrooms %}
-                        <option value="{{ c.id }}">{{ c.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">Session</label>
-                <select name="session" required class="w-full border rounded p-2 text-sm">
-                    <option value="">— Select Session —</option>
+                <label for="cs-session" class="mb-1 block text-sm font-medium text-ink-800">Session</label>
+                <select id="cs-session" name="session" required
+                        class="min-h-[44px] w-full rounded-lg border border-ink-200 bg-white px-3 text-sm text-ink-900 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-200">
+                    <option value="">Select a session</option>
                     {% for sess in sessions %}
                         <option value="{{ sess.id }}">{{ sess.name }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">Category</label>
-                <select name="category" class="w-full border rounded p-2 text-sm">
-                    <option value="core">Core</option>
-                    <option value="elective">Elective</option>
-                </select>
-            </div>
-            <button class="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm md:col-span-4 justify-self-start">Register</button>
-        </form>
-    </div>
 
-    {# List #}
+            <div>
+                <label for="cs-category" class="mb-1 block text-sm font-medium text-ink-800">Category</label>
+                <select id="cs-category" name="category"
+                        class="min-h-[44px] w-full rounded-lg border border-ink-200 bg-white px-3 text-sm text-ink-900 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-200">
+                    <option value="core">Core — every pupil in the class</option>
+                    <option value="elective">Elective — only pupils enrolled in it</option>
+                </select>
+                <p class="mt-1 text-xs text-ink-500">
+                    A core subject is scored for every pupil in the class. An elective only appears for the
+                    pupils enrolled in it.
+                </p>
+            </div>
+
+            <fieldset class="sm:col-span-2">
+                <legend class="mb-2 text-sm font-medium text-ink-800">Classes that teach this subject</legend>
+
+                <div class="mb-3 flex flex-wrap items-center gap-2">
+                    <button type="button" data-select-all
+                            class="min-h-[44px] rounded-lg border border-ink-200 px-3 text-sm font-semibold text-ink-700 transition-colors hover:border-accent-300 hover:text-accent-700">
+                        Select all
+                    </button>
+                    <button type="button" data-clear-all
+                            class="min-h-[44px] rounded-lg border border-ink-200 px-3 text-sm font-semibold text-ink-700 transition-colors hover:border-accent-300 hover:text-accent-700">
+                        Clear
+                    </button>
+                    <span id="cs-selected-count" aria-live="polite" class="text-xs text-ink-500">No class selected</span>
+                </div>
+
+                {% for level, rooms in classroomGroups %}
+                    <div class="mb-3">
+                        <div class="mb-1 flex items-center justify-between gap-2">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">{{ level }}</p>
+                            <button type="button" data-select-group="{{ loop.index }}"
+                                    class="min-h-[44px] px-2 text-xs font-semibold text-accent-700">
+                                Select all {{ level }}
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                            {% for c in rooms %}
+                                <label class="flex min-h-[44px] cursor-pointer items-center gap-2 rounded-lg border border-ink-200 px-3 py-2 text-sm text-ink-800 has-[:checked]:border-accent-500 has-[:checked]:bg-accent-50">
+                                    <input type="checkbox" name="classrooms[]" value="{{ c.id }}"
+                                           data-group="{{ loop.parent.loop.index }}"
+                                           class="h-4 w-4 shrink-0 accent-accent-600">
+                                    <span class="min-w-0 break-words">{{ c.arm ?: c.name }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="rounded-lg border border-dashed border-ink-300 p-4 text-sm text-ink-700">
+                        There are no classes yet.
+                        <a href="{{ path('app_tenant_classroom_index') }}" class="font-semibold text-accent-700 underline">
+                            Create the school's classes
+                        </a>
+                        first.
+                    </p>
+                {% endfor %}
+            </fieldset>
+
+            <div class="sm:col-span-2">
+                <button type="submit"
+                        class="min-h-[44px] w-full rounded-lg bg-accent-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-accent-700 sm:w-auto">
+                    Register subject
+                </button>
+            </div>
+        </form>
+    </section>
+
+    {# ── Registered: one card per subject per session ─────────────────────── #}
     {{ search.form(q, 'Search subject, class, department or session') }}
 
-    <div class="overflow-x-auto rounded-lg bg-white shadow">
-        <table class="w-full min-w-[720px] text-sm">
-            <thead class="bg-gray-100 text-left text-gray-500">
-                <tr>
-                    <th class="p-3">Session</th>
-                    <th class="p-3">Class</th>
-                    <th class="p-3">Subject</th>
-                    <th class="p-3">Department</th>
-                    <th class="p-3">Category</th>
-                    <th class="p-3 text-right">Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for cs in classSubjects %}
-                    <tr class="border-t">
-                        <td class="p-3">{{ cs.session.name }}</td>
-                        <td class="p-3">{{ cs.classroom.name }}</td>
-                        <td class="p-3 font-medium">{{ cs.subject.name }}</td>
-                        <td class="p-3">{{ cs.subject.department ? cs.subject.department.name : '—' }}</td>
-                        <td class="p-3">
-                            <span class="px-2 py-0.5 rounded-full text-xs {{ cs.isCore ? 'bg-indigo-100 text-indigo-700' : 'bg-purple-100 text-purple-700' }}">
-                                {{ cs.category }}
-                            </span>
-                        </td>
-                        <td class="p-3 text-right">
-                            <form method="post" action="{{ path('app_tenant_class_subject_delete', {id: cs.id}) }}"
-                                  onsubmit="return confirm('Remove this class subject?');">
-                                <input type="hidden" name="_token" value="{{ csrf_token('cs' ~ cs.id) }}">
-                                <button class="text-red-600 text-sm">Remove</button>
-                            </form>
-                        </td>
-                    </tr>
-                {% else %}
-                    <tr class="border-t">
-                        <td class="p-3 text-gray-500" colspan="6">
-                            {% if q %}
-                                No class subject matches “{{ q }}”.
-                                <a href="{{ path('app_tenant_class_subject_index') }}" class="font-semibold text-blue-600">Clear the search</a>.
-                            {% else %}
-                                No class subjects registered yet.
-                            {% endif %}
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    {% if groups is empty %}
+        <div class="rounded-lg border border-dashed border-ink-300 bg-white p-6 text-center">
+            {% if q %}
+                <p class="text-sm text-ink-700">No class subject matches “{{ q }}”.</p>
+                <a href="{{ path('app_tenant_class_subject_index') }}"
+                   class="mt-1 inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 underline">
+                    Clear the search
+                </a>
+            {% else %}
+                <p class="text-sm font-medium text-ink-900">No subject has been registered yet.</p>
+                <p class="mt-1 text-sm text-ink-600">Use the form above to pick a subject and the classes that teach it.</p>
+            {% endif %}
+        </div>
+    {% else %}
+        <p class="mb-3 text-sm text-ink-600">
+            {{ classSubjectCount }} class subject{{ classSubjectCount == 1 ? '' : 's' }} registered.
+        </p>
+
+        <div class="space-y-3">
+            {% for group in groups %}
+                <article class="rounded-lg bg-white p-4 shadow-card">
+                    <div class="flex flex-wrap items-start justify-between gap-2">
+                        <div class="min-w-0">
+                            <h3 class="break-words font-semibold text-ink-900">{{ group.subject.name }}</h3>
+                            <p class="mt-0.5 text-xs text-ink-500">
+                                {{ group.subject.department ? group.subject.department.name : 'No department' }}
+                                · {{ group.session.name }}
+                            </p>
+                        </div>
+                        <span class="badge-neutral shrink-0">
+                            {{ group.category == 'core' ? 'Core' : 'Elective' }}
+                        </span>
+                    </div>
+
+                    <ul class="mt-3 flex flex-wrap gap-2">
+                        {% for cs in group.rows %}
+                            <li>
+                                <form method="post"
+                                      action="{{ path('app_tenant_class_subject_delete', {id: cs.id}) }}"
+                                      onsubmit="return confirm('Remove {{ cs.subject.name|e('js') }} from {{ cs.classroom.name|e('js') }}?');">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('cs' ~ cs.id) }}">
+                                    <button type="submit"
+                                            class="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-ink-200 px-3 text-sm text-ink-800 transition-colors hover:border-failed hover:text-failed"
+                                            aria-label="Remove {{ cs.subject.name }} from {{ cs.classroom.name }}">
+                                        <span class="break-words">{{ cs.classroom.name }}</span>
+                                        <span aria-hidden="true" class="text-ink-400">&times;</span>
+                                    </button>
+                                </form>
+                            </li>
+                        {% endfor %}
+                    </ul>
+
+                    <p class="mt-2 text-xs text-ink-500">
+                        Taught in {{ group.rows|length }} class{{ group.rows|length == 1 ? '' : 'es' }}. Tap a class to remove it.
+                    </p>
+                </article>
+            {% endfor %}
+        </div>
+    {% endif %}
 </div>
+{% endblock %}
+
+{# The class picker is a checkbox list, not a <select multiple>: a multi-select
+   needs ctrl/cmd on a desktop and is close to unusable with a thumb, and it
+   never shows how many classes are actually ticked. These few lines keep the
+   running count honest and give the "all the JSS 1 arms" shortcut.
+
+   The `javascripts` block renders in <head>, before the body exists, so the
+   work has to wait for DOMContentLoaded. #}
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var boxes = Array.prototype.slice.call(document.querySelectorAll('input[name="classrooms[]"]'));
+            var count = document.getElementById('cs-selected-count');
+
+            if (!boxes.length || !count) {
+                return;
+            }
+
+            function refresh() {
+                var n = boxes.filter(function (box) { return box.checked; }).length;
+                count.textContent = n === 0
+                    ? 'No class selected'
+                    : n + (n === 1 ? ' class selected' : ' classes selected');
+            }
+
+            boxes.forEach(function (box) { box.addEventListener('change', refresh); });
+
+            document.querySelectorAll('[data-select-group]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    boxes.forEach(function (box) {
+                        if (box.dataset.group === button.dataset.selectGroup) {
+                            box.checked = true;
+                        }
+                    });
+                    refresh();
+                });
+            });
+
+            var all = document.querySelector('[data-select-all]');
+            if (all) {
+                all.addEventListener('click', function () {
+                    boxes.forEach(function (box) { box.checked = true; });
+                    refresh();
+                });
+            }
+
+            var clear = document.querySelector('[data-clear-all]');
+            if (clear) {
+                clear.addEventListener('click', function () {
+                    boxes.forEach(function (box) { box.checked = false; });
+                    refresh();
+                });
+            }
+
+            refresh();
+        });
+    </script>
 {% endblock %}

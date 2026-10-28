@@ -25,36 +25,102 @@ class ClassSubjectController extends AbstractController
     public function index(Request $request): Response
     {
         if ($request->isMethod('POST')) {
+            if (!$this->isCsrfTokenValid('class_subject_bulk', (string) $request->request->get('_token'))) {
+                $this->addFlash('error', 'That form expired. Please try again.');
+
+                return $this->redirectToRoute('app_tenant_class_subject_index');
+            }
+
             $subjectId = $request->request->get('subject');
-            $classroomId = $request->request->get('classroom');
             $sessionId = $request->request->get('session');
             $category = $request->request->get('category', ClassSubject::CATEGORY_CORE);
 
-            if ($subjectId && $classroomId && $sessionId) {
-                $subject = $this->em->getRepository(Subject::class)->find($subjectId);
-                $classroom = $this->em->getRepository(Classroom::class)->find($classroomId);
-                $session = $this->em->getRepository(Session::class)->find($sessionId);
+            /*
+             * One subject, many classes, one submit.
+             *
+             * A subject is a property of the school, not of a single arm: JSS 1 A
+             * and JSS 1 B both take Mathematics, and making the registrar repeat
+             * the form per arm is how classes end up with a different subject
+             * list by accident. Every ticked class becomes one ClassSubject row —
+             * the table still holds one row per (subject, class, session), so
+             * results, approvals and term locking keep working unchanged.
+             */
+            $classroomIds = array_values(array_unique(array_map(
+                'intval',
+                array_filter((array) ($request->request->all()['classrooms'] ?? []), 'is_scalar')
+            )));
 
-                if ($subject && $classroom && $session) {
-                    $existing = $this->em->getRepository(ClassSubject::class)->findOneBy([
-                        'subject' => $subject,
-                        'classroom' => $classroom,
-                        'session' => $session,
-                    ]);
+            if (!$subjectId || !$sessionId || $classroomIds === []) {
+                $this->addFlash('error', 'Pick a subject, a session and at least one class.');
 
-                    if (!$existing) {
-                        $classSubject = new ClassSubject();
-                        $classSubject->setSubject($subject)
-                            ->setClassroom($classroom)
-                            ->setSession($session)
-                            ->setCategory($category === ClassSubject::CATEGORY_ELECTIVE ? ClassSubject::CATEGORY_ELECTIVE : ClassSubject::CATEGORY_CORE);
-                        $this->em->persist($classSubject);
-                        $this->em->flush();
-                        $this->addFlash('success', 'Class subject registered.');
-                    } else {
-                        $this->addFlash('warning', 'That class subject already exists.');
-                    }
+                return $this->redirectToRoute('app_tenant_class_subject_index');
+            }
+
+            $subject = $this->em->getRepository(Subject::class)->find($subjectId);
+            $session = $this->em->getRepository(Session::class)->find($sessionId);
+            $classrooms = $this->em->getRepository(Classroom::class)->findBy(['id' => $classroomIds]);
+
+            if (!$subject || !$session || $classrooms === []) {
+                $this->addFlash('error', 'That subject, session or class no longer exists.');
+
+                return $this->redirectToRoute('app_tenant_class_subject_index');
+            }
+
+            // One query for the whole submission instead of one per ticked class.
+            $existingByClassroom = [];
+            foreach ($this->em->getRepository(ClassSubject::class)->findBy([
+                'subject' => $subject,
+                'session' => $session,
+            ]) as $row) {
+                $existingByClassroom[(int) $row->getClassroom()?->getId()] = true;
+            }
+
+            $category = $category === ClassSubject::CATEGORY_ELECTIVE
+                ? ClassSubject::CATEGORY_ELECTIVE
+                : ClassSubject::CATEGORY_CORE;
+
+            $created = 0;
+            $skipped = 0;
+
+            foreach ($classrooms as $classroom) {
+                if (isset($existingByClassroom[(int) $classroom->getId()])) {
+                    ++$skipped;
+
+                    continue;
                 }
+
+                $classSubject = new ClassSubject();
+                $classSubject->setSubject($subject)
+                    ->setClassroom($classroom)
+                    ->setSession($session)
+                    ->setCategory($category);
+                $this->em->persist($classSubject);
+                ++$created;
+            }
+
+            $this->em->flush();
+
+            $name = (string) $subject->getName();
+            if ($created > 0) {
+                $message = sprintf(
+                    '%s added to %d class%s for %s.',
+                    $name,
+                    $created,
+                    $created === 1 ? '' : 'es',
+                    (string) $session->getName()
+                );
+                if ($skipped > 0) {
+                    $message .= sprintf(' %d class%s already had it.', $skipped, $skipped === 1 ? '' : 'es');
+                }
+                $this->addFlash('success', $message);
+            } else {
+                $this->addFlash('info', sprintf(
+                    '%s was already registered in %d class%s for %s — nothing was added.',
+                    $name,
+                    $skipped,
+                    $skipped === 1 ? '' : 'es',
+                    (string) $session->getName()
+                ));
             }
 
             return $this->redirectToRoute('app_tenant_class_subject_index');
@@ -79,8 +145,8 @@ class ClassSubjectController extends AbstractController
             ->join('cs.session', 'sess')->addSelect('sess')
             ->leftJoin('sub.department', 'dept')->addSelect('dept')
             ->orderBy('sess.id', 'DESC')
-            ->addOrderBy('classroom.name', 'ASC')
-            ->addOrderBy('sub.name', 'ASC');
+            ->addOrderBy('sub.name', 'ASC')
+            ->addOrderBy('classroom.name', 'ASC');
 
         if ($q !== '') {
             $qb->andWhere('LOWER(sub.name) LIKE :q'
@@ -91,10 +157,45 @@ class ClassSubjectController extends AbstractController
                 ->setParameter('q', '%' . mb_strtolower($q) . '%');
         }
 
+        /*
+         * The list reads the way the register is now written: one card per
+         * subject per session, with every class it is taught in shown as a chip.
+         * Listing one row per class would turn "Mathematics" into twelve
+         * near-identical rows the moment a school registers it properly.
+         */
+        $rows = $qb->getQuery()->getResult();
+        $groups = [];
+        foreach ($rows as $cs) {
+            $key = sprintf(
+                '%d|%d|%s',
+                (int) $cs->getSession()?->getId(),
+                (int) $cs->getSubject()?->getId(),
+                (string) $cs->getCategory()
+            );
+
+            $groups[$key] ??= [
+                'session' => $cs->getSession(),
+                'subject' => $cs->getSubject(),
+                'category' => $cs->getCategory(),
+                'rows' => [],
+            ];
+
+            $groups[$key]['rows'][] = $cs;
+        }
+
+        // Pick list for the register form: every class, grouped under its level
+        // so "all the JSS 1 arms" is one glance rather than a scan of a flat list.
+        $classroomGroups = [];
+        foreach ($this->em->getRepository(Classroom::class)->findBy([], ['name' => 'ASC']) as $classroom) {
+            $classroomGroups[$classroom->getYearGroup()?->getName() ?? 'Other classes'][] = $classroom;
+        }
+        uksort($classroomGroups, 'strnatcasecmp');
+
         return $this->render('tenant/class_subject/index.html.twig', [
-            'classSubjects' => $qb->getQuery()->getResult(),
+            'groups' => $groups,
+            'classSubjectCount' => count($rows),
             'subjectGroups' => $subjectGroups,
-            'classrooms' => $this->em->getRepository(Classroom::class)->findBy([], ['name' => 'ASC']),
+            'classroomGroups' => $classroomGroups,
             'sessions' => $this->em->getRepository(Session::class)->findBy([], ['id' => 'DESC']),
             'q' => $q,
         ]);
@@ -103,10 +204,32 @@ class ClassSubjectController extends AbstractController
     #[Route('/{id}/delete', name: 'app_tenant_class_subject_delete', methods: ['POST'])]
     public function delete(ClassSubject $classSubject, Request $request): Response
     {
-        if ($this->isCsrfTokenValid('cs' . $classSubject->getId(), $request->request->get('_token'))) {
+        if (!$this->isCsrfTokenValid('cs' . $classSubject->getId(), $request->request->get('_token'))) {
+            $this->addFlash('error', 'That change expired. Please try again.');
+
+            return $this->redirectToRoute('app_tenant_class_subject_index');
+        }
+
+        $label = sprintf(
+            '%s in %s',
+            $classSubject->getSubject()?->getName() ?? 'That subject',
+            $classSubject->getClassroom()?->getName() ?? 'that class'
+        );
+
+        /*
+         * Scores, elective enrolments and result approvals all point at this
+         * row with ON DELETE RESTRICT. Removing it while they exist is a data
+         * loss question, not a bug to report as a 500 — say what is holding it.
+         */
+        try {
             $this->em->remove($classSubject);
             $this->em->flush();
-            $this->addFlash('success', 'Class subject removed.');
+            $this->addFlash('success', sprintf('%s removed.', $label));
+        } catch (\Throwable) {
+            $this->addFlash('error', sprintf(
+                '%s cannot be removed — marks or approvals are already recorded against it.',
+                $label
+            ));
         }
 
         return $this->redirectToRoute('app_tenant_class_subject_index');

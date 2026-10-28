@@ -259,42 +259,104 @@ class StaffAssignmentController extends AbstractController
     public function subjectTeacher(Request $request): Response
     {
         if ($request->isMethod('POST')) {
+            if (!$this->isCsrfTokenValid('subject_teacher_bulk', (string) $request->request->get('_token'))) {
+                $this->addFlash('error', 'That form expired. Please try again.');
+
+                return $this->redirectToRoute('app_tenant_subject_teacher');
+            }
+
             $staffId = $request->request->get('staff');
             $subjectId = $request->request->get('subject');
-            $classroomId = $request->request->get('classroom');
             $termId = $request->request->get('term');
 
-            if ($staffId && $subjectId && $classroomId && $termId) {
-                $staff = $this->resolveStaff((int) $staffId);
-                $subject = $this->em->getRepository(Subject::class)->find($subjectId);
-                $classroom = $this->em->getRepository(Classroom::class)->find($classroomId);
-                $term = $this->em->getRepository(Term::class)->find($termId);
+            /*
+             * One teacher, one subject, many classes, one submit.
+             *
+             * A teacher who takes Mathematics in JSS 1 A, B and C holds three
+             * assignments, because every mark, approval and report is anchored
+             * to one (teacher, subject, class, term). That is the right shape for
+             * the data — but it should be one action for the person typing it,
+             * not three trips through the form.
+             */
+            $classroomIds = array_values(array_unique(array_map(
+                'intval',
+                array_filter((array) ($request->request->all()['classrooms'] ?? []), 'is_scalar')
+            )));
 
-                if ($staff && $subject && $classroom && $term) {
-                    $existing = $this->em->getRepository(SubjectTeacher::class)->findOneBy([
-                        'staff' => $staff,
-                        'subject' => $subject,
-                        'classroom' => $classroom,
-                        'term' => $term,
-                    ]);
+            if (!$staffId || !$subjectId || !$termId || $classroomIds === []) {
+                $this->addFlash('error', 'Choose a staff member, a subject, a term and at least one class.');
 
-                    if (!$existing) {
-                        $assignment = new SubjectTeacher();
-                        $assignment->setStaff($staff)
-                            ->setSubject($subject)
-                            ->setClassroom($classroom)
-                            ->setTerm($term);
-                        $this->em->persist($assignment);
-                        $this->em->flush();
-                        $this->addFlash('success', 'Subject teacher assigned.');
-                    } else {
-                        $this->addFlash('warning', 'That assignment already exists.');
-                    }
-                } else {
-                    $this->addFlash('error', 'That staff member, subject, class or term could not be found. Pick the person again from the search list.');
+                return $this->redirectToRoute('app_tenant_subject_teacher');
+            }
+
+            $staff = $this->resolveStaff((int) $staffId);
+            $subject = $this->em->getRepository(Subject::class)->find($subjectId);
+            $term = $this->em->getRepository(Term::class)->find($termId);
+            $classrooms = $this->em->getRepository(Classroom::class)->findBy(['id' => $classroomIds]);
+
+            if (!$staff || !$subject || !$term || $classrooms === []) {
+                $this->addFlash('error', 'That staff member, subject or term could not be found. Pick the person again from the search list.');
+
+                return $this->redirectToRoute('app_tenant_subject_teacher');
+            }
+
+            // One query for the whole submission instead of one per ticked class.
+            $existingByClassroom = [];
+            foreach ($this->em->getRepository(SubjectTeacher::class)->findBy([
+                'staff' => $staff,
+                'subject' => $subject,
+                'term' => $term,
+            ]) as $row) {
+                $existingByClassroom[(int) $row->getClassroom()?->getId()] = true;
+            }
+
+            $created = 0;
+            $skipped = 0;
+
+            foreach ($classrooms as $classroom) {
+                if (isset($existingByClassroom[(int) $classroom->getId()])) {
+                    ++$skipped;
+
+                    continue;
                 }
+
+                $assignment = new SubjectTeacher();
+                $assignment->setStaff($staff)
+                    ->setSubject($subject)
+                    ->setClassroom($classroom)
+                    ->setTerm($term);
+                $this->em->persist($assignment);
+                ++$created;
+            }
+
+            $this->em->flush();
+
+            $teacher = $staff->getUser()?->getFullName() ?? $staff->getUser()?->getEmail() ?? 'The teacher';
+            $name = (string) $subject->getName();
+            $termLabel = (string) $term->getName();
+
+            if ($created > 0) {
+                $message = sprintf(
+                    '%s set to teach %s in %d class%s for %s.',
+                    $teacher,
+                    $name,
+                    $created,
+                    $created === 1 ? '' : 'es',
+                    $termLabel
+                );
+                if ($skipped > 0) {
+                    $message .= sprintf(' %d class%s already assigned.', $skipped, $skipped === 1 ? '' : 'es');
+                }
+                $this->addFlash('success', $message);
             } else {
-                $this->addFlash('error', 'Choose a staff member, a subject, a class and a term.');
+                $this->addFlash('info', sprintf(
+                    '%s already teaches %s in %d class%s for %s — nothing was added.',
+                    $teacher,
+                    $name,
+                    $skipped,
+                    $skipped === 1 ? '' : 'es',
+                    $termLabel
+                ));
             }
 
             return $this->redirectToRoute('app_tenant_subject_teacher');
@@ -310,7 +372,9 @@ class StaffAssignmentController extends AbstractController
             ->join('st.classroom', 'classroom')->addSelect('classroom')
             ->join('st.term', 't')->addSelect('t')
             ->orderBy('t.id', 'DESC')
-            ->addOrderBy('u.fullName', 'ASC');
+            ->addOrderBy('u.fullName', 'ASC')
+            ->addOrderBy('sub.name', 'ASC')
+            ->addOrderBy('classroom.name', 'ASC');
 
         if ($q !== '') {
             $qb->andWhere('LOWER(u.fullName) LIKE :q'
@@ -321,12 +385,46 @@ class StaffAssignmentController extends AbstractController
                 ->setParameter('q', '%' . mb_strtolower($q) . '%');
         }
 
+        /*
+         * Read back the way the assignment was written: one card per teacher per
+         * subject per term, with every class they take as a chip. One row per
+         * class would repeat the same teacher three times for one subject.
+         */
+        $rows = $qb->getQuery()->getResult();
+        $groups = [];
+        foreach ($rows as $row) {
+            $key = sprintf(
+                '%d|%d|%d',
+                (int) $row->getStaff()?->getId(),
+                (int) $row->getSubject()?->getId(),
+                (int) $row->getTerm()?->getId()
+            );
+
+            $groups[$key] ??= [
+                'staff' => $row->getStaff(),
+                'subject' => $row->getSubject(),
+                'term' => $row->getTerm(),
+                'rows' => [],
+            ];
+
+            $groups[$key]['rows'][] = $row;
+        }
+
+        // Pick list for the form: every class under its level, so "all the JSS 1
+        // arms" is one glance instead of a scan of a flat list.
+        $classroomGroups = [];
+        foreach ($this->em->getRepository(Classroom::class)->findBy([], ['name' => 'ASC']) as $classroom) {
+            $classroomGroups[$classroom->getYearGroup()?->getName() ?? 'Other classes'][] = $classroom;
+        }
+        uksort($classroomGroups, 'strnatcasecmp');
+
         return $this->render('tenant/staff_assignment/subject_teacher.html.twig', [
             'staffOptions' => $this->staffOptions(),
             'subjectGroups' => $this->subjectGroups(),
-            'classrooms' => $this->em->getRepository(Classroom::class)->findBy([], ['name' => 'ASC']),
+            'classroomGroups' => $classroomGroups,
             'terms' => $this->em->getRepository(Term::class)->findBy([], ['id' => 'DESC']),
-            'assignments' => $qb->getQuery()->getResult(),
+            'groups' => $groups,
+            'assignmentCount' => count($rows),
             'q' => $q,
         ]);
     }
