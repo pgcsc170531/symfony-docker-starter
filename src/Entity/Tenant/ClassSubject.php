@@ -52,6 +52,14 @@ class ClassSubject
 
     public function __toString(): string
     {
-        return $this->subject?->getName() . ' — ' . $this->classroom?->getArm();
+        // The arm is stored on the classroom, but classes created before it was
+        // ever written have it empty — "Mathematics — " was the label. Fall back
+        // to the class name, which always holds the full "JSS 1 Gold".
+        $arm = $this->classroom?->getArm();
+        $className = $arm !== null && $arm !== ''
+            ? $arm
+            : (string) $this->classroom?->getName();
+
+        return trim($this->subject?->getName() . ' — ' . $className);
     }
 }

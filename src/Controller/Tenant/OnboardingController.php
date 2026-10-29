@@ -2,13 +2,16 @@
 
 namespace App\Controller\Tenant;
 
+use App\Entity\Tenant\Application;
 use App\Entity\Tenant\Classroom;
 use App\Entity\Tenant\FeeItem;
 use App\Entity\Tenant\FeeStructure;
+use App\Service\Finance\ClassLevels;
 use App\Entity\Tenant\School;
 use App\Entity\Tenant\Session;
 use App\Entity\Tenant\Term;
 use App\Entity\Tenant\YearGroup;
+use App\Entity\Tenant\YearGroupMaster;
 use App\Form\Wizard\ClassStructureType;
 use App\Form\Wizard\FeeItemsType;
 use App\Form\Wizard\OnboardingCalendarType;
@@ -137,19 +140,26 @@ class OnboardingController extends AbstractController
             $rows = $data['classes'] ?? [];
 
             /*
-             * Every row is a class the school may rename, with its own arms.
-             * "JSS 1" + "A, B, C" makes JSS 1A/1B/1C; "SS 1" + "A, B" makes SS 1A/1B;
-             * blank arms makes the single class as typed. A row that is unticked or
-             * whose name was cleared is skipped rather than creating a nameless room.
+             * Every row is a LEVEL the school may rename, with its own arms.
+             * "Nursery 1" + "Chrome, Garnet" makes Nursery 1 Chrome/Garnet;
+             * "SS 1" + "A, B" makes SS 1 A/SS 1 B; blank arms makes the level as
+             * typed. A row that is unticked or whose name was cleared is skipped
+             * rather than creating a nameless room.
+             *
+             * The level is read from the row and handed on as-is. The wizard used
+             * to glue the name together and then re-derive the level by stripping
+             * a single trailing letter — which matched "Nursery 3 B" but nothing
+             * called "Nursery 1 Chrome", so the arm became its own level. That is
+             * how a four-level nursery ended up with a fee column per gemstone.
              */
-            $created = [];
+            $plan = [];
             foreach ($rows as $row) {
                 if (empty($row['checked'])) {
                     continue;
                 }
 
-                $className = trim((string) ($row['name'] ?? ''));
-                if ($className === '') {
+                $level = trim((string) ($row['name'] ?? ''));
+                if ($level === '') {
                     continue;
                 }
 
@@ -158,31 +168,50 @@ class OnboardingController extends AbstractController
                     explode(',', (string) ($row['arms'] ?? ''))
                 ), static fn (string $arm): bool => $arm !== ''));
 
-                if ($arms === []) {
-                    $created[] = $className;
-                } else {
-                    foreach ($arms as $arm) {
-                        $created[] = $className . ' ' . $arm;
-                    }
+                // No arms listed means "one class, exactly as typed" — a nursery
+                // has no arms, and an empty arm must never produce "Nursery 1 ".
+                foreach ($arms === [] ? [null] : $arms as $arm) {
+                    $key = mb_strtolower($level . '|' . (string) $arm);
+                    $plan[$key] = ['level' => $level, 'arm' => $arm];
                 }
             }
 
             // A school with no classes cannot bill, register or report. Refuse
             // instead of flashing "Success! 0 classrooms generated" and moving on.
-            if ($created === []) {
+            if ($plan === []) {
                 $this->addFlash('error', 'Tick at least one class and give it a name to continue.');
 
                 return $this->redirectToRoute('app_tenant_onboarding_structure');
             }
 
+            /*
+             * Year groups are cached for the run: nothing is flushed until the
+             * loop ends, so a database lookup per arm could not see the group the
+             * previous arm had just persisted and created a duplicate "Nursery 3"
+             * for every arm under it.
+             *
+             * @var array<string, YearGroup> $yearGroups
+             */
+            $yearGroups = [];
             $count = 0;
-            foreach (array_unique($created) as $className) {
-                $this->createClass($em, $className);
-                $count++;
+            foreach ($plan as $entry) {
+                if ($this->createClass($em, $yearGroups, $entry['level'], $entry['arm'])) {
+                    $count++;
+                }
             }
 
             $em->flush();
-            
+
+            /*
+             * A regenerate replaces the classes, not the levels. A year group left
+             * with no class at all — the fossil of an old arm-per-level run, or of
+             * a level the school dropped — would otherwise sit on the Year Group
+             * screen as a phantom level nobody can bill or promote into.
+             */
+            if ($action === 'regenerate' && $this->pruneOrphanYearGroups($em) > 0) {
+                $em->flush();
+            }
+
             // Flash message depends on what they did
             if ($action === 'regenerate') {
                 $this->addFlash('success', "Fresh start! $count new classrooms generated.");
@@ -432,25 +461,10 @@ class OnboardingController extends AbstractController
         // Load items respecting drag-and-drop order
         $allFeeItems = $em->getRepository(FeeItem::class)->findBy([], ['position' => 'ASC', 'id' => 'ASC']);
 
-        // 1. SMART GROUPING (JSS 1A, JSS 1B -> JSS 1)
-        $levels = [];
-        foreach ($classrooms as $class) {
-            $name = $class->getName();
-            $parts = explode(' ', $name);
-            if (count($parts) > 1) {
-                $last = end($parts);
-                if ((strlen($last) <= 2 && !is_numeric($last)) || in_array(strtolower($last), ['gold', 'silver', 'bronze', 'blue', 'red', 'green'])) {
-                    array_pop($parts);
-                    $levelName = implode(' ', $parts);
-                } else {
-                    $levelName = $name;
-                }
-            } else {
-                $levelName = $name;
-            }
-            $levels[$levelName][] = $class;
-        }
-        ksort($levels, SORT_NATURAL);
+        // 1. GROUP BY LEVEL — the classroom's year group IS the level, so the
+        //    amount entered once applies to every arm (see App\Service\Finance\ClassLevels).
+        $levels = ClassLevels::group($classrooms);
+        $levelByClassroom = ClassLevels::index($levels);
 
         // 🟢 2. PRE-FETCH EXISTING PRICES
         // We need to look up prices by [ItemID][LevelName]
@@ -461,15 +475,10 @@ class OnboardingController extends AbstractController
             $itemId = $fs->getFeeItem()->getId();
             $className = $fs->getClassroom()->getName();
             
-            // Reverse-Engineer the Level Name from Class Name
-            $levelName = $className; // Default
-            foreach (array_keys($levels) as $lvl) {
-                if (str_starts_with($className, $lvl)) {
-                    $levelName = $lvl;
-                    break;
-                }
-            }
-            
+            // Which level this class belongs to (no name guessing, see ClassLevels)
+            $levelName = $levelByClassroom[(int) $fs->getClassroom()->getId()]
+                ?? $fs->getClassroom()->getName();
+
             // Store the amount (overwrite is fine, all arms should have same price)
             $existingPrices[$itemId][$levelName] = $fs->getAmount();
         }
@@ -594,31 +603,73 @@ class OnboardingController extends AbstractController
         return $item->getId();
     }
     
-    private function createClass(EntityManagerInterface $em, string $name): void
+    /**
+     * Creates one class under the level it was entered under.
+     *
+     * The level arrives from the form row and is never re-derived from the name:
+     * "Nursery 1 Chrome" belongs to Nursery 1 because the school typed Chrome in
+     * Nursery 1's arms box — not because of what the string looks like. Every
+     * class gets a year group, arms or no arms, so the Year Group Master's screen,
+     * result approval and the fee schedule all agree on how many levels a school
+     * has.
+     *
+     * @param array<string, YearGroup> $yearGroups cache of groups already created in this run
+     *
+     * @return bool true when a new class was added
+     */
+    private function createClass(EntityManagerInterface $em, array &$yearGroups, string $level, ?string $arm): bool
     {
-        $exists = $em->getRepository(Classroom::class)->findOneBy(['name' => $name]);
-        if ($exists) {
-            return;
+        $room = max(0, 255 - mb_strlen($level) - 1);
+        $name = $arm === null || $arm === '' ? $level : trim($level . ' ' . mb_substr($arm, 0, $room));
+
+        if ($em->getRepository(Classroom::class)->findOneBy(['name' => $name])) {
+            return false;
         }
 
-        $classroom = new Classroom();
-        $classroom->setName($name);
-
-        // "JSS 1 A" belongs to the "JSS 1" year group. The wizard used to create
-        // the class and stop there, so the Year Group Master's screen and the
-        // final result approval were empty for every school set up through it.
-        $level = trim((string) preg_replace('/\s+[A-Za-z]$/', '', $name));
-        if ($level !== '' && $level !== $name) {
+        if (!isset($yearGroups[$level])) {
             $yearGroup = $em->getRepository(YearGroup::class)->findOneBy(['name' => $level]);
             if (!$yearGroup) {
                 $yearGroup = new YearGroup();
                 $yearGroup->setName($level);
                 $em->persist($yearGroup);
             }
-            $classroom->setYearGroup($yearGroup);
+            $yearGroups[$level] = $yearGroup;
         }
 
+        $classroom = new Classroom();
+        $classroom->setName($name);
+        $classroom->setArm($arm === '' ? null : $arm);
+        $classroom->setYearGroup($yearGroups[$level]);
         $em->persist($classroom);
+
+        return true;
+    }
+
+    /**
+     * Deletes year groups that nothing points at any more.
+     *
+     * A level is only real if a class is taught in it. Year group master
+     * assignments and admission applications are checked too, because those keep
+     * a level alive even with no class of its own (a level added for next year).
+     *
+     * @return int how many groups were removed
+     */
+    private function pruneOrphanYearGroups(EntityManagerInterface $em): int
+    {
+        $removed = 0;
+
+        foreach ($em->getRepository(YearGroup::class)->findAll() as $yearGroup) {
+            $inUse = $em->getRepository(Classroom::class)->count(['yearGroup' => $yearGroup])
+                + $em->getRepository(YearGroupMaster::class)->count(['yearGroup' => $yearGroup])
+                + $em->getRepository(Application::class)->count(['requestedYearGroup' => $yearGroup]);
+
+            if ($inUse === 0) {
+                $em->remove($yearGroup);
+                $removed++;
+            }
+        }
+
+        return $removed;
     }
 
     // ==========================================
@@ -667,26 +718,10 @@ class OnboardingController extends AbstractController
 
         $structures = $queryBuilder->getQuery()->getResult();
 
-        // 3. GROUP LEVELS
+        // 3. GROUP LEVELS (shared with the fee schedule — see ClassLevels)
         $classrooms = $em->getRepository(Classroom::class)->findAll();
-        $levels = [];
-        foreach ($classrooms as $class) {
-            $name = $class->getName();
-            $parts = explode(' ', $name);
-            if (count($parts) > 1) {
-                $last = end($parts);
-                if ((strlen($last) <= 2 && !is_numeric($last)) || in_array(strtolower($last), ['gold', 'silver', 'bronze', 'blue', 'red', 'green'])) {
-                    array_pop($parts);
-                    $levelName = implode(' ', $parts);
-                } else {
-                    $levelName = $name;
-                }
-            } else {
-                $levelName = $name;
-            }
-            $levels[$levelName][] = $class;
-        }
-        ksort($levels, SORT_NATURAL);
+        $levels = ClassLevels::group($classrooms);
+        $levelByClassroom = ClassLevels::index($levels);
 
         // 4. CALCULATE TOTALS (WITH DUPLICATE PROTECTION)
         $matrix = [];
@@ -708,14 +743,8 @@ class OnboardingController extends AbstractController
             $isOneTime = ($freq === 'ONETIME');
             
             // Map Class -> Level
-            $cName = $fs->getClassroom()->getName();
-            $levelName = $cName; 
-            foreach (array_keys($levels) as $lvl) {
-                if (str_starts_with($cName, $lvl)) {
-                    $levelName = $lvl;
-                    break;
-                }
-            }
+            $levelName = $levelByClassroom[(int) $fs->getClassroom()->getId()]
+                ?? $fs->getClassroom()->getName();
 
             // A. Fill the Matrix (Table Body) - This is safe to overwrite
             $matrix[$itemName][$levelName] = $fs->getAmount();

@@ -7,6 +7,7 @@ use App\Entity\Tenant\FeeItem;
 use App\Entity\Tenant\FeeStructure;
 use App\Entity\Tenant\School;
 use App\Entity\Tenant\Term;
+use App\Service\Finance\ClassLevels;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request; // 🟢 Needed for query params
@@ -65,26 +66,13 @@ class FeeController extends AbstractController
 
         $structures = $queryBuilder->getQuery()->getResult();
 
-        // 5. GROUP LEVELS
+        // 5. GROUP LEVELS — one column per level (Nursery 1), not per arm.
+        //    The arms of a level all carry the same amount, so showing five
+        //    identical "Nursery 1 …" columns was noise, and for a nursery whose
+        //    arms are gemstones the old name-guess made every arm its own level.
         $classrooms = $em->getRepository(Classroom::class)->findAll();
-        $levels = [];
-        foreach ($classrooms as $class) {
-            $name = $class->getName();
-            $parts = explode(' ', $name);
-            if (count($parts) > 1) {
-                $last = end($parts);
-                if ((strlen($last) <= 2 && !is_numeric($last)) || in_array(strtolower($last), ['gold', 'silver', 'bronze', 'blue', 'red', 'green'])) {
-                    array_pop($parts);
-                    $levelName = implode(' ', $parts);
-                } else {
-                    $levelName = $name;
-                }
-            } else {
-                $levelName = $name;
-            }
-            $levels[$levelName][] = $class;
-        }
-        ksort($levels, SORT_NATURAL);
+        $levels = ClassLevels::group($classrooms);
+        $levelByClassroom = ClassLevels::index($levels);
 
         // 6. CALCULATE TOTALS (With Duplicate Protection 🛡️)
         $matrix = [];
@@ -106,14 +94,8 @@ class FeeController extends AbstractController
             $isOneTime = ($freq === 'ONETIME');
             
             // Map Class -> Level
-            $cName = $fs->getClassroom()->getName();
-            $levelName = $cName; 
-            foreach (array_keys($levels) as $lvl) {
-                if (str_starts_with($cName, $lvl)) {
-                    $levelName = $lvl;
-                    break;
-                }
-            }
+            $levelName = $levelByClassroom[(int) $fs->getClassroom()->getId()]
+                ?? $fs->getClassroom()->getName();
 
             // A. Always update the Visual Matrix
             $matrix[$itemName][$levelName] = $fs->getAmount();

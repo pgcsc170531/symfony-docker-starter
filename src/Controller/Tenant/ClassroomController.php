@@ -39,7 +39,7 @@ class ClassroomController extends AbstractController
             if ('manual' === $request->request->get('mode')) {
                 $arm = trim((string) $request->request->get('arm'));
                 $fullName = $arm === '' ? $level : $this->joinArm($level, $arm);
-                $created = $this->createClassroomIfNotExists($em, $fullName, $yearGroup);
+                $created = $this->createClassroomIfNotExists($em, $fullName, $yearGroup, $arm);
 
                 $em->flush();
 
@@ -71,7 +71,7 @@ class ClassroomController extends AbstractController
                 $added = [];
                 foreach ($arms as $arm) {
                     $fullName = $this->joinArm($level, $arm);
-                    if ($this->createClassroomIfNotExists($em, $fullName, $yearGroup) > 0) {
+                    if ($this->createClassroomIfNotExists($em, $fullName, $yearGroup, $arm) > 0) {
                         $added[] = $fullName;
                     }
                 }
@@ -94,7 +94,7 @@ class ClassroomController extends AbstractController
             // no arms, and an empty arm must never produce "JSS 1 ".
             foreach ($arms === [] ? [null] : $arms as $arm) {
                 $fullName = $arm === null ? $level : $this->joinArm($level, $arm);
-                $created += $this->createClassroomIfNotExists($em, $fullName, $yearGroup);
+                $created += $this->createClassroomIfNotExists($em, $fullName, $yearGroup, $arm);
             }
 
             $em->flush();
@@ -175,6 +175,7 @@ class ClassroomController extends AbstractController
         }
 
         $level = $classroom->getYearGroup()?->getName();
+        $arm = null;
 
         if ($level !== null) {
             $arm = trim((string) $request->request->get('arm'));
@@ -197,6 +198,9 @@ class ClassroomController extends AbstractController
         }
 
         $classroom->setName($newName);
+        if ($level !== null) {
+            $classroom->setArm($arm === '' ? null : $arm);
+        }
         $em->flush();
 
         $this->addFlash('success', sprintf('Renamed to %s.', $newName));
@@ -264,12 +268,18 @@ class ClassroomController extends AbstractController
     }
 
     /** Creates the class when it is new; returns 1 when it created a row, 0 when it already existed. */
-    private function createClassroomIfNotExists(EntityManagerInterface $em, string $name, ?YearGroup $yearGroup = null): int
-    {
+    private function createClassroomIfNotExists(
+        EntityManagerInterface $em,
+        string $name,
+        ?YearGroup $yearGroup = null,
+        ?string $arm = null,
+    ): int {
         $classroom = $em->getRepository(Classroom::class)->findOneBy(['name' => $name]);
+
         if (!$classroom) {
             $classroom = new Classroom();
             $classroom->setName($name);
+            $classroom->setArm($arm === '' ? null : $arm);
             if ($yearGroup) {
                 $classroom->setYearGroup($yearGroup);
             }
@@ -280,6 +290,13 @@ class ClassroomController extends AbstractController
 
         if ($yearGroup && !$classroom->getYearGroup()) {
             $classroom->setYearGroup($yearGroup);
+        }
+
+        // Classes created before the arm column was filled in say "JSS 1 Gold" in
+        // the name and nothing in the arm; adopt the arm the school just typed so
+        // the record stops disagreeing with itself.
+        if ($classroom->getArm() === null && $arm !== null && $arm !== '') {
+            $classroom->setArm($arm);
         }
 
         return 0;
