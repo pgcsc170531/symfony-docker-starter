@@ -77,13 +77,16 @@ final class ResultSheetBuilder
 
             $csId = (int) $classSubject->getId();
             $mine = $totalsBySubject[$csId][(int) $student->getId()] ?? null;
-            $total = $mine === null ? null : $mine['total'];
+            // Summed through the scheme, not by adding up whatever rows exist: a
+            // mark left over from a CA the school has since dropped must not count
+            // towards a total that is now out of a smaller maximum.
+            $total = $mine === null ? null : $this->schemes->total($scheme, $mine['components']);
 
             $classTotals = [];
             foreach ($roster as $studentId) {
                 $row = $totalsBySubject[$csId][$studentId] ?? null;
                 if ($row !== null) {
-                    $classTotals[$studentId] = $row['total'];
+                    $classTotals[$studentId] = $this->schemes->total($scheme, $row['components']);
                 }
             }
 
@@ -134,7 +137,7 @@ final class ResultSheetBuilder
 
                 $scheme = $this->schemes->resolve($classroom, $classSubject, $term);
                 $max += $this->schemes->maximum($scheme);
-                $sum += $row['total'];
+                $sum += $this->schemes->total($scheme, $row['components']);
             }
             if ($max > 0) {
                 $classPercentages[$studentId] = round($sum / $max * 100, 1);
@@ -242,7 +245,12 @@ final class ResultSheetBuilder
      * One query for the whole class: every component score, grouped by
      * class-subject → student → component.
      *
-     * @return array<int, array<int, array{total: float, components: array<string, float>}>>
+     * No total is computed here on purpose. A raw sum of the rows would include a
+     * component the scheme has dropped, and each subject has its own scheme — the
+     * total is summed through AssessmentSchemeResolver::total() where the scheme
+     * is known.
+     *
+     * @return array<int, array<int, array{components: array<string, float>}>>
      */
     private function totalsForClassroom(Classroom $classroom, Term $term): array
     {
@@ -259,12 +267,6 @@ final class ResultSheetBuilder
             $cs = (int) $row['cs'];
             $sid = (int) $row['sid'];
             $out[$cs][$sid]['components'][(string) $row['c']] = (float) $row['s'];
-        }
-
-        foreach ($out as $cs => $students) {
-            foreach ($students as $sid => $data) {
-                $out[$cs][$sid]['total'] = array_sum($data['components']);
-            }
         }
 
         return $out;

@@ -89,7 +89,7 @@ final class ResultTrendBuilder
 
                 $scheme = $this->schemes->resolve($classroom, $classSubject, $term);
                 $max = $this->schemes->maximum($scheme);
-                $total = array_sum($components);
+                $total = $this->schemes->total($scheme, $components);
                 $percentage = $max > 0 ? round($total / $max * 100, 1) : null;
 
                 $points[$termId] = [

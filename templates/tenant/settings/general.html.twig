@@ -168,6 +168,24 @@
                 </label>
             </div>
 
+            {# === 2c. CONTINUOUS ASSESSMENT === #}
+            <div class="mt-6 mb-4">
+                <label for="{{ form.caCount.vars.id }}"
+                       class="block text-sm font-medium text-gray-800">
+                    {{ form.caCount.vars.label }}
+                </label>
+                <p class="mt-1 text-xs text-gray-500">
+                    Your school decides how many CA tests a subject carries. The teacher's score-entry
+                    screen shows that many CA fields and nothing else, and the report card prints the
+                    same number of CA columns — so a two-CA school never looks at an empty CA&nbsp;3.
+                </p>
+                <div class="mt-2 max-w-md">
+                    {{ form_widget(form.caCount, {'attr': {'class': 'block w-full min-h-[44px] rounded-md border-gray-300 shadow-sm focus:border-accent-500 focus:ring-accent-500 text-base'}}) }}
+                </div>
+                {{ form_errors(form.caCount) }}
+                {% if form.caCount.vars.help %}<p class="mt-2 text-xs text-gray-500">{{ form.caCount.vars.help }}</p>{% endif %}
+            </div>
+
             {# === NEW: BANKING DETAILS SECTION === #}
             <h2 class="text-lg font-semibold text-gray-700 border-b pb-2 mb-4 mt-8">
                 🏦 Banking Details <span class="text-xs font-normal text-gray-500">(For Payment Slips)</span>
@@ -369,32 +387,38 @@
                 </span>
             </label>
 
-            {# --- SAVE BUTTON — last thing on the page, after every section --- #}
-            <div class="mt-8 border-t pt-5">
-                <button type="submit"
-                        class="min-h-[44px] w-full rounded-lg bg-accent-600 px-6 font-bold text-white shadow-sm transition-colors hover:bg-accent-700 md:w-auto md:px-8">
-                    💾 Save School Settings
-                </button>
-                <p class="mt-2 text-xs text-ink-500">
-                    Nothing on this page is stored until you press Save.
-                </p>
-            </div>
-
-            {{ form_end(form) }}
-
             {# Documents live outside this form: they are their own screen, and a
-               school should be able to edit the rules without touching a setting. #}
-            <div class="mt-6 rounded-lg border border-gray-200 bg-white p-4">
+               school should be able to edit the rules without touching a setting.
+               Shown BEFORE the save bar — a card underneath the button made the
+               form look like it carried on past its own Save. #}
+            <div class="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
                 <p class="text-sm font-semibold text-gray-800">School documents</p>
                 <p class="mt-1 text-xs leading-relaxed text-gray-500">
                     Rules and regulations, the fees policy, anything a parent should read. Written once,
                     published on your website and attached to every admission letter.
                 </p>
                 <a href="{{ path('app_tenant_document_index') }}"
-                   class="mt-3 inline-flex min-h-[44px] items-center rounded-lg border border-gray-300 px-4 text-xs font-bold text-gray-700 hover:border-accent-400 hover:text-accent-700">
+                   class="mt-3 inline-flex min-h-[44px] items-center rounded-lg border border-gray-300 bg-white px-4 text-xs font-bold text-gray-700 hover:border-accent-400 hover:text-accent-700">
                     Manage documents &rarr;
                 </a>
             </div>
+
+            {# --- SAVE BAR — the last thing in the form, and the only primary action
+               on the page. Full width on a phone (a thumb, not a pointer); on a wider
+               screen it sits at the right edge of the form, where the eye finishes. --- #}
+            <div class="mt-8 border-t border-gray-200 pt-5">
+                <div class="flex flex-col gap-3 sm:flex-row-reverse sm:items-center sm:justify-between">
+                    <button type="submit"
+                            class="min-h-[44px] w-full rounded-lg bg-accent-600 px-8 font-bold text-white shadow-sm transition-colors hover:bg-accent-700 sm:w-auto">
+                        💾 Save School Settings
+                    </button>
+                    <p class="text-xs text-ink-500">
+                        Nothing on this page is stored until you press Save.
+                    </p>
+                </div>
+            </div>
+
+            {{ form_end(form) }}
         </div>
 
         {# === RIGHT COLUMN: LIVE PREVIEW === #}

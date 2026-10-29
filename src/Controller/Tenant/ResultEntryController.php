@@ -3,7 +3,6 @@
 
 namespace App\Controller\Tenant;
 
-use App\Entity\Tenant\AssessmentScheme;
 use App\Entity\Tenant\ClassSubject;
 use App\Entity\Tenant\DepartmentHead;
 use App\Entity\Tenant\FormTeacher;
@@ -16,6 +15,7 @@ use App\Entity\Tenant\StudentSubject;
 use App\Entity\Tenant\SubjectTeacher;
 use App\Entity\Tenant\Term;
 use App\Entity\Tenant\YearGroupMaster;
+use App\Service\Results\AssessmentSchemeResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -33,6 +33,7 @@ class ResultEntryController extends AbstractController
     public function __construct(
         private EntityManagerInterface $em,
         private CsrfTokenManagerInterface $csrf,
+        private AssessmentSchemeResolver $schemes,
     ) {
     }
 
@@ -118,6 +119,11 @@ class ResultEntryController extends AbstractController
 
         $roster = $this->rosterIds($classSubject);
 
+        // Only the components this school's scheme counts. A row posted with a
+        // component that is no longer reported (a stale tab open from before the
+        // school moved from three CAs to two) is ignored rather than stored.
+        $allowed = $this->resolveComponents($this->resolveScheme($assignment));
+
         foreach ($data['scores'] ?? [] as $row) {
             $student = $this->em->getRepository(Student::class)->find($row['student_id'] ?? null);
             if (!$student || !isset($roster[(int) $student->getId()])) {
@@ -125,7 +131,7 @@ class ResultEntryController extends AbstractController
             }
 
             foreach ($row as $component => $score) {
-                if (!in_array($component, ['ca1', 'ca2', 'ca3', 'theory', 'practical'], true) || $score === '' || $score === null) {
+                if (!in_array($component, $allowed, true) || $score === '' || $score === null) {
                     continue;
                 }
 
@@ -214,42 +220,19 @@ class ResultEntryController extends AbstractController
             ->getResult();
     }
 
+    /**
+     * The scheme for this teacher's sheet — graded subject → class → school, the
+     * same chain the report card walks, so the fields a teacher fills are the
+     * columns the report prints. A sheet with no class subject yet falls back to
+     * the school's own CA count from Settings.
+     */
     private function resolveScheme(SubjectTeacher $assignment): array
     {
-        $term = $assignment->getTerm();
-        $repo = $this->em->getRepository(AssessmentScheme::class);
+        $classSubject = $this->resolveClassSubject($assignment);
 
-        $scheme = $repo->findOneBy([
-            'term' => $term,
-            'classroom' => $assignment->getClassroom(),
-            'subject' => $assignment->getSubject(),
-        ]) ?? $repo->findOneBy([
-            'term' => $term,
-            'classroom' => $assignment->getClassroom(),
-            'subject' => null,
-        ]) ?? $repo->findOneBy([
-            'term' => $term,
-            'classroom' => null,
-            'subject' => null,
-        ]);
-
-        if (!$scheme) {
-            return [
-                'ca_count' => 3,
-                'exam_mode' => 'single',
-                'ca_max' => 20,
-                'theory_max' => 60,
-                'practical_max' => 40,
-            ];
-        }
-
-        return [
-            'ca_count' => $scheme->getCaCount(),
-            'exam_mode' => $scheme->getExamMode(),
-            'ca_max' => $scheme->getCaMax(),
-            'theory_max' => $scheme->getTheoryMax(),
-            'practical_max' => $scheme->getPracticalMax(),
-        ];
+        return $classSubject
+            ? $this->schemes->resolve($assignment->getClassroom(), $classSubject, $assignment->getTerm())
+            : $this->schemes->defaults();
     }
 
     #[Route('/entry/{id}/template', name: 'tenant_result_entry_template', methods: ['GET'])]
@@ -434,7 +417,7 @@ class ResultEntryController extends AbstractController
 
         $scheme = $assignment
             ? $this->resolveScheme($assignment)
-            : ['ca_count' => 3, 'exam_mode' => 'single', 'ca_max' => 20, 'theory_max' => 60, 'practical_max' => 40];
+            : $this->schemes->defaults();
 
         $students = $this->resolveStudents($classSubject);
         usort($students, static fn (Student $a, Student $b) => strcasecmp($a->getFullName(), $b->getFullName()));
@@ -451,14 +434,7 @@ class ResultEntryController extends AbstractController
             $submitted = $submitted || $row->getStatus() === ResultComponentScore::STATUS_SUBMITTED;
         }
 
-        $components = [];
-        for ($i = 1; $i <= $scheme['ca_count']; $i++) {
-            $components[] = 'ca' . $i;
-        }
-        $components[] = 'theory';
-        if ($scheme['exam_mode'] === 'dual') {
-            $components[] = 'practical';
-        }
+        $components = $this->resolveComponents($scheme);
 
         $grading = $this->gradingScaleJson();
 
@@ -654,16 +630,7 @@ class ResultEntryController extends AbstractController
 
     private function resolveComponents(array $scheme): array
     {
-        $components = [];
-        for ($i = 1; $i <= ($scheme['ca_count'] ?? 3); $i++) {
-            $components[] = 'ca' . $i;
-        }
-        $components[] = 'theory';
-        if (($scheme['exam_mode'] ?? 'single') === 'dual') {
-            $components[] = 'practical';
-        }
-
-        return $components;
+        return $this->schemes->components($scheme);
     }
 
     private function studentsToJson(array $students): array

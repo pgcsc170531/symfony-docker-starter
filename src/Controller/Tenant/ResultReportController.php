@@ -21,6 +21,7 @@ use App\Entity\Tenant\Term;
 use App\Entity\Tenant\User;
 use App\Entity\Tenant\YearGroupMaster;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Service\Results\AssessmentSchemeResolver;
 use App\Service\Results\ReportAccessGate;
 use App\Service\Results\ReportArchiveService;
 use App\Service\Results\ReportPdfRendererInterface;
@@ -52,6 +53,7 @@ class ResultReportController extends AbstractController
         private TranscriptPdfRenderer $transcriptRenderer,
         private ReportArchiveService $archives,
         private TermRelease $release,
+        private AssessmentSchemeResolver $schemes,
     ) {
     }
 
@@ -912,8 +914,17 @@ class ResultReportController extends AbstractController
             $byStudent[$sid]['student'] = $row->getStudent();
             $byStudent[$sid]['components'][$row->getComponent()] = (float) $row->getScore();
         }
+
+        // Summed through the school's scheme: a CA the school has dropped is not
+        // added in, and a CA the scheme has but the pupil has not sat counts zero.
+        $scheme = $this->schemes->resolve(
+            $classSubject->getClassroom(),
+            $classSubject,
+            $term
+        );
+
         foreach ($byStudent as &$entry) {
-            $entry['total'] = array_sum($entry['components']);
+            $entry['total'] = $this->schemes->total($scheme, $entry['components']);
             $entry['grade'] = $this->gradeFor($entry['total']);
         }
         unset($entry);
@@ -921,20 +932,26 @@ class ResultReportController extends AbstractController
         return $byStudent;
     }
 
+    /**
+     * The component columns to print for this subject, in order.
+     *
+     * Driven by the scheme — a school on two CAs gets CA 1 and CA 2 columns even
+     * if a stray `ca3` row is still in the table.
+     */
     private function componentsFor(ClassSubject $classSubject, Term $term): array
     {
-        $rows = $this->em->getRepository(ResultComponentScore::class)->findBy([
+        $scheme = $this->schemes->resolve($classSubject->getClassroom(), $classSubject, $term);
+        $allowed = $this->schemes->components($scheme);
+
+        $present = [];
+        foreach ($this->em->getRepository(ResultComponentScore::class)->findBy([
             'classSubject' => $classSubject,
             'term' => $term,
-        ]);
-
-        $components = [];
-        foreach ($rows as $row) {
-            $components[$row->getComponent()] = true;
+        ]) as $row) {
+            $present[$row->getComponent()] = true;
         }
 
-        $order = ['ca1', 'ca2', 'ca3', 'theory', 'practical'];
-        $sorted = array_intersect($order, array_keys($components));
+        $sorted = array_intersect($allowed, array_keys($present));
 
         return array_values($sorted);
     }

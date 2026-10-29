@@ -2,6 +2,7 @@
 
 namespace App\Form;
 
+use App\Entity\Tenant\AssessmentScheme;
 use App\Entity\Tenant\School; // ✅ CORRECT
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ColorType;
@@ -126,6 +127,21 @@ class SchoolSettingsType extends AbstractType
                 'label' => 'Withhold reports while fees are outstanding',
                 'required' => false,
                 'help' => 'A parent sees a clear “report available when fees are cleared” page instead of the report. Sharing is blocked too.',
+            ])
+            // How many CA tests this school runs. The teacher's entry sheet and
+            // the report card both read this, so a school that sets two never sees
+            // an empty "CA 3" column it cannot fill.
+            ->add('caCount', ChoiceType::class, [
+                'label' => 'Continuous assessment per subject',
+                'required' => true,
+                'choices' => [
+                    'Two CA tests — the teacher enters 2 fields (CA 1, CA 2)' => AssessmentScheme::CA_COUNT_TWO,
+                    'Three CA tests — the teacher enters 3 fields (CA 1, CA 2, CA 3)' => AssessmentScheme::CA_COUNT_THREE,
+                ],
+                'help' => 'Pick what your school actually runs. The teacher’s score-entry screen shows exactly this many CA fields, '
+                    . 'and the report card prints exactly this many CA columns. Each CA is scored out of 20, and the examination '
+                    . 'carries the rest. Changing this does not delete marks already entered for a dropped CA — they are simply '
+                    . 'no longer counted.',
             ])
 
             // === 3. 🏦 BANKING DETAILS (New Section) ===

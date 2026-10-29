@@ -103,6 +103,20 @@ class School
     #[ORM\Column(name: 'report_fee_gate_enabled', options: ['default' => false])]
     private ?bool $reportFeeGateEnabled = false;
 
+    /**
+     * How many continuous-assessment tests a subject carries — 2 or 3.
+     *
+     * This is the school's own answer, not a platform rule: one school runs
+     * CA1/CA2 only, the next insists on CA1/CA2/CA3. The teacher's entry sheet
+     * shows exactly this many fields and the report card prints exactly this many
+     * columns, both read from here, so the two can never disagree.
+     *
+     * A per-class or per-subject AssessmentScheme row still wins over this; it
+     * is the school-wide default (see App\Service\Results\AssessmentSchemeResolver).
+     */
+    #[ORM\Column(name: 'ca_count', options: ['default' => AssessmentScheme::CA_COUNT_THREE])]
+    private ?int $caCount = AssessmentScheme::CA_COUNT_THREE;
+
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $subdomain = null;
 
@@ -518,6 +532,18 @@ class School
 
     public function isReportFeeGateEnabled(): bool { return (bool) $this->reportFeeGateEnabled; }
     public function setReportFeeGateEnabled(bool $enabled): static { $this->reportFeeGateEnabled = $enabled; return $this; }
+
+    /**
+     * Always 2 or 3 — a stored value outside that range (an old row, a bad import)
+     * is read as 3 rather than producing a fourth CA column nobody can fill.
+     */
+    public function getCaCount(): int
+    {
+        return in_array($this->caCount, [AssessmentScheme::CA_COUNT_TWO, AssessmentScheme::CA_COUNT_THREE], true)
+            ? (int) $this->caCount
+            : AssessmentScheme::CA_COUNT_THREE;
+    }
+    public function setCaCount(int $caCount): static { $this->caCount = $caCount; return $this; }
 
     public function getMotto(): ?string { return $this->motto; }
     public function setMotto(?string $motto): static { $this->motto = $motto; return $this; }
