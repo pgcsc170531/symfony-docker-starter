@@ -2,8 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Score Sheet - {{ classroom.name }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    {% include '_design_tokens.html.twig' %}
+    {#
+        A blank sheet the teacher prints and fills in by hand, then types into
+        Result Entry. Its columns come from the assessment scheme — two CAs for a
+        school that keeps two, three for a school that keeps three — so the paper
+        and the screen never disagree about how many marks there are to give.
+    #}
     <style>
         @page { size: A4 portrait; margin: 15mm; }
         @media print {
@@ -19,62 +27,68 @@
         td { font-size: 12px; }
     </style>
 </head>
-<body class="bg-gray-200 font-sans text-gray-900">
+<body class="bg-ink-200 font-sans text-ink-900">
 
-    <div class="print-container bg-white max-w-4xl mx-auto my-8 p-8 shadow-lg">
-        
+    <div class="print-container bg-white max-w-4xl mx-auto my-8 p-6 shadow-lg sm:p-8">
+
         <div class="no-print mb-6 flex justify-end gap-3">
-            <button onclick="window.close()" class="bg-gray-200 px-4 py-2 rounded text-sm font-bold hover:bg-gray-300">Close</button>
-            <button onclick="window.print()" class="bg-indigo-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-indigo-700 flex items-center gap-2">
+            <a href="{{ path('app_tenant_student_index') }}"
+               class="inline-flex min-h-[44px] items-center rounded bg-ink-100 px-4 text-sm font-bold text-ink-700 hover:bg-ink-200">
+                Close
+            </a>
+            <button type="button" onclick="window.print()"
+                    class="inline-flex min-h-[44px] items-center gap-2 rounded bg-accent-600 px-4 text-sm font-bold text-white hover:bg-accent-700">
                 🖨️ Print Sheet
             </button>
         </div>
 
         <div class="text-center mb-6">
-            <h1 class="text-2xl font-bold uppercase">{{ tenant.name }}</h1>
-            <h2 class="text-lg font-semibold mt-1 uppercase decoration-2 underline underline-offset-4">Blank Score Sheet</h2>
-            
-            <div class="flex justify-between items-end mt-6 text-sm font-bold">
-                <p>Class: <span class="text-indigo-700">{{ classroom.name }}</span></p>
+            <h1 class="text-xl font-bold uppercase break-words sm:text-2xl">{{ tenant.name }}</h1>
+            <h2 class="text-base font-semibold mt-1 uppercase decoration-2 underline underline-offset-4 sm:text-lg">Blank Score Sheet</h2>
+
+            <div class="mt-6 flex flex-col gap-3 text-sm font-bold sm:flex-row sm:items-end sm:justify-between">
+                <p>Class: <span class="text-accent-700">{{ classroom.name }}</span></p>
                 <p>Subject: ___________________________</p>
                 <p>Term/Session: ______________________</p>
             </div>
         </div>
 
-        <table>
-            <thead>
-                <tr>
-                    <th class="w-8 text-center">S/N</th>
-                    <th class="w-24">Adm No.</th>
-                    <th class="w-64">{{ learner.capital }} Name</th>
-                    <th class="w-12 text-center">1st CA<br><span class="text-[9px] font-normal">(10)</span></th>
-                    <th class="w-12 text-center">2nd CA<br><span class="text-[9px] font-normal">(10)</span></th>
-                    <th class="w-12 text-center">3rd CA<br><span class="text-[9px] font-normal">(10)</span></th>
-                    <th class="w-12 text-center">Exam<br><span class="text-[9px] font-normal">(70)</span></th>
-                    <th class="w-12 text-center">Total<br><span class="text-[9px] font-normal">(100)</span></th>
-                    <th class="w-12 text-center">Grade</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for student in students %}
-                <tr>
-                    <td class="text-center text-gray-500">{{ loop.index }}</td>
-                    <td class="font-mono text-xs">{{ student.admissionNumber ?: '---' }}</td>
-                    <td class="font-bold uppercase text-[11px]">{{ student.fullName }}</td>
-                    <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> </tr>
-                {% else %}
-                <tr>
-                    <td colspan="9" class="text-center py-8 text-gray-400 italic">No active students found in this class.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="overflow-x-auto">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="w-8 text-center">S/N</th>
+                        <th class="w-24">Adm No.</th>
+                        <th class="w-64">{{ learner.capital }} Name</th>
+                        {% for column in columns %}
+                            <th class="w-12 text-center whitespace-nowrap">{{ column.label }}<br><span class="text-[9px] font-normal">({{ column.max }})</span></th>
+                        {% endfor %}
+                        <th class="w-12 text-center whitespace-nowrap">Total<br><span class="text-[9px] font-normal">({{ maximum }})</span></th>
+                        <th class="w-12 text-center">Grade</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td class="text-center text-ink-500">{{ loop.index }}</td>
+                        <td class="font-mono text-xs">{{ student.admissionNumber ?: '---' }}</td>
+                        <td class="font-bold uppercase text-[11px]">{{ student.fullName }}</td>
+                        {% for column in columns %}<td></td>{% endfor %}
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="{{ 3 + columns|length + 2 }}" class="text-center py-8 text-ink-400 italic">No active students found in this class.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
-        <div class="mt-12 flex justify-between text-sm">
-            <div>
-                <p>Teacher's Name: ___________________________</p>
-                <p class="mt-4">Signature / Date: _________________________</p>
-            </div>
+        <div class="mt-12 text-sm">
+            <p>Teacher's Name: ___________________________</p>
+            <p class="mt-4">Signature / Date: _________________________</p>
         </div>
 
     </div>

@@ -34,10 +34,43 @@ final class AssessmentSchemeResolver
         $repo = $this->em->getRepository(AssessmentScheme::class);
         $subject = $classSubject->getSubject();
 
-        $scheme = $repo->findOneBy(['term' => $term, 'classroom' => $classroom, 'subject' => $subject])
-            ?? $repo->findOneBy(['term' => $term, 'classroom' => $classroom, 'subject' => null])
-            ?? $repo->findOneBy(['term' => $term, 'classroom' => null, 'subject' => null]);
+        return $this->toScheme(
+            $repo->findOneBy(['term' => $term, 'classroom' => $classroom, 'subject' => $subject])
+                ?? $repo->findOneBy(['term' => $term, 'classroom' => $classroom, 'subject' => null])
+                ?? $repo->findOneBy(['term' => $term, 'classroom' => null, 'subject' => null])
+        );
+    }
 
+    /**
+     * The scheme for a whole class, when no subject has been chosen yet — the
+     * blank score sheet a teacher prints before a single mark exists.
+     *
+     * There is no subject to look up, so the chain is class-wide → school-wide →
+     * the school's own CA count. Same maxima the entry screen will show for a
+     * subject that has no scheme of its own, so the printed sheet and the screen
+     * can never disagree about how wide a column is.
+     *
+     * @return array{ca_count: int, exam_mode: string, ca_max: int, theory_max: int, practical_max: int}
+     */
+    public function forClassroom(Classroom $classroom, ?Term $term): array
+    {
+        if (!$term instanceof Term) {
+            return $this->defaults();
+        }
+
+        $repo = $this->em->getRepository(AssessmentScheme::class);
+
+        return $this->toScheme(
+            $repo->findOneBy(['term' => $term, 'classroom' => $classroom, 'subject' => null])
+                ?? $repo->findOneBy(['term' => $term, 'classroom' => null, 'subject' => null])
+        );
+    }
+
+    /**
+     * @return array{ca_count: int, exam_mode: string, ca_max: int, theory_max: int, practical_max: int}
+     */
+    private function toScheme(?AssessmentScheme $scheme): array
+    {
         if ($scheme === null) {
             return $this->defaults();
         }

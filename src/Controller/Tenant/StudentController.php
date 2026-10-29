@@ -11,6 +11,7 @@ use App\Entity\Tenant\Term;
 use App\Form\StudentType; 
 use App\Form\StudentAdmissionType;
 use App\Form\PhotoUploadType; 
+use App\Service\Results\AssessmentSchemeResolver;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -27,6 +28,10 @@ use Doctrine\ORM\Tools\Pagination\Paginator;
 #[IsGranted('ROLE_BURSAR')]
 class StudentController extends AbstractController
 {
+    public function __construct(private AssessmentSchemeResolver $schemes)
+    {
+    }
+
     #[Route('/', name: 'app_tenant_student_index', methods: ['GET', 'POST'])]
     public function index(Request $request, EntityManagerInterface $em): Response
     {
@@ -281,10 +286,37 @@ class StudentController extends AbstractController
         /** @var \App\Entity\Tenant\User $user */
         $tenant = $this->getUser()->getTenant();
 
+        // A blank sheet is filled in by hand and then typed into the entry screen,
+        // so its columns must be the columns that screen will show: two CAs for a
+        // school that keeps two, three for a school that keeps three. Hard-coding
+        // CA1–CA3 handed a two-CA school a sheet with a column that does not exist.
+        $scheme = $this->schemes->forClassroom(
+            $classroom,
+            $em->getRepository(Term::class)->findOneBy(['isActive' => true])
+        );
+
+        $columns = [];
+        foreach ($this->schemes->components($scheme) as $key) {
+            $columns[] = [
+                'label' => match ($key) {
+                    'theory' => 'Theory',
+                    'practical' => 'Practical',
+                    default => 'CA ' . substr($key, 2),
+                },
+                'max' => match ($key) {
+                    'theory' => $scheme['theory_max'],
+                    'practical' => $scheme['practical_max'],
+                    default => $scheme['ca_max'],
+                },
+            ];
+        }
+
         return $this->render('tenant/student/print_score_sheet.html.twig', [
             'classroom' => $classroom,
             'students' => $students,
-            'tenant' => $tenant
+            'tenant' => $tenant,
+            'columns' => $columns,
+            'maximum' => $this->schemes->maximum($scheme),
         ]);
     }
 
