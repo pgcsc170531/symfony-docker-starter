@@ -440,92 +440,207 @@
                 </div>
 
                 {# ── A sample report card ────────────────────────────────────────
-                   The document a parent actually keeps. Built as markup, not a
-                   screenshot, so it is legible at 360px and never goes stale. #}
-                <div id="report-card" class="mt-8 scroll-mt-24 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-200 sm:p-6">
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Sample report card</p>
-                        <span class="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-blue-700">Term 2 · 2025/2026</span>
-                    </div>
+                   Rebuilt from the project's own card: same markup, same tokens
+                   and same sections as templates/tenant/reports/_document.html.twig,
+                   only scaled down for a marketing column. What a prospect sees
+                   here is what a parent actually receives. #}
+                <div id="report-card" class="mt-8 scroll-mt-24">
+                    <p class="mb-2 text-[10px] font-bold uppercase tracking-widest text-ink-400">Sample report card</p>
 
-                    <div class="mt-4 rounded-lg bg-blue-800 px-4 py-3 text-white">
-                        <p class="text-sm font-extrabold uppercase tracking-wide">Springfield Academy</p>
-                        <p class="text-[10px] font-semibold uppercase tracking-widest text-blue-200">Secondary</p>
-                    </div>
+                    <article class="overflow-hidden rounded-xl border border-ink-200 bg-white shadow-card">
+                        {# School letterhead — the school's own colour, its type under the name #}
+                        <header class="px-4 py-3 text-white" style="background-color: #16223C">
+                            <div class="flex items-center gap-3">
+                                <span class="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white/15 text-base font-bold" aria-hidden="true">S</span>
+                                <div class="min-w-0">
+                                    <p class="truncate text-base font-bold leading-tight">Springfield Academy</p>
+                                    <p class="truncate text-[11px] text-white/80">Secondary</p>
+                                    <p class="truncate text-[11px] text-white/80">Knowledge and Character</p>
+                                </div>
+                                <p class="ml-auto hidden shrink-0 text-right text-[10px] uppercase tracking-wider text-white/80 sm:block">
+                                    First Term<br>Report Sheet
+                                </p>
+                            </div>
+                            <p class="mt-1.5 truncate text-[10px] text-white/75">12 Adeola Street, Ikeja · 0803 000 0000</p>
+                        </header>
 
-                    <dl class="mt-4 grid grid-cols-2 gap-x-3 gap-y-2 text-[11px]">
-                        <div><dt class="font-bold uppercase tracking-wide text-gray-400">Name</dt><dd class="font-semibold text-gray-900">Arraghibun Bello</dd></div>
-                        <div><dt class="font-bold uppercase tracking-wide text-gray-400">Admission no</dt><dd class="font-semibold text-gray-900">SPF/2025/0142</dd></div>
-                        <div><dt class="font-bold uppercase tracking-wide text-gray-400">Class</dt><dd class="font-semibold text-gray-900">JSS 1A</dd></div>
-                        <div><dt class="font-bold uppercase tracking-wide text-gray-400">Position</dt><dd class="font-semibold text-gray-900">1st of 41</dd></div>
-                    </dl>
-
-                    <div class="mt-4 overflow-x-auto rounded-lg border border-gray-200">
-                        <table class="w-full min-w-[360px] border-collapse text-[11px]">
-                            <thead class="bg-gray-100 uppercase tracking-wide text-gray-500">
-                                <tr>
-                                    <th class="px-2 py-1.5 text-left font-bold">Subject</th>
-                                    <th class="px-1.5 py-1.5 text-right font-bold">CA1</th>
-                                    <th class="px-1.5 py-1.5 text-right font-bold">CA2</th>
-                                    <th class="px-1.5 py-1.5 text-right font-bold">CA3</th>
-                                    <th class="px-1.5 py-1.5 text-right font-bold">Exam</th>
-                                    <th class="px-1.5 py-1.5 text-right font-bold">Total</th>
-                                    <th class="px-2 py-1.5 text-right font-bold">Gr.</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100 text-gray-800">
-                                <tr>
-                                    <td class="px-2 py-1.5">Mathematics</td>
-                                    <td class="px-1.5 py-1.5 text-right tabular">18</td>
-                                    <td class="px-1.5 py-1.5 text-right tabular">17</td>
-                                    <td class="px-1.5 py-1.5 text-right tabular">19</td>
-                                    <td class="px-1.5 py-1.5 text-right tabular">54</td>
-                                    <td class="px-1.5 py-1.5 text-right font-bold tabular">108</td>
-                                    <td class="px-2 py-1.5 text-right font-bold text-blue-700">A1</td>
-                                </tr>
-                                <tr>
-                                    <td class="px-2 py-1.5">English Language</td>
-                                    <td class="px-1.5 py-1.5 text-right tabular">15</td>
-                                    <td class="px-1.5 py-1.5 text-right tabular">16</td>
-                                    <td class="px-1.5 py-1.5 text-right tabular">14</td>
-                                    <td class="px-1.5 py-1.5 text-right tabular">48</td>
-                                    <td class="px-1.5 py-1.5 text-right font-bold tabular">93</td>
-                                    <td class="px-2 py-1.5 text-right font-bold text-blue-700">B2</td>
-                                </tr>
-                                <tr>
-                                    <td class="px-2 py-1.5">Basic Science</td>
-                                    <td class="px-1.5 py-1.5 text-right tabular">12</td>
-                                    <td class="px-1.5 py-1.5 text-right tabular">13</td>
-                                    <td class="px-1.5 py-1.5 text-right tabular">11</td>
-                                    <td class="px-1.5 py-1.5 text-right tabular">39</td>
-                                    <td class="px-1.5 py-1.5 text-right font-bold tabular">75</td>
-                                    <td class="px-2 py-1.5 text-right font-bold text-blue-700">C4</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="mt-3 grid grid-cols-2 gap-2 text-[11px]">
-                        <div class="rounded-lg bg-gray-50 p-2">
-                            <p class="font-bold uppercase tracking-wide text-gray-400">Attendance</p>
-                            <p class="font-semibold text-gray-900">62 of 64 days</p>
+                        {# Identity #}
+                        <div class="grid grid-cols-2 gap-x-3 gap-y-2 border-b border-ink-200 px-4 py-3 sm:grid-cols-4">
+                            <div class="col-span-2 sm:col-span-4">
+                                <p class="text-[10px] font-semibold uppercase tracking-wide text-ink-500">Name</p>
+                                <p class="break-words text-sm font-bold text-ink-900">Arraghibun Bello</p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-semibold uppercase tracking-wide text-ink-500">Admission no</p>
+                                <p class="break-words text-xs font-bold text-ink-900">SPF/2025/0142</p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-semibold uppercase tracking-wide text-ink-500">Class</p>
+                                <p class="text-xs font-bold text-ink-900">JSS 1A</p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-semibold uppercase tracking-wide text-ink-500">Session</p>
+                                <p class="text-xs font-bold text-ink-900">2025/2026</p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-semibold uppercase tracking-wide text-ink-500">Term</p>
+                                <p class="text-xs font-bold text-ink-900">First Term</p>
+                            </div>
                         </div>
-                        <div class="rounded-lg bg-gray-50 p-2">
-                            <p class="font-bold uppercase tracking-wide text-gray-400">Behaviour</p>
-                            <p class="font-semibold text-gray-900">Very good</p>
+
+                        {# Headline numbers #}
+                        <div class="grid grid-cols-3 divide-x divide-ink-200 border-b border-ink-200">
+                            <div class="px-3 py-2 text-center">
+                                <p class="text-[10px] font-semibold uppercase tracking-wide text-ink-500">Average</p>
+                                <p class="text-base font-bold tabular text-ink-900">76.7%</p>
+                            </div>
+                            <div class="px-3 py-2 text-center">
+                                <p class="text-[10px] font-semibold uppercase tracking-wide text-ink-500">Position</p>
+                                <p class="text-base font-bold tabular text-ink-900">3<span class="text-xs font-semibold text-ink-600"> of 41</span></p>
+                            </div>
+                            <div class="px-3 py-2 text-center">
+                                <p class="text-[10px] font-semibold uppercase tracking-wide text-ink-500">Grade</p>
+                                <p class="text-base font-bold text-ink-900">A1</p>
+                            </div>
                         </div>
-                    </div>
 
-                    <p class="mt-3 rounded-lg bg-gray-50 p-2 text-[11px] leading-relaxed text-gray-700">
-                        <span class="font-bold text-gray-900">Form teacher:</span> A strong term — steadier in Mathematics and much more confident in class.
-                    </p>
+                        {# Subjects — the boxed grid the card prints #}
+                        <div class="overflow-x-auto px-4 py-3">
+                            <table class="w-full min-w-[420px] border-collapse text-xs [&_th]:border [&_td]:border [&_th]:border-ink-300 [&_td]:border-ink-300">
+                                <thead class="bg-ink-100 text-left text-[10px] uppercase tracking-wide text-ink-600">
+                                    <tr>
+                                        <th class="px-2 py-1.5 font-bold">Subject</th>
+                                        <th class="px-1.5 py-1.5 text-right font-bold">CA1</th>
+                                        <th class="px-1.5 py-1.5 text-right font-bold">CA2</th>
+                                        <th class="px-1.5 py-1.5 text-right font-bold">CA3</th>
+                                        <th class="px-1.5 py-1.5 text-right font-bold">Exam</th>
+                                        <th class="px-1.5 py-1.5 text-right font-bold">Total</th>
+                                        <th class="px-1.5 py-1.5 text-right font-bold">Grade</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="font-bold text-ink-800">
+                                    <tr>
+                                        <td class="px-2 py-1.5 font-semibold text-ink-900">Mathematics</td>
+                                        <td class="px-1.5 py-1.5 text-right tabular">18</td>
+                                        <td class="px-1.5 py-1.5 text-right tabular">17</td>
+                                        <td class="px-1.5 py-1.5 text-right tabular">19</td>
+                                        <td class="px-1.5 py-1.5 text-right tabular">54</td>
+                                        <td class="px-1.5 py-1.5 text-right tabular text-ink-900">108</td>
+                                        <td class="px-1.5 py-1.5 text-right text-ink-900">A1</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-2 py-1.5 font-semibold text-ink-900">English Language</td>
+                                        <td class="px-1.5 py-1.5 text-right tabular">15</td>
+                                        <td class="px-1.5 py-1.5 text-right tabular">16</td>
+                                        <td class="px-1.5 py-1.5 text-right tabular">14</td>
+                                        <td class="px-1.5 py-1.5 text-right tabular">48</td>
+                                        <td class="px-1.5 py-1.5 text-right tabular text-ink-900">93</td>
+                                        <td class="px-1.5 py-1.5 text-right text-ink-900">B2</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-2 py-1.5 font-semibold text-ink-900">Basic Science</td>
+                                        <td class="px-1.5 py-1.5 text-right tabular">12</td>
+                                        <td class="px-1.5 py-1.5 text-right tabular">13</td>
+                                        <td class="px-1.5 py-1.5 text-right tabular">11</td>
+                                        <td class="px-1.5 py-1.5 text-right tabular">39</td>
+                                        <td class="px-1.5 py-1.5 text-right tabular text-ink-900">75</td>
+                                        <td class="px-1.5 py-1.5 text-right text-ink-900">C4</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
 
-                    <div class="mt-3 flex items-center gap-3 rounded-lg border border-dashed border-gray-300 p-2">
-                        <div class="grid h-12 w-12 shrink-0 place-items-center rounded bg-gray-900 font-mono text-[8px] text-white">QR</div>
-                        <p class="min-w-0 text-[10px] leading-snug text-gray-500">
-                            Verify at <span class="break-all font-mono text-blue-700">edus.ng/verify/RPT-7K2D-9Q</span> — no account needed, and no marks shown.
-                        </p>
-                    </div>
+                        <dl class="mx-4 mb-3 grid grid-cols-2 gap-x-3 gap-y-2 rounded-lg bg-ink-50 p-3 text-[11px] sm:grid-cols-4">
+                            <div>
+                                <dt class="text-ink-600">Total obtained</dt>
+                                <dd class="font-bold tabular text-ink-900">276 / 360</dd>
+                            </div>
+                            <div>
+                                <dt class="text-ink-600">Class average</dt>
+                                <dd class="font-bold tabular text-ink-900">64.8%</dd>
+                            </div>
+                            <div>
+                                <dt class="text-ink-600">Highest in class</dt>
+                                <dd class="font-bold tabular text-ink-900">78.4%</dd>
+                            </div>
+                            <div>
+                                <dt class="text-ink-600">Lowest in class</dt>
+                                <dd class="font-bold tabular text-ink-900">41.2%</dd>
+                            </div>
+                        </dl>
+
+                        {# Attendance #}
+                        <div class="border-t border-ink-200 px-4 py-3">
+                            <h3 class="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-ink-500">Attendance</h3>
+                            <div class="flex flex-wrap gap-x-3 gap-y-1 text-[11px]">
+                                <span class="whitespace-nowrap"><span class="text-ink-500">School opened</span> <strong class="tabular text-ink-900">64</strong></span>
+                                <span class="whitespace-nowrap"><span class="text-ink-500">Present</span> <strong class="tabular text-ink-900">62</strong></span>
+                                <span class="whitespace-nowrap"><span class="text-ink-500">Absent</span> <strong class="tabular text-failed">2</strong> <span class="text-[10px] text-ink-500">(1 excused)</span></span>
+                                <span class="whitespace-nowrap"><span class="text-ink-500">Attendance</span> <strong class="tabular text-ink-900">96.9%</strong></span>
+                            </div>
+                        </div>
+
+                        {# Behaviour — the five-dot scale #}
+                        <div class="border-t border-ink-200 px-4 py-3">
+                            <h3 class="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-ink-500">Behaviour</h3>
+                            <div class="grid grid-cols-2 gap-3">
+                                {% for domain in [
+                                    { 'title': 'Affective domain', 'items': [{ 'label': 'Punctuality', 'score': 5 }, { 'label': 'Cooperation', 'score': 4 }] },
+                                    { 'title': 'Psychomotor domain', 'items': [{ 'label': 'Handwriting', 'score': 4 }, { 'label': 'Sports', 'score': 5 }] }
+                                ] %}
+                                    <div>
+                                        <p class="mb-1 text-[10px] font-semibold text-ink-600">{{ domain.title }}</p>
+                                        <ul class="space-y-1">
+                                            {% for item in domain.items %}
+                                                <li class="flex items-center justify-between gap-2">
+                                                    <span class="min-w-0 break-words text-[11px] text-ink-800">{{ item.label }}</span>
+                                                    <span class="inline-flex shrink-0 gap-0.5" aria-label="{{ item.score }} of 5">
+                                                        {% for n in 1..5 %}
+                                                            <span class="h-2 w-2 rounded-full {{ n <= item.score ? 'bg-accent-600' : 'bg-ink-200' }}" aria-hidden="true"></span>
+                                                        {% endfor %}
+                                                    </span>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        {# Remarks #}
+                        <div class="border-t border-ink-200 px-4 py-3">
+                            <h3 class="mb-2 text-[11px] font-bold uppercase tracking-wide text-ink-600">Remarks</h3>
+                            <div class="border-t border-ink-100 pt-2">
+                                <p class="text-[11px] font-bold text-ink-700">Form teacher's remark</p>
+                                <p class="mt-1 text-[11px] leading-relaxed text-ink-800">A strong term — steadier in Mathematics and much more confident in class.</p>
+                                <div class="mt-2 flex items-end justify-between gap-2">
+                                    <div class="min-w-0">
+                                        <p class="break-words text-[11px] font-bold text-ink-900">Mrs H. Adeyemi</p>
+                                        <p class="text-[10px] text-ink-600">Form Teacher</p>
+                                    </div>
+                                    <p class="text-[10px] text-ink-600">11 December 2025</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {# Grading key #}
+                        <div class="border-t border-ink-200 bg-ink-50 px-4 py-2">
+                            <p class="text-[10px] text-ink-500">
+                                <span class="font-semibold text-ink-600">Grading:</span>
+                                A1 75–100 · B2 70–74 · B3 65–69 · C4 60–64 · C5 55–59 · C6 50–54 · D7 45–49 · E8 40–44 · F9 0–39
+                            </p>
+                        </div>
+
+                        {# Verification footer — every issued document carries one #}
+                        <div class="flex items-center gap-3 border-t border-ink-200 px-4 py-3">
+                            <span class="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-ink-900 font-mono text-[8px] text-white" aria-hidden="true">QR</span>
+                            <p class="min-w-0 text-[10px] leading-snug text-ink-500">
+                                Verify this document at
+                                <span class="break-all font-mono font-semibold text-accent-700">edus.ng/verify/RPT-7K2D-9Q</span>
+                                — no account needed, and no marks shown.
+                            </p>
+                        </div>
+                    </article>
                 </div>
 
                 <dl class="mt-8 space-y-6">
@@ -722,12 +837,12 @@
                 <div class="rounded-xl bg-white p-6 ring-1 ring-gray-200 shadow-sm">
                     <p class="text-[11px] font-bold uppercase tracking-widest text-gray-400">What the footer looks like</p>
                     <div class="mt-4 flex items-center gap-4">
-                        <div class="grid h-20 w-20 shrink-0 place-items-center rounded bg-gray-900 text-[10px] font-mono text-white">QR</div>
-                        <div class="min-w-0">
-                            <p class="font-bold text-gray-900">Verify this document</p>
-                            <p class="mt-1 break-words font-mono text-xs text-blue-700">edus.ng/verify/RPT-7K2D-9Q</p>
-                            <p class="mt-1 text-xs text-gray-500">No login. No marks. Just “this is ours”.</p>
-                        </div>
+                            <span class="grid h-20 w-20 shrink-0 place-items-center rounded-lg bg-ink-900 font-mono text-[10px] text-white" aria-hidden="true">QR</span>
+                            <div class="min-w-0">
+                                <p class="font-bold text-ink-900">Verify this document</p>
+                                <p class="mt-1 break-words font-mono text-xs font-semibold text-accent-700">edus.ng/verify/RPT-7K2D-9Q</p>
+                                <p class="mt-1 text-xs text-ink-500">No login. No marks. Just “this is ours”.</p>
+                            </div>
                     </div>
                 </div>
             </div>
