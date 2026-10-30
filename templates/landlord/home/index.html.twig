@@ -164,7 +164,7 @@
 {# --- 2. MODULE MARQUEE STRIP --- #}
 <div class="bg-blue-600 py-4 overflow-hidden">
     <div class="marquee gap-10 text-white/95 text-sm font-semibold uppercase tracking-wider">
-        {% set modules = ['Smart Dashboard','6-Step Onboarding','Student Registry','Admissions','Bulk Enrolment','Mass Promotion','Sessions & Terms','Smart Class Creator','Year Groups','Departments','Subjects','Grading Scale','Staff & Roles','Result Entry','4-Stage Approvals','Broadsheets','Payments & Receipts','Invoicing','Fee Schedule','Scholarships','Expenses','Income & Expenditure','SMS Wallet','Store POS','Inventory','School Calendar','Public Website','Parent Portal','Bank Transfer Slips','ID Cards'] %}
+        {% set modules = ['Smart Dashboard','6-Step Onboarding','Student Registry','Admissions','Online Applications','Bulk Enrolment','Mass Promotion','Sessions & Terms','Smart Class Creator','Year Groups','Departments','Subjects','Grading Scale','Staff & Roles','Staff Import','Result Entry','4-Stage Approvals','Broadsheets','Transcripts','Attendance Register','Behaviour Ratings','Payments & Receipts','Invoicing','Fee Schedule','Scholarships','Debtors by Guardian','Expenses','Income & Expenditure','SMS Wallet','Store POS','Inventory','School Calendar','Public Website','Parent Portal','Bank Transfer Slips','ID Cards','Document Verification'] %}
         {% for i in 1..2 %}
             <div class="flex gap-10 shrink-0">
                 {% for m in modules %}
@@ -231,7 +231,10 @@
                 { 'icon': '📊', 'title': 'Income & Expenditure Reporting', 'text': "Date-range reports that split academic fees from store income and subtract expenses, so you see your school's true net position." },
                 { 'icon': '🏅', 'title': 'Custom Grading Scales', 'text': 'A1–F9, WAEC, NECO or your own custom scale with score ranges, points and remarks — applied consistently across entry, reports and analytics.' },
                 { 'icon': '🔎', 'title': 'Smart Dashboards & Filters', 'text': 'Outstanding debt, low-stock alerts, unpaid invoices, debtor/cleared filters and split academic-vs-store debt badges.' },
-                { 'icon': '🌐', 'title': 'Public School Website', 'text': 'Every school gets a public website on its own subdomain, rendered automatically from your branding and content.' }
+                { 'icon': '🌐', 'title': 'Public School Website', 'text': 'Every school gets a public website on its own subdomain, rendered automatically from your branding and content.' },
+                { 'icon': '🖋️', 'title': 'Attendance & Behaviour', 'text': 'A one-tap daily register for the form teacher, with every later edit logged, and behaviour traits rated per term and printed on the card.' },
+                { 'icon': '🔗', 'title': 'Documents That Prove Themselves', 'text': 'Report cards, statements and receipts carry a QR and a short code that resolve on a public verify page — no login, no marks shown.' },
+                { 'icon': '🧑‍🏫', 'title': 'One Teacher, Many Classes', 'text': 'Assign a subject to a dozen classes, or a teacher to every class they teach, in one pass — and import the whole staff list from a CSV.' }
             ] %}
             {% for u in updates %}
                 <div class="reveal bg-white rounded-2xl p-7 ring-1 ring-gray-200/80 shadow-sm hover:shadow-xl hover:-translate-y-1 transition duration-300">
@@ -251,7 +254,7 @@
             <p class="text-base font-semibold text-blue-600 uppercase tracking-wide">Everything, in one platform</p>
             <h2 class="mt-2 text-3xl sm:text-4xl font-extrabold text-gray-900">The complete Edus feature catalogue</h2>
             <p class="mt-4 text-xl text-gray-500">
-                Eight connected suites. Nothing bolted on, nothing left out.
+                Ten connected suites. Nothing bolted on, nothing left out.
             </p>
         </div>
 
@@ -290,6 +293,7 @@
                     </p>
                     <ul class="mt-8 space-y-3 text-gray-700">
                         <li class="flex gap-3"><span class="text-blue-600 font-bold">✓</span> <span><strong>Student Registry</strong> — filters, split academic/store debt badges, CSV export, print ID cards.</span></li>
+                        <li class="flex gap-3"><span class="text-blue-600 font-bold">✓</span> <span><strong>Online Applications</strong> — parents apply on your subdomain before they are customers, pay the application fee, and track the status; the office accepts or sends it back with a reason.</span></li>
                         <li class="flex gap-3"><span class="text-blue-600 font-bold">✓</span> <span><strong>Admissions &amp; Enrolment</strong> — auto admission numbers, discounts and a printable admission letter.</span></li>
                         <li class="flex gap-3"><span class="text-blue-600 font-bold">✓</span> <span><strong>Bulk Enrolment</strong> — grid entry or 12-column CSV upload with auto-invoicing.</span></li>
                         <li class="flex gap-3"><span class="text-blue-600 font-bold">✓</span> <span><strong>Mass Promotion</strong> — promote, mark repeaters and bill the new session in one pass.</span></li>
@@ -314,7 +318,8 @@
                     <p class="mt-4 lg:mt-0 text-lg text-gray-500">
                         Sessions and terms with single-active enforcement, class arms generated automatically
                         (type "JSS 1", get JSS 1A, 1B, 1C…), year groups, departments, subjects and role-based
-                        staff accounts with one-click academic assignments.
+                        staff accounts — imported in bulk, with one-click academic assignments that can cover many
+                        classes at once.
                     </p>
                 </div>
 
@@ -325,10 +330,10 @@
                         { 'icon': '📂', 'title': 'Year Groups', 'text': 'Group all the arms of a level for form-teacher and year-group workflows.' },
                         { 'icon': '🏛️', 'title': 'Departments', 'text': 'Sciences, Arts, Business… organised with a clear Head of Department span.' },
                         { 'icon': '📖', 'title': 'Subject Catalogue', 'text': 'Subjects with codes and department assignment — ready for timetabling.' },
-                        { 'icon': '🗂️', 'title': 'Class Subjects', 'text': 'Choose which subjects each class offers per session, tagged core or elective.' },
+                        { 'icon': '🗂️', 'title': 'Class Subjects', 'text': 'Choose which subjects each class offers per session, tagged core or elective — assign one subject to many classes at once.' },
                         { 'icon': '🏅', 'title': 'Grading Scale', 'text': 'A1–F9, WAEC, NECO or custom ranges, points and remarks.' },
-                        { 'icon': '👥', 'title': 'Staff Accounts', 'text': 'Principal, Bursar, Store Keeper and Teacher logins with role-based access.' },
-                        { 'icon': '🧑‍🏫', 'title': 'Staff Assignments', 'text': 'Form Teacher, HOD, Year Group Master and Subject Teacher in one click.' }
+                        { 'icon': '👥', 'title': 'Staff Accounts', 'text': 'Principal, Bursar, Store Keeper and Teacher logins — bulk-imported from a CSV, each with a temporary password its owner must change at first sign-in.' },
+                        { 'icon': '🧑‍🏫', 'title': 'Staff Assignments', 'text': 'Form Teacher, HOD, Year Group Master and Subject Teacher — one teacher across several classes, in one pass.' }
                     ] %}
                     {% for a in academic %}
                         <div class="rounded-xl bg-white p-5 ring-1 ring-gray-200 hover:ring-blue-300 hover:shadow-md transition">
@@ -366,7 +371,8 @@
                     </div>
 
                     <ul class="mt-8 space-y-3 text-gray-700">
-                        <li class="flex gap-3"><span class="text-blue-600 font-bold">✓</span> <span><strong>Result Entry</strong> — save drafts, submit, download the Excel template and bulk-import scores.</span></li>
+                        <li class="flex gap-3"><span class="text-blue-600 font-bold">✓</span> <span><strong>Result Entry</strong> — save drafts, submit, download the Excel template and bulk-import scores. The school decides whether a subject carries two CAs or three, and every column follows.</span></li>
+                        <li class="flex gap-3"><span class="text-blue-600 font-bold">✓</span> <span><strong>Blank Score Sheets</strong> — print a sheet whose CA columns and maxima match the entry screen, before a single mark exists.</span></li>
                         <li class="flex gap-3"><span class="text-blue-600 font-bold">✓</span> <span><strong>Reports &amp; Analytics</strong> — mark sheets, broadsheets with positions, HOD subject masters, year-group status boards, school-wide grade distribution.</span></li>
                         <li class="flex gap-3"><span class="text-blue-600 font-bold">✓</span> <span><strong>Student &amp; Parent Result Sheets</strong> — individual results per term.</span></li>
                     </ul>
@@ -426,9 +432,10 @@
                     {% set finance = [
                         { 'icon': '💳', 'title': 'Payments & Receipts', 'text': 'Cash, bank-transfer slips, reference verification, receipts and walk-in store receipts.' },
                         { 'icon': '🧾', 'title': 'Academic & Store Ledgers', 'text': 'Two dedicated invoice ledgers with status and search filters.' },
-                        { 'icon': '💰', 'title': 'Fee Schedule Matrix', 'text': 'What each class pays per term, with recurring vs. one-time totals.' },
+                        { 'icon': '💰', 'title': 'Fee Schedule Matrix', 'text': 'What each level pays per term — one amount covers every arm, with recurring vs. one-time totals.' },
                         { 'icon': '📋', 'title': 'Fee Items & Structures', 'text': 'Tuition, books, uniform — priced per class and term.' },
                         { 'icon': '🎖️', 'title': 'Scholarships & Discounts', 'text': 'Rules like "Staff Child", assigned with duplicate protection and auto-applied.' },
+                        { 'icon': '📮', 'title': 'Debtors by Guardian', 'text': 'One row per family, the total owed across all their children, and a drafted reminder your bursar reads before sending.' },
                         { 'icon': '💸', 'title': 'Expenses', 'text': 'Day-to-day costs with categories and instant totals.' },
                         { 'icon': '📈', 'title': 'Income & Expenditure', 'text': 'Academic vs. store income, minus expenses, over any date range.' },
                         { 'icon': '📲', 'title': 'SMS Wallet', 'text': 'Prepaid credits, transaction history and proof-of-payment approval.' }
@@ -503,6 +510,7 @@
                         <li class="flex gap-3"><span class="text-blue-600 font-bold">✓</span> <span><strong>Parent Dashboard</strong> — children, invoices, payments and notices at a glance.</span></li>
                         <li class="flex gap-3"><span class="text-blue-600 font-bold">✓</span> <span><strong>Parent Calendar</strong> — month-by-month school calendar.</span></li>
                         <li class="flex gap-3"><span class="text-blue-600 font-bold">✓</span> <span><strong>Child Finance</strong> — per-child ledger and bank-transfer slip payment.</span></li>
+                        <li class="flex gap-3"><span class="text-blue-600 font-bold">✓</span> <span><strong>Applications &amp; Results</strong> — follow an application's status, and read each child's released result card in the same portal.</span></li>
                     </ul>
                 </div>
                 <div class="mt-10 lg:mt-0 lg:order-1 grid grid-cols-2 gap-4">
@@ -510,7 +518,68 @@
                     {{ _self.browser('screencapture-gobarau-localhost-8082-parent-student-10-finance-2026-04-21-15_54_30.png', 'Parent view of child finance', 'h-52 lg:h-64') }}
                 </div>
             </section>
+            {# 9. ATTENDANCE & BEHAVIOUR #}
+            <section class="reveal">
+                <div class="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-end">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-widest text-blue-600">09 · Attendance, Behaviour &amp; Welfare</span>
+                        <h3 class="mt-3 text-2xl sm:text-3xl font-extrabold text-gray-900">The form teacher's desk, finally on screen</h3>
+                    </div>
+                    <p class="mt-4 lg:mt-0 text-lg text-gray-500">
+                        A register that takes a minute, figures the school can defend, and behaviour that reaches
+                        the report card — all in the class workspace, under the same lock as the results.
+                    </p>
+                </div>
 
+                <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {% set welfare = [
+                        { 'icon': '🖋️', 'title': 'One-Tap Register', 'text': 'Present, absent, late or excused for the whole class. No half days, no ambiguity.' },
+                        { 'icon': '📊', 'title': 'Figures You Can Defend', 'text': 'A day nobody marked is reported as missing, never counted as a full house.' },
+                        { 'icon': '🕘', 'title': 'Edits Are Logged', 'text': 'A mark changed after the register was saved is recorded, so the paper trail survives.' },
+                        { 'icon': '🎭', 'title': 'Behaviour Traits', 'text': 'Readiness, participation, conduct — rated per pupil, per term, from traits your school controls.' },
+                        { 'icon': '🧾', 'title': 'Onto the Report Card', 'text': 'Attendance and behaviour print with the card; an unrated pupil says so instead of showing a zero.' },
+                        { 'icon': '💬', 'title': 'Form Teacher Remarks', 'text': 'A suggestion list built from the term\'s own data, edited by the teacher before printing.' }
+                    ] %}
+                    {% for w in welfare %}
+                        <div class="rounded-xl bg-white p-5 ring-1 ring-gray-200 hover:ring-blue-300 hover:shadow-md transition">
+                            <div class="text-2xl">{{ w.icon }}</div>
+                            <h4 class="mt-3 font-bold text-gray-900">{{ w.title }}</h4>
+                            <p class="mt-1.5 text-sm text-gray-600">{{ w.text }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            {# 10. DOCUMENTS & VERIFICATION #}
+            <section class="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center reveal">
+                <div>
+                    <span class="text-xs font-bold uppercase tracking-widest text-blue-600">10 · Documents &amp; Verification</span>
+                    <h3 class="mt-3 text-2xl sm:text-3xl font-extrabold text-gray-900">A result slip anyone can check</h3>
+                    <p class="mt-4 text-lg text-gray-500">
+                        Every document Edus issues carries a short code and a QR. Anyone holding the paper can
+                        confirm the school stands behind it — without an account, and without seeing a single mark.
+                    </p>
+                    <ul class="mt-8 space-y-3 text-gray-700">
+                        <li class="flex gap-3"><span class="text-blue-600 font-bold">✓</span> <span><strong>Verified on the spot</strong> — report cards, fee statements, receipts and performance packs all resolve on one public page.</span></li>
+                        <li class="flex gap-3"><span class="text-blue-600 font-bold">✓</span> <span><strong>Share links</strong> — a 30-day link to one child's card for a family with no portal account, so no password is handed over.</span></li>
+                        <li class="flex gap-3"><span class="text-blue-600 font-bold">✓</span> <span><strong>Transcripts &amp; batch print</strong> — every term on one page, or a whole class printed at the end of term.</span></li>
+                        <li class="flex gap-3"><span class="text-blue-600 font-bold">✓</span> <span><strong>Archive</strong> — every card the school has issued is kept and reprintable.</span></li>
+                    </ul>
+                </div>
+                <div class="mt-10 lg:mt-0">
+                    <div class="rounded-2xl bg-gray-50 p-6 ring-1 ring-gray-200">
+                        <p class="text-[11px] font-bold uppercase tracking-widest text-gray-400">Document footer</p>
+                        <div class="mt-4 flex items-center gap-4 rounded-xl bg-white p-4 ring-1 ring-gray-200">
+                            <div class="grid h-20 w-20 shrink-0 place-items-center rounded bg-gray-900 text-[10px] font-mono text-white">QR</div>
+                            <div class="min-w-0">
+                                <p class="font-bold text-gray-900">Verify this document</p>
+                                <p class="mt-1 break-words font-mono text-xs text-blue-700">edus.ng/verify/RPT-7K2D-9Q</p>
+                                <p class="mt-1 text-xs text-gray-500">No login. No marks. Just “this is ours”.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
     </div>
 </div>

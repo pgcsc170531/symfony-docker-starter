@@ -17,7 +17,7 @@
 
 {% block title %}System Features - Edus{% endblock %}
 {% block title_suffix %}{% endblock %}
-{% block meta_description %}Every module in Edus: admissions and enrolment, fee schedules and invoices, results and report cards, attendance, staff, store, messaging and the parent portal.{% endblock %}
+{% block meta_description %}Every module in Edus: online applications, admissions and enrolment, attendance and behaviour, fee schedules and invoices, results, report cards and verified documents, staff, store, messaging and the parent portal.{% endblock %}
 
 {% block body %}
 {# --- 0. NAVIGATION BAR --- #}
@@ -199,6 +199,15 @@
                             <dd class="mt-2 text-base text-gray-500">The moment you click "Admit", the system looks up the fee structure and generates the student's first bill instantly.</dd>
                         </div>
                     </div>
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <div class="flex items-center justify-center h-12 w-12 rounded-md bg-green-600 text-white">✓</div>
+                        </div>
+                        <div class="ml-4">
+                            <dt class="text-lg leading-6 font-medium text-gray-900">Applications Without an Account</dt>
+                            <dd class="mt-2 text-base text-gray-500">Parents apply on your own subdomain before they are customers: they register with an email, add one child or four, pay the application fee, then watch the status. The office reviews, accepts or sends it back with a reason.</dd>
+                        </div>
+                    </div>
                 </dl>
             </div>
             
@@ -371,8 +380,9 @@
                 </h3>
                 <p class="mt-3 text-lg text-gray-500">
                     Teachers capture two or three CA tests, the exam and — where relevant — a practical in a fast
-                    entry terminal, with Excel template download and bulk score import. Results then pass through
-                    a sign-off chain that mirrors real school governance.
+                    entry terminal, with Excel template download and bulk score import. The school chooses how many
+                    CAs a subject carries, and every screen, card and blank sheet follows that one answer. Results
+                    then pass through a sign-off chain that mirrors real school governance.
                 </p>
                 <div class="mt-8 rounded-2xl bg-gray-900 p-6 text-white">
                     <p class="text-[11px] font-bold uppercase tracking-widest text-gray-400">Approval chain</p>
@@ -394,7 +404,7 @@
                         </div>
                         <div class="ml-4">
                             <dt class="text-lg leading-6 font-medium text-gray-900">Every report a school needs</dt>
-                            <dd class="mt-2 text-base text-gray-500">Teacher mark sheets, form-teacher broadsheets with averages and positions, HOD subject masters, year-group approval status boards, school-wide A1–F9 distribution, and individual student/parent result sheets.</dd>
+                            <dd class="mt-2 text-base text-gray-500">Teacher mark sheets, form-teacher broadsheets with averages and positions, HOD subject masters, year-group approval status boards, school-wide A1–F9 distribution, individual student/parent result sheets, term transcripts, and a whole class printed in one pass. A blank sheet with the same columns can be printed before a single mark exists.</dd>
                         </div>
                     </div>
                 </dl>
@@ -467,9 +477,10 @@
                 {% set finance = [
                     { 'icon': '💳', 'title': 'Payments & Receipts', 'text': 'Cash payments or bank-transfer slips, reference-code verification, automatic parent SMS and printable receipts.' },
                     { 'icon': '🧾', 'title': 'Two Ledgers', 'text': 'Academic fees and store sales tracked separately, with status and search filters.' },
-                    { 'icon': '💰', 'title': 'Fee Schedule', 'text': 'A per-class, per-term pricing matrix showing recurring vs. one-time totals.' },
+                    { 'icon': '💰', 'title': 'Fee Schedule', 'text': 'A per-term pricing matrix by level: one amount covers every arm of JSS 1, with recurring vs. one-time totals.' },
                     { 'icon': '📋', 'title': 'Fee Items & Structures', 'text': 'Tuition, books, uniform — assigned with amounts to classes and terms.' },
                     { 'icon': '🎖️', 'title': 'Scholarships & Discounts', 'text': 'Rules like "Staff Child" applied automatically at billing, with duplicate protection.' },
+                    { 'icon': '📮', 'title': 'Debtors by Guardian', 'text': 'One row per family with the total owed across all their children, plus a drafted reminder your bursar reads before sending.' },
                     { 'icon': '💸', 'title': 'Expenses', 'text': 'Daily costs by category with instant total-spent visibility.' },
                     { 'icon': '📈', 'title': 'Income & Expenditure', 'text': 'Any date range: academic vs. store income, minus expenses, for your true net position.' },
                     { 'icon': '📲', 'title': 'SMS Wallet', 'text': 'Top up credits, review transactions and submit payment proof for approval.' }
@@ -528,10 +539,10 @@
                     { 'icon': '📂', 'title': 'Year Groups', 'text': 'Group the arms of a level for form-teacher and year-group workflows.' },
                     { 'icon': '🏛️', 'title': 'Departments', 'text': "Sciences, Arts, Business, Islamic Studies… and the span of control of each HOD." },
                     { 'icon': '📖', 'title': 'Subjects', 'text': 'A subject catalogue with codes and department assignment.' },
-                    { 'icon': '🗂️', 'title': 'Class Subjects', 'text': 'Which subjects each class offers per session, tagged core or elective.' },
+                    { 'icon': '🗂️', 'title': 'Class Subjects', 'text': 'Which subjects each class offers per session, tagged core or elective — assign one subject to a dozen classes in a single pass.' },
                     { 'icon': '🏅', 'title': 'Grading Scale', 'text': 'A1–F9, WAEC, NECO or custom ranges, points and remarks.' },
-                    { 'icon': '👥', 'title': 'Staff Accounts', 'text': 'Principal, Bursar, Store Keeper and Teacher logins with role-based access.' },
-                    { 'icon': '🧑‍🏫', 'title': 'Staff Assignments', 'text': 'Form Teacher, HOD, Year Group Master and Subject Teacher with duplicate protection.' }
+                    { 'icon': '👥', 'title': 'Staff Accounts', 'text': 'Principal, Bursar, Store Keeper and Teacher logins — imported from a CSV in bulk, with a temporary password each person must change at first sign-in.' },
+                    { 'icon': '🧑‍🏫', 'title': 'Staff Assignments', 'text': 'Form Teacher, HOD, Year Group Master and Subject Teacher — one teacher can be given several classes at once, with duplicate protection.' }
                 ] %}
                 {% for a in academic %}
                     <div class="rounded-xl bg-white p-5 ring-1 ring-gray-200 hover:ring-blue-300 hover:shadow-md transition">
@@ -543,11 +554,44 @@
             </div>
         </div>
 
-        {# FEATURE 11: COMMUNICATION & WEBSITE #}
+        {# FEATURE 11: ATTENDANCE & BEHAVIOUR #}
+        <div>
+            <div class="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-end mb-12">
+                <div>
+                    <h3 class="text-2xl font-extrabold text-gray-900 tracking-tight sm:text-3xl">
+                        11. Attendance, Behaviour &amp; the Form Teacher
+                    </h3>
+                </div>
+                <p class="mt-3 lg:mt-0 text-lg text-gray-500">
+                    The register is the form teacher's job, so it lives where the form teacher already works —
+                    beside the class remarks, under the same lock as the results.
+                </p>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {% set welfare = [
+                    { 'icon': '🖋️', 'title': 'One-Tap Daily Register', 'text': 'Present, absent, late or excused for every pupil in the class. Nothing else — no half days, no ambiguity.' },
+                    { 'icon': '📊', 'title': 'Honest Attendance Figures', 'text': "A day nobody marked is reported as missing, never counted as a full house. The denominator is the registers actually taken." },
+                    { 'icon': '🕘', 'title': 'Every Edit Recorded', 'text': 'A mark changed after the register was saved is logged, so an altered register can always be explained.' },
+                    { 'icon': '🎭', 'title': 'Behaviour Traits', 'text': 'Readiness, participation, conduct and the rest — rated per pupil, per term, from a list your school controls and can hide without losing.' },
+                    { 'icon': '🧾', 'title': 'Straight Onto the Card', 'text': 'Attendance counts and behaviour ratings print on the report card. A pupil nobody rated says so, rather than showing a silent zero.' },
+                    { 'icon': '💬', 'title': 'Form Teacher Remarks', 'text': "Suggestions drawn from the term's own marks and attendance, editable before anything is printed — never auto-generated copy sent as-is." }
+                ] %}
+                {% for w in welfare %}
+                    <div class="rounded-xl bg-white p-5 ring-1 ring-gray-200 hover:ring-blue-300 hover:shadow-md transition">
+                        <div class="text-2xl">{{ w.icon }}</div>
+                        <h4 class="mt-3 font-bold text-gray-900">{{ w.title }}</h4>
+                        <p class="mt-1.5 text-sm text-gray-600">{{ w.text }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        {# FEATURE 12: COMMUNICATION & WEBSITE #}
         <div class="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center">
             <div>
                 <h3 class="text-2xl font-extrabold text-gray-900 tracking-tight sm:text-3xl">
-                    11. Communication, Calendar &amp; Your Public Website
+                    12. Communication, Calendar &amp; Your Public Website
                 </h3>
                 <p class="mt-3 text-lg text-gray-500">
                     Keep parents informed without printing a thing: publish the academic calendar and events, flag
@@ -562,6 +606,40 @@
             </div>
             <div class="mt-10 lg:mt-0">
                 {{ _self.browser('screencapture-demo-edus-ng-onboarding-calendar-2026-04-21-13_48_31.png', 'Academic calendar and events', 'h-64 lg:h-80') }}
+            </div>
+        </div>
+
+        {# FEATURE 13: DOCUMENTS THAT VERIFY THEMSELVES #}
+        <div class="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center">
+            <div>
+                <h3 class="text-2xl font-extrabold text-gray-900 tracking-tight sm:text-3xl">
+                    13. Documents That Prove Themselves
+                </h3>
+                <p class="mt-3 text-lg text-gray-500">
+                    A result slip is only worth what the school will stand behind. Every document Edus issues —
+                    report card, fee statement, term summary, performance pack — carries a short code and a QR, so
+                    anyone holding the paper can confirm it is genuine without an account and without being shown
+                    the contents.
+                </p>
+                <ul class="mt-8 space-y-3 text-gray-700">
+                    <li class="flex gap-3"><span class="text-blue-600 font-bold">✓</span> <span><strong>Verify a paper</strong> — scan the QR or type the code; the page replies with the document, the pupil's class and term, and nothing more.</span></li>
+                    <li class="flex gap-3"><span class="text-blue-600 font-bold">✓</span> <span><strong>Share links</strong> — send a family a 30-day link to one child's card when they have no portal account, so no password has to be handed over.</span></li>
+                    <li class="flex gap-3"><span class="text-blue-600 font-bold">✓</span> <span><strong>Transcripts</strong> — every term a pupil has spent with you, on one page, for the school they are moving to.</span></li>
+                    <li class="flex gap-3"><span class="text-blue-600 font-bold">✓</span> <span><strong>Archive</strong> — every card the school has issued, kept and reprintable, so a replacement is never rebuilt by hand.</span></li>
+                </ul>
+            </div>
+            <div class="mt-10 lg:mt-0">
+                <div class="rounded-xl bg-white p-6 ring-1 ring-gray-200 shadow-sm">
+                    <p class="text-[11px] font-bold uppercase tracking-widest text-gray-400">What the footer looks like</p>
+                    <div class="mt-4 flex items-center gap-4">
+                        <div class="grid h-20 w-20 shrink-0 place-items-center rounded bg-gray-900 text-[10px] font-mono text-white">QR</div>
+                        <div class="min-w-0">
+                            <p class="font-bold text-gray-900">Verify this document</p>
+                            <p class="mt-1 break-words font-mono text-xs text-blue-700">edus.ng/verify/RPT-7K2D-9Q</p>
+                            <p class="mt-1 text-xs text-gray-500">No login. No marks. Just “this is ours”.</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 

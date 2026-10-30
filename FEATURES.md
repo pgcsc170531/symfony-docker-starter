@@ -43,7 +43,17 @@ state and LGA dropdowns are built in.
 ### ⚡ Bulk Enrolment
 Onboard hundreds of students at once — either through a manual grid or by
 uploading a 12-column CSV. The system matches class names automatically, creates
-parent accounts and can auto-generate invoices for every new student.
+parent accounts and can auto-generate invoices for every new student. Families
+are matched by phone number, so a second child uploaded in a separate file lands
+under the same parent account instead of creating a duplicate.
+
+### 📝 Online Applications (Public)
+Parents apply on the school's own subdomain before they are customers: they
+register with an email, add one child or several, pay the application fee by
+transfer and watch the status. The office reviews each application, accepts it —
+which creates the student — or sends it back with a reason. Accepted applicants
+then follow the same application inside the parent portal without a second
+account, and the application fee has its own report in Finance.
 
 ### 📈 Mass Promotion
 End-of-session promotion in a few clicks: select students, promote them to the
@@ -77,8 +87,7 @@ blocks of timetabling, teaching and results.
 
 ### 🗂️ Class Subjects
 Decide which subjects each class offers per session, and tag them as **core** or
-**elective** — so teachers only ever see the subjects that matter for each class.
-
+**elective** — so teachers only ever see the subjects that matter for each class.One subject can be assigned to many classes in a single pass.
 ### 🏅 Grading Scale
 Define your own grading system (A1–F9, WAEC, NECO or custom) with score ranges,
 points and remarks. Grades are applied consistently across entry, reports and
@@ -86,22 +95,28 @@ analytics.
 
 ### 👥 Staff Accounts
 Create staff login accounts with role-based access (Principal, Bursar, Store
-Keeper, Teacher) in seconds.
+Keeper, Teacher) in seconds — one at a time, or the whole staff list from a CSV.
+Each imported account gets a temporary password that must be changed at first
+sign-in, and every user can update their own email and password without asking
+an administrator.
 
 ### 🧑‍🏫 Staff Assignments
 Assign staff to academic roles with one click each: **Form Teacher**, **HOD
 (Department Head)**, **Year Group Master** and **Subject Teacher** — with smart
-search and duplicate protection.
+search and duplicate protection. A single teacher can be given several classes
+at once.
 
 ---
 
 ## 4. Examinations, Results & Approvals
 
 ### 📝 Result Entry
-A fast, friendly score-entry terminal for teachers. Enter CA1–CA3, theory and
-practical marks per student, save drafts, submit for approval, download an Excel
-template and bulk-import scores from it. Results lock after submission until an
-authorised unlock.
+A fast, friendly score-entry terminal for teachers. Each subject carries **two or
+three CA tests** — the school sets the number once, in Settings — plus the exam
+and, where relevant, a practical. Save drafts, submit for approval, download an
+Excel template and bulk-import scores from it. Results lock after submission
+until an authorised unlock. A blank score sheet can be printed for the class with
+exactly the same columns and maxima as the screen.
 
 ### ✅ Multi-Stage Approval Workflow
 A four-stage result sign-off that matches real school governance:
@@ -134,8 +149,15 @@ Two dedicated ledgers — **Academic Fees** and **Store Sales** — with status 
 search filters, per-student invoice generation and detailed invoice views.
 
 ### 💰 Fee Schedule
-A clear fee-schedule matrix showing what each class/level pays per term, with
-recurring vs. one-time totals.
+A clear fee-schedule matrix showing what each class level pays per term, with
+recurring vs. one-time totals. A level is priced once — the amount applies to
+every arm of it, so JSS 1 does not need to be priced three times.
+
+### 📮 Fee Reports & Debtors by Guardian
+Collections, class-by-class totals, a payments register, reconciliation, a
+fee-versus-expenses matrix, discounts and application fees — each exportable to
+CSV or PDF. The debtors report lists **one row per family**, with the total owed
+across all their children and a drafted reminder the bursar reads before sending.
 
 ### 📋 Fee Items & Structures
 Define chargeable line items (tuition, books, uniform) and assign them with
@@ -198,6 +220,52 @@ Parents can view the school calendar month by month.
 ### 💳 Child Finance
 Parents can view each child's fee ledger and pay via bank-transfer slip, with
 ownership verified so each parent only sees their own children.
+
+### 📝 Applications & Results
+A parent follows every application they have submitted from the same portal —
+status, any reason it was sent back, and what to do next — and reads each
+child's released result card once the school publishes it.
+
+---
+
+## 9. Attendance, Behaviour & Welfare
+
+### 🖋️ Daily Attendance Register
+The form teacher marks every pupil present, absent, late or excused in one
+tap-per-pupil pass. A mark changed after the register was saved is logged, so an
+altered register can always be explained. "Times school opened" counts registers
+actually taken — a day nobody marked is reported as missing, never counted as a
+full house.
+
+### 🎭 Behaviour Ratings
+Rate each pupil per term against traits your school controls (readiness,
+participation, conduct…). Traits can be hidden without deleting the ratings
+already recorded, and an unrated pupil is printed as unrated rather than as a
+zero.
+
+### 💬 Form Teacher Remarks
+A suggestion list drawn from the term's own marks and attendance, edited by the
+teacher before it reaches the card. Nothing is auto-generated copy sent as-is.
+
+---
+
+## 10. Transcripts, Archive & Verification
+
+### 📜 Transcripts & Batch Printing
+A transcript collects every term a pupil has spent with the school on one page,
+for the school they are moving to. A whole class can be printed in one pass at
+the end of term, and every card issued is kept in an archive so a replacement is
+never rebuilt by hand.
+
+### 🔗 Documents That Verify Themselves
+Report cards, fee statements, term summaries, performance packs and receipts
+carry a short code and a QR. A public verification page confirms the document is
+genuine — the school, the class and the term, and nothing about the pupil's
+marks — with no account needed.
+
+### 🔒 Share Links
+A 30-day link to one child's card, for a family with no portal account, so the
+office never hands a password to anybody.
 
 ---
 
