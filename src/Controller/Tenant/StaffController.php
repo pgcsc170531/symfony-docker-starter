@@ -206,11 +206,30 @@ class StaffController extends AbstractController
                 $result = $importer->import($file);
 
                 if ($result->created > 0) {
-                    $this->addFlash('success', sprintf(
+                    $message = sprintf(
                         '%d staff account%s created. Everyone signs in with %s and is asked to change it.',
                         $result->created,
                         $result->created === 1 ? '' : 's',
                         StaffImporter::DEFAULT_PASSWORD
+                    );
+
+                    if ($result->linked > 0) {
+                        $message .= sprintf(
+                            ' %d of them %s matched to an existing parent record, so the same sign-in offers both portals.',
+                            $result->linked,
+                            $result->linked === 1 ? 'was' : 'were'
+                        );
+                    }
+
+                    $this->addFlash('success', $message);
+                }
+
+                if ($result->promoted > 0) {
+                    $this->addFlash('success', sprintf(
+                        '%d existing parent account%s %s given a staff profile — same login, and it now asks which portal to open. Their password was not touched.',
+                        $result->promoted,
+                        $result->promoted === 1 ? '' : 's',
+                        $result->promoted === 1 ? 'was' : 'were'
                     ));
                 }
 

@@ -107,6 +107,25 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
     public function setRoles(array $roles): static { $this->roles = $roles; return $this; }
 
+    /**
+     * Does this account work here, as opposed to only having children here?
+     *
+     * A membership of staff whose own children attend the school holds both
+     * ROLE_TEACHER and ROLE_PARENT; which portal they are in is a session choice,
+     * never a role — see the `portal_mode` block at the top of base.html.twig.
+     */
+    public function holdsStaffRole(): bool
+    {
+        if ($this->staff !== null) {
+            return true;
+        }
+
+        return array_intersect($this->roles, [
+            'ROLE_TEACHER', 'ROLE_BURSAR', 'ROLE_STORE', 'ROLE_HOD',
+            'ROLE_ADMIN', 'ROLE_TENANT_SUPER_ADMIN', 'ROLE_ADMISSION_OFFICER',
+        ]) !== [];
+    }
+
     public function getPassword(): string { return $this->password; }
     public function setPassword(string $password): static { $this->password = $password; return $this; }
 

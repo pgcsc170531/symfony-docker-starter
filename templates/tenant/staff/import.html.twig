@@ -77,9 +77,12 @@
                 </dd>
             </div>
             <div>
-                <dt class="font-semibold text-ink-900">Duplicates</dt>
+                <dt class="font-semibold text-ink-900">Duplicates &amp; parents on staff</dt>
                 <dd class="mt-0.5">
-                    A row whose login already exists is skipped, not merged — the rest of the file still lands.
+                    A login that already exists as <strong>a parent account</strong> is not refused — that person
+                    also works here, so their login gets a staff profile and the password they already know is left
+                    alone. A login that already belongs to another member of staff is skipped, and the rest of the
+                    file still lands.
                 </dd>
             </div>
         </dl>
@@ -109,7 +112,7 @@
         <section class="rounded-lg bg-white p-4 shadow-card sm:p-6">
             <h2 class="font-semibold text-ink-900">Import report</h2>
 
-            <div class="mt-3 grid grid-cols-3 gap-2 text-center">
+            <div class="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
                 <div class="rounded-lg bg-ink-50 p-3">
                     <p class="text-2xl font-bold tabular text-ink-900">{{ result.rows }}</p>
                     <p class="text-xs uppercase tracking-wide text-ink-500">Rows read</p>
@@ -118,11 +121,23 @@
                     <p class="text-2xl font-bold tabular text-paid">{{ result.created }}</p>
                     <p class="text-xs uppercase tracking-wide text-ink-500">Created</p>
                 </div>
+                <div class="rounded-lg {{ result.linked + result.promoted > 0 ? 'bg-accent-50' : 'bg-ink-50' }} p-3">
+                    <p class="text-2xl font-bold tabular {{ result.linked + result.promoted > 0 ? 'text-accent-700' : 'text-ink-900' }}">{{ result.linked + result.promoted }}</p>
+                    <p class="text-xs uppercase tracking-wide text-ink-500">Also parents</p>
+                </div>
                 <div class="rounded-lg {{ result.skippedCount > 0 ? 'bg-failed/10' : 'bg-ink-50' }} p-3">
                     <p class="text-2xl font-bold tabular {{ result.skippedCount > 0 ? 'text-failed' : 'text-ink-900' }}">{{ result.skippedCount }}</p>
                     <p class="text-xs uppercase tracking-wide text-ink-500">Skipped</p>
                 </div>
             </div>
+
+            {% if result.linked + result.promoted > 0 %}
+                <p class="mt-3 rounded-lg border border-accent-200 bg-accent-50 p-3 text-sm text-ink-700">
+                    <span class="font-semibold text-ink-900">These people also have children here.</span>
+                    Their single login now offers two doors — staff and parent — and they choose one each time
+                    they sign in.
+                </p>
+            {% endif %}
 
             {% if result.skippedCount > 0 %}
                 <h3 class="mt-4 text-sm font-semibold text-ink-900">Rows that were left alone</h3>

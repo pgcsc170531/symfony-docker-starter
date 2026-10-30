@@ -1,0 +1,74 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Choose your portal{% endblock %}
+
+{#
+   Shown once per sign-in to a member of staff who is also a parent in this
+   school. Two doors, both full width on a phone, because this is the first thing
+   they meet and a mis-tap costs them a whole screen of navigation.
+#}
+{% block body %}
+<div class="px-4 py-6 sm:px-6 sm:py-8">
+    <div class="max-w-2xl">
+        <h1 class="text-xl font-bold text-ink-900 sm:text-2xl">How are you visiting today?</h1>
+        <p class="mt-2 text-sm text-ink-600">
+            This account works at the school <span class="font-semibold text-ink-900">and</span> has
+            {% if guardian and guardian.students|length > 0 %}
+                {{ guardian.students|length == 1 ? 'a child' : guardian.students|length ~ ' children' }}
+            {% else %}
+                children
+            {% endif %}
+            here. Choose a door — you can switch at any time from the header.
+        </p>
+    </div>
+
+    <div class="mt-6 grid max-w-2xl gap-3 sm:grid-cols-2">
+        <form method="post" class="contents">
+            <input type="hidden" name="_token" value="{{ csrf_token('portal_mode') }}">
+            <input type="hidden" name="mode" value="staff">
+            <button type="submit"
+                    class="flex w-full flex-col items-start gap-1 rounded-xl border-2 border-ink-200 bg-white p-5 text-left transition-colors hover:border-accent-500 hover:bg-accent-50">
+                <span class="text-2xl" aria-hidden="true">🧑‍🏫</span>
+                <span class="text-base font-bold text-ink-900">Staff portal</span>
+                <span class="text-sm text-ink-600">
+                    Timetables, results, pupils, fees and the school's own settings.
+                </span>
+                {% if current == 'staff' %}
+                    <span class="badge-neutral mt-1">You are here</span>
+                {% endif %}
+            </button>
+        </form>
+
+        <form method="post" class="contents">
+            <input type="hidden" name="_token" value="{{ csrf_token('portal_mode') }}">
+            <input type="hidden" name="mode" value="parent">
+            <button type="submit"
+                    class="flex w-full flex-col items-start gap-1 rounded-xl border-2 border-ink-200 bg-white p-5 text-left transition-colors hover:border-accent-500 hover:bg-accent-50">
+                <span class="text-2xl" aria-hidden="true">👨‍👩‍👧</span>
+                <span class="text-base font-bold text-ink-900">Parent portal</span>
+                <span class="text-sm text-ink-600">
+                    Your own children: their fees, receipts, calendar and result cards.
+                </span>
+                {% if current == 'parent' %}
+                    <span class="badge-neutral mt-1">You are here</span>
+                {% endif %}
+            </button>
+        </form>
+    </div>
+
+    {% if guardian and guardian.students|length > 0 %}
+        <div class="mt-6 max-w-2xl rounded-xl border border-ink-200 bg-white p-4">
+            <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">Children on this account</p>
+            <ul class="mt-2 space-y-1">
+                {% for child in guardian.students %}
+                    {% set cls = child.currentClassroom ?? child.currentClass ?? null %}
+                    <li class="flex flex-wrap items-baseline gap-x-2 text-sm text-ink-800">
+                        <span class="font-semibold break-words">{{ child.fullName }}</span>
+                        {% if cls %}<span class="text-xs text-ink-500">{{ cls.name }}</span>{% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

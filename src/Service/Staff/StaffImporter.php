@@ -2,8 +2,10 @@
 
 namespace App\Service\Staff;
 
+use App\Entity\Tenant\Guardian;
 use App\Entity\Tenant\Staff;
 use App\Entity\Tenant\User;
+use App\Service\Phone\PhoneNumber;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -162,7 +164,10 @@ final class StaffImporter
                 continue;
             }
 
-            $phone = $this->digits((string) ($data['phone'] ?? ''));
+            // Stored form of the number — no trunk zero, no country code — because
+            // that is what the guardian record holds and what the parent's login is
+            // built from. "0803…" and "+234803…" must reach the same person.
+            $phone = PhoneNumber::national((string) ($data['phone'] ?? ''));
             $typedEmail = mb_strtolower(trim((string) ($data['email'] ?? '')));
 
             if ($typedEmail === '' && $phone === '') {
@@ -172,7 +177,7 @@ final class StaffImporter
             }
 
             // The phone is the login when the office did not supply an inbox.
-            $email = $typedEmail !== '' ? $typedEmail : $phone . '@edus.ng';
+            $email = $typedEmail !== '' ? $typedEmail : PhoneNumber::loginEmail($phone);
 
             if (filter_var($email, \FILTER_VALIDATE_EMAIL) === false) {
                 $result->skip($rowNumber, sprintf('"%s" is not a valid email address.', $email));
@@ -180,14 +185,49 @@ final class StaffImporter
                 continue;
             }
 
+            $jobTitle = trim((string) ($data['job_title'] ?? ''));
+            $role = self::roleForTitle($jobTitle);
+
             if (isset($taken[$email])) {
-                $result->skip($rowNumber, sprintf('%s is already used by another account.', $email));
+                /*
+                 * The address already belongs to somebody. If that somebody is a
+                 * parent here, this row means "the same person also works here" —
+                 * so give the existing login a staff profile instead of refusing
+                 * it, and leave their password alone: it is their own, chosen by
+                 * them, and resetting it would lock them out of their children.
+                 */
+                $existing = $this->em->getRepository(User::class)->findOneBy(['email' => $email]);
+                $promoted = false;
+
+                if ($existing !== null && $existing->getStaff() === null) {
+                    $staff = new Staff();
+                    $staff->setUser($existing)
+                        ->setPhone($phone !== '' ? $phone : null)
+                        ->setAddress($this->trimTo($data['address'] ?? null, 255))
+                        ->setEmployeeNumber($this->trimTo($data['employee_number'] ?? null, 50))
+                        ->setTitle(self::titleFor($jobTitle, $role));
+
+                    $existing->setRoles(array_values(array_unique(array_filter(
+                        array_merge($existing->getRoles(), [$role, 'ROLE_PARENT']),
+                        static fn (string $r): bool => $r !== 'ROLE_USER'
+                    ))));
+
+                    $this->em->persist($staff);
+                    ++$result->promoted;
+                    ++$pending;
+                    $promoted = true;
+                }
+
+                if (!$promoted) {
+                    $result->skip($rowNumber, sprintf('%s is already used by another account.', $email));
+
+                    continue;
+                }
+
+                $taken[$email] = true;
 
                 continue;
             }
-
-            $jobTitle = trim((string) ($data['job_title'] ?? ''));
-            $role = self::roleForTitle($jobTitle);
 
             $user = new User();
             $user->setFullName($name);
@@ -206,6 +246,29 @@ final class StaffImporter
 
             $this->em->persist($user);
             $this->em->persist($staff);
+
+            /*
+             * Teachers are very often parents here too. If the office has already
+             * admitted their child, the guardian row is sitting there with their
+             * phone number and no login of its own — give it this one. The person
+             * then signs in once and is asked which portal they want.
+             *
+             * Only an unclaimed guardian is taken: one that already has a login
+             * belongs to somebody who set their own password, and silently moving
+             * it would lock them out of their own children.
+             */
+            if ($phone !== '') {
+                $guardian = $this->unclaimedGuardianFor($phone);
+
+                if ($guardian !== null) {
+                    $guardian->setUser($user);
+                    // The login is now two things at once: this person works here
+                    // and is a parent here. Both roles are stored; which portal
+                    // they open is chosen at sign-in.
+                    $user->setRoles([$role, 'ROLE_PARENT']);
+                    ++$result->linked;
+                }
+            }
 
             // Guard against the same address twice inside one file, which the
             // database lookup above cannot see until the first flush.
@@ -271,6 +334,25 @@ final class StaffImporter
     private function digits(string $phone): string
     {
         return preg_replace('/\D+/', '', $phone) ?? '';
+    }
+
+    /**
+     * The guardian record that belongs to this phone and has no login yet.
+     *
+     * Numbers are stored both with and without the trunk zero ("0803…" from the
+     * old admission form, "803…" from the importer), so both spellings are tried.
+     */
+    private function unclaimedGuardianFor(string $national): ?Guardian
+    {
+        return $this->em->getRepository(Guardian::class)->createQueryBuilder('g')
+            ->andWhere('g.phoneNumber IN (:numbers)')
+            ->andWhere('g.user IS NULL')
+            ->setParameter('numbers', array_values(array_unique([
+                $national, '0' . $national, '+234' . $national, '234' . $national,
+            ])))
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 
     private function trimTo(?string $value, int $length): ?string

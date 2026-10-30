@@ -286,6 +286,24 @@
        a glyph can never drift between the two navs. See templates/_nav_icons.html.twig. #}
     {% import '_nav_icons.html.twig' as nav %}
 
+    {# ── WHICH PORTAL AM I IN? ────────────────────────────────────────────────
+       Some members of staff are also parents here. They hold ROLE_TEACHER *and*
+       ROLE_PARENT on the same login, so a role can no longer answer this question
+       — deciding by role would put every such person inside the parent tab bar and
+       hide the work they came to do.
+
+       The answer comes from the session choice made at /choose-portal, and falls
+       back to the role for the 99% who only belong on one side. Every shell
+       decision below reads `parent_portal`, never is_granted('ROLE_PARENT').
+       ⚠️ Do NOT give the roles themselves a session-dependent value: Symfony
+       compares the roles in the session token with the freshly loaded user on
+       every request and logs the person out when they differ. #}
+    {% set portal_dual = app.session.get('portal.dual') %}
+    {% set portal_mode = portal_dual
+        ? (app.session.get('portal.mode') ?? 'staff')
+        : (is_granted('ROLE_PARENT') ? 'parent' : 'staff') %}
+    {% set parent_portal = portal_mode == 'parent' %}
+
     {% if app.user and not public_site %}
         {#
             ═══ STICKY APP HEADER ═══
@@ -299,7 +317,7 @@
                 style="padding-top: env(safe-area-inset-top);">
 
             {# Parents navigate with the bottom tab bar, so they get no drawer. #}
-            {% if not is_granted('ROLE_PARENT') %}
+            {% if not parent_portal %}
                 <button id="sidebar-toggle" type="button" aria-label="Open navigation menu"
                         aria-controls="sidebar" aria-expanded="false"
                         class="md:hidden flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-ink-600 hover:bg-ink-100 active:bg-ink-200">
@@ -328,7 +346,7 @@
                right. Putting ml-auto on the badge instead fails on phones: the badge
                is hidden below sm, so nothing absorbs the space and the sign-out
                button drifts to the middle. #}
-            <a href="{{ is_granted('ROLE_PARENT') ? path('app_parent_dashboard') : path('app_tenant_dashboard') }}"
+            <a href="{{ parent_portal ? path('app_parent_dashboard') : path('app_tenant_dashboard') }}"
                class="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-1 py-2">
                 {% if shell_school and shell_school.logoFilename %}
                     <img src="{{ asset('uploads/logos/' ~ shell_school.logoFilename) }}" alt=""
@@ -356,7 +374,7 @@
             </a>
 
             <span class="hidden shrink-0 items-center rounded-full border border-ink-200 bg-ink-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-ink-600 sm:inline-flex">
-                {{- is_granted('ROLE_PARENT') ? 'Parent'
+                {{- parent_portal ? 'Parent'
                     : (is_granted('ROLE_TENANT_SUPER_ADMIN') ? 'Super Admin'
                     : (is_granted('ROLE_ADMIN') ? 'Admin'
                     : (is_granted('ROLE_ADMISSION_OFFICER') ? 'Admissions'
@@ -378,6 +396,16 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
+                </a>
+            {% endif %}
+
+            {# A member of staff who is also a parent here: one tap between the two
+               portals. Only shown once the account is known to be dual, so nobody
+               else ever sees a door that leads nowhere. #}
+            {% if app.session.get('portal.dual') and not is_granted('ROLE_SUPER_ADMIN') and not is_granted('ROLE_AGENT') %}
+                <a href="{{ path('app_portal_choose') }}"
+                   class="flex min-h-[44px] shrink-0 items-center rounded-lg border border-ink-200 px-3 text-xs font-semibold text-ink-700 hover:border-accent-300 hover:text-accent-700">
+                    {{ parent_portal ? 'Staff portal' : 'Parent portal' }}
                 </a>
             {% endif %}
 
@@ -564,7 +592,7 @@
                    bar and missing from the rail, so the same parent on a laptop had
                    no way to reach the fees screen at all. Same four places, both
                    navs, always. #}
-                {% elseif is_granted('ROLE_PARENT') %}
+                {% elseif parent_portal %}
                     {{ nav.section('Parent Portal') }}
                     {{ nav.item(path('app_parent_dashboard'), 'home', 'My Dashboard',
                                 (route == 'app_parent_dashboard')) }}
@@ -913,7 +941,7 @@
         </footer>
     {% endif %}
 
-    {% if app.user and not public_site and is_granted('ROLE_PARENT') %}
+    {% if app.user and not public_site and parent_portal %}
         {# ═══ BOTTOM TAB BAR — phones only ═══
            The bar lists PLACES — things you go and look at. Verbs live elsewhere.
            Exactly four: a fifth wraps onto a second row, which grows the bar past
