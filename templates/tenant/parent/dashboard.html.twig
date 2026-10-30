@@ -50,73 +50,111 @@
         {# === LEFT COLUMN: STUDENTS === #}
         <div class="lg:col-span-2 space-y-6">
 
-            {# 📝 ADMISSION APPLICATIONS — the parent's entry point into the online application flow #}
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div class="bg-gradient-to-r from-indigo-600 to-indigo-700 px-6 py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                        <h2 class="text-white font-bold text-lg">📝 Admission Applications</h2>
-                        <p class="text-indigo-100 text-xs mt-1">
-                            {% if applicationCount > 0 %}
-                                {{ applicationCount }} application{{ applicationCount == 1 ? '' : 's' }} from your family
-                            {% else %}
-                                Apply for your child online — no need to queue at the school
-                            {% endif %}
-                        </p>
+            {# 📝 ADMISSION APPLICATIONS — the parent's entry point into the online application flow.
+               On a phone this is the first card a parent meets, so it is built at 360px
+               first: the title sits on one line beside its icon, the two states (open /
+               closed) each say what to do next, and the family's own applications stay
+               visible even after the window shuts — they could not see them at all before. #}
+            <div id="admission-applications" class="overflow-hidden rounded-xl border border-ink-200 bg-white shadow-card">
+                <div class="bg-accent-700 px-4 py-4 sm:px-6 sm:py-5">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                        <div class="flex min-w-0 items-start gap-2.5 sm:gap-3">
+                            <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/15 text-base sm:h-10 sm:w-10 sm:text-lg" aria-hidden="true">📝</span>
+                            <div class="min-w-0">
+                                {# "Admission applications" wrapped onto two lines in a 241px card at
+                                   360px and read as a squeezed banner. The nav already says
+                                   "Admission Applications"; the card only has to say what it is for. #}
+                                <h2 class="text-base font-bold leading-tight text-white sm:text-lg">Applications</h2>
+                                <p class="mt-0.5 break-words text-xs leading-snug text-accent-100 sm:text-sm">
+                                    {% if applicationCount > 0 %}
+                                        {{ applicationCount }} application{{ applicationCount == 1 ? '' : 's' }} from your family
+                                    {% else %}
+                                        Apply online — no queue at the school gate
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+
+                        {% if applicationsOpen %}
+                            <a href="{{ path('app_parent_applications_new') }}"
+                               class="flex min-h-[44px] w-full shrink-0 items-center justify-center rounded-lg bg-white px-4 text-sm font-bold text-accent-700 transition-colors hover:bg-accent-50 sm:w-auto">
+                                + Apply for a child
+                            </a>
+                        {% endif %}
                     </div>
-                    {% if applicationsOpen %}
-                        <a href="{{ path('app_parent_applications_new') }}"
-                           class="shrink-0 w-full sm:w-auto text-center bg-white text-indigo-700 font-bold text-base sm:text-sm px-4 py-3 sm:py-2.5 rounded-xl shadow hover:bg-indigo-50 active:bg-indigo-100 transition-colors">
-                            + Apply for a child
-                        </a>
-                    {% endif %}
                 </div>
 
-                <div class="p-6">
-                    {% if not applicationsOpen %}
-                        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
-                            <strong class="font-bold">Applications are currently closed.</strong>
-                            You can still view your existing applications below.
-                        </div>
-                    {% elseif applications is empty %}
-                        <div class="grid sm:grid-cols-3 gap-4 text-center">
-                            <div class="p-3">
-                                <div class="text-2xl mb-2">1️⃣</div>
-                                <p class="text-xs font-bold text-gray-700">Fill the child's details</p>
-                                <p class="text-[11px] text-gray-500 mt-1">Five short steps, saved as you type.</p>
+                <div class="px-4 py-4 sm:px-6 sm:py-5">
+                    {% if applications is empty %}
+                        {% if not applicationsOpen %}
+                            <div class="rounded-lg border border-pending/30 bg-pending/10 p-3 text-sm text-ink-700" role="status">
+                                <p class="font-semibold text-ink-900">Applications are closed right now.</p>
+                                <p class="mt-0.5">
+                                    The school will announce when the next window opens. Your child's details are kept,
+                                    so the next application takes a minute.
+                                </p>
                             </div>
-                            <div class="p-3">
-                                <div class="text-2xl mb-2">2️⃣</div>
-                                <p class="text-xs font-bold text-gray-700">The school reviews it</p>
-                                <p class="text-[11px] text-gray-500 mt-1">You get a reference number straight away.</p>
-                            </div>
-                            <div class="p-3">
-                                <div class="text-2xl mb-2">3️⃣</div>
-                                <p class="text-xs font-bold text-gray-700">Your child is enrolled</p>
-                                <p class="text-[11px] text-gray-500 mt-1">Then fees and results appear here.</p>
-                            </div>
-                        </div>
-                    {% else %}
-                        <div class="space-y-3">
-                            {% for application in applications %}
-                                <a href="{{ path('app_parent_applications_show', {id: application.id}) }}"
-                                   class="flex items-center justify-between gap-3 p-3 rounded-lg border border-gray-200 hover:border-indigo-400 hover:bg-indigo-50/40 transition-colors">
+                        {% else %}
+                            <ol class="space-y-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:space-y-0">
+                                <li class="flex gap-3 sm:block sm:rounded-lg sm:bg-ink-50 sm:p-3 sm:text-center">
+                                    <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent-100 text-sm font-bold text-accent-700" aria-hidden="true">1</span>
                                     <div class="min-w-0">
-                                        <p class="font-bold text-gray-800 text-sm truncate">{{ application.fullName ?: (application.status == 'awaiting_payment' ? 'New application — awaiting payment' : 'Unnamed draft') }}</p>
-                                        <p class="text-[11px] text-gray-500 mt-0.5">
-                                            {{ application.reference ?: 'Not submitted yet' }}
-                                            {%- if application.requestedClassName %} · {{ application.requestedClassName }}{% endif -%}
-                                        </p>
+                                        <p class="text-sm font-bold text-ink-900">Fill in your child's details</p>
+                                        <p class="mt-0.5 text-xs text-ink-600">Five short steps, saved as you type.</p>
                                     </div>
-                                    {% include 'tenant/parent/applications/_status_badge.html.twig' with {
-                                        status: application.status,
-                                        label: application.statusLabel
-                                    } only %}
-                                </a>
+                                </li>
+                                <li class="flex gap-3 sm:block sm:rounded-lg sm:bg-ink-50 sm:p-3 sm:text-center">
+                                    <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent-100 text-sm font-bold text-accent-700" aria-hidden="true">2</span>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-bold text-ink-900">The school reviews it</p>
+                                        <p class="mt-0.5 text-xs text-ink-600">You get a reference number immediately.</p>
+                                    </div>
+                                </li>
+                                <li class="flex gap-3 sm:block sm:rounded-lg sm:bg-ink-50 sm:p-3 sm:text-center">
+                                    <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent-100 text-sm font-bold text-accent-700" aria-hidden="true">3</span>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-bold text-ink-900">Your child is enrolled</p>
+                                        <p class="mt-0.5 text-xs text-ink-600">Fees and results then appear here.</p>
+                                    </div>
+                                </li>
+                            </ol>
+                        {% endif %}
+                    {% else %}
+                        {# The window closing does not hide a family's own applications — they
+                           were told to look "below" and there was nothing below. #}
+                        {% if not applicationsOpen %}
+                            <p class="mb-3 rounded-lg border border-pending/30 bg-pending/10 p-3 text-sm text-ink-700" role="status">
+                                <span class="font-semibold text-ink-900">Applications are closed right now.</span>
+                                What your family has already submitted is below.
+                            </p>
+                        {% endif %}
+
+                        <ul class="space-y-2">
+                            {% for application in applications %}
+                                <li>
+                                    <a href="{{ path('app_parent_applications_show', {id: application.id}) }}"
+                                       class="flex min-h-[44px] items-center justify-between gap-3 rounded-lg border border-ink-200 p-3 transition-colors hover:border-accent-400 hover:bg-accent-50/40">
+                                        <span class="min-w-0">
+                                            <span class="block break-words text-sm font-bold text-ink-900">
+                                                {{ application.fullName ?: (application.status == 'awaiting_payment' ? 'New application — awaiting payment' : 'Unnamed draft') }}
+                                            </span>
+                                            <span class="mt-0.5 block text-xs text-ink-500">
+                                                {{ application.reference ?: 'Not submitted yet' }}
+                                                {%- if application.requestedClassName %} · {{ application.requestedClassName }}{% endif -%}
+                                            </span>
+                                        </span>
+                                        {% include 'tenant/parent/applications/_status_badge.html.twig' with {
+                                            status: application.status,
+                                            label: application.statusLabel
+                                        } only %}
+                                    </a>
+                                </li>
                             {% endfor %}
-                        </div>
-                        <div class="mt-4 pt-4 border-t border-gray-100 text-right">
+                        </ul>
+
+                        <div class="mt-3 border-t border-ink-100 pt-1 text-right">
                             <a href="{{ path('app_parent_applications_index') }}"
-                               class="inline-block py-3.5 px-1 text-xs font-bold text-indigo-600 hover:underline">
+                               class="inline-flex min-h-[44px] items-center px-1 text-xs font-bold text-accent-700 hover:underline">
                                 View all applications →
                             </a>
                         </div>
