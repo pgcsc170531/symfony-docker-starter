@@ -266,95 +266,116 @@ class StaffAssignmentController extends AbstractController
             }
 
             $staffId = $request->request->get('staff');
-            $subjectId = $request->request->get('subject');
             $termId = $request->request->get('term');
 
             /*
-             * One teacher, one subject, many classes, one submit.
+             * One teacher, any number of subjects, any number of classes, one submit.
              *
-             * A teacher who takes Mathematics in JSS 1 A, B and C holds three
-             * assignments, because every mark, approval and report is anchored
-             * to one (teacher, subject, class, term). That is the right shape for
-             * the data — but it should be one action for the person typing it,
-             * not three trips through the form.
+             * A nursery teacher takes every subject in one class; a secondary teacher
+             * takes one subject across three arms. Both are the same gesture here:
+             * tick the subjects, tick the classes, submit. Every (teacher, subject,
+             * class, term) combination becomes its own row, because that is what a
+             * mark, an approval and a report anchor to.
              */
+            $subjectIds = array_values(array_unique(array_map(
+                'intval',
+                array_filter((array) ($request->request->all()['subjects'] ?? []), 'is_scalar')
+            )));
+
+            // A page rendered before subjects became a list still posts one subject.
+            if ($subjectIds === [] && $request->request->get('subject')) {
+                $subjectIds = [(int) $request->request->get('subject')];
+            }
+
             $classroomIds = array_values(array_unique(array_map(
                 'intval',
                 array_filter((array) ($request->request->all()['classrooms'] ?? []), 'is_scalar')
             )));
 
-            if (!$staffId || !$subjectId || !$termId || $classroomIds === []) {
-                $this->addFlash('error', 'Choose a staff member, a subject, a term and at least one class.');
+            if (!$staffId || $subjectIds === [] || !$termId || $classroomIds === []) {
+                $this->addFlash('error', 'Choose a staff member, at least one subject, a term and at least one class.');
 
                 return $this->redirectToRoute('app_tenant_subject_teacher');
             }
 
             $staff = $this->resolveStaff((int) $staffId);
-            $subject = $this->em->getRepository(Subject::class)->find($subjectId);
             $term = $this->em->getRepository(Term::class)->find($termId);
+            $subjects = $this->em->getRepository(Subject::class)->findBy(['id' => $subjectIds]);
             $classrooms = $this->em->getRepository(Classroom::class)->findBy(['id' => $classroomIds]);
 
-            if (!$staff || !$subject || !$term || $classrooms === []) {
+            if (!$staff || !$term || $subjects === [] || $classrooms === []) {
                 $this->addFlash('error', 'That staff member, subject or term could not be found. Pick the person again from the search list.');
 
                 return $this->redirectToRoute('app_tenant_subject_teacher');
             }
 
-            // One query for the whole submission instead of one per ticked class.
-            $existingByClassroom = [];
+            // One query for the whole submission: every assignment this teacher already
+            // holds for the term, keyed subject|class.
+            $existing = [];
             foreach ($this->em->getRepository(SubjectTeacher::class)->findBy([
                 'staff' => $staff,
-                'subject' => $subject,
                 'term' => $term,
             ]) as $row) {
-                $existingByClassroom[(int) $row->getClassroom()?->getId()] = true;
+                $existing[sprintf('%d|%d', (int) $row->getSubject()?->getId(), (int) $row->getClassroom()?->getId())] = true;
             }
 
             $created = 0;
             $skipped = 0;
 
-            foreach ($classrooms as $classroom) {
-                if (isset($existingByClassroom[(int) $classroom->getId()])) {
-                    ++$skipped;
+            foreach ($subjects as $subject) {
+                foreach ($classrooms as $classroom) {
+                    $key = sprintf('%d|%d', (int) $subject->getId(), (int) $classroom->getId());
 
-                    continue;
+                    if (isset($existing[$key])) {
+                        ++$skipped;
+
+                        continue;
+                    }
+
+                    // Hold the pair in memory too, so this request cannot insert it twice.
+                    $existing[$key] = true;
+
+                    $assignment = new SubjectTeacher();
+                    $assignment->setStaff($staff)
+                        ->setSubject($subject)
+                        ->setClassroom($classroom)
+                        ->setTerm($term);
+                    $this->em->persist($assignment);
+                    ++$created;
                 }
-
-                $assignment = new SubjectTeacher();
-                $assignment->setStaff($staff)
-                    ->setSubject($subject)
-                    ->setClassroom($classroom)
-                    ->setTerm($term);
-                $this->em->persist($assignment);
-                ++$created;
             }
 
             $this->em->flush();
 
             $teacher = $staff->getUser()?->getFullName() ?? $staff->getUser()?->getEmail() ?? 'The teacher';
-            $name = (string) $subject->getName();
+            $subjectCount = count($subjects);
+            $classCount = count($classrooms);
             $termLabel = (string) $term->getName();
 
             if ($created > 0) {
                 $message = sprintf(
-                    '%s set to teach %s in %d class%s for %s.',
+                    '%s set to teach %d subject%s in %d class%s for %s — %d assignment%s.',
                     $teacher,
-                    $name,
+                    $subjectCount,
+                    $subjectCount === 1 ? '' : 's',
+                    $classCount,
+                    $classCount === 1 ? '' : 'es',
+                    $termLabel,
                     $created,
-                    $created === 1 ? '' : 'es',
-                    $termLabel
+                    $created === 1 ? '' : 's'
                 );
                 if ($skipped > 0) {
-                    $message .= sprintf(' %d class%s already assigned.', $skipped, $skipped === 1 ? '' : 'es');
+                    $message .= sprintf(' %d already existed and %s left alone.', $skipped, $skipped === 1 ? 'was' : 'were');
                 }
                 $this->addFlash('success', $message);
             } else {
                 $this->addFlash('info', sprintf(
-                    '%s already teaches %s in %d class%s for %s — nothing was added.',
+                    '%s already teaches %d subject%s in %d class%s for %s — nothing was added.',
                     $teacher,
-                    $name,
-                    $skipped,
-                    $skipped === 1 ? '' : 'es',
+                    $subjectCount,
+                    $subjectCount === 1 ? '' : 's',
+                    $classCount,
+                    $classCount === 1 ? '' : 'es',
                     $termLabel
                 ));
             }

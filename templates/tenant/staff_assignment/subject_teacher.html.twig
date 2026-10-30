@@ -7,15 +7,15 @@
 <div class="px-4 py-4 sm:px-6 sm:py-6">
     <div class="mb-6">
         <h1 class="text-xl font-bold text-ink-900 sm:text-2xl">Subject Teachers</h1>
-        <p class="mt-1 text-sm text-ink-600">Which teacher takes which subject, in which classes, for which term.</p>
+        <p class="mt-1 text-sm text-ink-600">Which teacher takes which subjects, in which classes, for which term.</p>
     </div>
 
-    {# ── Assign: one teacher, one subject, many classes ───────────────────── #}
+    {# ── Assign: one teacher, any subjects, any classes ────────────────────── #}
     <section class="mb-6 rounded-lg bg-white p-4 shadow-card sm:p-6">
         <h2 class="font-semibold text-ink-900">Assign a teacher</h2>
         <p class="mt-1 text-sm text-ink-600">
-            Choose the teacher, the subject and the term, then tick every class they take it in.
-            Each ticked class is one assignment — one submission covers all of them.
+            Choose the teacher and the term, tick every subject they take, then tick every class they take
+            them in. Each subject-and-class pair is one assignment — one submission covers all of them.
         </p>
 
         <form method="post" class="mt-4 grid gap-4 sm:grid-cols-2">
@@ -40,21 +40,6 @@
             </div>
 
             <div>
-                <label for="st-subject" class="mb-1 block text-sm font-medium text-ink-800">Subject</label>
-                <select id="st-subject" name="subject" required
-                        class="min-h-[44px] w-full rounded-lg border border-ink-200 bg-white px-3 text-sm text-ink-900 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-200">
-                    <option value="">Select a subject</option>
-                    {% for deptName, deptSubjects in subjectGroups %}
-                        <optgroup label="{{ deptName }}">
-                            {% for s in deptSubjects %}
-                                <option value="{{ s.id }}">{{ s.name }}</option>
-                            {% endfor %}
-                        </optgroup>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div>
                 <label for="st-term" class="mb-1 block text-sm font-medium text-ink-800">Term</label>
                 <select id="st-term" name="term" required
                         class="min-h-[44px] w-full rounded-lg border border-ink-200 bg-white px-3 text-sm text-ink-900 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-200">
@@ -65,8 +50,59 @@
                 </select>
             </div>
 
-            <fieldset class="sm:col-span-2">
-                <legend class="mb-2 text-sm font-medium text-ink-800">Classes this teacher takes the subject in</legend>
+            {# A nursery teacher takes every subject; a secondary teacher takes one or
+               two. Same control either way — checkboxes, because a <select multiple>
+               is unusable with a thumb and hides how many are chosen. #}
+            <fieldset class="sm:col-span-2"
+                      data-picker data-noun="subject" data-noun-plural="subjects" data-empty-label="No subject selected">
+                <legend class="mb-1 text-sm font-medium text-ink-800">Subjects this teacher takes</legend>
+
+                <div class="mb-3 flex flex-wrap items-center gap-2">
+                    <button type="button" data-select-all
+                            class="min-h-[44px] rounded-lg border border-ink-200 px-3 text-sm font-semibold text-ink-700 transition-colors hover:border-accent-300 hover:text-accent-700">
+                        Select every subject
+                    </button>
+                    <button type="button" data-clear-all
+                            class="min-h-[44px] rounded-lg border border-ink-200 px-3 text-sm font-semibold text-ink-700 transition-colors hover:border-accent-300 hover:text-accent-700">
+                        Clear
+                    </button>
+                    <span data-count aria-live="polite" class="text-xs text-ink-500">No subject selected</span>
+                </div>
+
+                {% for deptName, deptSubjects in subjectGroups %}
+                    <div class="mb-3">
+                        <div class="mb-1 flex items-center justify-between gap-2">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-ink-500">{{ deptName }}</p>
+                            <button type="button" data-select-group="{{ loop.index }}"
+                                    class="min-h-[44px] px-2 text-xs font-semibold text-accent-700">
+                                Select all {{ deptName }}
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                            {% for s in deptSubjects %}
+                                <label class="flex min-h-[44px] cursor-pointer items-center gap-2 rounded-lg border border-ink-200 px-3 py-2 text-sm text-ink-800 has-[:checked]:border-accent-500 has-[:checked]:bg-accent-50">
+                                    <input type="checkbox" name="subjects[]" value="{{ s.id }}"
+                                           data-group="{{ loop.parent.loop.index }}"
+                                           class="h-4 w-4 shrink-0 accent-accent-600">
+                                    <span class="min-w-0 break-words">{{ s.name }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="rounded-lg border border-dashed border-ink-300 p-4 text-sm text-ink-700">
+                        There are no subjects yet.
+                        <a href="{{ path('app_tenant_subject_index') }}" class="font-semibold text-accent-700 underline">
+                            Create the subject catalogue
+                        </a>
+                        first.
+                    </p>
+                {% endfor %}
+            </fieldset>
+
+            <fieldset class="sm:col-span-2"
+                      data-picker data-noun="class" data-noun-plural="classes" data-empty-label="No class selected">
+                <legend class="mb-2 text-sm font-medium text-ink-800">Classes this teacher takes them in</legend>
 
                 <div class="mb-3 flex flex-wrap items-center gap-2">
                     <button type="button" data-select-all
@@ -77,7 +113,7 @@
                             class="min-h-[44px] rounded-lg border border-ink-200 px-3 text-sm font-semibold text-ink-700 transition-colors hover:border-accent-300 hover:text-accent-700">
                         Clear
                     </button>
-                    <span id="st-selected-count" aria-live="polite" class="text-xs text-ink-500">No class selected</span>
+                    <span data-count aria-live="polite" class="text-xs text-ink-500">No class selected</span>
                 </div>
 
                 {% for level, rooms in classroomGroups %}
@@ -183,60 +219,70 @@
 </div>
 {% endblock %}
 
-{# The class picker is a checkbox list, not a <select multiple>: a multi-select
-   needs ctrl/cmd on a desktop, is close to unusable with a thumb, and never
-   shows how many classes are actually ticked.
+{# Both pickers — subjects and classes — are checkbox lists, not <select multiple>:
+   a multi-select needs ctrl/cmd on a desktop, is close to unusable with a thumb,
+   and never shows how many items are actually ticked.
 
    The `javascripts` block renders in <head>, before the body exists, so the
-   work has to wait for DOMContentLoaded. #}
+   work has to wait for DOMContentLoaded. Each fieldset is wired independently,
+   so "Select all" in the subjects list never touches the class list. #}
 {% block javascripts %}
     {{ parent() }}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            var boxes = Array.prototype.slice.call(document.querySelectorAll('input[name="classrooms[]"]'));
-            var count = document.getElementById('st-selected-count');
+            function wire(scope) {
+                var boxes = Array.prototype.slice.call(scope.querySelectorAll('input[type="checkbox"]'));
+                var count = scope.querySelector('[data-count]');
+                var noun = scope.dataset.noun || 'item';
+                var plural = scope.dataset.nounPlural || noun + 's';
 
-            if (!boxes.length || !count) {
-                return;
-            }
+                if (!boxes.length) {
+                    return;
+                }
 
-            function refresh() {
-                var n = boxes.filter(function (box) { return box.checked; }).length;
-                count.textContent = n === 0
-                    ? 'No class selected'
-                    : n + (n === 1 ? ' class selected' : ' classes selected');
-            }
+                function refresh() {
+                    if (!count) {
+                        return;
+                    }
+                    var n = boxes.filter(function (box) { return box.checked; }).length;
+                    count.textContent = n === 0
+                        ? (scope.dataset.emptyLabel || 'None selected')
+                        : n + ' ' + (n === 1 ? noun : plural) + ' selected';
+                }
 
-            boxes.forEach(function (box) { box.addEventListener('change', refresh); });
+                boxes.forEach(function (box) { box.addEventListener('change', refresh); });
 
-            document.querySelectorAll('[data-select-group]').forEach(function (button) {
-                button.addEventListener('click', function () {
-                    boxes.forEach(function (box) {
-                        if (box.dataset.group === button.dataset.selectGroup) {
-                            box.checked = true;
-                        }
+                scope.querySelectorAll('[data-select-group]').forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        boxes.forEach(function (box) {
+                            if (box.dataset.group === button.dataset.selectGroup) {
+                                box.checked = true;
+                            }
+                        });
+                        refresh();
                     });
-                    refresh();
                 });
-            });
 
-            var all = document.querySelector('[data-select-all]');
-            if (all) {
-                all.addEventListener('click', function () {
-                    boxes.forEach(function (box) { box.checked = true; });
-                    refresh();
-                });
+                var all = scope.querySelector('[data-select-all]');
+                if (all) {
+                    all.addEventListener('click', function () {
+                        boxes.forEach(function (box) { box.checked = true; });
+                        refresh();
+                    });
+                }
+
+                var clear = scope.querySelector('[data-clear-all]');
+                if (clear) {
+                    clear.addEventListener('click', function () {
+                        boxes.forEach(function (box) { box.checked = false; });
+                        refresh();
+                    });
+                }
+
+                refresh();
             }
 
-            var clear = document.querySelector('[data-clear-all]');
-            if (clear) {
-                clear.addEventListener('click', function () {
-                    boxes.forEach(function (box) { box.checked = false; });
-                    refresh();
-                });
-            }
-
-            refresh();
+            document.querySelectorAll('[data-picker]').forEach(wire);
         });
     </script>
 {% endblock %}
