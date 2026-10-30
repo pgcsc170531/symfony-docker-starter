@@ -299,7 +299,7 @@ class StudentController extends AbstractController
         foreach ($this->schemes->components($scheme) as $key) {
             $columns[] = [
                 'label' => match ($key) {
-                    'theory' => 'Theory',
+                    'theory' => 'Exams',
                     'practical' => 'Practical',
                     default => 'CA ' . substr($key, 2),
                 },
