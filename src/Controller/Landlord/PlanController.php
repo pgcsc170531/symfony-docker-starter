@@ -4,6 +4,7 @@ namespace App\Controller\Landlord;
 
 use App\Entity\Landlord\Plan;
 use App\Form\Landlord\PlanType;
+use App\Service\Pricing\PricingCatalog;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -16,7 +17,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class PlanController extends AbstractController
 {
     #[Route('/', name: 'index', methods: ['GET'])]
-    public function index(ManagerRegistry $doctrine): Response
+    public function index(ManagerRegistry $doctrine, PricingCatalog $pricing): Response
     {
         $plans = $doctrine->getManager('landlord')
             ->getRepository(Plan::class)
@@ -24,6 +25,8 @@ class PlanController extends AbstractController
 
         return $this->render('landlord/plan/index.html.twig', [
             'plans' => $plans,
+            // The roll rule is arithmetic, not copy — it comes from the price list.
+            'pricing' => $pricing->toArray(),
         ]);
     }
 

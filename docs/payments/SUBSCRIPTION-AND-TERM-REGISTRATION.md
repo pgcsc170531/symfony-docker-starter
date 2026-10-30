@@ -81,9 +81,9 @@ recommended as the standard offer.
 | 1,200 | ₦1,650,000 | ₦1,375 | ₦2,550,000 | ₦2,125 |
 
 **The final Enterprise offer is slightly different:** the annual fee is
-**₦550,000** (the old ₦450,000 plus the mandatory ₦100,000 email service), and
-implementation is **₦300,000**. That makes year 1 **₦2,050,000** and the 3-year
-total **₦3,150,000** — see §2C.
+**₦650,000** (the old ₦450,000 renewal raised to ₦550,000, plus the mandatory
+₦100,000 email service), and implementation is **₦300,000**. That makes year 1
+**₦2,150,000** and the 3-year total **₦3,450,000** — see §2C.
 
 **Why it is the wrong default**
 
@@ -144,7 +144,7 @@ Two live tracks.
 | Track | Who it is for | Price | Pupil counting | Term registration |
 |---|---|---|---|---|
 | **Standard (per pupil)** | Most schools, from start-ups to ~1,000 pupils | **₦750/pupil per 4-month term** termly, or **₦500/pupil/term** when the year is paid up front | Yes — the roll is the bill | Sets the bill |
-| **Enterprise (licence)** | 1,000+ pupils, multi-campus, integration needs | **₦1,200,000 one-off licence + ₦550,000/year (email included) + ₦300,000 implementation** | **No pupil counting** — unlimited pupils | Confirms the roll for provisioning only |
+| **Enterprise (licence)** | 1,000+ pupils, multi-campus, integration needs | **₦1,200,000 one-off licence + ₦650,000/year (email included) + ₦300,000 implementation** | **No pupil counting** — unlimited pupils | Confirms the roll for provisioning only |
 
 The old flat Starter/Growth/Scale prices are **grandfathered** for existing
 contracts until renewal. New contracts use the per-pupil Standard rate. The old
@@ -208,10 +208,10 @@ that:
 | Item | Amount |
 |---|---:|
 | Licence (one-off) | ₦1,200,000 |
-| Annual renewal | **₦550,000/year from year 1** — includes mandatory email notifications |
+| Annual renewal | **₦650,000/year from year 1** — includes mandatory email notifications |
 | **Implementation charge** | **₦300,000 one-off** (server/hosting setup, migration, training) |
-| **Year 1 total** | **₦2,050,000** (₦1,200,000 licence + ₦300,000 implementation + ₦550,000 annual) |
-| **3-year total** | **₦3,150,000** (₦2,050,000 + 2 × ₦550,000) |
+| **Year 1 total** | **₦2,150,000** (₦1,200,000 licence + ₦300,000 implementation + ₦650,000 annual) |
+| **3-year total** | **₦3,450,000** (₦2,150,000 + 2 × ₦650,000) |
 | Initial term | 3 years recommended; annual renewal thereafter |
 
 **Included**
@@ -224,14 +224,14 @@ that:
 | Support | Named success manager, priority queue, SLA |
 | Multi-campus | Consolidated roll and reporting across school rows |
 | Audit | Exportable usage and billing statements for the board |
-| Email | **Mandatory and included** in the ₦550,000 annual fee |
+| Email | **Mandatory and included** in the ₦650,000 annual fee |
 
 The implementation charge is not optional: it pays for the server/hosting
 capacity, migration and training that an Enterprise school consumes before it
 pays its first renewal. Do not bury it in the licence.
 
 **Email is mandatory.** Standard plans include email notifications in their price;
-the Enterprise annual fee of **₦550,000** is the old ₦450,000 renewal plus the
+the Enterprise annual fee of **₦650,000** is the ₦550,000 renewal plus the
 **₦100,000 email service**. There is no Enterprise option without email.
 
 ---
@@ -243,30 +243,30 @@ Let:
 - `P` = pupils;
 - Standard termly annual cost = `P × ₦2,250`;
 - Standard annual-prepay cost = `P × ₦1,500`;
-- Enterprise year 1 = `₦2,050,000` (licence + implementation + annual);
-- Enterprise renewal = `₦550,000/year`;
-- Enterprise 3-year total = `₦3,150,000`.
+- Enterprise year 1 = `₦2,150,000` (licence + implementation + annual);
+- Enterprise renewal = `₦650,000/year`;
+- Enterprise 3-year total = `₦3,450,000`.
 
 With **implementation = ₦300,000** and email included:
 
 | Enterprise compared with… | Year 1 break-even | Year 2 break-even | 3-year break-even |
 |---|---:|---:|---:|
-| **Standard termly** | **911 pupils** | 245 pupils | **467 pupils** |
-| **Standard annual prepay** | **1,367 pupils** | 367 pupils | **700 pupils** |
+| **Standard termly** | **956 pupils** | 289 pupils | **512 pupils** |
+| **Standard annual prepay** | **1,434 pupils** | 434 pupils | **767 pupils** |
 
 **What this means**
 
-- A school paying **termly** reaches the Enterprise break-even at about **467
+- A school paying **termly** reaches the Enterprise break-even at about **512
   pupils over three years** — because termly Standard is expensive.
-- A school paying **annually** gets the 33% discount, so it needs about **700
+- A school paying **annually** gets the 33% discount, so it needs about **767
   pupils over three years** before Enterprise is cheaper.
 - **At 1,000+ pupils — the target — Enterprise is the rational choice:** it is
-  cheaper than annual Standard over three years (₦3.15m vs ₦4.5m) and much
-  cheaper than termly (₦3.15m vs ₦6.75m).
+  cheaper than annual Standard over three years (₦3.45m vs ₦4.5m) and much
+  cheaper than termly (₦3.45m vs ₦6.75m).
 - At **800 pupils**, Enterprise is already cheaper than annual Standard over three
-  years (₦3.15m vs ₦3.6m) and far cheaper than termly (₦3.15m vs ₦5.4m).
+  years (₦3.45m vs ₦3.6m) and far cheaper than termly (₦3.45m vs ₦5.4m).
 - At **600 pupils**, annual Standard is cheaper over three years (₦2.7m vs
-  ₦3.15m); termly Standard is more expensive, so a termly school should still
+  ₦3.45m); termly Standard is more expensive, so a termly school should still
   consider Enterprise.
 
 ---
@@ -281,34 +281,34 @@ lists.
 > cheaper. Between 600 and 800 it depends on how the school pays.**
 >
 > All three comparisons are over the **3-year term**, with the mandatory email
-> service already included in the ₦550,000 Enterprise annual fee.
+> service already included in the ₦650,000 Enterprise annual fee.
 
 | Pupils | Cheaper over 3 years | At 800 pupils, the actual arithmetic |
 |---|---|---|
-| **≤ 600** | **Standard (annual prepay)** — ₦2.7m at 600 vs ₦3.15m Enterprise | — |
+| **≤ 600** | **Standard (annual prepay)** — ₦2.7m at 600 vs ₦3.45m Enterprise | — |
 | **600 – 800** | **Depends on payment mode** | — |
-| **≥ 800** | **Enterprise** — ₦3.15m | vs **₦3.6m** annual Standard, **₦5.4m** termly |
+| **≥ 800** | **Enterprise** — ₦3.45m | vs **₦3.6m** annual Standard, **₦5.4m** termly |
 
 The middle band is not vague — it is decided by one question: *“are you paying
 termly or for the year?”*
 
 | Pupils | vs Standard **termly** (₦6,750/pupil/3yrs) | vs Standard **annual** (₦4,500/pupil/3yrs) | Sell |
 |---|---|---|---|
-| under 467 | Standard cheaper | Standard cheaper | Standard |
-| **467 – 700** | **Enterprise cheaper** | Standard cheaper | Standard if they can pay annually; Enterprise if they must pay termly |
-| **701 – 799** | **Enterprise cheaper** | **Enterprise cheaper** | Enterprise, but the saving is thin — lead with support, not price |
+| under 512 | Standard cheaper | Standard cheaper | Standard |
+| **512 – 767** | **Enterprise cheaper** | Standard cheaper | Standard if they can pay annually; Enterprise if they must pay termly |
+| **768 – 799** | **Enterprise cheaper** | **Enterprise cheaper** | Enterprise, but the saving is thin — lead with support, not price |
 | **800 +** | **Enterprise cheaper** | **Enterprise cheaper** | Enterprise |
 
 ### Two honest caveats — say them, don't hide them
 
 1. **The 800 rule is a 3-year rule, not a year-1 rule.** At 800 pupils the
-   Enterprise year-1 bill is **₦2,050,000** (licence + implementation + annual)
+   Enterprise year-1 bill is **₦2,150,000** (licence + implementation + annual)
    against **₦1,200,000** for annual Standard. Enterprise is *more* expensive in
    year 1 and only wins from year 3. A school that will not commit to the term
    should stay on Standard. Never quote “800 pupils” as a first-year saving.
-2. **The rule already includes email.** ₦550,000 = the old ₦450,000 renewal +
+2. **The rule already includes email.** ₦650,000 = the ₦550,000 renewal +
    the ₦100,000 email service. If email had stayed optional, the 3-year total
-   would be ₦2,950,000 and the annual-prepay break-even would fall to **656**
+   would be ₦3,150,000 and the annual-prepay break-even would fall to **700**
    pupils. The rule is deliberately computed on the dearer, email-included
    number, so the recommendation never under-states what the school will pay.
 
@@ -330,14 +330,14 @@ termly or for the year?”*
 
 | Implementation | vs Standard termly | vs Standard annual |
 |---:|---:|---:|
-| ₦0 | 422 pupils | 633 pupils |
-| ₦300,000 | 467 pupils | 700 pupils |
-| ₦500,000 | 496 pupils | 744 pupils |
-| ₦1,000,000 | 570 pupils | 856 pupils |
+| ₦0 | 467 pupils | 700 pupils |
+| ₦300,000 | 512 pupils | 767 pupils |
+| ₦500,000 | 541 pupils | 812 pupils |
+| ₦1,000,000 | 615 pupils | 923 pupils |
 
 Even at a ₦1m implementation charge, a 1,000-pupil school is still better off on
-Enterprise over three years than on annual Standard (₦3.85m vs ₦4.5m). Below
-~700 pupils, annual Standard remains the better deal.
+Enterprise over three years than on annual Standard (₦4.15m vs ₦4.5m). Below
+~767 pupils, annual Standard remains the better deal.
 
 ---
 
@@ -352,7 +352,7 @@ what we generated and what we paid for the system.”
 | Roll | students, staff, classes, active term — shown, not billed on Enterprise |
 | Usage this term | report cards generated, transcripts, SMS sent/remaining, online collections processed, storage |
 | Billing | invoices, payments, balance, next renewal, proof status |
-| Value statement | one printable page: “1,200 report cards, 3,400 SMS, ₦12.4m collected online; licence + annual + implementation paid: ₦2,050,000 this year” |
+| Value statement | one printable page: “1,200 report cards, 3,400 SMS, ₦12.4m collected online; licence + annual + implementation paid: ₦2,150,000 this year” |
 
 The statement is exportable as PDF/CSV so a bursar can put it in front of the
 board. It is also the honest answer to “what am I paying for?”
@@ -679,7 +679,7 @@ This is a separate invoice with a separate fee:
   invoice uses its own line, not the parent cap).
 - Show the fee as its own line; do not reuse the parent `MAX_FEE = ₦500` cap for a
   large subscription invoice.
-- **Email notifications:** included in Standard; **included in the Enterprise ₦550,000 annual fee** (mandatory).
+- **Email notifications:** included in Standard; **included in the Enterprise ₦650,000 annual fee** (mandatory).
 - **Recommendation:** the school pays the fee as a separate line, or Edus absorbs
   it on annual prepay as a sales incentive.
 - A bank transfer with an uploaded receipt is allowed for schools that will not
@@ -690,7 +690,7 @@ This is a separate invoice with a separate fee:
 | Cost | Who pays | How |
 |---|---|---|
 | SMS units | school | prepaid wallet; plan bonus on registration |
-| Email delivery | Included in Standard; included in the Enterprise ₦550,000 annual fee | — |
+| Email delivery | Included in Standard; included in the Enterprise ₦650,000 annual fee | — |
 | Payment proof verification | Edus | manual today; a bank-transfer reconciliation later |
 | VAT on the Edus subscription | depends on jurisdiction | show as a separate line if Edus is VAT-registered; do not guess |
 
@@ -752,7 +752,7 @@ of trust.
 | `minimumTermInvoice` | decimal(12,2), nullable | ₦50,000 |
 | `minimumAnnualInvoice` | decimal(12,2), nullable | ₦100,000 |
 | `licenceFee` | decimal(12,2), nullable | Enterprise ₦1,200,000 |
-| `annualFee` | decimal(12,2), nullable | Enterprise ₦550,000/year (email included) |
+| `annualFee` | decimal(12,2), nullable | Enterprise ₦650,000/year (email included) |
 | `implementationFee` | decimal(12,2), nullable | Enterprise ₦250k–₦500k |
 | `features` | json | what the plan unlocks (reports, SMS, API) |
 | `isPublic` | bool | show on the pricing page |
@@ -897,7 +897,7 @@ declaration is the part that must be right, and a gateway only moves money.
 | 5 | Enterprise threshold | **1,000+ pupils, multi-campus, or integration requirement** | protects the premium positioning |
 | 6 | Enterprise price | **₦1.2m one-off + ₦550k/year (email included)**, 3-year initial term | funds migration/integration; predictable support |
 | 7 | Enterprise implementation | **₦300,000 one-off** (server/hosting, migration, training) | the school’s capacity costs money before year 1 |
-| 8 | Enterprise email | **Mandatory; included in the ₦550,000 annual fee** | email is too important to be optional |
+| 8 | Enterprise email | **Mandatory; included in the ₦650,000 annual fee** | email is too important to be optional |
 | 9 | Enterprise inclusions | SSO/API, custom domain, migration, SLA, named success manager, unlimited pupils | justifies the licence |
 | 10 | Parent online charge | **Parent pays; ₦200 handling; transfer total capped at ₦500**; school nets full invoice | matches the updated `ProcessingFeeCalculator`; school is not out of pocket |
 | 11 | Parent transfer | **No fee; proof upload; bursar verifies** | already built; fallback for schools without a gateway |

@@ -33,13 +33,13 @@ final class PricingCatalog
     // ── Enterprise (licence) ────────────────────────────────────────────────
     public const LICENCE_FEE = 1_200_000;
 
-    /** The old renewal, before email became mandatory. */
-    public const ENTERPRISE_BASE_ANNUAL_FEE = 450_000;
+    /** The renewal before email became mandatory. */
+    public const ENTERPRISE_BASE_ANNUAL_FEE = 550_000;
 
     /** Email notifications are mandatory on Enterprise — never sold as an option. */
     public const EMAIL_SERVICE_FEE = 100_000;
 
-    public const ENTERPRISE_ANNUAL_FEE = self::ENTERPRISE_BASE_ANNUAL_FEE + self::EMAIL_SERVICE_FEE; // ₦550,000
+    public const ENTERPRISE_ANNUAL_FEE = self::ENTERPRISE_BASE_ANNUAL_FEE + self::EMAIL_SERVICE_FEE; // ₦650,000
 
     public const IMPLEMENTATION_FEE = 300_000;
 
@@ -105,8 +105,8 @@ final class PricingCatalog
      * Roll at which Enterprise stops being dearer than Standard over the term.
      *
      * At exactly this number the two are usually within a naira of each other
-     * (annual prepay: 700 pupils × ₦4,500 = ₦3,150,000 exactly), so the page
-     * describes it as the crossover, not as a saving.
+     * (annual prepay: 767 pupils × ₦4,500 = ₦3,451,500), so the page describes it
+     * as the crossover, not as a saving.
      */
     public function breakEvenPupils(bool $annualPrepay): int
     {

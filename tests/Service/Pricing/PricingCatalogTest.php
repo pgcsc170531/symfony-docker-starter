@@ -24,14 +24,14 @@ final class PricingCatalogTest extends TestCase
     public function test_email_is_mandatory_and_inside_the_enterprise_annual_fee(): void
     {
         self::assertSame(100_000, PricingCatalog::EMAIL_SERVICE_FEE);
-        self::assertSame(450_000, PricingCatalog::ENTERPRISE_BASE_ANNUAL_FEE);
-        self::assertSame(550_000, PricingCatalog::ENTERPRISE_ANNUAL_FEE);
+        self::assertSame(550_000, PricingCatalog::ENTERPRISE_BASE_ANNUAL_FEE);
+        self::assertSame(650_000, PricingCatalog::ENTERPRISE_ANNUAL_FEE);
     }
 
     public function test_enterprise_totals_match_the_published_offer(): void
     {
-        self::assertSame(2_050_000, $this->catalog->enterpriseYearOne());
-        self::assertSame(3_150_000, $this->catalog->enterpriseThreeYear());
+        self::assertSame(2_150_000, $this->catalog->enterpriseYearOne());
+        self::assertSame(3_450_000, $this->catalog->enterpriseThreeYear());
     }
 
     public function test_annual_prepay_is_a_third_off_the_termly_rate(): void
@@ -60,19 +60,19 @@ final class PricingCatalogTest extends TestCase
 
     public function test_break_even_pupils_match_the_roll_rule(): void
     {
-        self::assertSame(467, $this->catalog->breakEvenPupils(false));
-        self::assertSame(700, $this->catalog->breakEvenPupils(true));
+        self::assertSame(512, $this->catalog->breakEvenPupils(false));
+        self::assertSame(767, $this->catalog->breakEvenPupils(true));
     }
 
     public function test_enterprise_is_cheaper_just_above_each_crossover(): void
     {
-        // Termly: 466 pupils is still cheaper on Standard, 467 is not.
-        self::assertLessThan($this->catalog->enterpriseThreeYear(), 466 * 6_750);
-        self::assertGreaterThan($this->catalog->enterpriseThreeYear(), 467 * 6_750);
+        // Termly: 511 pupils is still cheaper on Standard, 512 is not.
+        self::assertLessThan($this->catalog->enterpriseThreeYear(), 511 * 6_750);
+        self::assertGreaterThan($this->catalog->enterpriseThreeYear(), 512 * 6_750);
 
-        // Annual: at 700 the two are exactly level; from 701 Enterprise wins.
-        self::assertSame($this->catalog->enterpriseThreeYear(), 700 * 4_500);
-        self::assertGreaterThan($this->catalog->enterpriseThreeYear(), 701 * 4_500);
+        // Annual: 766 pupils is still cheaper on Standard, 767 is not.
+        self::assertLessThan($this->catalog->enterpriseThreeYear(), 766 * 4_500);
+        self::assertGreaterThan($this->catalog->enterpriseThreeYear(), 767 * 4_500);
     }
 
     public function test_roll_rule_bands(): void

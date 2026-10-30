@@ -174,18 +174,18 @@ conceptually (roll rule from `SUBSCRIPTION-AND-TERM-REGISTRATION.md` §2D).
 3. **Two plan cards**, one column on mobile, side by side from `md:`:
    - **Standard** — ₦750/pupil per 4-month term, or **₦1,500/pupil/year** paid up
      front (33% off). Minimums ₦50,000/term, ₦100,000/year. Unlimited staff.
-   - **Enterprise** — **₦1,200,000** one-off licence + **₦550,000/year** (email
+   - **Enterprise** — **₦1,200,000** one-off licence + **₦650,000/year** (email
      included) + **₦300,000** implementation. Unlimited pupils.
 4. **Calculator** (client-side, no request):
    - one input: number of pupils;
    - shows three numbers: Standard termly per year, Standard annual, Enterprise
      over 3 years;
-   - one plain sentence: *"At 720 pupils, annual Standard costs ₦3.24m over three
-     years; Enterprise costs ₦3.15m."*
+   - one plain sentence: *"At 767 pupils, annual Standard costs ₦3.45m over three
+     years; Enterprise costs ₦3.45m."*
    - must round the same way as the billing code, and must never show a saving the
      billing engine would not honour.
-5. **"Which is cheaper?" table** — the 4-band crossover table (under 467 / 467–700
-   / 701–799 / 800+), stated in naira, not formulas.
+5. **"Which is cheaper?" table** — the 4-band crossover table (under 512 / 512–767
+   / 768–799 / 800+), stated in naira, not formulas.
 6. **What is included / what is not** — including the honesty that gateway charges
    on **parent** payments (₦200 handling, capped ₦500 on transfer) are separate
    from the subscription.
