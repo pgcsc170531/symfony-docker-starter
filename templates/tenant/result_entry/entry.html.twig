@@ -59,7 +59,7 @@
                     <template x-for="n in scheme.ca_count" :key="'ca'+n">
                         <th class="p-3" x-text="'CA' + n"></th>
                     </template>
-                    <th class="p-3">Theory</th>
+                    <th class="p-3">Exams</th>
                     <template x-if="scheme.exam_mode === 'dual'">
                         <th class="p-3">Practical</th>
                     </template>
@@ -130,7 +130,7 @@
                 </div>
             </template>
             <div class="mb-3">
-                <label class="block text-sm font-medium mb-1">Theory</label>
+                <label class="block text-sm font-medium mb-1">Exams</label>
                 <input type="number" class="w-full border rounded p-2"
                        x-model.number="currentStudent.theory"
                        :disabled="locked"
