@@ -20,7 +20,7 @@
 #}
 {% import '_brand.html.twig' as brand %}
 {% set current = current|default('') %}
-{% set trial_url = 'https://wa.me/2348032714999?text=' ~ ('Hello!%20I%20am%20a%20school%20proprietor%20interested%20in%20setting%20up%20a%20Free%20Trial%20for%20EDUS.') %}
+{% set try_url = 'https://wa.me/2348032714999?text=' ~ ('Hello!%20I%20am%20a%20school%20proprietor%20interested%20in%20trying%20EDUS%20for%20a%20full%20term.') %}
 
 <div x-data="{ open: false }" class="sticky top-0 z-[60] border-b border-white/10 bg-ink-900/95 backdrop-blur-md">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -39,9 +39,9 @@
                        class="text-sm font-medium {{ current == 'manual' ? 'text-white' : 'text-ink-300 hover:text-white' }} transition">User Manual</a>
                     <a href="{{ path('app_login') }}"
                        class="text-sm font-semibold text-white hover:text-accent-300 transition">Sign In</a>
-                    <a href="{{ trial_url }}" target="_blank" rel="noopener noreferrer"
+                    <a href="{{ try_url }}" target="_blank" rel="noopener noreferrer"
                        class="inline-flex min-h-[44px] items-center rounded-lg bg-white px-5 text-sm font-semibold text-ink-900 hover:bg-ink-100 transition">
-                        Start Free Trial
+                        Try a Term
                     </a>
                 </nav>
 
@@ -60,9 +60,9 @@
             <a href="{{ path('app_pricing') }}" class="flex min-h-[44px] items-center px-2 text-sm text-ink-200 hover:text-white">Pricing</a>
             <a href="{{ path('app_manual') }}" class="flex min-h-[44px] items-center px-2 text-sm text-ink-200 hover:text-white">User Manual</a>
             <a href="{{ path('app_login') }}" class="flex min-h-[44px] items-center px-2 text-sm font-semibold text-white">Sign In</a>
-            <a href="{{ trial_url }}" target="_blank" rel="noopener noreferrer"
+            <a href="{{ try_url }}" target="_blank" rel="noopener noreferrer"
                class="mt-2 flex min-h-[48px] items-center justify-center rounded-lg bg-white px-5 text-center text-sm font-semibold text-ink-900">
-                Start Free Trial
+                Try a Term
             </a>
         </div>
     </div>
