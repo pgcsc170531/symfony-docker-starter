@@ -9,11 +9,13 @@ use App\Entity\Tenant\FormTeacher;
 use App\Entity\Tenant\GradingScale;
 use App\Entity\Tenant\ResultApproval;
 use App\Entity\Tenant\ResultComponentScore;
+use App\Entity\Tenant\School;
 use App\Entity\Tenant\Staff;
 use App\Entity\Tenant\Student;
 use App\Entity\Tenant\StudentSubject;
 use App\Entity\Tenant\SubjectTeacher;
 use App\Entity\Tenant\Term;
+use App\Entity\Tenant\User;
 use App\Entity\Tenant\YearGroupMaster;
 use App\Service\Results\AssessmentSchemeResolver;
 use App\Service\Subjects\PupilSubjects;
@@ -405,6 +407,33 @@ class ResultEntryController extends AbstractController
     #[Route('/sheet/{id}', name: 'tenant_result_sheet_view', methods: ['GET'])]
     public function sheet(ClassSubject $classSubject): Response
     {
+        return $this->render('tenant/result_entry/sheet.html.twig', $this->buildSheet($classSubject));
+    }
+
+    /**
+     * The entered marks, on paper.
+     *
+     * A teacher prints this **before** submitting to check their typing against the
+     * handwritten sheet, and again **after** submitting as the record of what was
+     * handed in. It is built by the same code the reviewer's screen uses — one
+     * builder, two renderers — so the paper can never disagree with the screen.
+     */
+    #[Route('/sheet/{id}/print', name: 'tenant_result_sheet_print', methods: ['GET'])]
+    public function printSheet(ClassSubject $classSubject): Response
+    {
+        return $this->render('tenant/result_entry/print_scores.html.twig', $this->buildSheet($classSubject) + [
+            'tenant' => $this->currentSchool(),
+            'printed_at' => new \DateTimeImmutable(),
+        ]);
+    }
+
+    /**
+     * The one computation behind both the read-only screen and the printed sheet.
+     *
+     * @return array<string, mixed>
+     */
+    private function buildSheet(ClassSubject $classSubject): array
+    {
         $this->assertCanReviewSheet($classSubject);
 
         $term = $this->em->getRepository(Term::class)->findOneBy(['isActive' => true])
@@ -487,10 +516,22 @@ class ResultEntryController extends AbstractController
             'term' => $term,
         ]);
 
-        return $this->render('tenant/result_entry/sheet.html.twig', [
+        // What the paper is, in one word: a draft the teacher is still typing, a
+        // sheet handed in for approval, or one an HOD has already signed off.
+        $status = match (true) {
+            $approval?->getHodStatus() === ResultApproval::STATUS_APPROVED => 'approved',
+            $submitted => 'submitted',
+            default => 'draft',
+        };
+
+        return [
             'classSubject' => $classSubject,
+            'assignment' => $assignment,
+            'teacher' => $assignment?->getStaff() ? (string) $assignment->getStaff() : null,
             'term' => $term,
             'components' => $components,
+            'columns' => $this->schemes->columns($scheme),
+            'maximum' => $this->schemes->maximum($scheme),
             'sheet' => $sheet,
             'graded' => count($totals),
             'roster' => count($sheet),
@@ -500,7 +541,24 @@ class ResultEntryController extends AbstractController
             'fails' => $fails,
             'submitted' => $submitted,
             'approval' => $approval,
-        ]);
+            'status' => $status,
+        ];
+    }
+
+    /**
+     * The school whose letterhead goes on the paper. Parent and staff logins do not
+     * always carry a tenant, so the single `school_settings` row is the fallback —
+     * the same rule the app header follows.
+     */
+    private function currentSchool(): ?School
+    {
+        $user = $this->getUser();
+
+        if ($user instanceof User && $user->getTenant()) {
+            return $user->getTenant();
+        }
+
+        return $this->em->getRepository(School::class)->findOneBy([]);
     }
 
     private function gradeFor(float $total, array $grading): string

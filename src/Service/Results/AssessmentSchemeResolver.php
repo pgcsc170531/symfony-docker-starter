@@ -142,6 +142,39 @@ final class AssessmentSchemeResolver
     }
 
     /**
+     * The components of a scheme as printable columns: key, human label, maximum.
+     *
+     * A paper sheet and the screen it mirrors must agree on both the columns and
+     * their headings — "Theory" on one and "Exams" on the other is how a mark gets
+     * written in the wrong box — so the mapping lives here and not in each view.
+     *
+     * @param array{ca_count: int, exam_mode: string, ca_max: int, theory_max: int, practical_max: int} $scheme
+     *
+     * @return list<array{component: string, label: string, max: int}>
+     */
+    public function columns(array $scheme): array
+    {
+        $columns = [];
+        foreach ($this->components($scheme) as $component) {
+            $columns[] = [
+                'component' => $component,
+                'label' => match ($component) {
+                    'theory' => 'Exams',
+                    'practical' => 'Practical',
+                    default => 'CA ' . substr($component, 2),
+                },
+                'max' => match ($component) {
+                    'theory' => $scheme['theory_max'],
+                    'practical' => $scheme['practical_max'],
+                    default => $scheme['ca_max'],
+                },
+            ];
+        }
+
+        return $columns;
+    }
+
+    /**
      * Sums only the components the scheme counts.
      *
      * Marks already in the database for a dropped component are kept but never

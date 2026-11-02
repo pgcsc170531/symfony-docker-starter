@@ -1,0 +1,32 @@
+{#
+    The paper rules shared by every A4 sheet this school prints by hand:
+    the blank score sheet and the entered mark sheet.
+
+    A4 is 210 × 297 mm. The preview is that shape on screen so the teacher can
+    see how much of the page the class list will fill, and the @page rule is the
+    same size so the printer has nothing to guess. Include this INSIDE <style>.
+#}
+@page { size: A4 portrait; margin: 12mm 14mm; }
+.paper { width: 210mm; max-width: 100%; min-height: 297mm; }
+@media print {
+    .no-print { display: none !important; }
+    body { background: white; margin: 0; padding: 0; }
+    /* On paper the @page margin IS the margin; the preview chrome must go. */
+    .paper { box-shadow: none !important; margin: 0 !important; border: 0 !important;
+             border-radius: 0 !important; width: auto !important;
+             max-width: none !important; min-height: 0 !important; }
+    .paper-inner { padding: 0 !important; }
+    /* A big class runs onto page two; the column headings must travel with it. */
+    .sheet thead { display: table-header-group; }
+    .sheet tr { break-inside: avoid; }
+    .sheet th, .sheet td { border-color: #9ca3af !important; }
+    /* Handwriting lines vanish on paper unless they are told to print. */
+    .blank-line { border-color: #374151 !important; }
+}
+.sheet { border-collapse: collapse; width: 100%; }
+.sheet th, .sheet td { border: 1px solid #d1d5db; padding: 6px 8px; text-align: left; }
+.sheet th { background-color: #f3f4f6; font-weight: bold; font-size: 10px;
+            text-transform: uppercase; letter-spacing: .02em; vertical-align: bottom; }
+.sheet td { font-size: 11px; height: 30px; } /* tall enough to write a mark in */
+.sheet td.num, .sheet th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.sheet td.mid, .sheet th.mid { text-align: center; }

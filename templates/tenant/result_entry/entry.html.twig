@@ -33,6 +33,15 @@
         </label>
         <span x-show="importing" class="text-sm text-gray-500">Importing…</span>
         <span x-text="importMessage" class="text-sm text-red-600"></span>
+
+        {# The entered marks on paper. It prints what is SAVED, so unsaved cells
+           in this browser are not on the sheet — say so rather than surprise them. #}
+        <a href="{{ path('tenant_result_sheet_print', {id: classSubject.id}) }}"
+           target="_blank" rel="noopener"
+           title="Prints the marks already saved, before or after submitting"
+           class="inline-flex min-h-[44px] items-center bg-white border border-gray-300 text-gray-700 px-4 rounded-lg text-sm hover:bg-gray-100">
+            🖨️ Print mark sheet
+        </a>
     </div>
 
     {# Locked banner #}

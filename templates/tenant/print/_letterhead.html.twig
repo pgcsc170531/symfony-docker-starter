@@ -1,0 +1,58 @@
+{#
+    The school's letterhead, shared by every sheet the school prints.
+
+    A sheet is handed to a form teacher, an invigilator or an HOD. It has to be
+    obvious which school it belongs to, so the logo, name, motto and contacts
+    head the page and the rule beneath is the school's own colour.
+
+    Expects:
+      school — App\Entity\Tenant\School (may be null)
+      term   — App\Entity\Tenant\Term|null
+      kicker — small word above the title: 'Blank', 'Draft', 'Submitted', 'Approved'
+      title  — the document's name: 'Score Sheet', 'Mark Sheet'
+      ink    — the accent colour (school primary colour, already defaulted)
+#}
+{% set school_logo = school ? school_logo_url(school.logoFilename) : null %}
+{% set letterhead = school
+    ? [school.address, school.phoneNumber, school.email, school.website]|filter(value => value is not empty)
+    : [] %}
+
+<header class="flex flex-col items-center gap-3 border-b-[3px] pb-3 text-center sm:flex-row sm:items-start sm:gap-4 sm:text-left"
+        style="border-color: {{ ink }};">
+    {% if school_logo %}
+        <img src="{{ school_logo }}" alt="" class="h-16 w-16 shrink-0 object-contain sm:h-[68px] sm:w-[68px]">
+    {% elseif school %}
+        {# No usable logo — a letter tile from the school's own name beats a
+           broken image, exactly as the app header does it. #}
+        <span class="grid h-16 w-16 shrink-0 place-items-center rounded-lg text-2xl font-bold text-white sm:h-[68px] sm:w-[68px]"
+              style="background-color: {{ ink }};" aria-hidden="true">{{ school.name|slice(0, 1)|upper }}</span>
+    {% endif %}
+
+    <div class="min-w-0 flex-1">
+        <h1 class="break-words text-base font-bold uppercase leading-tight tracking-tight text-ink-900 sm:text-xl">
+            {{ school ? school.name : 'Edus' }}
+        </h1>
+        {% if school and school.motto %}
+            <p class="break-words text-xs italic leading-snug text-ink-600 sm:text-sm">
+                &ldquo;{{ school.motto }}&rdquo;
+            </p>
+        {% endif %}
+        {% if letterhead is not empty %}
+            <p class="mt-1 break-words text-[11px] leading-snug text-ink-500">
+                {{ letterhead|join(' · ') }}
+            </p>
+        {% endif %}
+    </div>
+
+    <div class="shrink-0 sm:text-right">
+        <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">{{ kicker }}</p>
+        <p class="text-sm font-bold uppercase leading-tight tracking-wide" style="color: {{ ink }};">
+            {{ title }}
+        </p>
+        {% if term %}
+            <p class="text-[11px] leading-snug text-ink-500">
+                {{ term.session.name }}<br>{{ term.name }}
+            </p>
+        {% endif %}
+    </div>
+</header>

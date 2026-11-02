@@ -1,0 +1,23 @@
+{#
+    Who signs for these marks. Every sheet carries the same two lines: the teacher
+    who entered them, and the office that accepts them.
+
+    Expects: school (App\Entity\Tenant\School|null), optional teacher (name)
+#}
+<div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
+    <div>
+        <p class="text-[10px] font-semibold uppercase tracking-wide text-ink-600">Subject teacher</p>
+        {% if teacher is defined and teacher %}
+            <p class="mt-1 break-words text-xs font-bold text-ink-900">{{ teacher }}</p>
+        {% endif %}
+        <span class="blank-line {{ teacher is defined and teacher ? 'mt-5' : 'mt-8' }} block border-t border-ink-300"></span>
+        <p class="mt-1 text-[10px] text-ink-500">Name, signature &amp; date</p>
+    </div>
+    <div>
+        <p class="text-[10px] font-semibold uppercase tracking-wide text-ink-600">
+            HOD / {{ school and school.principalTitle ? school.principalTitle : 'Principal' }}
+        </p>
+        <span class="blank-line mt-8 block border-t border-ink-300"></span>
+        <p class="mt-1 text-[10px] text-ink-500">Name, signature &amp; date</p>
+    </div>
+</div>

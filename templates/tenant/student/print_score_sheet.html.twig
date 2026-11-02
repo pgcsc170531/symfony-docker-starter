@@ -6,38 +6,10 @@
     <title>Score Sheet - {{ classroom.name }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     {% include '_design_tokens.html.twig' %}
-    {#
-        A blank sheet the teacher prints and fills in by hand, then types into
-        Result Entry. Its columns come from the assessment scheme — two CAs for a
-        school that keeps two, three for a school that keeps three — so the paper
-        and the screen never disagree about how many marks there are to give.
-    #}
+    {#  The paper rules are shared with the entered mark sheet, so the blank sheet a
+        teacher collects and the sheet they print afterwards are the same page.  #}
     <style>
-        /* The paper. A4 is 210 × 297 mm — the preview is that shape on screen so the
-           teacher can see how much of the page the class list will fill, and the
-           @page rule is the same size so the printer has nothing to guess. */
-        @page { size: A4 portrait; margin: 12mm 14mm; }
-        .paper { width: 210mm; max-width: 100%; min-height: 297mm; }
-        @media print {
-            .no-print { display: none !important; }
-            body { background: white; margin: 0; padding: 0; }
-            /* On paper the @page margin IS the margin; the preview chrome must go. */
-            .paper { box-shadow: none !important; margin: 0 !important; border: 0 !important;
-                     border-radius: 0 !important; width: auto !important;
-                     max-width: none !important; min-height: 0 !important; }
-            .paper-inner { padding: 0 !important; }
-            /* A big class runs onto page two; the column headings must travel with it. */
-            .sheet thead { display: table-header-group; }
-            .sheet tr { break-inside: avoid; }
-            .sheet th, .sheet td { border-color: #9ca3af !important; }
-            /* Handwriting lines vanish on paper unless they are told to print. */
-            .blank-line { border-color: #374151 !important; }
-        }
-        .sheet { border-collapse: collapse; width: 100%; }
-        .sheet th, .sheet td { border: 1px solid #d1d5db; padding: 6px 8px; text-align: left; }
-        .sheet th { background-color: #f3f4f6; font-weight: bold; font-size: 10px;
-                    text-transform: uppercase; letter-spacing: .02em; vertical-align: bottom; }
-        .sheet td { font-size: 11px; height: 30px; } /* tall enough to write a mark in */
+        {% include 'tenant/print/_styles.html.twig' %}
     </style>
 </head>
 <body class="bg-ink-100 font-sans text-ink-900">
@@ -45,9 +17,6 @@
 {# The school's own colour heads its own paperwork. `primary_color` is set per
    tenant, so a sheet printed by one school cannot be mistaken for another's. #}
 {% set paper_ink = tenant.primaryColor ?: '#1e40af' %}
-{% set school_logo = school_logo_url(tenant.logoFilename) %}
-{% set letterhead = [tenant.address, tenant.phoneNumber, tenant.email, tenant.website]
-    |filter(value => value is not empty) %}
 
 <div class="px-4 py-4 sm:px-6 sm:py-6">
 
@@ -78,50 +47,15 @@
     <div class="paper mx-auto mt-3 rounded-xl border border-ink-200 bg-white shadow-sm">
         <div class="paper-inner p-5 sm:p-8">
 
-            {# ── Letterhead: the SCHOOL, not the software ─────────────────
-               A sheet is handed to a form teacher, an invigilator or an HOD. It
-               has to be obvious which school and which class it belongs to, so
-               the logo, name, motto and contacts head the page and the accent
-               rule is the school's own colour. #}
-            <header class="flex flex-col items-center gap-3 border-b-[3px] pb-3 text-center sm:flex-row sm:items-start sm:gap-4 sm:text-left"
-                    style="border-color: {{ paper_ink }};">
-                {% if school_logo %}
-                    <img src="{{ school_logo }}" alt="" class="h-16 w-16 shrink-0 object-contain sm:h-[68px] sm:w-[68px]">
-                {% else %}
-                    {# No logo uploaded yet — a letter tile from the school's own name
-                       beats a broken image, exactly as the app header does it. #}
-                    <span class="grid h-16 w-16 shrink-0 place-items-center rounded-lg text-2xl font-bold text-white sm:h-[68px] sm:w-[68px]"
-                          style="background-color: {{ paper_ink }};" aria-hidden="true">{{ tenant.name|slice(0, 1)|upper }}</span>
-                {% endif %}
-
-                <div class="min-w-0 flex-1">
-                    <h1 class="break-words text-base font-bold uppercase leading-tight tracking-tight text-ink-900 sm:text-xl">
-                        {{ tenant.name }}
-                    </h1>
-                    {% if tenant.motto %}
-                        <p class="break-words text-xs italic leading-snug text-ink-600 sm:text-sm">
-                            &ldquo;{{ tenant.motto }}&rdquo;
-                        </p>
-                    {% endif %}
-                    {% if letterhead is not empty %}
-                        <p class="mt-1 break-words text-[11px] leading-snug text-ink-500">
-                            {{ letterhead|join(' · ') }}
-                        </p>
-                    {% endif %}
-                </div>
-
-                <div class="shrink-0 sm:text-right">
-                    <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Blank</p>
-                    <p class="text-sm font-bold uppercase leading-tight tracking-wide" style="color: {{ paper_ink }};">
-                        Score Sheet
-                    </p>
-                    {% if term %}
-                        <p class="text-[11px] leading-snug text-ink-500">
-                            {{ term.session.name }}<br>{{ term.name }}
-                        </p>
-                    {% endif %}
-                </div>
-            </header>
+            {# ── Letterhead: the SCHOOL, not the software. Shared with the entered
+               mark sheet, so both papers are the same document in different ink. #}
+            {% include 'tenant/print/_letterhead.html.twig' with {
+                school: tenant,
+                term: term,
+                kicker: 'Blank',
+                title: 'Score Sheet',
+                ink: paper_ink,
+            } only %}
 
             {# ── The particulars: which class, which subject, how many marks ── #}
             <section class="grid grid-cols-2 gap-x-5 gap-y-3 border-b border-ink-200 py-3 sm:grid-cols-4">
@@ -190,20 +124,7 @@
             </div>
 
             {# ── Who signs for these marks ───────────────────────────────── #}
-            <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <div>
-                    <p class="text-[10px] font-semibold uppercase tracking-wide text-ink-600">Subject teacher</p>
-                    <span class="blank-line mt-8 block border-t border-ink-300"></span>
-                    <p class="mt-1 text-[10px] text-ink-500">Name, signature &amp; date</p>
-                </div>
-                <div>
-                    <p class="text-[10px] font-semibold uppercase tracking-wide text-ink-600">
-                        HOD / {{ tenant.principalTitle ?: 'Principal' }}
-                    </p>
-                    <span class="blank-line mt-8 block border-t border-ink-300"></span>
-                    <p class="mt-1 text-[10px] text-ink-500">Name, signature &amp; date</p>
-                </div>
-            </div>
+            {% include 'tenant/print/_signatures.html.twig' with { school: tenant } only %}
 
             {# ── Colophon: the school issued it, Edus printed it ──────────── #}
             <footer class="mt-6 flex flex-col gap-1 border-t border-ink-200 pt-2 text-[10px] leading-snug text-ink-500 sm:flex-row sm:items-baseline sm:justify-between">
