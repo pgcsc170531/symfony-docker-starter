@@ -169,131 +169,171 @@ totals differ by exactly the override.
 
 ---
 
-# Part B — Subjects per pupil
+# Part B — A pupil who does not take a subject
+
+> **Revised 2 November 2026, on the owner's instruction.** The first draft proposed
+> "choice groups" (Religion = CRK *or* IRS, one of each group). **That is dropped.**
+> The ask is simpler than that: pick a pupil, untick the subject they do not offer,
+> done — and the reason is concrete: *we must not record a fail for a pupil who
+> does not offer IRS.* The arms already do the differentiating (SS 1 Science vs
+> SS 1 Arts); what is missing is one tick inside an arm.
 
 ## B1. The decision I propose
 
-**A pupil's subjects default to their class's list, and can be narrowed per pupil
-once a choice group is involved.**
+**An exemption list, and nothing else. In every segment — nursery, primary,
+junior, senior.**
 
-Two new concepts, and nothing else changes for the majority of pupils:
+The class list stays exactly as it is — `ClassSubject` still says *this arm offers
+these subjects*. On top of it, a pupil's record says **which of those subjects they
+do not take**. No pupil with an exemption list keeps today's behaviour, byte for
+byte.
 
-- **`SubjectChoiceGroup`** — a named set of alternatives within a level or arm,
-  e.g. *"Religion"* = {CRK, IRS}, *"Vocational"* = {Home Economics, Food &
-  Nutrition}, *"Technical"* = {Technical Drawing, Woodwork}. A group states how
-  many subjects a pupil must take from it (**exactly one**, default).
-- **`StudentSubject`** — the rows that record what a pupil actually takes, for a
-  session. **No rows ⇒ the pupil takes the class list** (today's behaviour, zero
-  migration, zero risk for the 95% of pupils with no choice).
+- **No groups.** No "choose one of these two", no min/max, no alternative sets.
+- **No backfill.** No rows means "takes the class list" — every existing pupil,
+  every school that never uses this, is untouched.
+- **One gesture.** A ticked checklist: everything ticked by default, the form
+  teacher unticks the one the child does not offer.
+- **No segment gets a special case.** A nursery arm whose pupils do not take
+  *Rhymes*, a primary arm that skips *French*, an SS 1 Arts pupil who offers IRS
+  instead of CRK — all three are the same untick, on the same screen, with the
+  same effect. Nothing asks "what kind of school is this?" before agreeing.
 
-The class list remains the catalogue. The pupil list is the truth for marking,
-cards, approvals and positions.
+The rule the school actually asked for, stated as a rule:
+
+> **A subject a pupil does not take is not marked, not counted, not printed, and
+> cannot produce a fail.**
 
 ## B2. Data
 
 ```
-subject_choice_group
-  id, name, session_id (NULL = every session), min_choices (1), max_choices (1), position
-
-subject_choice_group_member
-  id, group_id, subject_id            -- CRK and IRS in the same group
-
-student_subject
-  id, student_id, subject_id, classroom_id, session_id, source ('class' | 'choice')
-  UNIQUE (student_id, subject_id, session_id)
+student_subject_exemption
+  id
+  student_id           -- the pupil
+  class_subject_id     -- the subject *in this arm and this session*
+  recorded_by          -- staff id (who unticked it)
+  recorded_at
+  reason               -- nullable, free text ("offers IRS instead")
+  UNIQUE (student_id, class_subject_id)
 ```
 
-Rules the database can hold:
+Why `class_subject_id` and not `subject_id`: the class subject already carries the
+classroom **and** the session, so an exemption for "IRS in SS 1 Arts, 2025/2026"
+cannot leak into another arm, another level or next year. Nothing else needs a
+column.
 
-- A subject may belong to **at most one group per session** (a subject cannot be
-  both "either CRK or IRS" and "either CRK or French").
-- `min_choices = max_choices = 1` is the ordinary case; `0..2` allows
-  "pick any two of these five".
+Deleting a `ClassSubject` cascades its exemptions away with it; deleting a pupil
+does the same. No other entity is touched.
 
-Migration: **none needed for existing pupils.** `student_subject` starts empty;
-empty means "the class list".
-
-## B3. Where "the pupil's subjects" is answered today (all must move to one service)
+## B3. Where "this pupil's subjects" is answered today (all must move to one service)
 
 | Caller | Line | Today | Must become |
 |---|---|---|---|
-| `ResultSheetBuilder` | 54 | class's `ClassSubject` rows | the pupil's list |
-| `ResultTrendBuilder` | 56 | class's rows | the pupil's list |
-| `ApprovalController` | 180, 425, 457 | class's rows | per-pupil completeness, class subject still approvable when every taker is done |
-| `TermRelease` | 32, 55 | "every `ClassSubject` approved" | "every *taken* subject approved" |
+| `ResultSheetBuilder` | 54 | class's `ClassSubject` rows | the pupil's list, minus exemptions |
+| `ResultTrendBuilder` | 56 | class's rows | same |
+| `ApprovalController` | 180, 425, 457 | class's rows | complete when every **taker** is done |
+| `TermRelease` | 32, 55 | "every `ClassSubject` approved" | every class subject **with at least one taker** approved |
 | `ResultEntryController` | 380 | `findOneBy(classroom, subject, session)` | unchanged — the teacher still enters by class-subject; only **which pupils appear** is filtered |
-| `ResultReportController` | 137, 225 | class's rows | broadsheet columns = union of subjects taken, blank where not taken |
-| `SchoolPerformanceBuilder` | 264 | class's rows | aggregate over takers, not over the class |
+| `ResultReportController` | 137, 225 | class's rows | broadsheet column stays, cell blank for an exempt pupil (never 0, never F9) |
+| `SchoolPerformanceBuilder` | 264 | class's rows | averages over takers only |
+| `ResultEntryController::save()` / CSV import | 122+, 243+ | accepts any pupil's row | refuses a mark for an exempt pupil, by name, in the flash |
 
-**The design intent is one service** — `App\Service\Subjects\PupilSubjects`:
+**One service**, `App\Service\Subjects\PupilSubjects`:
 
 ```php
+/** The class's subjects, minus the ones this pupil does not take. */
 subjectsFor(Student $student, Classroom $classroom, Session $session): list<ClassSubject>
-// rows in student_subject, else the class list
+
+takes(Student $student, ClassSubject $classSubject): bool
 ```
 
-Every caller above uses it. That way CRK/IRS cannot be honoured on the card and
-ignored in the broadsheet — which is exactly the class of bug this codebase has
-paid for before (the CA-count sweep).
+Every caller above uses it. Honouring an exemption on the card while the HOD's
+board still demands the mark is exactly the bug class this codebase has paid for
+before (the CA-count sweep).
 
 ## B4. Screens
 
-### B4.1 Pupil profile → "Subjects"
-A compact list: core subjects ticked and locked, choice groups shown as a radio
-set ("Religion: ○ CRK ○ IRS"), and a "same as the class" badge when nothing has
-been chosen. One save button, 44px targets, works at 360px.
+### B4.1 The per-arm grid — where a form teacher will actually do it
 
-### B4.2 Class → "Give a group choice to this arm"
-Pick an arm, pick a choice group, then mark each pupil: CRK / IRS. A single
-screen with one row per pupil and two radio buttons — the way a form teacher
-actually does it, on paper, in one sitting.
+One row per pupil, one column per subject the arm offers, every box ticked:
 
-### B4.3 Result entry
-Unchanged for the teacher: still one sheet per class-subject. But the pupil rows
-shown are only those who take it, with a count line — *"24 of 31 pupils take
-this subject"* — so a teacher is never confused by the seven missing names.
+```
+             MATH  ENG  BASIC SCI  CRK  IRS  FRENCH
+  Zubairu      ☑     ☑      ☑       ☐    ☑     ☑
+  Hauwa        ☑     ☑      ☑       ☑    ☐     ☑
+```
 
-### B4.4 Report card
-Lists only the pupil's subjects. **Position** is computed within the subjects the
-pupil takes (already the case) and, for a choice-group subject, **against the
-other takers of that subject**, not against the whole class.
+Untick → that pupil does not take it. One **Save**, one flash: *"2 pupils updated
+for SS 1 Arts — 1 no longer takes CRK, 1 no longer takes IRS."* On a phone the
+same data is one card per pupil with subject chips that toggle.
+
+This is the screen that matters: a form teacher does the whole arm in one sitting,
+the way they do it on paper today.
+
+### B4.2 Pupil profile → "Subjects"
+The same list for one pupil, for the case where a parent walks in with a letter.
+Everything ticked by default; an unticked subject shows *"not taken"* rather than
+an empty mark.
+
+### B4.3 Class-subject screen → "Not taken by"
+For the reverse case — *"the eight CRK pupils are exempt from IRS"* — the subject's
+own screen has one action: pick the arm, pick the pupils, exempt them all. One
+write, one audit row.
+
+### B4.4 Result entry
+Unchanged for the teacher: still one sheet per class-subject. The pupil rows shown
+are only the takers, with a count line — *"24 of 31 pupils take this subject"* —
+so the seven missing names are explained rather than mysteriously absent. The CSV
+template for that class-subject contains only takers, and an uploaded row for an
+exempt pupil is refused with their name in the message.
+
+### B4.5 Report card and broadsheet
+The card lists only the subjects the pupil takes — **the exempt subject is absent,
+not printed as "—", not printed as 0, and never as F9.** The broadsheet keeps its
+column (other pupils need it) and leaves that pupil's cell blank.
 
 ## B5. Rules
 
 | Situation | Rule |
 |---|---|
-| Pupil has no `student_subject` rows | Takes the class list. Nothing to configure. |
-| A choice group exists in the arm | The pupil **must** have exactly one member chosen before marks are entered (or the sheet says "subject not chosen" and refuses). |
-| A core subject | Always taken; cannot be removed per pupil. |
-| Pupil swaps CRK → IRS after CRK marks exist | Marks are **kept but flagged**, and the card refuses to print CRK. A swap is a deliberate act; it is confirmed with the consequence in the sentence. |
-| Pupil joins mid-term | Inherits the class list; the form teacher picks their option. |
-| Move to another arm | `student_subject` rows are per (pupil, session); moving arms re-resolves and warns if the new arm does not offer a chosen subject. |
+| Pupil has no exemption rows | Takes the class list. Nothing to configure. |
+| Exempt subject, no marks | Nothing to record; no fail, no zero, no average contribution. |
+| Exempt subject, marks already exist | Rows are **kept, flagged and excluded** from every figure; the card omits the subject. Re-ticking restores them untouched. |
+| All pupils in an arm exempt from one subject | The class subject shows *"no takers"*; it is not required for term release and its teacher sheet is empty. |
+| A mark arrives for an exempt pupil (screen or CSV) | **Refused**, by name: *"Zubairu Letter does not take IRS in SS 1 Arts."* |
+| Pupil moves to another arm | Exemptions belong to the old arm's class subjects; the new arm's list applies as normal. The move warns if a subject they were exempt from is core in the new arm. |
+| Pupil joins mid-term | Inherits the class list; the form teacher untick what does not apply. |
 | Fees | **Unaffected.** Subjects do not price anything today and should not start. |
 | Timetable / teacher assignment | Unaffected: `SubjectTeacher` stays class-level. |
 
 ## B6. Edge cases worth naming now
 
 - **Approval completeness.** "Every subject of this class is submitted" becomes
-  "every subject of this class is submitted for every pupil who takes it". The
-  HOD's board must not demand marks for IRS from a CRK pupil.
-- **Broadsheet width.** A class with 3 optional subjects gets 3 extra columns,
-  mostly blank. Acceptable; it is what the paper broadsheet does today.
-- **Class average per subject.** Must be the average **of takers**.
-- **Transitions.** A pupil with no choice rows who later gets rows must not lose
-  marks already entered for a subject they no longer take.
-- **Deleting a group.** Members are not deleted; pupils keep whatever they chose.
+  "every subject of this class is submitted **for every pupil who takes it**". An
+  HOD can no longer be blocked by a pupil who was never in the class for it.
+- **Position and average.** A pupil is ranked on the subjects **they** take; a
+  subject's class average is the average **of its takers**.
+- **Who may exempt.** The form teacher of that arm, the principal/head teacher for
+  their segment, and an administrator. Every change writes `authority_action_log`
+  (§ principal design) — an exemption is the kind of decision a parent will
+  question in March.
+- **Bulk is the norm.** Exempting one pupil at a time for a whole arm is the
+  exception; B4.3 exists so eight CRK pupils take eight seconds, not eight visits.
+- **Undo is free.** Re-ticking re-includes the pupil and their old marks, because
+  nothing was deleted.
 
 ## B7. Decisions wanted — Part B
 
 | # | Question | My recommendation |
 |---|---|---|
-| B1 | Choice expressed per **pupil** (B1) or per **arm** (SS 1 Science vs Arts as two arms)? | **Per pupil.** Arms already exist for stream differences; a choice inside one arm (CRK/IRS) must not require creating an arm. |
-| B2 | Does a choice group belong to a level, an arm, or the session? | **Session-wide**, attached to subjects, with an optional arm restriction later. Simplest thing that covers CRK/IRS and Trade groups. |
-| B3 | Materialise the class list into `student_subject` for every pupil, or leave it empty and resolve? | **Leave empty, resolve.** No migration, no 1,000-row writes per term, and the class list keeps working if a school never uses choices. |
-| B4 | Where does the form teacher enter the choice — pupil profile, or a per-arm grid? | **Both**, but the **grid** is the one that will be used; build it first. |
-| B5 | If a pupil swaps after marks exist, keep or void the marks? | **Keep, flag, and refuse to print.** Deleting marks silently is how a school loses a term. |
-| B6 | Should positions be within the subject's takers? | **Yes** — a CRK pupil must not be ranked against IRS marks. |
-| B7 | Is this needed for **primary/nursery**? | No, and the screens must not clutter those schools: choice groups only appear once a group exists. |
+| B1 | Exemption list (untick what is not taken) or an explicit list of what *is* taken? | **Exemption list.** It matches "deselect a subject", and an empty list needs no migration. |
+| B2 | Is an exemption per **session** or per **term**? | **Per session** — it follows the class subject, which is already session-scoped. A term-level exception is not worth the extra column. |
+| B3 | Can a **core** subject be exempted for one pupil? | **Yes**, with a warning. The school decides; a rule that refuses would send the work back to paper. |
+| B4 | Keep marks when a pupil is exempted after marking? | **Keep, exclude, restore on undo.** Never delete a mark silently. |
+| B5 | Should position be computed among takers only? | **Yes.** |
+| B6 | Does the principal/head teacher get this power? | **Yes, scoped to their segment**, and logged. |
+| B7 | Do we need the choice-group idea at all? | **No.** Dropped by the owner on 2 Nov. If a school wants "one of these two", it creates the arm or accepts the manual tick. |
+| B8 | Which segments get this? | **All four — nursery, primary, junior, senior.** Owner, 2 Nov: "this functionality should be just there". No setting, no gate. |
+| B9 | Does a nursery arm need its own *Rhymes* exemption screen? | **No separate screen** — the same per-arm grid, which for a 3-subject nursery arm is three columns. |
 
 ---
 
@@ -303,20 +343,21 @@ other takers of that subject**, not against the whole class.
 |---|---|---|
 | **1** | Part A read view: arms in the fee schedule, "from ₦X", per-arm totals, printed schedule | The report is currently **wrong**, not just limited. Fixing it cannot wait behind an editor. |
 | **2** | Part A editor (`/finance/fees/amounts`) + `is_override` + unique constraint + invoice test | Makes the science/arts case actually enterable. |
-| **3** | Part B model (`SubjectChoiceGroup`, `StudentSubject`, `PupilSubjects`) with **no UI**, and every caller moved onto the service | The refactor is the risk; do it while nothing can be misconfigured. |
-| **4** | Part B UI: per-arm choice grid, pupil profile subjects, result-entry counts, card/broadsheet/approval filters | Now the behaviour is visible and testable end to end. |
+| **3** | Part B model (`student_subject_exemption`) + `PupilSubjects::subjectsFor()` with **no UI**, and every caller moved onto it | The refactor is the risk; do it while nothing can be misconfigured. |
+| **4** | Part B UI: the per-arm tick grid, the pupil checklist, the "not taken by" action, result-entry counts, card/broadsheet/approval filters | Now the behaviour is visible and testable end to end. |
 
-Rough size: **1** ≈ half a day, **2** ≈ a day, **3** ≈ a day and a half,
-**4** ≈ two days. Nothing here needs a new server or a downtime window.
+Rough size: **1** ≈ half a day, **2** ≈ a day, **3** ≈ a day, **4** ≈ two days.
+Nothing here needs a new server or a downtime window.
 
 ## 4. What I will not do (so we agree on it now)
 
 - I will not make every fee per-arm. Levels stay, and a school with identical arms
   keeps one box.
 - I will not touch invoices, payments or discounts — they already read the arm.
-- I will not backfill `student_subject` for existing pupils.
-- I will not let a subject choice affect money.
-- I will not delete a mark when a pupil swaps subject.
+- I will not backfill exemptions — an empty list already means "takes the class
+  list", for every existing pupil in every segment.
+- I will not let a subject exemption affect money.
+- I will not delete a mark when a pupil is exempted.
 
 ## 5. Decision log — to be filled in before phase 1 starts
 
@@ -327,9 +368,13 @@ Rough size: **1** ≈ half a day, **2** ≈ a day, **3** ≈ a day and a half,
 | A3 | Overrides survive a level change | | |
 | A4 | Range vs single number for a differing level | | |
 | A5 | Edit on the schedule or its own screen | | |
-| B1 | Choice per pupil, not per arm | | |
-| B2 | Group scoped to the session | | |
-| B3 | Resolve the class list, do not backfill | | |
-| B4 | Grid first, pupil profile second | | |
-| B5 | Keep and flag marks on a swap | | |
+| B1 | Exemption list, not choice groups | | |
+| B2 | Exemption scoped to the session (follows the class subject) | | |
+| B3 | Core subjects can be exempted, with a warning | | |
+| B4 | Marks kept and excluded when a pupil is exempted | | |
+| B5 | Position computed among takers | | |
+| B6 | Principal / head teacher may exempt within their segment | | |
+| B7 | Choice groups dropped entirely | | |
+| B8 | All segments — nursery, primary, junior, senior | | |
+| B9 | One grid for every segment, no separate nursery screen | | |
 | B6 | Positions within takers | | |
