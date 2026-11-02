@@ -192,7 +192,11 @@ class UpdateTenantSchemaCommand extends Command
         SQL);
 
         $this->ensureColumn($connection, 'classroom', 'year_group_id', 'INT DEFAULT NULL', $io);
-        $this->ensureColumn($connection, 'classroom', 'arm', 'VARCHAR(10) DEFAULT NULL', $io);
+        $this->ensureColumn($connection, 'classroom', 'arm', 'VARCHAR(30) DEFAULT NULL', $io);
+        // Every database created before this widening holds VARCHAR(10), and
+        // `ensureColumn()` leaves an existing column alone — so a school could not
+        // name an arm "Science" and be told nothing but a database error.
+        $this->ensureColumnWidth($connection, 'classroom', 'arm', 30, $io);
 
         $this->ensureForeignKey($connection, 'subject', 'department_id', 'department', 'id', $io);
         $this->ensureForeignKey($connection, 'classroom', 'year_group_id', 'year_group', 'id', $io);
@@ -242,6 +246,37 @@ class UpdateTenantSchemaCommand extends Command
 
         $connection->executeStatement("ALTER TABLE {$table} ADD COLUMN {$column} {$definition}");
         $io->text("  + Added column {$table}.{$column}");
+    }
+
+    /**
+     * Widens a VARCHAR that an older build created too short.
+     *
+     * `ensureColumn()` only adds what is missing, so a column that exists with the
+     * wrong width stays wrong for ever — and the school sees a database error, not a
+     * validation message. Idempotent: reads the current width and does nothing once
+     * the column is wide enough, so this command stays safe to run repeatedly.
+     */
+    private function ensureColumnWidth(Connection $connection, string $table, string $column, int $length, SymfonyStyle $io): void
+    {
+        $current = $connection->fetchOne(
+            "SELECT CHARACTER_MAXIMUM_LENGTH FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table AND COLUMN_NAME = :column",
+            ['table' => $table, 'column' => $column]
+        );
+
+        // A NULL here is a TEXT/BLOB column, which already has room.
+        if ($current === false || $current === null || (int) $current >= $length) {
+            return;
+        }
+
+        $connection->executeStatement(sprintf(
+            'ALTER TABLE %s MODIFY %s VARCHAR(%d) DEFAULT NULL',
+            $table,
+            $column,
+            $length
+        ));
+
+        $io->text(sprintf('  ~ Widened %s.%s from VARCHAR(%d) to VARCHAR(%d)', $table, $column, (int) $current, $length));
     }
 
     private function ensureForeignKey(

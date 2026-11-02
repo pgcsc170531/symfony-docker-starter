@@ -20,7 +20,14 @@ class Classroom
     #[ORM\JoinColumn(name: 'year_group_id', nullable: true)]
     private ?YearGroup $yearGroup = null;
 
-    #[ORM\Column(length: 10, nullable: true)]
+    /**
+     * What this arm is called inside its level: "A", "Science", "Chrome".
+     *
+     * 30 characters, not 10: schools name arms after streams and houses
+     * ("Science", "Commercial", "Blue House"), and a 10-character column made
+     * the onboarding wizard fail on names it had asked the school to type.
+     */
+    #[ORM\Column(length: 30, nullable: true)]
     private ?string $arm = null;
 
     public function getId(): ?int

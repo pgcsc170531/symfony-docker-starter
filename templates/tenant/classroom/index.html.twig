@@ -62,7 +62,7 @@
                         <label for="manual-arm" class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-500">
                             Arm <span class="normal-case text-ink-400">(optional)</span>
                         </label>
-                        <input id="manual-arm" type="text" name="arm" placeholder="Gold" autocomplete="off"
+                        <input id="manual-arm" type="text" name="arm" placeholder="Gold" autocomplete="off" maxlength="30"
                                class="min-h-[44px] w-full rounded-lg border border-ink-300 px-3 text-base text-ink-900 placeholder:text-ink-400 focus:border-accent-500 focus:ring-accent-500">
                         <p class="mt-1 text-xs text-ink-500">Leave it empty to add the class with no arm.</p>
                     </div>
@@ -126,7 +126,7 @@
                                                     <label class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-500">Arm name</label>
                                                     <div class="flex items-stretch">
                                                         <span class="inline-flex shrink-0 items-center rounded-l-lg border border-r-0 border-ink-300 bg-ink-50 px-3 text-sm text-ink-600">{{ levelName }}</span>
-                                                        <input type="text" name="arm" value="{{ arm }}" placeholder="A" autocomplete="off"
+                                                        <input type="text" name="arm" value="{{ arm }}" placeholder="A" autocomplete="off" maxlength="30"
                                                                class="min-h-[44px] w-full min-w-0 rounded-r-lg border border-ink-300 px-3 text-base text-ink-900 placeholder:text-ink-400 focus:border-accent-500 focus:ring-accent-500">
                                                     </div>
                                                 </div>
@@ -151,7 +151,7 @@
                             <input type="hidden" name="mode" value="append">
                             <input type="hidden" name="name" value="{{ level }}">
                             <label class="sr-only" for="append-arm-{{ loop.index }}">Add an arm to {{ level }}</label>
-                            <input id="append-arm-{{ loop.index }}" type="text" name="arm" placeholder="Add arm — e.g. D or Gold" autocomplete="off"
+                            <input id="append-arm-{{ loop.index }}" type="text" name="arm" placeholder="Add arm — e.g. D or Gold" autocomplete="off" maxlength="30"
                                    class="min-h-[44px] w-full min-w-0 rounded-lg border border-ink-300 px-3 text-base text-ink-900 placeholder:text-ink-400 focus:border-accent-500 focus:ring-accent-500">
                             <button type="submit" class="min-h-[44px] shrink-0 rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white hover:bg-accent-700 focus:outline-none focus:ring-2 focus:ring-accent-500">
                                 Add arm
