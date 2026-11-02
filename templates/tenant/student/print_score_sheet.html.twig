@@ -13,85 +13,210 @@
         and the screen never disagree about how many marks there are to give.
     #}
     <style>
-        @page { size: A4 portrait; margin: 15mm; }
+        /* The paper. A4 is 210 × 297 mm — the preview is that shape on screen so the
+           teacher can see how much of the page the class list will fill, and the
+           @page rule is the same size so the printer has nothing to guess. */
+        @page { size: A4 portrait; margin: 12mm 14mm; }
+        .paper { width: 210mm; max-width: 100%; min-height: 297mm; }
         @media print {
             .no-print { display: none !important; }
             body { background: white; margin: 0; padding: 0; }
-            .print-container { box-shadow: none !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
-            /* Force borders to print strongly */
-            th, td { border: 1px solid #000 !important; }
+            /* On paper the @page margin IS the margin; the preview chrome must go. */
+            .paper { box-shadow: none !important; margin: 0 !important; border: 0 !important;
+                     border-radius: 0 !important; width: auto !important;
+                     max-width: none !important; min-height: 0 !important; }
+            .paper-inner { padding: 0 !important; }
+            /* A big class runs onto page two; the column headings must travel with it. */
+            .sheet thead { display: table-header-group; }
+            .sheet tr { break-inside: avoid; }
+            .sheet th, .sheet td { border-color: #9ca3af !important; }
+            /* Handwriting lines vanish on paper unless they are told to print. */
+            .blank-line { border-color: #374151 !important; }
         }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #e5e7eb; padding: 6px 8px; text-align: left; }
-        th { background-color: #f9fafb; font-weight: bold; font-size: 11px; text-transform: uppercase; }
-        td { font-size: 12px; }
+        .sheet { border-collapse: collapse; width: 100%; }
+        .sheet th, .sheet td { border: 1px solid #d1d5db; padding: 6px 8px; text-align: left; }
+        .sheet th { background-color: #f3f4f6; font-weight: bold; font-size: 10px;
+                    text-transform: uppercase; letter-spacing: .02em; vertical-align: bottom; }
+        .sheet td { font-size: 11px; height: 30px; } /* tall enough to write a mark in */
     </style>
 </head>
-<body class="bg-ink-200 font-sans text-ink-900">
+<body class="bg-ink-100 font-sans text-ink-900">
 
-    <div class="print-container bg-white max-w-4xl mx-auto my-8 p-6 shadow-lg sm:p-8">
+{# The school's own colour heads its own paperwork. `primary_color` is set per
+   tenant, so a sheet printed by one school cannot be mistaken for another's. #}
+{% set paper_ink = tenant.primaryColor ?: '#1e40af' %}
+{% set school_logo = school_logo_url(tenant.logoFilename) %}
+{% set letterhead = [tenant.address, tenant.phoneNumber, tenant.email, tenant.website]
+    |filter(value => value is not empty) %}
 
-        <div class="no-print mb-6 flex justify-end gap-3">
+<div class="px-4 py-4 sm:px-6 sm:py-6">
+
+    <div class="no-print mx-auto max-w-[210mm]">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <a href="{{ path('app_tenant_student_index') }}"
-               class="inline-flex min-h-[44px] items-center rounded bg-ink-100 px-4 text-sm font-bold text-ink-700 hover:bg-ink-200">
-                Close
+               class="inline-flex min-h-[44px] items-center text-sm font-bold text-accent-700 hover:text-accent-900">
+                &larr; Back to {{ learner.pluralCapital }}
             </a>
             <button type="button" onclick="window.print()"
-                    class="inline-flex min-h-[44px] items-center gap-2 rounded bg-accent-600 px-4 text-sm font-bold text-white hover:bg-accent-700">
-                🖨️ Print Sheet
+                    class="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg bg-accent-600 px-5 text-sm font-semibold text-white hover:bg-accent-700 sm:w-auto">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5zm-3 0h.008v.008H15V10.5z" />
+                </svg>
+                Print sheet
             </button>
         </div>
-
-        <div class="text-center mb-6">
-            <h1 class="text-xl font-bold uppercase break-words sm:text-2xl">{{ tenant.name }}</h1>
-            <h2 class="text-base font-semibold mt-1 uppercase decoration-2 underline underline-offset-4 sm:text-lg">Blank Score Sheet</h2>
-
-            <div class="mt-6 flex flex-col gap-3 text-sm font-bold sm:flex-row sm:items-end sm:justify-between">
-                <p>Class: <span class="text-accent-700">{{ classroom.name }}</span></p>
-                <p>Subject: ___________________________</p>
-                <p>Term/Session: ______________________</p>
-            </div>
-        </div>
-
-        <div class="overflow-x-auto">
-            <table>
-                <thead>
-                    <tr>
-                        <th class="w-8 text-center">S/N</th>
-                        <th class="w-24">Adm No.</th>
-                        <th class="w-64">{{ learner.capital }} Name</th>
-                        {% for column in columns %}
-                            <th class="w-12 text-center whitespace-nowrap">{{ column.label }}<br><span class="text-[9px] font-normal">({{ column.max }})</span></th>
-                        {% endfor %}
-                        <th class="w-12 text-center whitespace-nowrap">Total<br><span class="text-[9px] font-normal">({{ maximum }})</span></th>
-                        <th class="w-12 text-center">Grade</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for student in students %}
-                    <tr>
-                        <td class="text-center text-ink-500">{{ loop.index }}</td>
-                        <td class="font-mono text-xs">{{ student.admissionNumber ?: '---' }}</td>
-                        <td class="font-bold uppercase text-[11px]">{{ student.fullName }}</td>
-                        {% for column in columns %}<td></td>{% endfor %}
-                        <td></td>
-                        <td></td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="{{ 3 + columns|length + 2 }}" class="text-center py-8 text-ink-400 italic">No active students found in this class.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <div class="mt-12 text-sm">
-            <p>Teacher's Name: ___________________________</p>
-            <p class="mt-4">Signature / Date: _________________________</p>
-        </div>
-
+        <p class="mt-1 text-xs text-ink-500">
+            Prints as one A4 sheet on the school&rsquo;s letterhead — class, subject and
+            assessment grid included. Fill it in by hand, then type the marks into
+            Result Entry.
+        </p>
     </div>
+
+    {# ── The paper ─────────────────────────────────────────────────────────
+       Screen shows a page-shaped preview; print shows the page itself. #}
+    <div class="paper mx-auto mt-3 rounded-xl border border-ink-200 bg-white shadow-sm">
+        <div class="paper-inner p-5 sm:p-8">
+
+            {# ── Letterhead: the SCHOOL, not the software ─────────────────
+               A sheet is handed to a form teacher, an invigilator or an HOD. It
+               has to be obvious which school and which class it belongs to, so
+               the logo, name, motto and contacts head the page and the accent
+               rule is the school's own colour. #}
+            <header class="flex flex-col items-center gap-3 border-b-[3px] pb-3 text-center sm:flex-row sm:items-start sm:gap-4 sm:text-left"
+                    style="border-color: {{ paper_ink }};">
+                {% if school_logo %}
+                    <img src="{{ school_logo }}" alt="" class="h-16 w-16 shrink-0 object-contain sm:h-[68px] sm:w-[68px]">
+                {% else %}
+                    {# No logo uploaded yet — a letter tile from the school's own name
+                       beats a broken image, exactly as the app header does it. #}
+                    <span class="grid h-16 w-16 shrink-0 place-items-center rounded-lg text-2xl font-bold text-white sm:h-[68px] sm:w-[68px]"
+                          style="background-color: {{ paper_ink }};" aria-hidden="true">{{ tenant.name|slice(0, 1)|upper }}</span>
+                {% endif %}
+
+                <div class="min-w-0 flex-1">
+                    <h1 class="break-words text-base font-bold uppercase leading-tight tracking-tight text-ink-900 sm:text-xl">
+                        {{ tenant.name }}
+                    </h1>
+                    {% if tenant.motto %}
+                        <p class="break-words text-xs italic leading-snug text-ink-600 sm:text-sm">
+                            &ldquo;{{ tenant.motto }}&rdquo;
+                        </p>
+                    {% endif %}
+                    {% if letterhead is not empty %}
+                        <p class="mt-1 break-words text-[11px] leading-snug text-ink-500">
+                            {{ letterhead|join(' · ') }}
+                        </p>
+                    {% endif %}
+                </div>
+
+                <div class="shrink-0 sm:text-right">
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-500">Blank</p>
+                    <p class="text-sm font-bold uppercase leading-tight tracking-wide" style="color: {{ paper_ink }};">
+                        Score Sheet
+                    </p>
+                    {% if term %}
+                        <p class="text-[11px] leading-snug text-ink-500">
+                            {{ term.session.name }}<br>{{ term.name }}
+                        </p>
+                    {% endif %}
+                </div>
+            </header>
+
+            {# ── The particulars: which class, which subject, how many marks ── #}
+            <section class="grid grid-cols-2 gap-x-5 gap-y-3 border-b border-ink-200 py-3 sm:grid-cols-4">
+                <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-ink-500">Class</p>
+                    <p class="break-words text-sm font-bold text-ink-900">{{ classroom.name }}</p>
+                    {% if classroom.level is defined and classroom.level %}
+                        <p class="text-[11px] text-ink-500">{{ classroom.level.name }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-ink-500">Subject</p>
+                    <span class="blank-line mt-2 block h-5 border-b border-dotted border-ink-300">&nbsp;</span>
+                </div>
+                <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-ink-500">Subject teacher</p>
+                    <span class="blank-line mt-2 block h-5 border-b border-dotted border-ink-300">&nbsp;</span>
+                </div>
+                <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-ink-500">Assessment</p>
+                    <p class="text-xs font-semibold leading-snug text-ink-900">
+                        {%- for column in columns -%}
+                            {{ column.label }} ({{ column.max }}){{ not loop.last ? ' + ' : '' }}
+                        {%- endfor -%}
+                    </p>
+                    <p class="text-[11px] text-ink-500">
+                        {{ maximum }} marks in all &middot;
+                        {{ students|length }} {{ students|length == 1 ? learner : learner.plural }}
+                    </p>
+                </div>
+            </section>
+
+            <div class="mt-4 overflow-x-auto">
+                <table class="sheet min-w-[640px]">
+                    <thead>
+                        <tr>
+                            <th class="w-8 text-center">S/N</th>
+                            <th class="w-24">Adm. No.</th>
+                            <th class="w-64">{{ learner.capital }} name</th>
+                            {% for column in columns %}
+                                <th class="w-12 text-center whitespace-nowrap">{{ column.label }}<br><span class="text-[9px] font-normal">({{ column.max }})</span></th>
+                            {% endfor %}
+                            <th class="w-12 text-center whitespace-nowrap">Total<br><span class="text-[9px] font-normal">({{ maximum }})</span></th>
+                            <th class="w-12 text-center">Grade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr>
+                            <td class="text-center text-ink-500">{{ loop.index }}</td>
+                            <td class="font-mono text-xs">{{ student.admissionNumber ?: '—' }}</td>
+                            <td class="text-[11px] font-semibold uppercase">{{ student.fullName }}</td>
+                            {% for column in columns %}<td></td>{% endfor %}
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="{{ 3 + columns|length + 2 }}" class="py-8 text-center italic text-ink-400">
+                                No {{ learner.plural }} in this class yet.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {# ── Who signs for these marks ───────────────────────────────── #}
+            <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-ink-600">Subject teacher</p>
+                    <span class="blank-line mt-8 block border-t border-ink-300"></span>
+                    <p class="mt-1 text-[10px] text-ink-500">Name, signature &amp; date</p>
+                </div>
+                <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-ink-600">
+                        HOD / {{ tenant.principalTitle ?: 'Principal' }}
+                    </p>
+                    <span class="blank-line mt-8 block border-t border-ink-300"></span>
+                    <p class="mt-1 text-[10px] text-ink-500">Name, signature &amp; date</p>
+                </div>
+            </div>
+
+            {# ── Colophon: the school issued it, Edus printed it ──────────── #}
+            <footer class="mt-6 flex flex-col gap-1 border-t border-ink-200 pt-2 text-[10px] leading-snug text-ink-500 sm:flex-row sm:items-baseline sm:justify-between">
+                <span class="break-words">
+                    {{ tenant.name }}{% if tenant.address %} &middot; {{ tenant.address }}{% endif %}{% if tenant.phoneNumber %} &middot; {{ tenant.phoneNumber }}{% endif %}
+                </span>
+                <span class="shrink-0">Printed {{ 'now'|date('j M Y') }} &middot; Generated by Edus</span>
+            </footer>
+
+        </div>
+    </div>
+
+</div>
 
 </body>
 </html>

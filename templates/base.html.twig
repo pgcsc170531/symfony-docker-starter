@@ -348,8 +348,9 @@
                button drifts to the middle. #}
             <a href="{{ parent_portal ? path('app_parent_dashboard') : path('app_tenant_dashboard') }}"
                class="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-1 py-2">
-                {% if shell_school and shell_school.logoFilename %}
-                    <img src="{{ asset('uploads/logos/' ~ shell_school.logoFilename) }}" alt=""
+                {% set shell_logo = shell_school ? school_logo_url(shell_school.logoFilename) : null %}
+                {% if shell_logo %}
+                    <img src="{{ shell_logo }}" alt=""
                          class="h-8 w-8 shrink-0 rounded-lg object-contain">
                 {% elseif shell_school %}
                     {# No uploaded logo yet — a letter tile beats a broken image, and it

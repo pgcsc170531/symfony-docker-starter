@@ -12,6 +12,7 @@ use App\Form\StudentType;
 use App\Form\StudentAdmissionType;
 use App\Form\PhotoUploadType; 
 use App\Service\Results\AssessmentSchemeResolver;
+use App\Service\Subjects\PupilSubjects;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -276,12 +277,12 @@ class StudentController extends AbstractController
     }
 
     #[Route('/class/{id}/score-sheet', name: 'app_tenant_class_score_sheet', methods: ['GET'])]
-    public function printScoreSheet(Classroom $classroom, EntityManagerInterface $em): Response
+    public function printScoreSheet(Classroom $classroom, EntityManagerInterface $em, PupilSubjects $pupils): Response
     {
-        $students = $em->getRepository(Student::class)->findBy(
-            ['currentClass' => $classroom],
-            ['firstName' => 'ASC'] 
-        );
+        // The same roster every other screen uses. Three links to a class exist in
+        // this schema (`current_classroom`, `current_class` and an enrollment row)
+        // and a sheet that reads only one of them can print an empty class.
+        $students = $pupils->roster($classroom);
 
         /** @var \App\Entity\Tenant\User $user */
         $tenant = $this->getUser()->getTenant();
@@ -290,10 +291,9 @@ class StudentController extends AbstractController
         // so its columns must be the columns that screen will show: two CAs for a
         // school that keeps two, three for a school that keeps three. Hard-coding
         // CA1–CA3 handed a two-CA school a sheet with a column that does not exist.
-        $scheme = $this->schemes->forClassroom(
-            $classroom,
-            $em->getRepository(Term::class)->findOneBy(['isActive' => true])
-        );
+        $term = $em->getRepository(Term::class)->findOneBy(['isActive' => true]);
+
+        $scheme = $this->schemes->forClassroom($classroom, $term);
 
         $columns = [];
         foreach ($this->schemes->components($scheme) as $key) {
@@ -315,6 +315,7 @@ class StudentController extends AbstractController
             'classroom' => $classroom,
             'students' => $students,
             'tenant' => $tenant,
+            'term' => $term,
             'columns' => $columns,
             'maximum' => $this->schemes->maximum($scheme),
         ]);

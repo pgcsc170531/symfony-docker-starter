@@ -7,6 +7,7 @@ use App\Entity\Tenant\FormTeacher;
 use App\Entity\Tenant\School;
 use App\Entity\Tenant\YearGroupMaster;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
@@ -22,7 +23,8 @@ class AccessExtension extends AbstractExtension
 {
     public function __construct(
         private TokenStorageInterface $tokenStorage,
-        private EntityManagerInterface $em
+        private EntityManagerInterface $em,
+        #[Autowire('%kernel.project_dir%')] private string $projectDir,
     ) {
     }
 
@@ -31,7 +33,32 @@ class AccessExtension extends AbstractExtension
         return [
             new TwigFunction('has_approval_assignment', [$this, 'hasApprovalAssignment']),
             new TwigFunction('tenant_school', [$this, 'tenantSchool']),
+            new TwigFunction('school_logo_url', [$this, 'schoolLogoUrl']),
         ];
+    }
+
+    /**
+     * The school's uploaded logo — or null when the file is not there any more.
+     *
+     * `logo_filename` outlives the file: a re-upload, a restored backup or a
+     * copied database all leave a name behind that 404s, and the result is a
+     * broken-image glyph on every letterhead, ID card and receipt. `asset()`
+     * will happily build a URL for a file that does not exist, so the only
+     * honest answer is to look at the disk.
+     */
+    public function schoolLogoUrl(?string $filename): ?string
+    {
+        $filename = trim((string) $filename);
+
+        // A filename is not a path. Anything with a separator or a dot-dot is
+        // not something this helper should turn into a URL.
+        if ($filename === '' || str_contains($filename, '..') || str_contains($filename, '/') || str_contains($filename, '\\')) {
+            return null;
+        }
+
+        return is_file($this->projectDir.'/public/uploads/logos/'.$filename)
+            ? '/uploads/logos/'.$filename
+            : null;
     }
 
     /**

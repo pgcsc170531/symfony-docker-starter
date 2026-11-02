@@ -90,11 +90,14 @@
                                 </td>
                                 {% for arm in arms %}
                                     <td class="p-3 text-right">
-                                        <label class="sr-only" for="amount-{{ arm.id }}-{{ item.id }}">
-                                            {{ item.name }} for {{ arm.name }}
-                                        </label>
+                                        {# aria-label, NOT an sr-only <label>. `sr-only` is
+                                           position:absolute, so it escapes the table rail's
+                                           clipping and widened the whole document by 84px at
+                                           360px — the page scrolled sideways for no visible
+                                           reason. An attribute cannot do that. #}
                                         <input id="amount-{{ arm.id }}-{{ item.id }}" type="text" inputmode="decimal"
                                                name="amounts[{{ arm.id }}][{{ item.id }}]"
+                                               aria-label="{{ item.name }} for {{ arm.name }}"
                                                value="{{ values[arm.id][item.id] ?? '' }}"
                                                placeholder="—"
                                                data-row="{{ loop.parent.loop.index }}"
@@ -109,6 +112,9 @@
 
             <p class="mt-2 text-xs text-ink-500">
                 Amounts are in naira. An empty box means that arm does not pay the item.
+            </p>
+            <p class="mt-1 text-xs font-medium text-accent-700 sm:hidden">
+                Swipe the table sideways to reach the other arms.
             </p>
 
             <div class="mt-4 flex flex-col gap-2 sm:flex-row">
