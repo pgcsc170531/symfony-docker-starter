@@ -8,6 +8,7 @@ use App\Entity\Tenant\Enrollment;
 use App\Entity\Tenant\GradingScale;
 use App\Entity\Tenant\Student;
 use App\Entity\Tenant\Term;
+use App\Service\Subjects\PupilSubjects;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -22,6 +23,7 @@ final class ResultTrendBuilder
     public function __construct(
         private EntityManagerInterface $em,
         private AssessmentSchemeResolver $schemes,
+        private PupilSubjects $pupils,
     ) {
     }
 
@@ -53,17 +55,10 @@ final class ResultTrendBuilder
             return $empty;
         }
 
-        $classSubjects = $this->em->getRepository(ClassSubject::class)
-            ->createQueryBuilder('cs')
-            ->addSelect('s')
-            ->join('cs.subject', 's')
-            ->andWhere('cs.classroom = :classroom')
-            ->andWhere('cs.session = :session')
-            ->setParameter('classroom', $classroom)
-            ->setParameter('session', $session)
-            ->orderBy('s.name', 'ASC')
-            ->getQuery()
-            ->getResult();
+        $classSubjects = array_values(array_filter(
+            $this->pupils->subjectsFor($student, $classroom),
+            static fn (ClassSubject $classSubject): bool => $classSubject->getSession()?->getId() === $session->getId()
+        ));
 
         $scores = $this->scores($student, $classroom, $terms);
         $grading = $this->gradingScale();

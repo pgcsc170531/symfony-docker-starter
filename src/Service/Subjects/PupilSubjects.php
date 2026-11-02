@@ -106,6 +106,47 @@ final class PupilSubjects
     }
 
     /**
+     * The pupils who sit this subject, by id — a class subject nobody takes is not
+     * a subject the HOD has to approve, and not a reason to hold a term open.
+     *
+     * @param list<Student> $roster every pupil in the arm (fetched when empty)
+     *
+     * @return array<int, true> student id → true
+     */
+    public function takerIds(ClassSubject $classSubject, array $roster = []): array
+    {
+        $exempt = $this->exemptIdsFor($classSubject);
+
+        if ($classSubject->isElective()) {
+            $ids = [];
+            foreach ($this->em->getRepository(StudentSubject::class)->findBy(['classSubject' => $classSubject]) as $row) {
+                $id = (int) $row->getStudent()?->getId();
+                if ($id > 0 && !isset($exempt[$id])) {
+                    $ids[$id] = true;
+                }
+            }
+
+            return $ids;
+        }
+
+        $classroom = $classSubject->getClassroom();
+        if ($classroom === null) {
+            return [];
+        }
+
+        $ids = [];
+        foreach ($roster !== [] ? $roster : $this->roster($classroom) as $student) {
+            $ids[(int) $student->getId()] = true;
+        }
+
+        foreach (array_keys($exempt) as $studentId) {
+            unset($ids[$studentId]);
+        }
+
+        return $ids;
+    }
+
+    /**
      * The subjects this pupil is examined on, for a report card, a transcript or a
      * trend strip.
      *

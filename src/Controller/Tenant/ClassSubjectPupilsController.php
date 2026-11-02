@@ -5,6 +5,7 @@ namespace App\Controller\Tenant;
 use App\Entity\Tenant\ClassSubject;
 use App\Entity\Tenant\Student;
 use App\Service\Subjects\PupilSubjects;
+use App\Service\Wording\LearnerWording;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -32,6 +33,7 @@ final class ClassSubjectPupilsController extends AbstractController
         Request $request,
         PupilSubjects $pupils,
         EntityManagerInterface $em,
+        LearnerWording $wording,
     ): Response {
         $classroom = $classSubject->getClassroom();
         if ($classroom === null) {
@@ -83,10 +85,22 @@ final class ClassSubjectPupilsController extends AbstractController
 
             $em->flush();
 
+            // A nursery or primary school calls them pupils; everyone else calls
+            // them students. One word, from LearnerWording, everywhere.
+            $noun = $wording->singular();
+            $nouns = $wording->plural();
+            $subjectName = (string) $classSubject->getSubject()?->getName();
+
             $this->addFlash($added + $removed > 0 ? 'success' : 'info', match (true) {
-                $added > 0 && $removed > 0 => sprintf('%d pupil%s added and %d removed from %s.', $added, $added === 1 ? '' : 's', $removed, $classSubject->getSubject()?->getName()),
-                $added > 0 => sprintf('%d pupil%s added to %s.', $added, $added === 1 ? '' : 's', $classSubject->getSubject()?->getName()),
-                $removed > 0 => sprintf('%d pupil%s no longer take%s %s.', $removed, $removed === 1 ? '' : 's', $removed === 1 ? 's' : '', $classSubject->getSubject()?->getName()),
+                $added > 0 && $removed > 0 => sprintf(
+                    '%d %s added and %d removed from %s.',
+                    $added, $added === 1 ? $noun : $nouns, $removed, $subjectName
+                ),
+                $added > 0 => sprintf('%d %s added to %s.', $added, $added === 1 ? $noun : $nouns, $subjectName),
+                $removed > 0 => sprintf(
+                    '%d %s no longer %s %s.',
+                    $removed, $removed === 1 ? $noun : $nouns, $removed === 1 ? 'takes' : 'take', $subjectName
+                ),
                 default => 'Nothing changed.',
             });
 

@@ -51,12 +51,12 @@
                 <label for="cs-category" class="mb-1 block text-sm font-medium text-ink-800">Category</label>
                 <select id="cs-category" name="category"
                         class="min-h-[44px] w-full rounded-lg border border-ink-200 bg-white px-3 text-sm text-ink-900 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-200">
-                    <option value="core">Core — every pupil in the class</option>
-                    <option value="elective">Elective — only pupils enrolled in it</option>
+                    <option value="core">Core — every {{ learner }} in the class</option>
+                    <option value="elective">Elective — only {{ learner.plural }} enrolled in it</option>
                 </select>
                 <p class="mt-1 text-xs text-ink-500">
-                    A core subject is scored for every pupil in the class. An elective only appears for the
-                    pupils enrolled in it.
+                    A core subject is scored for every {{ learner }} in the class. An elective only appears
+                    for the {{ learner.plural }} enrolled in it.
                 </p>
             </div>
 

@@ -23,11 +23,13 @@
         </h1>
         <p class="mt-1 text-sm text-ink-600">
             <strong class="font-semibold text-ink-900">{{ takers }} of {{ roster|length }}</strong>
-            {{ learner.plural | default('pupils') }} take this subject.
-            Untick a pupil who does not offer it — they will not be marked or printed on a card for it.
+            {{ learner.plural }} take this subject.
+            Untick a {{ learner }} who does not offer it — they will not be marked or printed on a card for it.
         </p>
         <p class="mt-1 text-xs text-ink-500">
-            {{ classSubject.isElective ? 'This subject is an elective: only ticked pupils are on the sheet.' : 'This subject is core: every pupil is ticked unless you untick them.' }}
+            {{ classSubject.isElective
+                ? 'This subject is an elective: only ticked ' ~ learner.plural ~ ' are on the sheet.'
+                : 'This subject is core: every ' ~ learner ~ ' is ticked unless you untick them.' }}
         </p>
     </div>
 

@@ -29,7 +29,7 @@ use App\Service\Results\ReportShareService;
 use App\Service\Results\ResultMailer;
 use App\Service\Results\ResultSheetBuilder;
 use App\Service\Results\TranscriptPdfRenderer;
-use App\Service\SchoolLife\TermRelease;
+use App\Service\Subjects\PupilSubjects;use App\Service\SchoolLife\TermRelease;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -54,6 +54,7 @@ class ResultReportController extends AbstractController
         private ReportArchiveService $archives,
         private TermRelease $release,
         private AssessmentSchemeResolver $schemes,
+        private PupilSubjects $pupils,
     ) {
     }
 
@@ -908,9 +909,19 @@ class ResultReportController extends AbstractController
             'term' => $term,
         ]);
 
+        // A pupil the form teacher unticked is not in this subject's figures: no
+        // count, no average, no grade distribution. Stale marks stay in the table
+        // but never reach a sheet or a board.
+        $exempt = $this->pupils->exemptIdsFor($classSubject);
+
         $byStudent = [];
         foreach ($rows as $row) {
-            $sid = $row->getStudent()->getId();
+            $sid = (int) $row->getStudent()->getId();
+
+            if (isset($exempt[$sid])) {
+                continue;
+            }
+
             $byStudent[$sid]['student'] = $row->getStudent();
             $byStudent[$sid]['components'][$row->getComponent()] = (float) $row->getScore();
         }
