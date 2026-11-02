@@ -16,6 +16,7 @@ use App\Entity\Tenant\SubjectTeacher;
 use App\Entity\Tenant\Term;
 use App\Entity\Tenant\YearGroupMaster;
 use App\Service\Results\AssessmentSchemeResolver;
+use App\Service\Subjects\PupilSubjects;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -34,6 +35,7 @@ class ResultEntryController extends AbstractController
         private EntityManagerInterface $em,
         private CsrfTokenManagerInterface $csrf,
         private AssessmentSchemeResolver $schemes,
+        private PupilSubjects $pupils,
     ) {
     }
 
@@ -206,9 +208,12 @@ class ResultEntryController extends AbstractController
 
     private function resolveStudents(ClassSubject $classSubject): array
     {
+        $classroom = $classSubject->getClassroom();
+
         if ($classSubject->isCore()) {
-            return $this->em->getRepository(Student::class)
-                ->findBy(['currentClassroom' => $classSubject->getClassroom()]); // ⚠️ confirm Student::getCurrentClassroom() property name
+            // Every pupil linked to the arm, however they were linked, minus the
+            // ones the form teacher unticked.
+            return $this->pupils->takers($classSubject, $this->pupils->roster($classroom));
         }
 
         return $this->em->getRepository(Student::class)

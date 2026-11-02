@@ -8,6 +8,7 @@ use App\Entity\Tenant\FeeStructure;
 use App\Entity\Tenant\School;
 use App\Entity\Tenant\Term;
 use App\Service\Finance\ClassLevels;
+use App\Service\Finance\FeeSchedule;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request; // 🟢 Needed for query params
@@ -67,56 +68,30 @@ class FeeController extends AbstractController
         $structures = $queryBuilder->getQuery()->getResult();
 
         // 5. GROUP LEVELS — one column per level (Nursery 1), not per arm.
-        //    The arms of a level all carry the same amount, so showing five
-        //    identical "Nursery 1 …" columns was noise, and for a nursery whose
-        //    arms are gemstones the old name-guess made every arm its own level.
+        //    Arms that agree print one number; arms that differ print "from ₦X"
+        //    with every arm listed underneath. The old code kept the last arm read
+        //    and presented it as the level price — see FeeSchedule.
         $classrooms = $em->getRepository(Classroom::class)->findAll();
         $levels = ClassLevels::group($classrooms);
         $levelByClassroom = ClassLevels::index($levels);
 
-        // 6. CALCULATE TOTALS (With Duplicate Protection 🛡️)
-        $matrix = [];
-        $totals = []; 
-
-        // Initialize totals
-        foreach (array_keys($levels) as $lvl) {
-            $totals[$lvl] = ['recurring' => 0, 'onetime' => 0];
-        }
-
-        // 🛡️ THE FIX: This array remembers what we have already added
-        $processedItems = []; // Format: "ItemID_LevelName"
-
+        $rows = [];
         /** @var FeeStructure $fs */
         foreach ($structures as $fs) {
-            $itemName = $fs->getFeeItem()->getName();
-            $itemId   = $fs->getFeeItem()->getId();
-            $freq     = $fs->getFeeItem()->getFrequency();
-            $isOneTime = ($freq === 'ONETIME');
-            
-            // Map Class -> Level
-            $levelName = $levelByClassroom[(int) $fs->getClassroom()->getId()]
-                ?? $fs->getClassroom()->getName();
+            $classroom = $fs->getClassroom();
+            $item = $fs->getFeeItem();
 
-            // A. Always update the Visual Matrix
-            $matrix[$itemName][$levelName] = $fs->getAmount();
-
-            // B. Calculate Totals (ONLY ONCE per Level)
-            $uniqueKey = $itemId . '_' . $levelName;
-
-            // 🛡️ CHECK: Have we added this item for this level yet?
-            if (!isset($processedItems[$uniqueKey])) {
-                
-                if ($isOneTime) {
-                    $totals[$levelName]['onetime'] += $fs->getAmount();
-                } else {
-                    $totals[$levelName]['recurring'] += $fs->getAmount();
-                }
-
-                // Mark as done so we don't add it again for "JSS 1B"
-                $processedItems[$uniqueKey] = true; 
-            }
+            $rows[] = [
+                'item' => (string) $item->getName(),
+                'itemId' => (int) $item->getId(),
+                'level' => $levelByClassroom[(int) $classroom->getId()] ?? $classroom->getName(),
+                'arm' => (string) $classroom->getName(),
+                'amount' => (float) $fs->getAmount(),
+                'oneTime' => $item->getFrequency() === 'ONETIME',
+            ];
         }
-        
+
+        $schedule = FeeSchedule::build($rows, array_keys($levels));
         // 7. PREPARE ROWS FOR DISPLAY
         $feeItems = $em->getRepository(FeeItem::class)->findBy([], ['position' => 'ASC']);
         
@@ -131,10 +106,11 @@ class FeeController extends AbstractController
             'term' => $term,
             'allTerms' => $allTerms,
             'levels' => array_keys($levels),
+            'levelClasses' => $levels,
             'recurringItems' => $recurringItems,
             'oneTimeItems' => $oneTimeItems,
-            'matrix' => $matrix,
-            'totals' => $totals,
+            'cells' => $schedule['cells'],
+            'totals' => $schedule['totals'],
             'isFirstTerm' => $isFirstTerm
         ]);
     }

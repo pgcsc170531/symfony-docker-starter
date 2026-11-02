@@ -7,6 +7,7 @@ use App\Entity\Tenant\Classroom;
 use App\Entity\Tenant\FeeItem;
 use App\Entity\Tenant\FeeStructure;
 use App\Service\Finance\ClassLevels;
+use App\Service\Finance\FeeSchedule;
 use App\Entity\Tenant\School;
 use App\Entity\Tenant\Session;
 use App\Entity\Tenant\Term;
@@ -718,54 +719,29 @@ class OnboardingController extends AbstractController
 
         $structures = $queryBuilder->getQuery()->getResult();
 
-        // 3. GROUP LEVELS (shared with the fee schedule — see ClassLevels)
+        // 3. GROUP LEVELS (shared with the fee schedule — see ClassLevels) and
+        //    summarise per arm, so two arms of one level can carry two prices.
         $classrooms = $em->getRepository(Classroom::class)->findAll();
         $levels = ClassLevels::group($classrooms);
         $levelByClassroom = ClassLevels::index($levels);
 
-        // 4. CALCULATE TOTALS (WITH DUPLICATE PROTECTION)
-        $matrix = [];
-        $totals = []; 
-
-        // Initialize totals
-        foreach (array_keys($levels) as $lvl) {
-            $totals[$lvl] = ['recurring' => 0, 'onetime' => 0];
-        }
-
-        // 🛡️ DUPLICATE BLOCKER: Keeps track of what we have already added
-        $processedItems = []; // Format: "ItemID_LevelName"
-
+        $rows = [];
         /** @var FeeStructure $fs */
         foreach ($structures as $fs) {
-            $itemName = $fs->getFeeItem()->getName();
-            $itemId   = $fs->getFeeItem()->getId();
-            $freq     = $fs->getFeeItem()->getFrequency();
-            $isOneTime = ($freq === 'ONETIME');
-            
-            // Map Class -> Level
-            $levelName = $levelByClassroom[(int) $fs->getClassroom()->getId()]
-                ?? $fs->getClassroom()->getName();
+            $classroom = $fs->getClassroom();
+            $item = $fs->getFeeItem();
 
-            // A. Fill the Matrix (Table Body) - This is safe to overwrite
-            $matrix[$itemName][$levelName] = $fs->getAmount();
-
-            // B. Calculate Totals (Footer) - NEEDS PROTECTION
-            // Create a unique key for this Fee Item + Level
-            $uniqueKey = $itemId . '_' . $levelName;
-
-            // 🛡️ ONLY ADD TO TOTAL IF NOT PROCESSED YET
-            if (!isset($processedItems[$uniqueKey])) {
-                if ($isOneTime) {
-                    $totals[$levelName]['onetime'] += $fs->getAmount();
-                } else {
-                    $totals[$levelName]['recurring'] += $fs->getAmount();
-                }
-                
-                // Mark as processed so JSS 1B, 1C don't get added again
-                $processedItems[$uniqueKey] = true; 
-            }
+            $rows[] = [
+                'item' => (string) $item->getName(),
+                'itemId' => (int) $item->getId(),
+                'level' => $levelByClassroom[(int) $classroom->getId()] ?? $classroom->getName(),
+                'arm' => (string) $classroom->getName(),
+                'amount' => (float) $fs->getAmount(),
+                'oneTime' => $item->getFrequency() === 'ONETIME',
+            ];
         }
-        
+
+        $schedule = FeeSchedule::build($rows, array_keys($levels));
         // 5. PREPARE ITEM LISTS
         $feeItems = $em->getRepository(FeeItem::class)->findBy([], ['position' => 'ASC']);
         
@@ -779,10 +755,11 @@ class OnboardingController extends AbstractController
             'school' => $school,
             'term' => $term,
             'levels' => array_keys($levels),
+            'levelClasses' => $levels,
             'recurringItems' => $recurringItems,
             'oneTimeItems' => $oneTimeItems,
-            'matrix' => $matrix,
-            'totals' => $totals,
+            'cells' => $schedule['cells'],
+            'totals' => $schedule['totals'],
             'isFirstTerm' => $isFirstTerm
         ]);
     }

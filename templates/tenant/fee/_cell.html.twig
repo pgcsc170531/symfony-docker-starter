@@ -1,0 +1,26 @@
+{% set cell = cell|default(null) %}
+
+{% if cell is null or cell.max <= 0 %}
+    <span class="text-ink-400">-</span>
+{% elseif cell.differs %}
+    {# Arms of this level do not charge the same. Say so, and let the reader
+       open the arm amounts instead of printing one arm as if it were the
+       level's price. #}
+    <span class="block text-[10px] uppercase tracking-wide text-ink-500">from</span>
+    <span class="font-semibold tabular">{{ cell.min|number_format(2) }}</span>
+    <details class="mt-0.5 text-left">
+        <summary class="cursor-pointer list-none text-[10px] font-semibold text-accent-700">
+            {{ cell.arms|length }} arms
+        </summary>
+        <ul class="mt-1 space-y-0.5">
+            {% for arm, amount in cell.arms %}
+                <li class="flex justify-between gap-2 text-[10px] text-ink-600">
+                    <span class="min-w-0 break-words">{{ arm }}</span>
+                    <span class="shrink-0 tabular">{{ amount|number_format(2) }}</span>
+                </li>
+            {% endfor %}
+        </ul>
+    </details>
+{% else %}
+    <span class="tabular">{{ cell.min|number_format(2) }}</span>
+{% endif %}

@@ -1,0 +1,79 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ classSubject.subject.name }} — who takes it{% endblock %}
+
+{#
+   One row per pupil, ticked by default. Unticking is the whole feature: a pupil
+   who does not offer this subject is not marked, not counted, not printed on the
+   card, and cannot pick up a fail for it.
+#}
+{% block body %}
+<div class="px-4 py-4 pb-24 sm:px-6 sm:py-6">
+
+    <a href="{{ path('app_tenant_class_subject_index') }}"
+       class="inline-flex min-h-[44px] items-center text-sm font-bold text-accent-700 hover:text-accent-900">
+        &larr; Class subjects
+    </a>
+
+    <div class="mt-1">
+        <h1 class="text-xl font-bold text-ink-900 sm:text-2xl">
+            {{ classSubject.subject.name }}
+            <span class="text-ink-500">·</span>
+            <span class="text-ink-700">{{ classroom.name }}</span>
+        </h1>
+        <p class="mt-1 text-sm text-ink-600">
+            <strong class="font-semibold text-ink-900">{{ takers }} of {{ roster|length }}</strong>
+            {{ learner.plural | default('pupils') }} take this subject.
+            Untick a pupil who does not offer it — they will not be marked or printed on a card for it.
+        </p>
+        <p class="mt-1 text-xs text-ink-500">
+            {{ classSubject.isElective ? 'This subject is an elective: only ticked pupils are on the sheet.' : 'This subject is core: every pupil is ticked unless you untick them.' }}
+        </p>
+    </div>
+
+    <form method="post" class="mt-4">
+        <input type="hidden" name="_token" value="{{ csrf_token('subject_pupils_' ~ classSubject.id) }}">
+
+        {% if roster is empty %}
+            <div class="rounded-lg border border-dashed border-ink-300 bg-white p-6 text-center">
+                <p class="text-sm font-medium text-ink-900">No {{ learner.plural }} in {{ classroom.name }} yet.</p>
+                <a href="{{ path('app_tenant_student_index', {'class_id': classroom.id}) }}"
+                   class="mt-1 inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 underline">
+                    Add {{ learner.plural }} to this class
+                </a>
+            </div>
+        {% else %}
+            <ul class="divide-y divide-ink-100 overflow-hidden rounded-xl border border-ink-200 bg-white">
+                {% for student in roster %}
+                    {% set takes = state[student.id] %}
+                    <li>
+                        <label class="flex min-h-[56px] cursor-pointer items-center gap-3 px-3 py-2 hover:bg-ink-50">
+                            <input type="checkbox" name="takes[]" value="{{ student.id }}"
+                                   {{ takes ? 'checked' : '' }}
+                                   class="h-5 w-5 shrink-0 accent-accent-600">
+                            <span class="min-w-0 flex-1">
+                                <span class="block break-words text-sm font-semibold text-ink-900">{{ student.fullName }}</span>
+                                <span class="block text-xs text-ink-500">
+                                    {{ student.admissionNumber ?: '—' }}
+                                    {% if not takes %}<span class="font-semibold text-pending">· does not take this subject</span>{% endif %}
+                                </span>
+                            </span>
+                        </label>
+                    </li>
+                {% endfor %}
+            </ul>
+
+            <div class="fixed inset-x-0 bottom-0 z-40 border-t border-ink-200 bg-white/95 px-4 py-2 backdrop-blur"
+                 style="padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));">
+                <div class="mx-auto flex max-w-3xl items-center justify-between gap-3">
+                    <p class="text-xs text-ink-500">Untick to exempt</p>
+                    <button type="submit"
+                            class="min-h-[44px] rounded-lg bg-accent-600 px-5 text-sm font-semibold text-white hover:bg-accent-700">
+                        Save
+                    </button>
+                </div>
+            </div>
+        {% endif %}
+    </form>
+</div>
+{% endblock %}

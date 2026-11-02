@@ -1,0 +1,123 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Fee amounts by arm{% endblock %}
+
+{#
+   One level at a time, one row per fee item, one column per arm.
+
+   The common case — every arm of a level pays the same — is still one number,
+   because "Set every arm" writes that number across the row. The uncommon case
+   is the one this screen exists for: SS 1 Science costs more than SS 1 Arts.
+#}
+{% block body %}
+<div class="px-4 py-4 sm:px-6 sm:py-6">
+
+    <div class="mb-4">
+        <a href="{{ path('app_tenant_fee_schedule', {'term': term.id}) }}"
+           class="inline-flex min-h-[44px] items-center text-sm font-bold text-accent-700 hover:text-accent-900">
+            &larr; Back to the fee schedule
+        </a>
+        <h1 class="mt-1 text-xl font-bold text-ink-900 sm:text-2xl">Fee amounts by arm</h1>
+        <p class="mt-1 text-sm text-ink-600">
+            Each arm is invoiced from its own row, so an arm may cost more than its siblings —
+            a science levy on SS 1 Science, for example. Leave a box empty to say that arm
+            does not pay that item.
+        </p>
+    </div>
+
+    <form method="get" class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+        <label for="fee-term" class="text-sm font-medium text-ink-800">Term</label>
+        <select id="fee-term" name="term" onchange="this.form.submit()"
+                class="min-h-[44px] w-full rounded-lg border border-ink-200 bg-white px-3 text-base text-ink-900 sm:w-64">
+            {% for t in terms %}
+                <option value="{{ t.id }}" {{ t.id == term.id ? 'selected' : '' }}>
+                    {{ t.session.name }} · {{ t.name }}{{ t.isActive ? ' (active)' : '' }}
+                </option>
+            {% endfor %}
+        </select>
+        <input type="hidden" name="level" value="{{ level }}">
+    </form>
+
+    {# Level tabs — one row of links, wraps on a phone rather than scrolling sideways. #}
+    <div class="mb-4 flex flex-wrap gap-2">
+        {% for lvl in levels %}
+            <a href="{{ path('app_tenant_fee_amounts', {'term': term.id, 'level': lvl}) }}"
+               class="inline-flex min-h-[44px] items-center rounded-lg border px-3 text-sm font-semibold transition-colors
+                      {{ lvl == level ? 'border-accent-500 bg-accent-50 text-accent-800' : 'border-ink-200 bg-white text-ink-700 hover:border-accent-300' }}">
+                {{ lvl }}
+            </a>
+        {% endfor %}
+    </div>
+
+    {% if arms is empty %}
+        <div class="rounded-lg border border-dashed border-ink-300 bg-white p-6 text-center">
+            <p class="text-sm font-medium text-ink-900">This level has no classes.</p>
+            <a href="{{ path('app_tenant_classroom_index') }}"
+               class="mt-1 inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 underline">
+                Create a class
+            </a>
+        </div>
+    {% elseif items is empty %}
+        <div class="rounded-lg border border-dashed border-ink-300 bg-white p-6 text-center">
+            <p class="text-sm font-medium text-ink-900">No fee items yet.</p>
+            <a href="{{ path('app_tenant_fee_item_index') }}"
+               class="mt-1 inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 underline">
+                Create the fee items
+            </a>
+        </div>
+    {% else %}
+        <form method="post">
+            <input type="hidden" name="_token" value="{{ csrf_token('fee_amounts') }}">
+
+            <div class="overflow-x-auto rounded-xl border border-ink-200 bg-white">
+                <table class="min-w-[560px] w-full text-sm">
+                    <thead class="bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-500">
+                        <tr>
+                            <th class="p-3">Fee item</th>
+                            {% for arm in arms %}
+                                <th class="p-3 text-right">{{ arm.name }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-ink-100">
+                        {% for item in items %}
+                            <tr>
+                                <td class="p-3">
+                                    <p class="font-semibold text-ink-900">{{ item.name }}</p>
+                                    <p class="text-xs text-ink-500">
+                                        {{ item.frequency == 'ONETIME' ? 'One-time' : (item.frequency == 'SESSION' ? 'Per session' : 'Per term') }}
+                                    </p>
+                                </td>
+                                {% for arm in arms %}
+                                    <td class="p-3 text-right">
+                                        <label class="sr-only" for="amount-{{ arm.id }}-{{ item.id }}">
+                                            {{ item.name }} for {{ arm.name }}
+                                        </label>
+                                        <input id="amount-{{ arm.id }}-{{ item.id }}" type="text" inputmode="decimal"
+                                               name="amounts[{{ arm.id }}][{{ item.id }}]"
+                                               value="{{ values[arm.id][item.id] ?? '' }}"
+                                               placeholder="—"
+                                               data-row="{{ loop.parent.loop.index }}"
+                                               class="min-h-[44px] w-full min-w-[96px] rounded-lg border border-ink-200 px-2 text-right text-base tabular text-ink-900 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-200">
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <p class="mt-2 text-xs text-ink-500">
+                Amounts are in naira. An empty box means that arm does not pay the item.
+            </p>
+
+            <div class="mt-4 flex flex-col gap-2 sm:flex-row">
+                <button type="submit"
+                        class="min-h-[44px] w-full rounded-lg bg-accent-600 px-5 text-sm font-semibold text-white hover:bg-accent-700 sm:w-auto">
+                    Save {{ level }} amounts
+                </button>
+            </div>
+        </form>
+    {% endif %}
+</div>
+{% endblock %}

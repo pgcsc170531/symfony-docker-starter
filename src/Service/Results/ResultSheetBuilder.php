@@ -14,6 +14,7 @@ use App\Entity\Tenant\StudentTermRemark;
 use App\Entity\Tenant\Term;
 use App\Service\SchoolLife\AttendanceSummary;
 use App\Service\SchoolLife\TermRelease;
+use App\Service\Subjects\PupilSubjects;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -35,6 +36,7 @@ final class ResultSheetBuilder
         private TermRelease $release,
         private AssessmentSchemeResolver $schemes,
         private ResultTrendBuilder $trend,
+        private PupilSubjects $pupils,
     ) {
     }
 
@@ -51,15 +53,7 @@ final class ResultSheetBuilder
         $school = $this->em->getRepository(School::class)->findOneBy([]);
         $grading = $this->gradingScale();
 
-        $classSubjects = $this->em->getRepository(ClassSubject::class)
-            ->createQueryBuilder('cs')
-            ->addSelect('s')
-            ->join('cs.subject', 's')
-            ->andWhere('cs.classroom = :classroom')
-            ->setParameter('classroom', $classroom)
-            ->orderBy('s.name', 'ASC')
-            ->getQuery()
-            ->getResult();
+        $classSubjects = $this->pupils->subjectsFor($student, $classroom);
 
         $roster = $this->rosterIds($classroom, $term);
         $totalsBySubject = $this->totalsForClassroom($classroom, $term);
@@ -83,7 +77,12 @@ final class ResultSheetBuilder
             $total = $mine === null ? null : $this->schemes->total($scheme, $mine['components']);
 
             $classTotals = [];
+            $exempt = $this->pupils->exemptIdsFor($classSubject);
             foreach ($roster as $studentId) {
+                if (isset($exempt[$studentId])) {
+                    continue;
+                }
+
                 $row = $totalsBySubject[$csId][$studentId] ?? null;
                 if ($row !== null) {
                     $classTotals[$studentId] = $this->schemes->total($scheme, $row['components']);

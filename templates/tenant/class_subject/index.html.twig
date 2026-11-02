@@ -154,16 +154,23 @@
 
                     <ul class="mt-3 flex flex-wrap gap-2">
                         {% for cs in group.rows %}
-                            <li>
+                            {# Tap the class name to say who actually takes the subject;
+                               the × still removes it from that class. #}
+                            <li class="flex items-center overflow-hidden rounded-full border border-ink-200">
+                                <a href="{{ path('app_tenant_class_subject_pupils', {id: cs.id}) }}"
+                                   class="inline-flex min-h-[44px] items-center px-3 text-sm text-ink-800 transition-colors hover:bg-accent-50 hover:text-accent-800"
+                                   aria-label="Who takes {{ cs.subject.name }} in {{ cs.classroom.name }}">
+                                    <span class="break-words">{{ cs.classroom.name }}</span>
+                                </a>
                                 <form method="post"
+                                      class="border-l border-ink-200"
                                       action="{{ path('app_tenant_class_subject_delete', {id: cs.id}) }}"
                                       onsubmit="return confirm('Remove {{ cs.subject.name|e('js') }} from {{ cs.classroom.name|e('js') }}?');">
                                     <input type="hidden" name="_token" value="{{ csrf_token('cs' ~ cs.id) }}">
                                     <button type="submit"
-                                            class="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-ink-200 px-3 text-sm text-ink-800 transition-colors hover:border-failed hover:text-failed"
+                                            class="inline-flex h-11 w-10 items-center justify-center text-ink-400 transition-colors hover:bg-failed/5 hover:text-failed"
                                             aria-label="Remove {{ cs.subject.name }} from {{ cs.classroom.name }}">
-                                        <span class="break-words">{{ cs.classroom.name }}</span>
-                                        <span aria-hidden="true" class="text-ink-400">&times;</span>
+                                        <span aria-hidden="true">&times;</span>
                                     </button>
                                 </form>
                             </li>
@@ -171,7 +178,7 @@
                     </ul>
 
                     <p class="mt-2 text-xs text-ink-500">
-                        Taught in {{ group.rows|length }} class{{ group.rows|length == 1 ? '' : 'es' }}. Tap a class to remove it.
+                        Taught in {{ group.rows|length }} class{{ group.rows|length == 1 ? '' : 'es' }}. Tap a class to choose who takes it; tap × to remove it.
                     </p>
                 </article>
             {% endfor %}
