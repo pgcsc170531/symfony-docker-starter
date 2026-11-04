@@ -16,6 +16,7 @@ use App\Service\Finance\AdvancePaymentService;
 use App\Service\Admissions\AdmissionNumberGenerator;
 use App\Service\Finance\InvoiceNumberGenerator;
 use App\Service\Import\TextEncoding;
+use App\Service\Import\UniqueClashExplainer;
 use App\Service\Phone\PhoneNumber;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -61,6 +62,8 @@ class QuickAdmissionController extends AbstractController
         private readonly InvoiceNumberGenerator $invoiceNumbers,
         private readonly AdmissionNumberGenerator $admissionNumbers,
         private readonly AdvancePaymentService $advances,
+        // Turns "Duplicate entry 'X' for key 'Y'" into the row, name and class.
+        private readonly UniqueClashExplainer $clashes,
     ) {
     }
 
@@ -168,6 +171,10 @@ class QuickAdmissionController extends AbstractController
         $errors = [];
         // Values that had to be re-encoded, so the office can be told why.
         $repaired = 0;
+        // Admission numbers already claimed earlier in THIS file → row number.
+        // Two rows carrying "0" used to reach the flush together and abort the
+        // whole upload with a message that named no row at all.
+        $claimedNumbers = [];
 
         if (($handle = fopen($file->getPathname(), "r")) !== FALSE) {
             // Excel on Windows writes CSV in Windows-1252 unless the office picks
@@ -206,8 +213,47 @@ class QuickAdmissionController extends AbstractController
                 // had to be re-uploaded. Reject the row here, with its row number,
                 // and keep the rest of the file.
                 $typedNumber = trim($row[9]);
-                if ($typedNumber !== '' && $em->getRepository(Student::class)->findOneBy(['admissionNumber' => $typedNumber])) {
-                    $errors[] = "Row $rowNumber: admission number '$typedNumber' is already in use — that row was skipped.";
+                $pupilName = trim(implode(' ', array_filter([
+                    trim($row[0]), trim($row[1]), trim($row[2]),
+                ])));
+
+                $holder = $typedNumber === ''
+                    ? null
+                    : $em->getRepository(Student::class)->findOneBy(['admissionNumber' => $typedNumber]);
+
+                if ($holder !== null) {
+                    // Name both sides of the clash: the row being refused, and the
+                    // pupil whose number it is. "Admission number is already in use"
+                    // left the office to find both by hand.
+                    $errors[] = sprintf(
+                        "Row %d: %s (%s) cannot use admission number '%s' — it belongs to %s in %s.",
+                        $rowNumber,
+                        $pupilName !== '' ? $pupilName : 'that pupil',
+                        $csvClassName,
+                        $typedNumber,
+                        $holder->getFullName(),
+                        // Two links to a class exist and older admissions only
+                        // wrote `currentClass`, so "another class" was printed for a
+                        // pupil who is plainly in one.
+                        $holder->getCurrentClassroom()?->getName()
+                            ?? $holder->getCurrentClass()?->getName()
+                            ?? 'another class'
+                    );
+                    continue;
+                }
+
+                // The same number twice in one file. The second insert cannot win,
+                // and letting it try aborts every other row in the upload, so the
+                // duplicate is named here instead.
+                if ($typedNumber !== '' && isset($claimedNumbers[$typedNumber])) {
+                    $errors[] = sprintf(
+                        "Row %d: %s (%s) cannot use admission number '%s' — row %d of this file already uses it.",
+                        $rowNumber,
+                        $pupilName !== '' ? $pupilName : 'that pupil',
+                        $csvClassName,
+                        $typedNumber,
+                        $claimedNumbers[$typedNumber]
+                    );
                     continue;
                 }
 
@@ -235,8 +281,18 @@ class QuickAdmissionController extends AbstractController
                     'parent_name'      => trim($row[11]), // 👈 SHIFTED: Index 11
                     'parent_phone'     => $parentPhone, // 👈 SHIFTED: Index 12
                 ],
-                    'classroom' => $classMap[$cleanClass]
+                    'classroom' => $classMap[$cleanClass],
+                    // Carried so a failure at flush can name the row instead of
+                    // making the office hunt through 145 lines for the culprit.
+                    'row' => $rowNumber,
+                    'name' => trim(implode(' ', array_filter([
+                        trim($row[0]), trim($row[1]), trim($row[2]),
+                    ]))),
                 ];
+
+                if ($typedNumber !== '') {
+                    $claimedNumbers[$typedNumber] = $rowNumber;
+                }
             }
             fclose($handle);
         }
@@ -281,14 +337,10 @@ class QuickAdmissionController extends AbstractController
             }
             
         } catch (\Doctrine\DBAL\Exception\UniqueConstraintViolationException $e) {
-            // Say what actually collided. "Duplicate admission number" was printed
-            // for every unique violation, including sibling guardians sharing a
-            // phone — which sent the school looking in the wrong place.
-            $reason = stripos($e->getMessage(), 'admission') !== false
-                ? 'One or more Admission Numbers in your file already exist in the database. Please check for duplicates and try again.'
-                : 'A row in your file clashes with a record that already exists (a guardian phone/email or a pupil already on roll). Check the phone numbers and parent names in the file, then upload again.';
-
-            $this->addFlash('error', 'Upload Stopped! ' . $reason);
+            // Say what actually collided, and where. "A row in your file clashes
+            // with a record that already exists" sent the office looking through
+            // 145 lines by hand; the row, the name and the class are what they need.
+            $this->addFlash('error', $this->clashes->explain($e->getMessage(), $rowsToSave));
             
             return $this->redirectToRoute('app_tenant_quick_enroll');
 
@@ -338,6 +390,7 @@ class QuickAdmissionController extends AbstractController
         return PhoneNumber::national($value);
     }
 
+
     /**
      * Why rows were left out, grouped, with the row numbers to look at.
      *
@@ -350,8 +403,7 @@ class QuickAdmissionController extends AbstractController
      * @param list<string> $errors
      */
     private function summariseSkips(array $errors): string
-    {
-        /** @var array<string, list<string>> $byReason reason → row numbers */
+    {        /** @var array<string, list<string>> $byReason reason → row numbers */
         $byReason = [];
 
         foreach ($errors as $error) {
