@@ -241,7 +241,19 @@ class StaffController extends AbstractController
                     ));
                 }
             } catch (\Throwable $e) {
-                $this->addFlash('error', $e->getMessage());
+                /*
+                 * 1366 is "Incorrect string value" — bytes the database cannot store,
+                 * which in practice means the file was saved in Excel's ANSI encoding
+                 * rather than UTF-8. Rows are decoded on the way in, so this is the
+                 * last-resort message: say what to do, not what SQLSTATE says.
+                 */
+                if (str_contains($e->getMessage(), '1366') || stripos($e->getMessage(), 'Incorrect string value') !== false) {
+                    $this->addFlash('error', 'That file contains characters this system cannot store — it was '
+                        . 'most likely saved in the old ANSI encoding. Open it in Excel and save it as '
+                        . '"CSV UTF-8 (Comma delimited)", then upload it again.');
+                } else {
+                    $this->addFlash('error', $e->getMessage());
+                }
             }
         }
 

@@ -5,6 +5,7 @@ namespace App\Service\Staff;
 use App\Entity\Tenant\Guardian;
 use App\Entity\Tenant\Staff;
 use App\Entity\Tenant\User;
+use App\Service\Import\TextEncoding;
 use App\Service\Phone\PhoneNumber;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -133,7 +134,9 @@ final class StaffImporter
         }
 
         $header = fgetcsv($handle);
-        $map = $this->mapHeader($header);
+        // The same Windows-1252 trap the student import hit: a name using Excel's
+        // curly apostrophe would abort the whole staff list at flush time.
+        $map = $this->mapHeader($header === false ? [] : TextEncoding::row($header));
 
         if ($map === null) {
             throw new \RuntimeException(
@@ -147,6 +150,9 @@ final class StaffImporter
 
         while (($row = fgetcsv($handle)) !== false) {
             ++$rowNumber;
+
+            // ", " or a BOM in a cell becomes invalid UTF-8 in the database otherwise.
+            $row = TextEncoding::row($row);
 
             // Blank line — a trailing newline, or the gap Excel leaves behind.
             if (array_filter($row, static fn ($v) => trim((string) $v) !== '') === []) {

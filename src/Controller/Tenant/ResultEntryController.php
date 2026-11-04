@@ -17,6 +17,7 @@ use App\Entity\Tenant\SubjectTeacher;
 use App\Entity\Tenant\Term;
 use App\Entity\Tenant\User;
 use App\Entity\Tenant\YearGroupMaster;
+use App\Service\Import\TextEncoding;
 use App\Service\Results\AssessmentSchemeResolver;
 use App\Service\Subjects\PupilSubjects;
 use Doctrine\ORM\EntityManagerInterface;
@@ -324,6 +325,9 @@ class ResultEntryController extends AbstractController
             fclose($handle);
             return $this->json(['success' => false, 'error' => 'The CSV file is empty.'], 400);
         }
+
+        // Names come back from a spreadsheet as Windows-1252 far more often than not.
+        $header = TextEncoding::row($header);
 
         $colMap = [];
         foreach ($header as $i => $col) {

@@ -5,6 +5,7 @@ namespace App\Controller\Tenant;
 use App\Entity\Tenant\Product;
 use App\Entity\Tenant\Classroom;
 use App\Form\ProductType;
+use App\Service\Import\TextEncoding;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -91,6 +92,10 @@ class ProductController extends AbstractController
             fgetcsv($handle); // Skip the Excel header row
 
             while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                // An Excel-on-Windows file is Windows-1252; a product named with a
+                // curly quote would otherwise be refused by MySQL as invalid UTF-8.
+                $data = TextEncoding::row($data);
+
                 // Expected CSV Columns: Name | Category | Price | Stock | Level (Optional)
                 if (count($data) >= 4) {
                     $name = trim($data[0]);

@@ -15,6 +15,7 @@ use App\Service\Finance\DiscountCalculator;
 use App\Service\Finance\AdvancePaymentService;
 use App\Service\Admissions\AdmissionNumberGenerator;
 use App\Service\Finance\InvoiceNumberGenerator;
+use App\Service\Import\TextEncoding;
 use App\Service\Phone\PhoneNumber;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -165,9 +166,15 @@ class QuickAdmissionController extends AbstractController
 
         $rowsToSave = [];
         $errors = [];
+        // Values that had to be re-encoded, so the office can be told why.
+        $repaired = 0;
 
         if (($handle = fopen($file->getPathname(), "r")) !== FALSE) {
-            $header = fgetcsv($handle); 
+            // Excel on Windows writes CSV in Windows-1252 unless the office picks
+            // "CSV UTF-8". A curly apostrophe (byte 0x92) is then invalid UTF-8 and
+            // MySQL rejects the INSERT with "1366 Incorrect string value" — taking
+            // every good row down with it. Decode the bytes we were actually given.
+            $header = TextEncoding::row((array) fgetcsv($handle));
             
             if (count($header) < 12) {
                 $this->addFlash('error', "Format Error: Template requires 12 columns.");
@@ -178,6 +185,12 @@ class QuickAdmissionController extends AbstractController
             while (($row = fgetcsv($handle)) !== FALSE) {
                 $rowNumber++;
                 if (!array_filter($row)) continue; 
+                foreach ($row as $cell) {
+                    if (TextEncoding::neededRepair($cell)) {
+                        ++$repaired;
+                    }
+                }
+                $row = TextEncoding::row($row);
                 if (trim($row[0]) === 'John' && trim($row[2]) === 'Doe') continue; 
 
                 $csvClassName = trim($row[10]); 
@@ -258,6 +271,19 @@ class QuickAdmissionController extends AbstractController
                     implode(' ', array_slice($errors, 0, 5))
                 ));
             }
+
+            if ($repaired > 0) {
+                // Not an error — the values were decoded and stored correctly. It is
+                // worth saying, because the next file from the same machine will do
+                // the same thing and the office can save as UTF-8 instead.
+                $this->addFlash('warning', sprintf(
+                    '%d value%s in your file were not saved as UTF-8 by Excel (usually a name with ’ or “ ”). '
+                    . 'They were converted and stored correctly. To avoid this, save the file as "CSV UTF-8" '
+                    . 'next time (Excel: Save As → CSV UTF-8 (Comma delimited)).',
+                    $repaired,
+                    $repaired === 1 ? '' : 's'
+                ));
+            }
             
         } catch (\Doctrine\DBAL\Exception\UniqueConstraintViolationException $e) {
             // Say what actually collided. "Duplicate admission number" was printed
@@ -272,6 +298,21 @@ class QuickAdmissionController extends AbstractController
             return $this->redirectToRoute('app_tenant_quick_enroll');
 
         } catch (\Exception $e) {
+            /*
+             * An encoding failure used to reach the office as raw SQL. Rows are now
+             * decoded on the way in, so this should not happen — but if a file
+             * defeats the decoder, say what it is and what to do about it rather
+             * than printing "Incorrect string value" at a bursar.
+             */
+            if (str_contains($e->getMessage(), '1366') || stripos($e->getMessage(), 'Incorrect string value') !== false) {
+                $this->addFlash('error', 'Upload Stopped! One of the names in your file contains characters this '
+                    . 'system cannot store — the file was most likely saved in the old ANSI encoding. Open it in '
+                    . 'Excel and save it again as "CSV UTF-8 (Comma delimited)", then upload it once more. '
+                    . 'Nothing was imported.');
+
+                return $this->redirectToRoute('app_tenant_quick_enroll');
+            }
+
             // Handle any other unexpected errors (database connection, etc.)
             $this->addFlash('error', "An unexpected error occurred during the upload: " . $e->getMessage());
             
