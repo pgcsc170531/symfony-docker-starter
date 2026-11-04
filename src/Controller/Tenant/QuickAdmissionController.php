@@ -18,6 +18,7 @@ use App\Service\Finance\InvoiceNumberGenerator;
 use App\Service\Import\TextEncoding;
 use App\Service\Import\UniqueClashExplainer;
 use App\Service\Phone\PhoneNumber;
+use App\Service\Wording\LearnerWording;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -64,6 +65,8 @@ class QuickAdmissionController extends AbstractController
         private readonly AdvancePaymentService $advances,
         // Turns "Duplicate entry 'X' for key 'Y'" into the row, name and class.
         private readonly UniqueClashExplainer $clashes,
+        // Pupil or student, depending on the school.
+        private readonly LearnerWording $wording,
     ) {
     }
 
@@ -316,8 +319,32 @@ class QuickAdmissionController extends AbstractController
             // The flush happens once at the end. 
             // If any row fails a "Unique" constraint, the whole batch stops here.
             $em->flush();
-            
-            $this->addFlash('success', "Import Complete! " . count($rowsToSave) . " students are now linked to their parents.");
+
+            /*
+             * Two children of one parent may sit in the same class, and they must
+             * end up on ONE parent record — one phone number, one login, both pupils
+             * attached to it. That is what `resolveGuardian()` does (its cache is keyed
+             * on the normalised phone). Saying the number of contacts here makes the
+             * behaviour visible, so the office does not have to wonder whether a
+             * family of four became four separate parents.
+             */
+            $pupilCount = count($rowsToSave);
+            $contacts = count(array_unique(array_map(
+                static fn (array $row): string => (string) $row['data']['parent_phone'],
+                $rowsToSave
+            )));
+
+            $this->addFlash('success', sprintf(
+                'Import Complete! %d %s %s now linked to %d parent contact%s.%s',
+                $pupilCount,
+                $pupilCount === 1 ? $this->wording->singular() : $this->wording->plural(),
+                $pupilCount === 1 ? 'is' : 'are',
+                $contacts,
+                $contacts === 1 ? '' : 's',
+                $contacts < $pupilCount
+                    ? ' Siblings share one contact: the same parent record and the same login, however many children they have.'
+                    : ''
+            ));
 
             if ($errors !== []) {
                 $this->addFlash('warning', $this->summariseSkips($errors));
