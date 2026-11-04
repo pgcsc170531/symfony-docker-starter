@@ -264,12 +264,7 @@ class QuickAdmissionController extends AbstractController
             $this->addFlash('success', "Import Complete! " . count($rowsToSave) . " students are now linked to their parents.");
 
             if ($errors !== []) {
-                $this->addFlash('warning', sprintf(
-                    '%d row%s skipped — %s',
-                    count($errors),
-                    count($errors) === 1 ? '' : 's',
-                    implode(' ', array_slice($errors, 0, 5))
-                ));
+                $this->addFlash('warning', $this->summariseSkips($errors));
             }
 
             if ($repaired > 0) {
@@ -341,6 +336,46 @@ class QuickAdmissionController extends AbstractController
     private function normalisePhone(string $value): string
     {
         return PhoneNumber::national($value);
+    }
+
+    /**
+     * Why rows were left out, grouped, with the row numbers to look at.
+     *
+     * A 145-row file with 29 rows missing a parent phone used to produce
+     * "29 rows skipped — Row 12: no parent phone number … Row 20: no parent phone
+     * number …" — the same sentence five times and not one usable number, while the
+     * other 24 rows were not mentioned at all. The office re-opens the file in Excel,
+     * so what it needs is which rows to fix and how many of each.
+     *
+     * @param list<string> $errors
+     */
+    private function summariseSkips(array $errors): string
+    {
+        /** @var array<string, list<string>> $byReason reason → row numbers */
+        $byReason = [];
+
+        foreach ($errors as $error) {
+            if (preg_match('/^Row (\d+):\s*(.*)$/u', $error, $matches) === 1) {
+                $byReason[$matches[2]][] = $matches[1];
+            } else {
+                $byReason[$error][] = '';
+            }
+        }
+
+        $parts = [];
+        foreach ($byReason as $reason => $rows) {
+            $count = count($rows);
+            $rowNumbers = array_values(array_filter($rows, static fn (string $r): bool => $r !== ''));
+            $shown = array_slice($rowNumbers, 0, 20);
+            $list = $rowNumbers === []
+                ? ''
+                : sprintf(' (row%s %s%s)', count($shown) === 1 ? '' : 's', implode(', ', $shown), $count > count($shown) ? ', …' : '');
+
+            $parts[] = sprintf('%d row%s%s', $count, $count === 1 ? '' : 's', $list);
+            $parts[count($parts) - 1] .= ' — ' . $reason;
+        }
+
+        return 'Not imported: ' . implode(' ', $parts);
     }
 
     /**
