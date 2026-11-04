@@ -66,7 +66,7 @@
             <div class="mt-4 rounded-xl border border-ink-200 bg-white p-8 text-center">
                 <p class="text-4xl" aria-hidden="true">🎉</p>
                 <h2 class="mt-3 text-lg font-bold text-ink-900">Nobody owes anything for this term</h2>
-                <p class="mt-1 text-sm text-ink-600">Every billed pupil is fully paid.</p>
+                <p class="mt-1 text-sm text-ink-600">Every billed {{ learner }} is fully paid.</p>
             </div>
         {% else %}
             <div class="mt-4 space-y-2">
@@ -90,7 +90,7 @@
                             <span class="min-w-0">
                                 <span class="block break-words font-semibold text-ink-900">{{ family.guardian }}</span>
                                 <span class="block text-xs text-ink-500">
-                                    {{ family.pupils }} pupil{{ family.pupils == 1 ? '' : 's' }}
+                                    {{ family.pupils }} {{ family.pupils == 1 ? learner : learner.plural }}
                                     {% if family.phone %} · {{ family.phone }}{% else %} · no phone{% endif %}
                                 </span>
                             </span>
@@ -125,7 +125,7 @@
 
                             {% if family.guardianId is null %}
                                 <p class="mt-3 rounded-lg bg-failed/10 p-3 text-xs text-failed">
-                                    This pupil has no guardian attached. Link a guardian before sending a reminder.
+                                    This {{ learner }} has no guardian attached. Link a guardian before sending a reminder.
                                 </p>
                             {% elseif not family.phone %}
                                 <p class="mt-3 rounded-lg bg-pending/10 p-3 text-xs text-ink-700">

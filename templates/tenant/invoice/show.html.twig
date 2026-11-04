@@ -144,7 +144,7 @@
                             <span class="whitespace-nowrap">- ₦{{ invoice.discountApplied|number_format(2) }}</span>
                         </div>
                         {% if invoice.discountLabel %}
-                            <p class="text-xs text-gray-500">This pupil is on scholarship. The total below is already reduced by it.</p>
+                            <p class="text-xs text-gray-500">This {{ learner }} is on scholarship. The total below is already reduced by it.</p>
                         {% endif %}
                     </div>
                     {% endif %}

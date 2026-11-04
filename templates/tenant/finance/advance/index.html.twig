@@ -9,7 +9,7 @@
         <h1 class="text-xl font-black tracking-tight text-ink-900 sm:text-2xl">Advance Payments</h1>
         <p class="mt-1 text-sm text-ink-500">
             Money a family has paid before the bills existed. Every invoice raised afterwards
-            for that pupil is settled from it — automatically, with a remark on the receipt.
+            for that {{ learner }} is settled from it — automatically, with a remark on the receipt.
         </p>
     </div>
 
@@ -39,7 +39,7 @@
                 {# Step 1 — find the pupil. GET, so the tab survives a refresh. #}
                 <form method="get" action="{{ path('app_tenant_advance_index') }}" class="border-b border-ink-100 p-4">
                     <label for="advance-pupil" class="mb-1 block text-xs font-semibold text-ink-600">
-                        Find the pupil
+                        Find the {{ learner }}
                     </label>
                     <input id="advance-pupil" name="q" type="search" value="{{ search }}" autocomplete="off"
                            placeholder="Name or admission number"
@@ -54,10 +54,10 @@
                     <div class="border-b border-ink-100 p-4">
                         {% if found is empty %}
                             <p class="text-sm text-ink-500">
-                                No pupil matches &ldquo;{{ search }}&rdquo;. Try the surname or the admission number.
+                                No {{ learner }} matches &ldquo;{{ search }}&rdquo;. Try the surname or the admission number.
                             </p>
                         {% else %}
-                            <p class="mb-2 text-xs font-semibold text-ink-600">Choose the pupil:</p>
+                            <p class="mb-2 text-xs font-semibold text-ink-600">Choose the {{ learner }}:</p>
                             <ul class="space-y-2">
                                 {% for s in found %}
                                     <li>
@@ -92,7 +92,7 @@
                         </p>
                     {% else %}
                         <p class="mb-3 rounded-lg bg-ink-50 px-3 py-2 text-xs text-ink-500">
-                            Search for and select a pupil above, then enter the amount.
+                            Search for and select a {{ learner }} above, then enter the amount.
                         </p>
                     {% endif %}
 

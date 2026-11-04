@@ -43,7 +43,7 @@
             <div>
                 <label for="body" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Text</label>
                 <textarea id="body" name="body" rows="16" required
-                          placeholder="One paragraph per blank line. Numbered rules read well: “1. Pupils must …”"
+                          placeholder="One paragraph per blank line. Numbered rules read well: “1. {{ learner.pluralCapital }} must …”"
                           class="w-full rounded-lg border border-ink-300 p-3 text-base font-normal shadow-sm focus:border-accent-500 focus:ring-accent-500 sm:text-sm">{{ document.body }}</textarea>
                 <p class="mt-1 text-[11px] text-ink-400">
                     Plain text. Leave a blank line between paragraphs; numbered lines stay numbered.

@@ -8,6 +8,7 @@ use App\Entity\Tenant\Student;
 use App\Form\DiscountTypeForm;
 use App\Form\StudentDiscountAssignmentType;
 use App\Service\Finance\DiscountRepricer;
+use App\Service\Wording\LearnerWording;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -21,6 +22,7 @@ class DiscountController extends AbstractController
 {
     public function __construct(
         private readonly DiscountRepricer $repricer,
+        private readonly LearnerWording $wording,
     ) {
     }
     // 1. Manage Rules (e.g. Create "Staff Child")
@@ -153,7 +155,7 @@ class DiscountController extends AbstractController
     {
         if ($changes === []) {
             $this->addFlash('info', $action === 'remove'
-                ? 'No open bill needed changing — the pupil was already billed the full amount.'
+                ? 'No open bill needed changing — the ' . $this->wording->singular() . ' was already billed the full amount.'
                 : 'No open bill was changed — the rule will apply to bills generated from now on.');
             return;
         }

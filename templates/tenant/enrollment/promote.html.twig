@@ -150,7 +150,7 @@
                 tbody.innerHTML = ''; 
                 
                 if(data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-gray-500 text-sm italic">No students found in this class.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-gray-500 text-sm italic">No {{ learner.plural }} found in this class.</td></tr>';
                 }
 
                 data.forEach(student => {

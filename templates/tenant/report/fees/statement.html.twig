@@ -78,7 +78,7 @@
 
         <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-4">
             <div>
-                <dt class="text-xs font-semibold uppercase tracking-wide text-ink-500">Pupil</dt>
+                <dt class="text-xs font-semibold uppercase tracking-wide text-ink-500">{{ learner.capital }}</dt>
                 <dd class="break-words font-semibold text-ink-900">{{ data.student.fullName }}</dd>
             </div>
             <div>
@@ -102,7 +102,7 @@
 
         {% if data.lines is empty %}
             <div class="mt-6 rounded-lg border border-ink-200 bg-ink-50 p-6 text-center text-sm text-ink-600">
-                No invoices for {{ term ? term.name : 'this pupil' }}. Nothing is owed.
+                No invoices for {{ term ? term.name : 'this ' ~ learner }}. Nothing is owed.
             </div>
         {% else %}
             <div class="mt-6 overflow-x-auto">

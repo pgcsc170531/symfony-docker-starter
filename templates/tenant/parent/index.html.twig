@@ -15,7 +15,7 @@
                         {{ guardians|length }} match{{ guardians|length == 1 ? '' : 'es' }} for “{{ q }}”.
                         <a href="{{ path('app_tenant_parent_index') }}" class="font-semibold text-blue-600">Show all</a>
                     {% else %}
-                        {{ guardians|length }} parent{{ guardians|length == 1 ? '' : 's' }} linked to enrolled students.
+                        {{ guardians|length }} parent{{ guardians|length == 1 ? '' : 's' }} linked to enrolled {{ learner.plural }}.
                     {% endif %}
                 </p>
             </div>

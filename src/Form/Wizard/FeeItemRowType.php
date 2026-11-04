@@ -2,6 +2,7 @@
 
 namespace App\Form\Wizard;
 
+use App\Service\Wording\LearnerWording;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -12,6 +13,10 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class FeeItemRowType extends AbstractType
 {
+    public function __construct(private readonly LearnerWording $wording)
+    {
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
@@ -35,13 +40,13 @@ class FeeItemRowType extends AbstractType
                 'choices' => [
                     'Every Term' => 'TERM',
                     'Once per Session' => 'SESSION',
-                    'One-Time (Life of Student)' => 'ONETIME',
+                    'One-Time (Life of ' . $this->wording->capital() . ')' => 'ONETIME',
                 ],
             ])
             ->add('target', ChoiceType::class, [
                 'label' => false,
                 'choices' => [
-                    'All Students' => 'ALL',
+                    'All ' . $this->wording->pluralCapital() => 'ALL',
                     'New Intake Only' => 'NEW',
                 ],
             ])

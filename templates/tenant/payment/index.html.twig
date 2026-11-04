@@ -6,7 +6,7 @@
     
     <div class="text-center mb-10">
         <h1 class="text-2xl font-bold text-gray-800 sm:text-3xl">💳 Payment Terminal</h1>
-        <p class="text-gray-500">Search for a student to view bills and record payments.</p>
+        <p class="text-gray-500">Search for a {{ learner }} to view bills and record payments.</p>
     </div>
 
     {# SEARCH CARD #}
@@ -65,7 +65,7 @@
                 </div>
             {% else %}
                 <div class="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                    <p class="text-gray-500">No students found matching "{{ query }}"</p>
+                    <p class="text-gray-500">No {{ learner.plural }} found matching "{{ query }}"</p>
                 </div>
             {% endif %}
         </div>

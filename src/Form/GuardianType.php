@@ -3,6 +3,7 @@
 namespace App\Form;
 
 use App\Entity\Tenant\Guardian;
+use App\Service\Wording\LearnerWording;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
@@ -14,6 +15,10 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class GuardianType extends AbstractType
 {
+    public function __construct(private readonly LearnerWording $wording)
+    {
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
@@ -46,6 +51,9 @@ class GuardianType extends AbstractType
                 'attr' => ['placeholder' => 'Optional']
             ])
             ->add('relationshipToStudent', ChoiceType::class, [
+                // Without a label Symfony humanises the property name and prints
+                // "Relationship to student" on a nursery school's admission screen.
+                'label' => 'Relationship to the ' . $this->wording->singular(),
                 'choices' => [
                     'Father' => 'Father',
                     'Mother' => 'Mother',

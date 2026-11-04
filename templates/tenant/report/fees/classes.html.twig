@@ -57,7 +57,7 @@
                     <thead class="bg-ink-50 text-xs uppercase tracking-wide text-ink-500">
                         <tr>
                             <th class="px-4 py-3">Class</th>
-                            <th class="px-4 py-3 text-right">Pupils</th>
+                            <th class="px-4 py-3 text-right">{{ learner.pluralCapital }}</th>
                             <th class="px-4 py-3 text-right">Expected</th>
                             <th class="px-4 py-3 text-right">Collected</th>
                             <th class="px-4 py-3 text-right">Outstanding</th>
@@ -106,7 +106,7 @@
         {% if unbilled is not empty %}
             <details class="mt-4 rounded-xl border border-pending/40 bg-pending/5 p-4">
                 <summary class="flex min-h-[44px] cursor-pointer items-center justify-between gap-3 font-semibold text-ink-900">
-                    <span>{{ unbilled|length }} enrolled pupil{{ unbilled|length == 1 ? '' : 's' }} not billed for this term</span>
+                    <span>{{ unbilled|length }} enrolled {{ unbilled|length == 1 ? learner : learner.plural }} not billed for this term</span>
                     <span class="text-xl text-ink-500" aria-hidden="true">+</span>
                 </summary>
                 <p class="mt-2 text-sm text-ink-700">They are not counted as owing or paid until an invoice exists.</p>

@@ -14,6 +14,7 @@ use App\Entity\Tenant\Term;
 use App\Service\Fees\FeeReportPdfRenderer;
 use App\Service\Fees\FeeReportService;
 use App\Service\Fees\StudentStatementPdfRenderer;
+use App\Service\Wording\LearnerWording;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
@@ -42,6 +43,9 @@ final class FeeReportController extends AbstractController
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly FeeReportService $reports,
+        // A spreadsheet is read by the school, so its headings use the school's
+        // own word: "Pupil" in a primary, "Student" in a secondary.
+        private readonly LearnerWording $wording,
     ) {
     }
 
@@ -143,7 +147,7 @@ final class FeeReportController extends AbstractController
         }, $families);
 
         return $this->csv('outstanding-' . ($term?->getId() ?? 'term') . '.csv', [
-            'Guardian', 'Phone', 'Pupils', 'Children', 'Outstanding', 'Message',
+            'Guardian', 'Phone', $this->wording->pluralCapital(), 'Children', 'Outstanding', 'Message',
         ], $rows);
     }
 
@@ -258,7 +262,7 @@ final class FeeReportController extends AbstractController
         $rows = $this->reports->paymentRegister($filters, 1, 100000)['rows'];
 
         return $this->csv('payments-' . $from->format('Y-m-d') . '_' . $to->format('Y-m-d') . '.csv', [
-            'Date', 'Time', 'Pupil / buyer', 'Admission no.', 'Class', 'Invoice', 'Type',
+            'Date', 'Time', $this->wording->capital() . ' / buyer', 'Admission no.', 'Class', 'Invoice', 'Type',
             'Method', 'Reference', 'Amount', 'Status', 'Confirmed by',
         ], array_map(static function (Payment $p): array {
             $invoice = $p->getInvoice();

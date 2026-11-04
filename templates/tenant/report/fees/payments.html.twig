@@ -39,7 +39,7 @@
             <div>
                 <label for="q" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">Search</label>
                 <input type="search" id="q" name="q" value="{{ filters.q }}"
-                       placeholder="Pupil, invoice, reference"
+                       placeholder="{{ learner.capital }}, invoice, reference"
                        class="min-h-[44px] w-full rounded-lg border border-ink-300 px-3 text-base text-ink-900 focus:border-accent-500 focus:ring-accent-500">
             </div>
             <div>
@@ -125,7 +125,7 @@
                 <thead class="bg-ink-50 text-xs uppercase tracking-wide text-ink-500">
                     <tr>
                         <th class="px-4 py-3">Date</th>
-                        <th class="px-4 py-3">Pupil / buyer</th>
+                        <th class="px-4 py-3">{{ learner.capital }} / buyer</th>
                         <th class="px-4 py-3">Invoice</th>
                         <th class="px-4 py-3">Method</th>
                         <th class="px-4 py-3">Reference</th>
