@@ -46,6 +46,22 @@ jobs:
             cd /root/projects
             export TERMII_API_KEY=${{ secrets.TERMII_API_KEY }}
 
+            # ── The checkout IS the application ───────────────────────────────
+            # compose.yaml mounts `./:/app`, so the container runs the files in
+            # this directory, not the ones baked into the image. Without this
+            # step every deploy pulls a brand-new image that the mount then
+            # shadows: routes and templates stayed at whatever someone had pulled
+            # by hand, and a pushed fix "deployed green" while the school kept
+            # seeing the old screen (2026-11-08, the admission-numbers menu).
+            #
+            # `reset --hard` rather than `pull`: the server must run exactly
+            # origin/main, never a merge or a half-applied stash. `.env.local`
+            # and the other server-owned files are untracked/gitignored, so they
+            # are not touched.
+            git fetch --prune origin
+            git reset --hard origin/main
+            echo "Deploying commit: $(git log --oneline -1)"
+
             # ── Secrets that must reach the app ───────────────────────────────
             # `.env.local` is gitignored on purpose, and the compose file mounts
             # `./:/app`, so THIS file on the VPS *is* the app's `.env.local`.
