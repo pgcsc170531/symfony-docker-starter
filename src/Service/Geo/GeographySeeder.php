@@ -43,27 +43,35 @@ final class GeographySeeder
 
         // Two queries instead of ~810 existence checks: load what is already
         // there, then persist only the difference.
+        //
+        // Skipped when the country was just created: a brand-new country has no
+        // rows and, more importantly, has no identifier yet — Doctrine refuses
+        // to bind an unpersisted entity to a DQL parameter ("Binding entities to
+        // query parameters only allowed for entities that have an identifier").
         $existingStates = [];
-        foreach ($em->createQueryBuilder()
-            ->select('s.id', 's.name')
-            ->from(State::class, 's')
-            ->where('s.country = :country')
-            ->setParameter('country', $country)
-            ->getQuery()
-            ->getArrayResult() as $row) {
-            $existingStates[(string) $row['name']] = (int) $row['id'];
-        }
-
         $existingLgas = [];
-        foreach ($em->createQueryBuilder()
-            ->select('s.name AS stateName', 'l.name AS lgaName')
-            ->from(LGA::class, 'l')
-            ->join('l.state', 's')
-            ->where('s.country = :country')
-            ->setParameter('country', $country)
-            ->getQuery()
-            ->getArrayResult() as $row) {
-            $existingLgas[(string) $row['stateName']][(string) $row['lgaName']] = true;
+
+        if (!$countryCreated) {
+            foreach ($em->createQueryBuilder()
+                ->select('s.id', 's.name')
+                ->from(State::class, 's')
+                ->where('s.country = :country')
+                ->setParameter('country', $country)
+                ->getQuery()
+                ->getArrayResult() as $row) {
+                $existingStates[(string) $row['name']] = (int) $row['id'];
+            }
+
+            foreach ($em->createQueryBuilder()
+                ->select('s.name AS stateName', 'l.name AS lgaName')
+                ->from(LGA::class, 'l')
+                ->join('l.state', 's')
+                ->where('s.country = :country')
+                ->setParameter('country', $country)
+                ->getQuery()
+                ->getArrayResult() as $row) {
+                $existingLgas[(string) $row['stateName']][(string) $row['lgaName']] = true;
+            }
         }
 
         $statesAdded = 0;
