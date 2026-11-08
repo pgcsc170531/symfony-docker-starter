@@ -114,7 +114,20 @@ jobs:
               echo "Synced from image: ${{ secrets.DOCKERHUB_USERNAME }}/edus-saas:latest"
             fi
 
-            TERMII_API_KEY=$TERMII_API_KEY docker compose up -d --force-recreate
+            # Bring the application up WITHOUT its dependencies.
+            #
+            # `--no-deps` is deliberate: this host also runs Azuracast, which
+            # already owns ports 8025/8080/443. Plain `up` therefore fails on the
+            # Mailpit sidecar ("Bind for 0.0.0.0:8025 failed: port is already
+            # allocated") and CANCELS php, which depends_on it — the school
+            # portal went down that way on 2026-11-08. A dev inbox must never be
+            # able to take the school offline.
+            TERMII_API_KEY=$TERMII_API_KEY docker compose up -d --force-recreate --no-deps php database phpmyadmin
+
+            # Try the mailer too, but never fail the deploy over it: real mail
+            # goes through MAILER_DSN (Brevo), set in .env.local above.
+            TERMII_API_KEY=$TERMII_API_KEY docker compose up -d mailer \
+              || echo "mailer not started (host port in use?) - the app is unaffected"
             
             # ⏱️ Give MySQL 15 seconds to boot before running schema updates
             sleep 15
@@ -157,4 +170,11 @@ jobs:
             # container Symfony boots from must have been rebuilt from these
             # sources, or it would answer "command is not defined".
             docker compose exec -e APP_ENV=prod -T php bin/console app:tenant:seed-nigeria
+
+            # 🧽 Old image generations are what filled the 30 GB boot volume on
+            # 2026-11-08 ("no space left on device" mid-pull). Keep only layers
+            # nothing references; `prune` without `-a` never removes a tagged
+            # image in use, and never touches volumes (the databases).
+            docker image prune -f >/dev/null 2>&1 || true
+            df -h / | tail -1
 
