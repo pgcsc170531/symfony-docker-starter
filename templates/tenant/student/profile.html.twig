@@ -75,6 +75,15 @@
             <a href="{{ path('app_tenant_student_edit', {'id': student.id}) }}" class="w-full sm:w-auto bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2.5 px-4 rounded-lg transition-colors border border-blue-200 flex items-center justify-center shadow-sm">
                 <i class="fas fa-pencil-alt mr-2"></i> Edit Profile
             </a>
+
+            {# The admission number is not on the profile form on purpose (it is
+               already printed on documents). The owner can still correct it from
+               here, so nobody has to hunt for the settings screen. #}
+            {% if is_granted('ROLE_TENANT_SUPER_ADMIN') %}
+                <a href="{{ path('app_tenant_admission_number_edit', {'id': student.id}) }}" class="w-full sm:w-auto bg-white hover:bg-ink-50 text-ink-700 border border-ink-300 font-bold py-2.5 px-4 rounded-lg shadow-sm transition-colors flex items-center justify-center">
+                    <i class="fas fa-hashtag mr-2"></i> Admission No
+                </a>
+            {% endif %}
             
             <a href="{{ path('app_tenant_student_upload_photo', {'id': student.id}) }}" class="w-full sm:w-auto bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-2.5 px-4 rounded-lg transition-colors border border-indigo-200 flex items-center justify-center shadow-sm">
                 <i class="fas fa-camera mr-2"></i> Photo

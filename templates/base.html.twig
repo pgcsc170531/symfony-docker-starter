@@ -775,6 +775,11 @@
                                     ('wallet' in route)) }}
                         {{ nav.item(path('app_tenant_settings_general'), 'adjustments', 'Settings',
                                     ('settings' in route)) }}
+                        {# Correcting a number is a System-level act, so it sits here
+                           as well as on the Settings page — a school that cannot find
+                           it will not use it. #}
+                        {{ nav.item(path('app_tenant_admission_numbers'), 'identification', 'Admission numbers',
+                                    ('admission_number' in route)) }}
                     {% endif %}
 
                 {% endif %}
