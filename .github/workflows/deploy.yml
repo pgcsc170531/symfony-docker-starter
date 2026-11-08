@@ -39,9 +39,10 @@ jobs:
       - name: Deploy to Oracle ARM64 instance via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.VPS_SSH_HOST }}
-          username: ${{ secrets.VPS_SSH_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
+          # Keep current names first, but support legacy secret keys too.
+          host: ${{ secrets.VPS_SSH_HOST || secrets.VPS_HOST || secrets.SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USER || secrets.VPS_USER || secrets.SSH_USER }}
+          key: ${{ secrets.VPS_SSH_KEY || secrets.VPS_KEY || secrets.SSH_KEY }}
           script: |
             cd /root/projects
             export TERMII_API_KEY=${{ secrets.TERMII_API_KEY }}
