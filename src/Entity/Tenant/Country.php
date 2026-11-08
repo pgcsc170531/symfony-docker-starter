@@ -33,7 +33,25 @@ class Country
     public function setName(string $name): static { $this->name = $name; return $this; }
     public function getIsoCode(): ?string { return $this->isoCode; }
     public function setIsoCode(string $isoCode): static { $this->isoCode = $isoCode; return $this; }
-    
+
+    /**
+     * @return Collection<int, State>
+     */
+    public function getStates(): Collection
+    {
+        return $this->states;
+    }
+
+    public function addState(State $state): static
+    {
+        if (!$this->states->contains($state)) {
+            $this->states->add($state);
+            $state->setCountry($this);
+        }
+
+        return $this;
+    }
+
     // Helper for dropdowns
-    public function __toString(): string { return $this->name; }
+    public function __toString(): string { return $this->name ?? ''; }
 }

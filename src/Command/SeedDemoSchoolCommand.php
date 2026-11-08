@@ -19,6 +19,7 @@ use App\Entity\Tenant\Term;
 use App\Entity\Tenant\User;
 use App\Entity\Tenant\YearGroup;
 use App\Entity\Tenant\YearGroupMaster;
+use App\Service\Geo\GeographySeeder;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -115,6 +116,7 @@ class SeedDemoSchoolCommand extends Command
         private Connection $tenantConnection,
         private EntityManagerInterface $em,
         private UserPasswordHasherInterface $hasher,
+        private GeographySeeder $geography,
     ) {
         parent::__construct();
     }
@@ -143,6 +145,18 @@ class SeedDemoSchoolCommand extends Command
         }
 
         $io->title(sprintf('Seeding %s — %s / %s', $subdomain, $session->getName(), $term->getName()));
+
+        // 0. Country, states and LGAs -------------------------------------------
+        // The public application form asks for a nationality, a state of origin and
+        // an LGA. Seeding them here means a demo school can be walked end to end
+        // even if it was provisioned before the geography step existed.
+        $geo = $this->geography->seedNigeria($this->em);
+        $io->writeln(sprintf(
+            '  geography: country %s · %d state(s) · %d LGA(s) added',
+            $geo['country_created'] ? 'created' : 'already present',
+            $geo['states_added'],
+            $geo['lgas_added']
+        ));
 
         // 1. Departments + subjects -------------------------------------------
         $departments = [];

@@ -7,6 +7,7 @@ use App\Entity\Tenant\School as TenantSchool;
 use App\Entity\Tenant\Session;
 use App\Entity\Tenant\Term;
 use App\Entity\Tenant\User;
+use App\Service\Geo\GeographySeeder;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping\UnderscoreNamingStrategy;
@@ -27,7 +28,8 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
  *   3. the school settings row
  *   4. the active academic session + first term
  *   5. the default Nigerian A1–F9 grading scale
- *   6. the principal's login account
+ *   6. the Nigerian Country, States and LGAs the admission form selects from
+ *   7. the principal's login account
  *
  * Everything is idempotent — running it twice must not duplicate rows.
  */
@@ -59,6 +61,7 @@ class TenantProvisioner
         #[Autowire(env: 'LANDLORD_DATABASE_URL')]
         private string $landlordDatabaseUrl,
         private UserPasswordHasherInterface $passwordHasher,
+        private GeographySeeder $geography,
     ) {
     }
 
@@ -78,6 +81,7 @@ class TenantProvisioner
      *     session:string,
      *     term:string,
      *     grading_scale_seeded:int,
+     *     geo_seeded:array{country_created:bool, states_added:int, lgas_added:int},
      *     admin_created:?string
      * }
      */
@@ -158,7 +162,14 @@ class TenantProvisioner
         // ── 5. Default grading scale ─────────────────────────────────────
         $gradingScaleSeeded = $this->seedGradingScale($em);
 
-        // ── 6. The owner's account ────────────────────────────────
+        // ── 6. Country, States and LGAs ──────────────────────────────────
+        //
+        // Admission asks for a nationality, a state of origin and an LGA, all
+        // three as entity dropdowns. A school provisioned without these is a
+        // school whose admission form cannot be filled in.
+        $geoSeeded = $this->geography->seedNigeria($em);
+
+        // ── 7. The owner's account ────────────────────────────────
         //
         // The person whose details were used to sign the school up IS the
         // school's super admin, permanently. From here they can create ordinary
@@ -198,6 +209,7 @@ class TenantProvisioner
             'session' => $sessionName,
             'term' => $termName,
             'grading_scale_seeded' => $gradingScaleSeeded,
+            'geo_seeded' => $geoSeeded,
             'admin_created' => $adminCreated,
         ];
     }

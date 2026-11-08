@@ -154,6 +154,11 @@ HELP);
                 ['Academic session', $result['session']],
                 ['Current term', $result['term']],
                 ['Grading scale', $result['grading_scale_seeded'] . ' grade(s) added'],
+                ['Geography', sprintf(
+                    '%d state(s), %d LGA(s) added',
+                    $result['geo_seeded']['states_added'],
+                    $result['geo_seeded']['lgas_added']
+                )],
                 ['Admin login', $result['admin_created'] ?? 'not created (no --principal-email)'],
             ]
         );

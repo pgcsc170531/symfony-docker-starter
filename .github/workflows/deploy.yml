@@ -118,3 +118,17 @@ jobs:
             # var/log does not always exist on the bind mount — create it rather
             # than letting `chown` fail the whole deploy.
             docker compose exec -T php sh -c 'mkdir -p var/log && chown -R www-data:www-data var/cache var/log'
+
+            # 🌍 Geography for admission (Country → State of origin → LGA).
+            #
+            # The admission and parent-application forms render those three as
+            # entity dropdowns, so a tenant without the rows has three empty
+            # selects. Idempotent — it only inserts what a tenant is missing —
+            # so it is safe on every deploy and heals schools provisioned before
+            # the seeding step existed.
+            #
+            # Runs AFTER the cache wipe on purpose: this command is new, and the
+            # container Symfony boots from must have been rebuilt from these
+            # sources, or it would answer "command is not defined".
+            docker compose exec -e APP_ENV=prod -T php bin/console app:tenant:seed-nigeria
+
