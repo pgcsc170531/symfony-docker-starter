@@ -176,6 +176,11 @@ security:
         #       the credential and stays valid after the share link expires.
         - { path: ^/pv/, roles: PUBLIC_ACCESS }
 
+        # 🟢 2g. Build marker / uptime probe. Exposes the running commit and the
+        #       environment, never a school's data, so "is my push live?" can be
+        #       answered without a login.
+        - { path: ^/health$, roles: PUBLIC_ACCESS }
+
         # ⚠️ 3. LOGIN PAGES MUST STAY PUBLIC.
         # If these are not public, the firewall denies the login form itself and
         # redirects it back to itself → browser shows ERR_TOO_MANY_REDIRECTS

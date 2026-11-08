@@ -1,3 +1,8 @@
+# The commit this image was built from. Surfaced at /health, so "did my push
+# actually reach the server?" is one curl instead of guessing from a menu row
+# that the browser may have cached (2026-11-08 — two green deploys, stale code).
+ARG GIT_SHA=dev
+
 # Stage 1: Build dependencies
 FROM dunglas/frankenphp:1-php8.4-alpine AS builder
 
@@ -38,6 +43,8 @@ RUN composer install --no-dev --optimize-autoloader
 # Stage 2: Final Production Image
 FROM dunglas/frankenphp:1-php8.4-alpine
 
+ARG GIT_SHA
+
 WORKDIR /app
 
 # 7. Re-install required runtime extensions
@@ -61,3 +68,4 @@ RUN php bin/console cache:clear --env=prod
 
 ENV APP_ENV=prod
 ENV FRANKENPHP_CONFIG="worker ./public/index.php"
+ENV APP_BUILD_SHA=${GIT_SHA}

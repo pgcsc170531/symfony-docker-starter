@@ -33,6 +33,10 @@ jobs:
         with:
           context: .
           platforms: linux/arm64
+          # Baked into the image and shown by /health, so the running commit can
+          # be checked from anywhere without shell access.
+          build-args: |
+            GIT_SHA=${{ github.sha }}
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/edus-saas:latest
 

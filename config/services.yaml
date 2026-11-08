@@ -18,6 +18,9 @@ parameters:
     receipts_directory: '%kernel.project_dir%/public/uploads/receipts'
     app.base_domain: "%env(default:default_base_domain:BASE_DOMAIN)%"
     default_base_domain: 'localhost'
+    # The commit baked into the running image, read by HealthController so a
+    # deploy can be verified with one request. Empty outside Docker.
+    app.build_sha: "%env(default::APP_BUILD_SHA)%"
     # The domain a school's public site actually answers on (edus.ng), as opposed
     # to BASE_DOMAIN, which is the host this box happens to serve (localhost in
     # development). The Paystack webhook URL printed on /admin/settings/payments
