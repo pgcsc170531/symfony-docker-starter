@@ -403,6 +403,21 @@
                 </a>
             </div>
 
+            {# Admission numbers are their own screen too: correcting one is a
+               super-admin act with a consequence (it is on printed documents), not
+               a field to brush past while saving the school's identity. #}
+            <div class="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <p class="text-sm font-semibold text-gray-800">Admission numbers</p>
+                <p class="mt-1 text-xs leading-relaxed text-gray-500">
+                    Fix a number an uploaded list brought in wrong, or remove a {{ learner }}
+                    who was never meant to be on the roll.
+                </p>
+                <a href="{{ path('app_tenant_admission_numbers') }}"
+                   class="mt-3 inline-flex min-h-[44px] items-center rounded-lg border border-gray-300 bg-white px-4 text-xs font-bold text-gray-700 hover:border-accent-400 hover:text-accent-700">
+                    Manage admission numbers &rarr;
+                </a>
+            </div>
+
             {# --- SAVE BAR — the last thing in the form, and the only primary action
                on the page. Full width on a phone (a thumb, not a pointer); on a wider
                screen it sits at the right edge of the form, where the eye finishes. --- #}

@@ -1,0 +1,102 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Admission number · {{ student.fullName }}{% endblock %}
+
+{% block body %}
+<div class="px-4 py-4 sm:py-6">
+
+    <div class="mb-5">
+        <a href="{{ path('app_tenant_admission_numbers') }}"
+           class="inline-flex min-h-[44px] items-center text-xs font-semibold text-accent-700 hover:underline">&larr; Admission numbers</a>
+        <h1 class="mt-1 break-words text-2xl font-black tracking-tight text-ink-900 sm:text-3xl">{{ student.fullName }}</h1>
+        <div class="mt-2 flex flex-wrap items-center gap-3">
+            <p class="text-sm text-ink-600">{{ class_name }}</p>
+            <a href="{{ path('app_tenant_student_profile', {id: student.id}) }}"
+               class="inline-flex min-h-[44px] items-center rounded-lg border border-ink-300 px-4 text-xs font-semibold text-ink-700 hover:border-accent-400 hover:text-accent-700">
+                Open profile &rarr;
+            </a>
+        </div>
+    </div>
+
+    <div class="rounded-xl border border-ink-200 bg-white p-4 shadow-card sm:p-6">
+        <p class="text-xs uppercase tracking-wide text-ink-500">Currently</p>
+        <p class="mt-1 font-mono text-lg font-bold text-ink-900">
+            {{ student.admissionNumber ?: 'No admission number yet' }}
+        </p>
+
+        {{ form_start(form, {'attr': {'novalidate': 'novalidate'}}) }}
+            <div class="mt-5">
+                {{ form_label(form.admissionNumber, null, {'label_attr': {'class': 'block text-sm font-semibold text-ink-700'}}) }}
+                {{ form_widget(form.admissionNumber, {'attr': {
+                    'class': 'mt-1 block min-h-[44px] w-full rounded-lg border border-ink-300 bg-white px-3 font-mono text-base text-ink-900 focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500'
+                }}) }}
+                {{ form_errors(form.admissionNumber) }}
+                {{ form_help(form.admissionNumber) }}
+            </div>
+
+            <div class="mt-5 rounded-lg border border-pending/40 bg-pending/5 p-3 text-xs leading-relaxed text-ink-700">
+                <strong class="text-ink-900">This number is already on paper.</strong>
+                It appears on invoices, receipts, the ID card and any admission letter issued. Changing it here
+                corrects the record from now on — anything already printed keeps the old number.
+            </div>
+
+            <div class="mt-6 flex flex-col gap-3 sm:flex-row-reverse sm:items-center sm:justify-between">
+                <button type="submit"
+                        class="min-h-[44px] w-full rounded-lg bg-accent-600 px-8 font-bold text-white shadow-sm hover:bg-accent-700 sm:w-auto">
+                    Save admission number
+                </button>
+                <p class="text-xs text-ink-500">Nothing changes until you press Save.</p>
+            </div>
+        {{ form_end(form) }}
+    </div>
+
+    {# === DANGER ZONE — deleting the pupil === #}
+    <div class="mt-6 rounded-xl border border-failed/30 bg-white p-4 sm:p-6">
+        <h2 class="text-sm font-bold text-failed">Delete this {{ learner }}</h2>
+
+        {% if delete_blocker %}
+            <p class="mt-2 text-sm leading-relaxed text-ink-700">{{ delete_blocker }}</p>
+            <p class="mt-2 text-xs text-ink-500">
+                The delete form stays locked until that is cleared.
+            </p>
+        {% else %}
+            <p class="mt-2 text-sm leading-relaxed text-ink-700">
+                Removes the {{ learner }}, their enrolment, their unpaid bills and everything recorded against
+                them.
+                {% if guardian_name %}
+                    <strong class="text-ink-900">{{ guardian_name }} (the parent) is kept</strong>
+                    {%- if other_children > 0 %}, along with their {{ other_children }} other
+                        {{ other_children == 1 ? learner : learner.plural }} here{% endif %},
+                    and so is their portal login.
+                {% else %}
+                    There is no parent attached to this {{ learner }}.
+                {% endif %}
+                <strong class="text-ink-900">This cannot be undone.</strong>
+            </p>
+
+            <form method="post"
+                  action="{{ path('app_tenant_admission_number_delete', {id: student.id}) }}"
+                  onsubmit="return confirm('Delete {{ student.fullName|e('js') }} permanently?');"
+                  class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-end">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete_student_' ~ student.id) }}">
+                <div class="w-full sm:max-w-xs">
+                    <label for="confirm-delete" class="block text-xs font-semibold text-ink-700">
+                        {% if student.admissionNumber %}
+                            Type the admission number to confirm
+                        {% else %}
+                            This {{ learner }} has no admission number — type DELETE to confirm
+                        {% endif %}
+                    </label>
+                    <input id="confirm-delete" name="confirm" type="text" autocomplete="off" spellcheck="false"
+                           placeholder="{{ student.admissionNumber ?: 'DELETE' }}"
+                           class="mt-1 block min-h-[44px] w-full rounded-lg border border-ink-300 bg-white px-3 font-mono text-base text-ink-900 focus:border-failed focus:outline-none focus:ring-1 focus:ring-failed">
+                </div>
+                <button type="submit"
+                        class="min-h-[44px] w-full rounded-lg border border-failed/40 px-5 text-sm font-semibold text-failed hover:bg-failed/10 sm:w-auto">
+                    Delete permanently
+                </button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

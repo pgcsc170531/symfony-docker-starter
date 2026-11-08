@@ -1,0 +1,110 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Admission numbers{% endblock %}
+
+{% block body %}
+<div class="px-4 py-4 sm:py-6">
+
+    <div class="mb-5">
+        <a href="{{ path('app_tenant_settings_general') }}"
+           class="inline-flex min-h-[44px] items-center text-xs font-semibold text-accent-700 hover:underline">&larr; Settings</a>
+        <h1 class="mt-1 text-2xl font-black tracking-tight text-ink-900 sm:text-3xl">Admission numbers</h1>
+        <p class="mt-1 text-sm leading-relaxed text-ink-600">
+            Correct a number an uploaded list brought in wrong, or remove a {{ learner }} who was never meant
+            to be on the roll. Changing a number does <strong>not</strong> reprint documents already issued.
+        </p>
+    </div>
+
+    <form method="get" class="mb-4 flex flex-col gap-2 sm:flex-row">
+        <input type="search" name="q" value="{{ q }}" placeholder="Admission number, first or last name"
+               class="min-h-[44px] w-full rounded-lg border border-ink-300 bg-white px-3 text-base text-ink-900 focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500 sm:max-w-xs">
+        <select name="class_id"
+                class="min-h-[44px] w-full rounded-lg border border-ink-300 bg-white px-3 text-base text-ink-900 focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500 sm:w-auto">
+            <option value="">All classes</option>
+            {% for classroom in classrooms %}
+                <option value="{{ classroom.id }}" {% if class_id == classroom.id %}selected{% endif %}>{{ classroom.name }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit"
+                class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-accent-600 px-5 text-sm font-semibold text-white hover:bg-accent-700 sm:w-auto">
+            Search
+        </button>
+    </form>
+
+    <p class="mb-3 text-xs text-ink-500">
+        {{ total }} {{ total == 1 ? learner : learner.plural }} · page {{ page }} of {{ pages }}
+        {% if q != '' %} · matching &ldquo;{{ q }}&rdquo;{% endif %}
+    </p>
+
+    {% if total == 0 %}
+        <div class="rounded-xl border border-dashed border-ink-300 bg-white p-6 text-center">
+            <p class="text-sm font-semibold text-ink-900">Nothing matches</p>
+            <p class="mx-auto mt-1 max-w-md text-sm leading-relaxed text-ink-500">
+                {% if q != '' or class_id %}
+                    Try a different name or admission number, or clear the class filter.
+                {% else %}
+                    There are no {{ learner.plural }} on this school's roll yet. They arrive through
+                    admission or the CSV upload.
+                {% endif %}
+            </p>
+        </div>
+    {% else %}
+        <div class="overflow-x-auto rounded-xl border border-ink-200 bg-white shadow-card">
+            <table class="w-full min-w-[640px] text-left text-sm">
+                <thead class="border-b border-ink-200 bg-ink-50 text-xs uppercase tracking-wide text-ink-500">
+                    <tr>
+                        <th class="px-4 py-3 font-semibold">Admission no</th>
+                        <th class="px-4 py-3 font-semibold">{{ learner.pluralCapital }}</th>
+                        <th class="px-4 py-3 font-semibold">Class</th>
+                        <th class="px-4 py-3 text-right font-semibold">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-ink-100">
+                    {% for student in students %}
+                        {% set class_name = student.currentClassroom ? student.currentClassroom.name : (student.currentClass ? student.currentClass.name : '—') %}
+                        <tr class="hover:bg-ink-50">
+                            <td class="px-4 py-3 font-mono text-xs text-ink-900">
+                                {% if student.admissionNumber %}
+                                    {{ student.admissionNumber }}
+                                {% else %}
+                                    <span class="badge-pending">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td class="break-words px-4 py-3 font-semibold text-ink-900">{{ student.fullName }}</td>
+                            <td class="px-4 py-3 text-ink-700">{{ class_name }}</td>
+                            <td class="px-4 py-3 text-right">
+                                <a href="{{ path('app_tenant_admission_number_edit', {id: student.id}) }}"
+                                   class="inline-flex min-h-[44px] items-center rounded-lg border border-ink-300 px-4 text-xs font-semibold text-ink-700 hover:border-accent-400 hover:text-accent-700">
+                                    Edit
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if pages > 1 %}
+            <nav class="mt-4 flex items-center justify-between gap-3" aria-label="Pagination">
+                {% if page > 1 %}
+                    <a href="{{ path('app_tenant_admission_numbers', {q: q, class_id: class_id, page: page - 1}) }}"
+                       class="inline-flex min-h-[44px] items-center rounded-lg border border-ink-300 px-4 text-xs font-semibold text-ink-700 hover:border-accent-400 hover:text-accent-700">
+                        &larr; Previous
+                    </a>
+                {% else %}
+                    <span class="inline-flex min-h-[44px] items-center px-4 text-xs text-ink-400">Previous</span>
+                {% endif %}
+
+                {% if page < pages %}
+                    <a href="{{ path('app_tenant_admission_numbers', {q: q, class_id: class_id, page: page + 1}) }}"
+                       class="inline-flex min-h-[44px] items-center rounded-lg border border-ink-300 px-4 text-xs font-semibold text-ink-700 hover:border-accent-400 hover:text-accent-700">
+                        Next &rarr;
+                    </a>
+                {% else %}
+                    <span class="inline-flex min-h-[44px] items-center px-4 text-xs text-ink-400">Next</span>
+                {% endif %}
+            </nav>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}
