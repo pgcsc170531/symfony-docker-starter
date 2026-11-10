@@ -105,7 +105,9 @@ class StudentAdmissionType extends AbstractType
                 'attr' => ['id' => 'select-lga', 'disabled' => 'disabled'],
             ])
             ->add('homeTown', TextType::class, [
-                'label' => 'Home Town',
+                // The column is still `home_town`; the field asks for an address,
+                // which is what a school actually needs to reach a family.
+                'label' => 'Home Address',
                 'required' => false
             ])
 

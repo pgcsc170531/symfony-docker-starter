@@ -90,6 +90,11 @@
 
                     toggle(stateBox, hasList);
                     toggle(regionBox, !hasList);
+
+                    // The word follows the COUNTRY the user picked, not the
+                    // school's: an Iraqi pupil in a Nigerian school still has a
+                    // Governorate, and the field must say so.
+                    relabel(stateBox, word);
                     relabel(regionBox, word);
 
                     // Only one of the two may be submitted: clearing the hidden

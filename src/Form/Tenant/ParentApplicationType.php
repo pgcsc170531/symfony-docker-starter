@@ -131,7 +131,7 @@ class ParentApplicationType extends AbstractType
                 'attr' => ['class' => self::INPUT],
             ])
             ->add('homeTown', TextType::class, [
-                'label' => 'Home town',
+                'label' => 'Home address',
                 'required' => false,
                 'attr' => ['class' => self::INPUT],
             ])
