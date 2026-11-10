@@ -14,21 +14,24 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
- * Gives every tenant the Country / State / LGA rows the admission form needs.
+ * Gives every tenant the countries, regions and LGAs the admission form needs.
  *
  * New schools get these automatically from {@see \App\Service\TenantProvisioner};
  * this command exists for schools provisioned before that step was added, and is
  * safe to re-run — it only inserts what is missing.
  *
+ * The command keeps its original name (`app:tenant:seed-nigeria`) because the
+ * deploy workflow calls it on every push; `seed-geography` is the honest alias.
+ *
  *   docker compose exec -T php php bin/console app:tenant:seed-nigeria
- *   docker compose exec -T php php bin/console app:tenant:seed-nigeria --school=gakprimary
+ *   docker compose exec -T php php bin/console app:tenant:seed-geography --school=gakprimary
  *
  * If a database predates the `country` / `state` / `lga` tables, run
  * `app:tenant:update-schema` first.
  */
 #[AsCommand(
     name: 'app:tenant:seed-nigeria',
-    description: 'Seeds the Nigerian Country, States and LGAs into every tenant database',
+    description: 'Seeds every country, the regions Edus knows and Nigeria\'s LGAs into every tenant',
     aliases: ['app:tenant:seed-geography'],
 )]
 final class SeedNigeriaDataCommand extends TenantAwareCommand
@@ -61,7 +64,7 @@ final class SeedNigeriaDataCommand extends TenantAwareCommand
             return Command::FAILURE;
         }
 
-        $io->title('Seeding Nigerian Country, States and LGAs');
+        $io->title('Seeding countries, regions and LGAs');
 
         $failed = 0;
 
@@ -70,7 +73,7 @@ final class SeedNigeriaDataCommand extends TenantAwareCommand
 
             try {
                 $this->switchTo($school);
-                $result = $this->geography->seedNigeria($this->tenantEm);
+                $result = $this->geography->seedAll($this->tenantEm);
             } catch (\Throwable $e) {
                 $failed++;
                 $io->error($e->getMessage());
@@ -78,8 +81,12 @@ final class SeedNigeriaDataCommand extends TenantAwareCommand
                 continue;
             }
 
-            $io->text(sprintf(' - Country: %s', $result['country_created'] ? 'created' : 'already present'));
-            $io->text(sprintf(' - States added: %d', $result['states_added']));
+            $io->text(sprintf(
+                ' - Countries: %d new, %d in total',
+                $result['countries_created'],
+                $result['countries_total']
+            ));
+            $io->text(sprintf(' - Regions added: %d', $result['regions_added']));
             $io->text(sprintf(' - LGAs added: %d', $result['lgas_added']));
         }
 
@@ -91,7 +98,7 @@ final class SeedNigeriaDataCommand extends TenantAwareCommand
             return Command::FAILURE;
         }
 
-        $io->success('Every school now has Nigeria, its 36 states + the FCT, and their LGAs.');
+        $io->success('Every school now has every country, the regions Edus knows, and Nigeria\'s LGAs.');
 
         return Command::SUCCESS;
     }

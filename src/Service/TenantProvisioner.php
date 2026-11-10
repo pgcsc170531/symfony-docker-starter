@@ -81,7 +81,7 @@ class TenantProvisioner
      *     session:string,
      *     term:string,
      *     grading_scale_seeded:int,
-     *     geo_seeded:array{country_created:bool, states_added:int, lgas_added:int},
+     *     geo_seeded:array{countries_created:int, countries_total:int, regions_added:int, lgas_added:int},
      *     admin_created:?string
      * }
      */
@@ -162,12 +162,13 @@ class TenantProvisioner
         // ── 5. Default grading scale ─────────────────────────────────────
         $gradingScaleSeeded = $this->seedGradingScale($em);
 
-        // ── 6. Country, States and LGAs ──────────────────────────────────
+        // ── 6. Countries, regions and LGAs ──────────────────────────────
         //
-        // Admission asks for a nationality, a state of origin and an LGA, all
-        // three as entity dropdowns. A school provisioned without these is a
-        // school whose admission form cannot be filled in.
-        $geoSeeded = $this->geography->seedNigeria($em);
+        // Admission asks for a nationality, a region of origin and (in Nigeria)
+        // an LGA, all three as entity dropdowns. A school provisioned without
+        // these is a school whose admission form cannot be filled in — and a
+        // school provisioned with Nigeria alone offers exactly one nationality.
+        $geoSeeded = $this->geography->seedAll($em);
 
         // ── 7. The owner's account ────────────────────────────────
         //

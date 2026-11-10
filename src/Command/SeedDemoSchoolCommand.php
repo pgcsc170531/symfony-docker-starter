@@ -146,15 +146,16 @@ class SeedDemoSchoolCommand extends Command
 
         $io->title(sprintf('Seeding %s — %s / %s', $subdomain, $session->getName(), $term->getName()));
 
-        // 0. Country, states and LGAs -------------------------------------------
-        // The public application form asks for a nationality, a state of origin and
-        // an LGA. Seeding them here means a demo school can be walked end to end
+        // 0. Countries, regions and LGAs ---------------------------------------
+        // The public application form asks for a nationality and a region of
+        // origin. Seeding them here means a demo school can be walked end to end
         // even if it was provisioned before the geography step existed.
-        $geo = $this->geography->seedNigeria($this->em);
+        $geo = $this->geography->seedAll($this->em);
         $io->writeln(sprintf(
-            '  geography: country %s · %d state(s) · %d LGA(s) added',
-            $geo['country_created'] ? 'created' : 'already present',
-            $geo['states_added'],
+            '  geography: %d country(ies) new of %d · %d region(s) · %d LGA(s) added',
+            $geo['countries_created'],
+            $geo['countries_total'],
+            $geo['regions_added'],
             $geo['lgas_added']
         ));
 

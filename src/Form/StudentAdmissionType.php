@@ -7,6 +7,7 @@ use App\Entity\Tenant\Country;
 use App\Entity\Tenant\LGA;
 use App\Entity\Tenant\State;
 use App\Entity\Tenant\Student;
+use App\Service\Geo\SchoolRegionLabel;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -20,6 +21,10 @@ use Symfony\Component\Form\FormEvents;       // 🟢 Added for dynamic fields
 
 class StudentAdmissionType extends AbstractType
 {
+    public function __construct(private readonly SchoolRegionLabel $regionLabel)
+    {
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
@@ -73,7 +78,9 @@ class StudentAdmissionType extends AbstractType
             ->add('stateOfOrigin', EntityType::class, [
                 'class' => State::class,
                 'choice_label' => 'name',
-                'placeholder' => 'Select State',
+                // "State" only where the school's country calls it that.
+                'label' => $this->regionLabel->label(),
+                'placeholder' => 'Select ' . $this->regionLabel->label(),
                 'required' => false,
                 'attr' => ['id' => 'select-state'],
             ])

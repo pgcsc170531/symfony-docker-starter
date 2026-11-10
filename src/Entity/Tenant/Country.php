@@ -21,6 +21,15 @@ class Country
     #[ORM\Column(name: 'iso_code', length: 5)]
     private ?string $isoCode = null; // e.g., NG, GH
 
+    /**
+     * What this country calls its first-level division: "State" (Nigeria),
+     * "Governorate" (Iraq), "Province" (South Africa), "Region" (Ghana).
+     * Rendered as the label of the state-of-origin field, so a school abroad is
+     * never asked for a "State" it does not have.
+     */
+    #[ORM\Column(name: 'region_label', length: 40)]
+    private string $regionLabel = 'Region';
+
     #[ORM\OneToMany(mappedBy: 'country', targetEntity: State::class, cascade: ['persist', 'remove'])]
     private Collection $states;
 
@@ -33,6 +42,18 @@ class Country
     public function setName(string $name): static { $this->name = $name; return $this; }
     public function getIsoCode(): ?string { return $this->isoCode; }
     public function setIsoCode(string $isoCode): static { $this->isoCode = $isoCode; return $this; }
+
+    public function getRegionLabel(): string
+    {
+        return trim($this->regionLabel) !== '' ? $this->regionLabel : 'Region';
+    }
+
+    public function setRegionLabel(string $regionLabel): static
+    {
+        $this->regionLabel = trim($regionLabel) !== '' ? trim($regionLabel) : 'Region';
+
+        return $this;
+    }
 
     /**
      * @return Collection<int, State>

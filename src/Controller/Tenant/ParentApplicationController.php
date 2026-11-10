@@ -4,6 +4,7 @@ namespace App\Controller\Tenant;
 
 use App\Entity\Tenant\Application;
 use App\Entity\Tenant\ApplicationEvent;
+use App\Entity\Tenant\Country;
 use App\Entity\Tenant\Guardian;
 use App\Entity\Tenant\School;
 use App\Entity\Tenant\State;
@@ -183,6 +184,20 @@ class ParentApplicationController extends AbstractController
      * client swallowed, leaving the LGA dropdown unfiltered. This is public reference
      * geography, so a parent-scoped copy is the right place for it.
      */
+    #[Route('/api/states/{id}', name: 'app_parent_applications_api_states', methods: ['GET'], requirements: ['id' => '\d+'])]
+    public function statesByCountry(Country $country): JsonResponse
+    {
+        // Widened for the international list: 249 countries now exist, so the
+        // region select has to follow the chosen nationality instead of listing
+        // every region on earth.
+        $states = [];
+        foreach ($country->getStates() as $state) {
+            $states[] = ['id' => $state->getId(), 'name' => $state->getName()];
+        }
+
+        return new JsonResponse($states);
+    }
+
     #[Route('/api/lgas/{id}', name: 'app_parent_applications_api_lgas', methods: ['GET'], requirements: ['id' => '\d+'])]
     public function lgasByState(State $state): JsonResponse
     {

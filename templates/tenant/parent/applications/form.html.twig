@@ -21,9 +21,9 @@
     while "Submit application" validates the whole form.
 #}
 
-{% macro field(field, help, attrs, vars) %}
+{% macro field(field, help, attrs, vars, label) %}
     <div>
-        {{ form_label(field, null, {'label_attr': {'class': 'block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5'}}) }}
+        {{ form_label(field, label|default(null), {'label_attr': {'class': 'block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5'}}) }}
         {#
             Two subtleties, both learned the hard way:
             1. form_widget() with an `attr` key REPLACES the whole attribute array, so merge with
@@ -197,8 +197,19 @@
 
                 <div class="grid sm:grid-cols-3 gap-4">
                     {{ ui.field(form.nationality, false, {'class': inputClass}) }}
-                    {{ ui.field(form.stateOfOrigin, 'Choosing a state loads its local government areas.', {'class': inputClass}, {'id': 'select-state'}) }}
-                    {{ ui.field(form.lga, false, {'class': inputClass}, {'id': 'select-lga'}) }}
+                    {# The school's own word for its region: "State" only in Nigeria. #}
+                    {{ ui.field(
+                        form.stateOfOrigin,
+                        region_label() == 'State' ? 'Choosing a state loads its local government areas.' : 'Where the family is registered.',
+                        {'class': inputClass},
+                        {'id': 'select-state'},
+                        region_label()
+                    ) }}
+                    {# LGAs exist only in Nigeria; the script below hides this
+                       block when the chosen region has none. #}
+                    <div id="lga-field">
+                        {{ ui.field(form.lga, false, {'class': inputClass}, {'id': 'select-lga'}) }}
+                    </div>
                 </div>
 
                 <div class="grid sm:grid-cols-3 gap-4">
@@ -382,6 +393,48 @@
 
             const lgaApiUrl = "{{ path('app_parent_applications_api_lgas', {id: 0}) }}".slice(0, -1);
             const lgaHelp = lgaSelect.parentElement ? lgaSelect.parentElement.querySelector('p') : null;
+            const lgaField = document.getElementById('lga-field');
+
+            // Country → region, same rule as the staff form: the region list
+            // follows the chosen nationality.
+            const countrySelect = document.querySelector('[name*="nationality"]');
+            const statesApiUrl = "{{ path('app_parent_applications_api_states', {id: 0}) }}".slice(0, -1);
+            const regionWord = "{{ ('Select ' ~ region_label())|e('js') }}";
+
+            function fillStates(countryId, keepId) {
+                if (!countryId) { return; }
+
+                fetch(statesApiUrl + countryId, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(response => {
+                        if (!response.ok) { throw new Error('HTTP ' + response.status); }
+                        return response.json();
+                    })
+                    .then(states => {
+                        stateSelect.innerHTML = '';
+                        const placeholder = document.createElement('option');
+                        placeholder.value = '';
+                        placeholder.textContent = regionWord;
+                        stateSelect.appendChild(placeholder);
+
+                        states.forEach(state => {
+                            const option = document.createElement('option');
+                            option.value = state.id;
+                            option.textContent = state.name;
+                            stateSelect.appendChild(option);
+                        });
+
+                        if (keepId) { stateSelect.value = String(keepId); }
+                        stateSelect.dispatchEvent(new Event('change'));
+                    })
+                    .catch(error => console.error('Could not load regions:', error));
+            }
+
+            if (countrySelect) {
+                countrySelect.addEventListener('change', function () { fillStates(this.value); });
+                if (countrySelect.value) {
+                    fillStates(countrySelect.value, stateSelect.value);
+                }
+            }
 
             stateSelect.addEventListener('change', function () {
                 const stateId = this.value;
@@ -400,6 +453,12 @@
                         placeholder.value = '';
                         placeholder.textContent = data.length ? 'Select LGA' : 'No LGAs found';
                         lgaSelect.appendChild(placeholder);
+
+                        // Outside Nigeria the region has no third level at
+                        // all: hide the field instead of showing an empty one.
+                        if (lgaField) {
+                            lgaField.style.display = data.length ? '' : 'none';
+                        }
 
                         data.forEach(lga => {
                             const option = document.createElement('option');

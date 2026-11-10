@@ -31,6 +31,15 @@ class School
     #[ORM\Column(length: 255)]
     private ?string $name = 'My School'; // Default name
 
+    /**
+     * ISO 3166-1 alpha-2 of the country the school operates in. Decides which
+     * word its first-level division carries ("State" in Nigeria, "Governorate"
+     * in Iraq) and, from the currency phase, which currency it bills in.
+     * Null/empty reads as NG: every school that existed before this column did.
+     */
+    #[ORM\Column(name: 'country', length: 2, nullable: true)]
+    private ?string $country = 'NG';
+
     // 🟢 NEW: This is the field causing the error. 
     // It MUST have the getter and setter methods below.
     #[ORM\Column(name: "institution_type", length: 20, options: ['default' => 'secondary'])]
@@ -425,7 +434,22 @@ class School
     public function getInstitutionType(): ?string { 
         return $this->institutionType; 
     }
-    
+
+    /** ISO 3166-1 alpha-2. Everything written before this column was Nigerian. */
+    public function getCountry(): string
+    {
+        $code = strtoupper(trim((string) $this->country));
+
+        return strlen($code) === 2 ? $code : 'NG';
+    }
+
+    public function setCountry(?string $country): static
+    {
+        $code = strtoupper(trim((string) $country));
+        $this->country = strlen($code) === 2 ? $code : null;
+
+        return $this;
+    }
     public function setInstitutionType(string $institutionType): static { 
         $this->institutionType = $institutionType; 
         return $this; 

@@ -7,6 +7,7 @@ use App\Entity\Tenant\Country;
 use App\Entity\Tenant\LGA;
 use App\Entity\Tenant\State;
 use App\Entity\Tenant\YearGroup;
+use App\Service\Geo\SchoolRegionLabel;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
@@ -30,6 +31,10 @@ class ParentApplicationType extends AbstractType
 {
     /** Shared Tailwind classes so every wizard input looks identical. */
     public const INPUT = 'w-full rounded-lg border-gray-300 p-3 shadow-sm focus:ring-indigo-500 focus:border-indigo-500';
+
+    public function __construct(private readonly SchoolRegionLabel $regionLabel)
+    {
+    }
 
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
@@ -100,8 +105,9 @@ class ParentApplicationType extends AbstractType
             ->add('stateOfOrigin', EntityType::class, [
                 'class' => State::class,
                 'choice_label' => 'name',
-                'label' => 'State of origin',
-                'placeholder' => 'Select state',
+                // "State" only where the school's country calls it that.
+                'label' => $this->regionLabel->label(),
+                'placeholder' => 'Select ' . $this->regionLabel->label(),
                 'required' => false,
                 'attr' => ['class' => self::INPUT],
             ])
