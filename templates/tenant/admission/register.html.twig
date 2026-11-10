@@ -77,7 +77,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 {{ form_row(form.nationality, {'attr': {'class': 'rounded-lg p-3 w-full'}}) }}
 
-                <div class="form-group">
+                <div class="form-group" data-origin="state">
                     {# The school's own word for its region: "State" only in Nigeria. #}
                     {{ form_label(form.stateOfOrigin, region_label(), {'label_attr': {'class': 'block text-sm font-bold text-gray-700 mb-1'}}) }}
                     {{ form_widget(form.stateOfOrigin, {'attr': {'class': 'rounded-lg p-3 w-full border-gray-300 shadow-sm', 'id': 'select-state'}}) }} 
@@ -88,6 +88,14 @@
                 <div class="form-group" id="lga-field">
                     {{ form_label(form.lga, null, {'label_attr': {'class': 'block text-sm font-bold text-gray-700 mb-1'}}) }}
                     {{ form_widget(form.lga, {'attr': {'class': 'rounded-lg p-3 w-full border-gray-300 shadow-sm', 'id': 'select-lga'}}) }}
+                </div>
+
+                {# Every country without a seeded region list: type it instead.
+                   The helper shows exactly one of this and the dropdown. #}
+                <div class="form-group" data-origin="region" style="display: none;">
+                    {{ form_label(form.regionName, null, {'label_attr': {'class': 'block text-sm font-bold text-gray-700 mb-1'}}) }}
+                    {{ form_widget(form.regionName, {'attr': {'class': 'rounded-lg p-3 w-full border-gray-300 shadow-sm'}}) }}
+                    {{ form_errors(form.regionName) }}
                 </div>
 
                 {{ form_row(form.homeTown, {'attr': {'class': 'rounded-lg p-3 w-full'}}) }}
@@ -129,6 +137,7 @@
 {% block javascripts %}
     {{ parent() }}
     {% include '_select_search.html.twig' %}
+    {% include '_origin_fields.html.twig' %}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // We find the elements by their Symfony-generated names if the custom IDs fail
@@ -143,61 +152,36 @@
             const lgaApiUrl = "{{ path('app_tenant_api_lgas', {id: 0}) }}".slice(0, -1);
             const lgaField = document.getElementById('lga-field');
 
-            // Country → region. 249 countries exist now, so the region select
-            // cannot list every region on earth; it follows the nationality.
             const countrySelect = document.querySelector('[name*="nationality"]');
+            const regionInput = document.querySelector('[name*="regionName"]');
             const statesApiUrl = "{{ path('app_tenant_api_states', {id: 0}) }}".slice(0, -1);
-            const regionWord = "{{ ('Select ' ~ region_label())|e('js') }}";
-
-            // 249 countries (and 774 LGAs) do not belong in a scrolly native
-            // dropdown: type to filter. The search box only appears when a list
-            // is long enough to need it.
             const regionName = "{{ region_label()|e('js') }}";
+
+            // Long lists become searchable comboboxes; see _select_search.html.twig.
             if (countrySelect) {
                 edusSelectSearch(countrySelect, { placeholder: 'Search countries…', label: 'Search countries' });
             }
             edusSelectSearch(stateSelect, { placeholder: 'Search ' + regionName.toLowerCase() + 's…', label: 'Search ' + regionName.toLowerCase() + 's' });
             edusSelectSearch(lgaSelect, { placeholder: 'Search LGA…', label: 'Search local government areas' });
 
-            function fillStates(countryId, keepId) {
-                if (!countryId) { return; }
-
-                fetch(statesApiUrl + countryId)
-                    .then(response => response.json())
-                    .then(states => {
-                        stateSelect.innerHTML = '';
-                        const placeholder = document.createElement('option');
-                        placeholder.value = '';
-                        placeholder.textContent = regionWord;
-                        stateSelect.appendChild(placeholder);
-
-                        states.forEach(state => {
-                            const option = document.createElement('option');
-                            option.value = state.id;
-                            option.textContent = state.name;
-                            stateSelect.appendChild(option);
-                        });
-
-                        if (keepId) { stateSelect.value = String(keepId); }
-                        if (stateSelect._searchRefresh) { stateSelect._searchRefresh(); }
-                        stateSelect.dispatchEvent(new Event('change'));
-                    })
-                    .catch(error => console.error('Could not load regions:', error));
-            }
-
-            if (countrySelect) {
-                countrySelect.addEventListener('change', function () { fillStates(this.value); });
-
-                // First paint on an existing pupil: narrow to their country rather
-                // than showing every region on earth.
-                if (countrySelect.value) {
-                    fillStates(countrySelect.value, stateSelect.value);
-                }
-            }
+            // Country → region: a dropdown where Edus has the list, a typed field
+            // everywhere else. See _origin_fields.html.twig.
+            edusOriginFields({
+                countrySelect: countrySelect,
+                stateSelect: stateSelect,
+                regionInput: regionInput,
+                statesUrl: statesApiUrl,
+            });
 
             stateSelect.addEventListener('change', function() {
                 const stateId = this.value;
-                if (!stateId) return;
+
+                // No region chosen (foreign country, or cleared): the LGA field
+                // has nothing to attach to.
+                if (!stateId) {
+                    if (lgaField) { lgaField.style.display = 'none'; }
+                    return;
+                }
 
                 console.log("Fetching LGAs for State ID:", stateId);
 

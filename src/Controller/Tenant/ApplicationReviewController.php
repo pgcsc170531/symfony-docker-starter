@@ -253,6 +253,8 @@ final class ApplicationReviewController extends AbstractController
         $student->setReligion($application->getReligion());
         $student->setNationality($application->getNationality());
         $student->setStateOfOrigin($application->getStateOfOrigin());
+        // The typed region travels with it: a foreign applicant has no State row.
+        $student->setRegionName($application->getRegionName());
         $student->setLga($application->getLga());
         $student->setHomeTown($application->getHomeTown());
         $student->setBloodGroup($application->getBloodGroup());

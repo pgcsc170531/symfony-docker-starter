@@ -100,6 +100,10 @@ class Application
     #[ORM\JoinColumn(name: 'state_of_origin_id', nullable: true, onDelete: 'SET NULL')]
     private ?State $stateOfOrigin = null;
 
+    /** The typed region for countries without a seeded list — see Student::$regionName. */
+    #[ORM\Column(name: 'region_name', length: 100, nullable: true)]
+    private ?string $regionName = null;
+
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(name: 'lga_id', nullable: true, onDelete: 'SET NULL')]
     private ?LGA $lga = null;
@@ -307,6 +311,21 @@ class Application
 
     public function getStateOfOrigin(): ?State { return $this->stateOfOrigin; }
     public function setStateOfOrigin(?State $stateOfOrigin): static { $this->stateOfOrigin = $stateOfOrigin; return $this; }
+
+    public function getRegionName(): ?string { return $this->regionName; }
+    public function setRegionName(?string $regionName): static
+    {
+        $regionName = trim((string) $regionName);
+        $this->regionName = $regionName !== '' ? $regionName : null;
+
+        return $this;
+    }
+
+    /** The region as a person reads it: the chosen option, or what they typed. */
+    public function getOriginRegion(): ?string
+    {
+        return $this->stateOfOrigin?->getName() ?: $this->regionName;
+    }
 
     public function getLga(): ?LGA { return $this->lga; }
     public function setLga(?LGA $lga): static { $this->lga = $lga; return $this; }

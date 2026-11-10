@@ -195,7 +195,10 @@ class ParentApplicationController extends AbstractController
             $states[] = ['id' => $state->getId(), 'name' => $state->getName()];
         }
 
-        return new JsonResponse($states);
+        return new JsonResponse([
+            'label' => $country->getRegionLabel(),
+            'states' => $states,
+        ]);
     }
 
     #[Route('/api/lgas/{id}', name: 'app_parent_applications_api_lgas', methods: ['GET'], requirements: ['id' => '\d+'])]

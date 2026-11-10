@@ -111,6 +111,17 @@ class ParentApplicationType extends AbstractType
                 'required' => false,
                 'attr' => ['class' => self::INPUT],
             ])
+            // Shown instead of the dropdown when the country has no seeded list.
+            ->add('regionName', TextType::class, [
+                'label' => 'State / Province',
+                'required' => false,
+                'attr' => [
+                    'class' => self::INPUT,
+                    'maxlength' => 100,
+                    'autocomplete' => 'off',
+                    'placeholder' => 'Type the region',
+                ],
+            ])
             ->add('lga', EntityType::class, [
                 'class' => LGA::class,
                 'choice_label' => 'name',

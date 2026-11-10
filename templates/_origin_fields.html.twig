@@ -1,0 +1,118 @@
+{#
+   Country → region, with a fallback: type it.
+
+   Edus carries a region list for Nigeria (states + 774 LGAs) and for the few
+   markets we have curated. For the other ~243 countries there is no list — and
+   there never may be, because maintaining 4 600 subdivisions is a job nobody
+   asked for. So:
+
+     country with a list  → dropdown (searchable), plus the LGA field in Nigeria
+     country without one   → a text field, labelled with that country's word
+                             ("Governorate", "Province", …), which the user fills in
+
+   The API answers `{label, states}`; an empty `states` is what switches the form
+   to typing. Nothing here knows about any particular country.
+
+   Usage:
+     {% include '_origin_fields.html.twig' %}
+     edusOriginFields({
+       countrySelect: document.querySelector('[name*="nationality"]'),
+       stateSelect:   document.getElementById('select-state'),
+       regionInput:   document.querySelector('[name*="regionName"]'),
+       statesUrl:     "/admission/api/states/",
+     });
+
+   The region and state boxes must carry data-origin="state" / data-origin="region".
+#}
+<script>
+(function () {
+    if (window.edusOriginFields) {
+        return;
+    }
+
+    window.edusOriginFields = function (config) {
+        var country = config.countrySelect;
+        var state = config.stateSelect;
+        var region = config.regionInput;
+
+        if (!country || !state || !region || !config.statesUrl) {
+            return;
+        }
+
+        var stateBox = state.closest('[data-origin="state"]');
+        var regionBox = region.closest('[data-origin="region"]');
+
+        function toggle(box, visible) {
+            if (box) { box.style.display = visible ? '' : 'none'; }
+        }
+
+        function relabel(box, word) {
+            var label = box ? box.querySelector('label') : null;
+            if (label && word) {
+                label.textContent = word;
+            }
+        }
+
+        function apply(countryId, keepId) {
+            if (!countryId) {
+                toggle(stateBox, true);
+                toggle(regionBox, false);
+                return;
+            }
+
+            fetch(config.statesUrl + countryId, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function (response) {
+                    if (!response.ok) { throw new Error('HTTP ' + response.status); }
+                    return response.json();
+                })
+                .then(function (data) {
+                    // Older endpoints answered a bare array; accept both.
+                    var states = Array.isArray(data) ? data : (data.states || []);
+                    var word = (data && data.label) || 'State / Province';
+
+                    state.innerHTML = '';
+                    var placeholder = document.createElement('option');
+                    placeholder.value = '';
+                    placeholder.textContent = 'Select ' + word;
+                    state.appendChild(placeholder);
+
+                    states.forEach(function (entry) {
+                        var option = document.createElement('option');
+                        option.value = entry.id;
+                        option.textContent = entry.name;
+                        state.appendChild(option);
+                    });
+
+                    if (keepId) { state.value = String(keepId); }
+                    if (state._searchRefresh) { state._searchRefresh(); }
+
+                    var hasList = states.length > 0;
+
+                    toggle(stateBox, hasList);
+                    toggle(regionBox, !hasList);
+                    relabel(regionBox, word);
+
+                    // Only one of the two may be submitted: clearing the hidden
+                    // one stops a stale region riding along with the next save.
+                    if (hasList) { region.value = ''; } else { state.value = ''; }
+
+                    // Lets the LGA cascade (and anything else) notice the change.
+                    state.dispatchEvent(new Event('change', { bubbles: true }));
+                })
+                .catch(function (error) {
+                    console.error('Could not load regions:', error);
+                    toggle(stateBox, true);
+                    toggle(regionBox, false);
+                });
+        }
+
+        country.addEventListener('change', function () { apply(this.value); });
+
+        // First paint: an existing pupil already has a nationality, so narrow the
+        // list (or switch to typing) without waiting for a change event.
+        if (country.value) {
+            apply(country.value, state.value);
+        }
+    };
+})();
+</script>

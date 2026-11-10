@@ -68,7 +68,7 @@
                     {{ ui.field('Date of birth', application.dateOfBirth ? application.dateOfBirth|date('d M Y') : null) }}
                     {{ ui.field('Religion', application.religion) }}
                     {{ ui.field('Nationality', application.nationality ? application.nationality.name : null) }}
-                    {{ ui.field('State of origin', application.stateOfOrigin ? application.stateOfOrigin.name : null) }}
+                    {{ ui.field(region_label(), application.originRegion) }}
                     {{ ui.field('LGA', application.lga ? application.lga.name : null) }}
                     {{ ui.field('Home town', application.homeTown) }}
                     {{ ui.field('Blood group', application.bloodGroup) }}

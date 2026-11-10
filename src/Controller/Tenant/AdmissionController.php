@@ -121,7 +121,14 @@ class AdmissionController extends AbstractController
         foreach ($country->getStates() as $state) {
             $states[] = ['id' => $state->getId(), 'name' => $state->getName()];
         }
-        return new JsonResponse($states);
+
+        // `label` is the country's own word (State / Governorate / Province) and
+        // an empty `states` list is the honest answer for the ~243 countries we
+        // carry no regions for: the form then asks the user to type it.
+        return new JsonResponse([
+            'label' => $country->getRegionLabel(),
+            'states' => $states,
+        ]);
     }
 
     #[Route('/api/lgas/{id}', name: 'app_tenant_api_lgas', methods: ['GET'])]

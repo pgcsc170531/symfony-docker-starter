@@ -84,6 +84,18 @@ class StudentAdmissionType extends AbstractType
                 'required' => false,
                 'attr' => ['id' => 'select-state'],
             ])
+            // Only shown for countries whose regions Edus does not carry — the
+            // script picks it by the chosen nationality and relabels it with that
+            // country's word ("Governorate", "Province", …).
+            ->add('regionName', TextType::class, [
+                'label' => 'State / Province',
+                'required' => false,
+                'attr' => [
+                    'maxlength' => 100,
+                    'autocomplete' => 'off',
+                    'placeholder' => 'Type the region',
+                ],
+            ])
             ->add('lga', EntityType::class, [
                 'class' => LGA::class,
                 'choice_label' => 'name',

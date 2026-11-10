@@ -58,6 +58,14 @@ class Student
     #[ORM\JoinColumn(name: 'state_of_origin_id', referencedColumnName: 'id', nullable: true)]
     private ?State $stateOfOrigin = null;
 
+    /**
+     * The region, typed — for every country whose regions Edus does not carry.
+     * Only Nigeria (and the markets with seeded lists) has a dropdown; elsewhere
+     * a parent types "Basra", "Ashanti" or "Gauteng" and it lands here.
+     */
+    #[ORM\Column(name: 'region_name', length: 100, nullable: true)]
+    private ?string $regionName = null;
+
     #[ORM\ManyToOne(targetEntity: LGA::class)]
     #[ORM\JoinColumn(name: 'lga_id', referencedColumnName: 'id', nullable: true)]
     private ?LGA $lga = null; 
@@ -144,6 +152,21 @@ class Student
 
     public function getStateOfOrigin(): ?State { return $this->stateOfOrigin; }
     public function setStateOfOrigin(?State $stateOfOrigin): static { $this->stateOfOrigin = $stateOfOrigin; return $this; }
+
+    public function getRegionName(): ?string { return $this->regionName; }
+    public function setRegionName(?string $regionName): static
+    {
+        $regionName = trim((string) $regionName);
+        $this->regionName = $regionName !== '' ? $regionName : null;
+
+        return $this;
+    }
+
+    /** The region as a person reads it: the chosen option, or what they typed. */
+    public function getOriginRegion(): ?string
+    {
+        return $this->stateOfOrigin?->getName() ?: $this->regionName;
+    }
 
     public function getLga(): ?LGA { return $this->lga; }
     public function setLga(?LGA $lga): static { $this->lga = $lga; return $this; }

@@ -282,7 +282,7 @@
                     <div>
                         <dt class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">State / LGA</dt>
                         <dd class="text-gray-800 font-medium">
-                            {{ application.stateOfOrigin ? application.stateOfOrigin.name : '—' }}
+                            {{ application.originRegion ?: '—' }}
                             {%- if application.lga %} · {{ application.lga.name }}{% endif -%}
                         </dd>
                     </div>
