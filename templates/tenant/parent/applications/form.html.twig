@@ -380,6 +380,7 @@
 
 {% block javascripts %}
     {{ parent() }}
+    {% include '_select_search.html.twig' %}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             // State → LGA cascade, reusing the existing JSON endpoint
@@ -400,6 +401,14 @@
             const countrySelect = document.querySelector('[name*="nationality"]');
             const statesApiUrl = "{{ path('app_parent_applications_api_states', {id: 0}) }}".slice(0, -1);
             const regionWord = "{{ ('Select ' ~ region_label())|e('js') }}";
+
+            // Type to filter: 249 countries and 774 LGAs are not lists to scroll.
+            const regionName = "{{ region_label()|e('js') }}";
+            if (countrySelect) {
+                edusSelectSearch(countrySelect, { placeholder: 'Search countries…', label: 'Search countries' });
+            }
+            edusSelectSearch(stateSelect, { placeholder: 'Search ' + regionName.toLowerCase() + 's…', label: 'Search ' + regionName.toLowerCase() + 's' });
+            edusSelectSearch(lgaSelect, { placeholder: 'Search LGA…', label: 'Search local government areas' });
 
             function fillStates(countryId, keepId) {
                 if (!countryId) { return; }
@@ -424,6 +433,7 @@
                         });
 
                         if (keepId) { stateSelect.value = String(keepId); }
+                        if (stateSelect._searchRefresh) { stateSelect._searchRefresh(); }
                         stateSelect.dispatchEvent(new Event('change'));
                     })
                     .catch(error => console.error('Could not load regions:', error));
@@ -467,6 +477,7 @@
                             lgaSelect.appendChild(option);
                         });
                         lgaSelect.disabled = false;
+                        if (lgaSelect._searchRefresh) { lgaSelect._searchRefresh(); }
                     })
                     .catch(() => {
                         // Offline, or the request failed: keep the full list rather than

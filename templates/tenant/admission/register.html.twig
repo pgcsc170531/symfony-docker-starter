@@ -125,6 +125,7 @@
 
 {% block javascripts %}
     {{ parent() }}
+    {% include '_select_search.html.twig' %}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // We find the elements by their Symfony-generated names if the custom IDs fail
@@ -144,6 +145,16 @@
             const countrySelect = document.querySelector('[name*="nationality"]');
             const statesApiUrl = "{{ path('app_tenant_api_states', {id: 0}) }}".slice(0, -1);
             const regionWord = "{{ ('Select ' ~ region_label())|e('js') }}";
+
+            // 249 countries (and 774 LGAs) do not belong in a scrolly native
+            // dropdown: type to filter. The search box only appears when a list
+            // is long enough to need it.
+            const regionName = "{{ region_label()|e('js') }}";
+            if (countrySelect) {
+                edusSelectSearch(countrySelect, { placeholder: 'Search countries…', label: 'Search countries' });
+            }
+            edusSelectSearch(stateSelect, { placeholder: 'Search ' + regionName.toLowerCase() + 's…', label: 'Search ' + regionName.toLowerCase() + 's' });
+            edusSelectSearch(lgaSelect, { placeholder: 'Search LGA…', label: 'Search local government areas' });
 
             function fillStates(countryId, keepId) {
                 if (!countryId) { return; }
@@ -165,6 +176,7 @@
                         });
 
                         if (keepId) { stateSelect.value = String(keepId); }
+                        if (stateSelect._searchRefresh) { stateSelect._searchRefresh(); }
                         stateSelect.dispatchEvent(new Event('change'));
                     })
                     .catch(error => console.error('Could not load regions:', error));
@@ -224,6 +236,8 @@
                         if (lgaField) {
                             lgaField.style.display = data.length > 0 ? '' : 'none';
                         }
+
+                        if (lgaSelect._searchRefresh) { lgaSelect._searchRefresh(); }
                     })
                     .catch(error => console.error("Fetch Error:", error));
             });

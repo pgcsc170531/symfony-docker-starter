@@ -1,0 +1,124 @@
+{#
+   Type-to-filter for long <select> lists.
+
+   With 249 countries in the nationality field, scrolling is the wrong
+   interaction. This adds a search box above a select and, as you type, REBUILDS
+   the <option> list to the matches.
+
+   Why rebuild instead of hiding options: `option.hidden` is ignored by the
+   native picker on iOS and Android, so a hidden-option filter looks broken on
+   the phones this portal is built for. Replacing the options means the native
+   picker itself only contains matches — it works everywhere, keeps the select's
+   name (the form still submits exactly as before) and needs no library.
+
+   Usage:
+     {% include '_select_search.html.twig' %}
+     <script>
+       edusSelectSearch(select, { placeholder: 'Search countries…' });
+       // after replacing options yourself:
+       select._searchRefresh && select._searchRefresh();
+     </script>
+
+   The search box only appears when the list is longer than `threshold` (10), so
+   a three-option field never grows a pointless input.
+#}
+<script>
+(function () {
+    if (window.edusSelectSearch) {
+        return;
+    }
+
+    /** Case- and accent-insensitive: "cote" finds "Côte d'Ivoire". */
+    function normalise(text) {
+        return String(text || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase();
+    }
+
+    window.edusSelectSearch = function (select, options) {
+        options = options || {};
+
+        if (!select || select.dataset.searchReady === '1') {
+            return;
+        }
+        select.dataset.searchReady = '1';
+
+        const input = document.createElement('input');
+        input.type = 'search';
+        input.autocomplete = 'off';
+        input.spellcheck = false;
+        input.placeholder = options.placeholder || 'Type to search…';
+        input.setAttribute('aria-label', options.label || 'Search this list');
+        input.className = 'mb-1 block w-full rounded-lg border border-ink-300 bg-white px-3 text-base text-ink-900 focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500';
+        input.style.minHeight = '44px';
+        input.style.display = 'none';
+
+        select.parentNode.insertBefore(input, select);
+
+        let all = [];
+
+        function read() {
+            all = Array.from(select.options).map(function (option) {
+                return { value: option.value, text: option.textContent };
+            });
+        }
+
+        function apply(query) {
+            const q = normalise(query).trim();
+            const current = select.value;
+
+            select.innerHTML = '';
+
+            let matches = 0;
+            all.forEach(function (option) {
+                // The placeholder (empty value) always stays.
+                if (option.value !== '' && q !== '' && normalise(option.text).indexOf(q) === -1) {
+                    return;
+                }
+
+                const node = document.createElement('option');
+                node.value = option.value;
+                node.textContent = option.text;
+                select.appendChild(node);
+                matches++;
+            });
+
+            if (matches === 0) {
+                const none = document.createElement('option');
+                none.value = '';
+                none.textContent = 'No match';
+                select.appendChild(none);
+            }
+
+            // Keep the chosen value if it survived the filter.
+            if (current !== '' && Array.from(select.options).some(function (o) { return o.value === current; })) {
+                select.value = current;
+            }
+
+            // Deliberately NO change event here: typing must not fire the
+            // country → region cascade on every keystroke. Picking an option
+            // fires it natively.
+        }
+
+        input.addEventListener('input', function () {
+            apply(this.value);
+        });
+
+        function refresh() {
+            read();
+            input.value = '';
+            input.style.display = all.length > (options.threshold || 10) ? '' : 'none';
+
+            // Always re-apply: the caller may have replaced the options (country
+            // → region), and any filter from the previous, longer list is stale.
+            apply('');
+        }
+
+        refresh();
+
+        // Let callers that replace the options tell the filter to re-read them.
+        select._searchRefresh = refresh;
+    };
+})();
+</script>
