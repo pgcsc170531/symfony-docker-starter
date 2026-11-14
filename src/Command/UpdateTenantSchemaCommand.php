@@ -86,8 +86,27 @@ class UpdateTenantSchemaCommand extends Command
                 $metadata = $entityManager->getMetadataFactory()->getAllMetadata();
                 $schemaTool = new SchemaTool($entityManager);
 
+                // The discount scope was introduced after 100% rules already
+                // existed. Record whether this is the first run before the
+                // column is added, so we can preserve their old grand-total
+                // behaviour once — and never overwrite a later office choice.
+                $discountScopeExisted = (int) $connection->fetchOne(
+                    "SELECT COUNT(*) FROM information_schema.COLUMNS
+                     WHERE TABLE_SCHEMA = DATABASE()
+                       AND TABLE_NAME = 'discount_type'
+                       AND COLUMN_NAME = 'applies_to_all'"
+                ) > 0;
+
                 // true = Execute safely (update only, don't delete data)
                 $schemaTool->updateSchema($metadata, true);
+
+                if (!$discountScopeExisted) {
+                    $connection->executeStatement(
+                        "UPDATE discount_type SET applies_to_all = 1
+                         WHERE mode = 'PERCENTAGE' AND value = 100.00"
+                    );
+                    $io->text('  ✓ Existing 100% rules marked as grand-total scholarships.');
+                }
 
                 // D. 🚀 Deterministic fallback: explicitly add the website
                 //    personalisation columns...

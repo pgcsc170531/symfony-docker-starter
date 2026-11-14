@@ -175,6 +175,13 @@ class DiscountController extends AbstractController
                     if ($exists) {
                         $this->addFlash('error', 'This student already has a discount. Remove it first.');
                     } else {
+                        // Unticked means "follow the rule", which is stored as
+                        // NULL so a later change to the rule still reaches this
+                        // pupil. Ticked is a deliberate per-pupil widening.
+                        $assignment->setAppliesToAll(
+                            $form->get('appliesToAll')->getData() ? true : null
+                        );
+
                         $em->persist($assignment);
                         $em->flush();
                         $this->addFlash('success', "Discount assigned to {$selectedStudent->getFirstName()}.");

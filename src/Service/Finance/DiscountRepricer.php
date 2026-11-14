@@ -25,8 +25,9 @@ use Doctrine\ORM\EntityManagerInterface;
  *   - the gross is taken from the invoice items, so the discount is always a
  *     percentage of the fees actually billed, never of an already discounted
  *     total;
- *   - the base is tuition, except a 100% full scholarship, which covers every
- *     fee item.
+ *   - the base is tuition, unless the award is scoped to the grand total —
+ *     either because the rule says so, or because the bursar ticked the box for
+ *     this pupil on the Scholarship Board.
  *
  * Part-paid invoices are re-priced too, but the total is never pushed below what
  * the family has already paid.
@@ -55,7 +56,7 @@ class DiscountRepricer
         foreach ($invoices as $invoice) {
             $paid = (float) $invoice->getPaidAmount();
 
-            // Skip a bill that real money has settled. A 100% scholarship also
+            // Skip a bill that real money has settled. A full discount also
             // makes the status PAID but leaves paid_amount at zero; removing or
             // changing that rule must be able to re-open and re-price it.
             if ($invoice->getStatus() === Invoice::STATUS_PAID && $paid > 0.005) {

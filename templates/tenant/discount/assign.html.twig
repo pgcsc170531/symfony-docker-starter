@@ -59,7 +59,10 @@
             <div class="bg-white p-6 rounded shadow-md border-t-4 border-green-600 relative animate-fade-in-down">
                 <div class="flex justify-between items-start mb-4">
                     <h2 class="text-lg font-bold text-green-700">2. Assign Rule</h2>
-                    <a href="{{ path('app_tenant_discount_assign') }}" class="text-gray-400 hover:text-red-500 font-bold text-xl leading-none">&times;</a>
+                    {# A 20px × is not a thumb target; give it the full 44px. #}
+                    <a href="{{ path('app_tenant_discount_assign') }}"
+                       aria-label="Clear selection"
+                       class="flex h-11 w-11 -mt-2 -mr-2 items-center justify-center rounded text-2xl font-bold leading-none text-gray-400 hover:text-red-500">&times;</a>
                 </div>
                 
                 <div class="mb-5 p-4 bg-green-50 rounded-lg border border-green-100">
@@ -78,6 +81,18 @@
                         {{ form_widget(form.discountType, {'attr': {'class': 'w-full border-2 border-gray-300 rounded-md p-3 bg-white focus:border-green-500 focus:outline-none'}}) }}
                     </div>
 
+                    {# Scope is a decision taken here, per pupil: the same rule can
+                       be tuition-only for one child and cover the grand total for a
+                       fully sponsored one. Unticked follows the rule. #}
+                    <div class="mb-5 p-4 rounded-lg border-2 border-gray-200 bg-gray-50">
+                        <div class="flex items-start gap-3">
+                            {{ form_widget(form.appliesToAll, {'attr': {'class': 'mt-0.5 h-5 w-5 shrink-0 accent-green-600'}}) }}
+                            <label for="{{ form.appliesToAll.vars.id }}" class="text-sm font-bold text-gray-800 leading-snug">
+                                {{ form.appliesToAll.vars.label }}
+                            </label>
+                        </div>
+                    </div>
+
                     <button class="bg-green-600 text-white w-full py-3 rounded-md font-bold hover:bg-green-700 shadow-lg transform active:scale-95 transition">
                         Confirm Assignment
                     </button>
@@ -87,7 +102,9 @@
 
         </div>
 
-        <div class="lg:col-span-2">
+        {# min-w-0 lets the grid column shrink, so the table scrolls inside its
+           own wrapper instead of widening the whole page on a phone. #}
+        <div class="lg:col-span-2 min-w-0">
             <div class="bg-white rounded shadow-md p-6 h-full">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl font-bold text-gray-800">Active Scholarships</h2>
@@ -98,10 +115,12 @@
                     Assigning a rule re-prices the {{ learner }}'s unpaid bill straight away.
                     <strong class="text-gray-700">Bill effect</strong> shows what actually happened to the money —
                     a rule that never reached an invoice is called out rather than left looking successful.
+                    Each award is marked <strong class="text-gray-700">Grand total</strong> or
+                    <strong class="text-gray-700">Tuition only</strong>, so the scope in force is never a guess.
                 </p>
                 
                 <div class="overflow-x-auto">
-                    <table class="min-w-full">
+                    <table class="w-full min-w-[640px]">
                         <thead class="bg-gray-50 border-b-2 border-gray-100">
                             <tr>
                                 <th class="text-left py-3 px-4 text-gray-500 font-bold uppercase text-xs tracking-wider">{{ learner.capital }}</th>
@@ -130,6 +149,13 @@
                                             (₦{{ item.discountType.value|number_format }})
                                         {% endif %}
                                     </span>
+                                    {# What the money was actually taken from — the
+                                       rule's default, or this pupil's own choice. #}
+                                    {% if item.coversAllFeeItems %}
+                                        <span class="block mt-1 text-[11px] font-bold uppercase tracking-wide text-green-700">Grand total</span>
+                                    {% else %}
+                                        <span class="block mt-1 text-[11px] font-bold uppercase tracking-wide text-gray-400">Tuition only</span>
+                                    {% endif %}
                                 </td>
                                 {# A rule that reached the bill and one that did not look
                                    identical in this table before. Say which is which, in

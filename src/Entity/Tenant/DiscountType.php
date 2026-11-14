@@ -24,6 +24,14 @@ class DiscountType
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private ?string $value = null; // e.g. 50.00 (for 50%) or 5000.00 (for ₦5k)
 
+    /**
+     * When true the rule is taken from the whole bill — tuition, levies, books
+     * and one-time items. When false it is a tuition waiver, whatever the
+     * percentage. This is an explicit office choice, not a side effect of 100%.
+     */
+    #[ORM\Column(name: 'applies_to_all', options: ['default' => false])]
+    private bool $appliesToAll = false;
+
     public function getId(): ?int { return $this->id; }
 
     public function getName(): ?string { return $this->name; }
@@ -34,4 +42,7 @@ class DiscountType
 
     public function getValue(): ?string { return $this->value; }
     public function setValue(string $value): static { $this->value = $value; return $this; }
+
+    public function isAppliesToAll(): bool { return $this->appliesToAll; }
+    public function setAppliesToAll(bool $appliesToAll): static { $this->appliesToAll = $appliesToAll; return $this; }
 }

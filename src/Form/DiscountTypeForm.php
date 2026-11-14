@@ -4,6 +4,7 @@ namespace App\Form;
 
 use App\Entity\Tenant\DiscountType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -34,7 +35,7 @@ class DiscountTypeForm extends AbstractType
             ->add('value', NumberType::class, [
                 'label' => 'Value (e.g. 50 for 50%)',
                 'scale' => 2,
-                'help' => 'A percentage applies to tuition only. 100% waives the whole bill — every fee item.',
+                'help' => 'A percentage or fixed amount comes off tuition only, unless you tick the box below.',
                 'constraints' => [
                     new Assert\NotBlank(message: 'Enter a value.'),
                     new Assert\Positive(message: 'The value must be greater than zero.'),
@@ -47,6 +48,10 @@ class DiscountTypeForm extends AbstractType
                         }
                     }),
                 ],
+            ])
+            ->add('appliesToAll', CheckboxType::class, [
+                'label' => 'Apply to grand total',
+                'required' => false,
             ]);
     }
 

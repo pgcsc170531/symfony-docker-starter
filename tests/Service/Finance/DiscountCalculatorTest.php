@@ -14,18 +14,17 @@ use Doctrine\ORM\EntityRepository;
 use PHPUnit\Framework\TestCase;
 
 /**
- * The owner's rule: a discount — percentage OR fixed — comes off TUITION only,
- * except a 100% percentage rule, which is a full scholarship and waives every
- * fee item.
+ * The owner's rule: a discount — percentage OR fixed — comes off TUITION only
+ * unless the office ticks "Apply to grand total".
  *
  * The failure this guards against is silent and expensive: a 50% scholarship
  * measured against the whole bill quietly pays for uniforms, ID cards and
- * development levies as well. A full scholarship, on the other hand, must not
- * leave the family owing those same items.
+ * development levies as well. A deliberately scoped full scholarship, on the
+ * other hand, must not leave the family owing those same items.
  */
 final class DiscountCalculatorTest extends TestCase
 {
-    private function calculator(?DiscountType $rule): DiscountCalculator
+    private function calculator(?DiscountType $rule, ?bool $pupilScope = null): DiscountCalculator
     {
         $student = (new Student())->setFirstName('Test')->setLastName('Pupil');
 
@@ -33,7 +32,8 @@ final class DiscountCalculatorTest extends TestCase
         if ($rule !== null) {
             $assignment = (new StudentDiscount())
                 ->setStudent($student)
-                ->setDiscountType($rule);
+                ->setDiscountType($rule)
+                ->setAppliesToAll($pupilScope);
         }
 
         $repository = $this->createMock(EntityRepository::class);
@@ -112,13 +112,40 @@ final class DiscountCalculatorTest extends TestCase
         self::assertSame(0.0, $calculator->calculateDiscount(new Student(), 0.0, 12_500.0));
     }
 
-    public function testOneHundredPercentWaivesTheWholeBill(): void
+    public function testOneHundredPercentWithoutTheAllFeesFlagStaysTuitionOnly(): void
     {
         $calculator = $this->calculator((new DiscountType())->setMode('PERCENTAGE')->setValue('100'));
 
-        // ₦40,000 tuition + ₦12,500 of levies and books: a full scholarship
-        // must leave the family owing nothing at all.
+        // 100% of tuition is ₦40,000; the levies and books are untouched.
+        self::assertSame(40_000.0, $calculator->calculateDiscount(new Student(), 40_000.0, 52_500.0));
+    }
+
+    public function testAnAllFeesRuleWaivesTheWholeBill(): void
+    {
+        $calculator = $this->calculator(
+            (new DiscountType())->setMode('PERCENTAGE')->setValue('100')->setAppliesToAll(true)
+        );
+
+        // ₦40,000 tuition + ₦12,500 of levies and books.
         self::assertSame(52_500.0, $calculator->calculateDiscount(new Student(), 40_000.0, 52_500.0));
+    }
+
+    public function testFiftyPercentWithTheAllFeesFlagUsesTheWholeBill(): void
+    {
+        $calculator = $this->calculator(
+            (new DiscountType())->setMode('PERCENTAGE')->setValue('50')->setAppliesToAll(true)
+        );
+
+        self::assertSame(26_250.0, $calculator->calculateDiscount(new Student(), 40_000.0, 52_500.0));
+    }
+
+    public function testAFixedAmountWithTheAllFeesFlagCanReachNonTuitionItems(): void
+    {
+        $calculator = $this->calculator(
+            (new DiscountType())->setMode('FIXED')->setValue('9000')->setAppliesToAll(true)
+        );
+
+        self::assertSame(9_000.0, $calculator->calculateDiscount(new Student(), 40_000.0, 52_500.0));
     }
 
     public function testNinetyNinePercentStillComesOffTuitionOnly(): void
@@ -129,12 +156,71 @@ final class DiscountCalculatorTest extends TestCase
         self::assertSame(39_600.0, $calculator->calculateDiscount(new Student(), 40_000.0, 52_500.0));
     }
 
-    public function testOneHundredPercentWorksEvenWhenTheBillHasNoTuitionLine(): void
+    public function testAnAllFeesRuleWorksEvenWhenTheBillHasNoTuitionLine(): void
     {
-        $calculator = $this->calculator((new DiscountType())->setMode('PERCENTAGE')->setValue('100'));
+        $calculator = $this->calculator(
+            (new DiscountType())->setMode('PERCENTAGE')->setValue('100')->setAppliesToAll(true)
+        );
 
-        // A full scholarship is about the family, not about which line exists.
+        // A deliberately scoped full scholarship is about the family, not about
+        // which line exists.
         self::assertSame(12_500.0, $calculator->calculateDiscount(new Student(), 0.0, 12_500.0));
+    }
+
+    /**
+     * The Scholarship Board decides the scope per pupil, so the same rule can
+     * treat two families differently: one still owes the uniform, one owes
+     * nothing. This is the case that started it — a tuition-only 100% rule that
+     * a bursar widens for a fully sponsored child.
+     */
+    public function testAPupilCanWidenATuitionOnlyRuleToTheWholeBill(): void
+    {
+        $calculator = $this->calculator(
+            (new DiscountType())->setMode('PERCENTAGE')->setValue('100'),
+            true,
+        );
+
+        self::assertSame(52_500.0, $calculator->calculateDiscount(new Student(), 40_000.0, 52_500.0));
+    }
+
+    public function testAPupilWithoutAPreferenceFollowsTheRule(): void
+    {
+        $allFees = $this->calculator(
+            (new DiscountType())->setMode('PERCENTAGE')->setValue('100')->setAppliesToAll(true)
+        );
+        $tuitionOnly = $this->calculator(
+            (new DiscountType())->setMode('PERCENTAGE')->setValue('100')
+        );
+
+        self::assertSame(52_500.0, $allFees->calculateDiscount(new Student(), 40_000.0, 52_500.0));
+        self::assertSame(40_000.0, $tuitionOnly->calculateDiscount(new Student(), 40_000.0, 52_500.0));
+    }
+
+    public function testAPupilCanNarrowAnAllFeesRuleBackToTuition(): void
+    {
+        $calculator = $this->calculator(
+            (new DiscountType())->setMode('PERCENTAGE')->setValue('100')->setAppliesToAll(true),
+            false,
+        );
+
+        self::assertSame(40_000.0, $calculator->calculateDiscount(new Student(), 40_000.0, 52_500.0));
+    }
+
+    public function testTheBillLabelSaysWhenTheAwardCoversAllFees(): void
+    {
+        $allFees = $this->calculator(
+            (new DiscountType())->setName('Demo Scholarship')->setMode('PERCENTAGE')->setValue('100'),
+            true,
+        );
+        $tuitionOnly = $this->calculator(
+            (new DiscountType())->setName('Demo Scholarship')->setMode('PERCENTAGE')->setValue('100'),
+        );
+
+        self::assertSame(
+            'Demo Scholarship (100% — all fees)',
+            $allFees->describe(new Student()),
+        );
+        self::assertSame('Demo Scholarship (100%)', $tuitionOnly->describe(new Student()));
     }
 
     public function testTheStructureBaseSkipsOptionalAndNonTuitionLines(): void

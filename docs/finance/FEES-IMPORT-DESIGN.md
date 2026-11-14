@@ -60,7 +60,7 @@ scholarship.
 | It bills **every non-optional fee item** | `createTuitionInvoice()` — `if (!$fee->getFeeItem()->isOptional())` | One-time items are billed to returning pupils too. This is the bug the school is seeing. |
 | The admission path does the same | `AdmissionService::billStudent()` | Two copies of the same billing loop can drift. |
 | “New intake only” is encoded as `FeeItem.frequency = ONETIME` | `FeeItem`, `Form/Wizard/FeeItemRowType`, onboarding (`target = NEW → ONETIME`) | We already know which items a returning pupil must not pay; we just never ask for the pupil's type. |
-| A scholarship is one `StudentDiscount` → one `DiscountType` | `StudentDiscount`, `DiscountCalculator::assignmentFor()` | One rule per pupil, applied to **tuition only**, capped at the tuition line — except a **100% percentage** rule, which is a full scholarship and covers every fee item. |
+| A scholarship is one `StudentDiscount` → one `DiscountType` | `StudentDiscount`, `DiscountCalculator::assignmentFor()` | One rule per pupil, applied to **tuition only**, capped at the tuition line — unless the award is scoped to all fee items. The scope is the pupil's own choice (`StudentDiscount.applies_to_all`) when one was made on the Scholarship Board, and the rule's **Apply to grand total** setting otherwise (`StudentDiscount::coversAllFeeItems()`). |
 | `Invoice.total_amount` is **net of the discount** | `Invoice::getNetBillable()`, `DiscountCalculator` | The invoice line items show the gross; `discount_applied` explains the gap; payments compare against the net. |
 | Fees are per classroom + term + item | `FeeStructure(classroom, term, feeItem, amount)` | The importer can compute the right bill from the pupil's class. |
 | A payment is a `Payment` row tied to an invoice | `PaymentController::payCash()` | `invoice.paid_amount` and `status` must be updated in the same transaction. Overpayment has a home: `StudentAdvance`. |
@@ -223,7 +223,8 @@ Rules:
 3. Skip `ONETIME` items when `studentType === RETURNING`.
 4. Sum the rest to `gross`.
 5. Discount = `DiscountCalculator::calculateDiscount($student, tuitionBase, gross)`
-   — **tuition only**, except a **100% percentage** rule, which uses `gross`.
+   — **tuition only**, unless the rule has **Apply to grand total** ticked, in
+   which case `gross` is the base.
 6. `invoice.total_amount = gross − discount`; keep `discount_applied` and
    `discount_label`.
 7. If an invoice already exists for `student + term + type ACADEMIC`, **reuse it**
@@ -337,23 +338,39 @@ A list with, at minimum:
 Then, **before** the fees CSV is uploaded:
 
 1. Create three `DiscountType` rows (10 %, 50 %, 100 %) — or one per named
-   scheme if the school distinguishes them.
+   scheme if the school distinguishes them. Tick **Apply to grand total** only
+   on the rule that should cover levies and one-time items; the 10 % and 50 %
+   rules stay tuition-only.
 2. Assign `StudentDiscount` to every pupil on the list (a tiny two-column import
    is enough; the UI already exists under Finance → Discounts).
 3. Spot-check five pupils in the preview: net due must equal gross tuition −
    scholarship.
 
-### 7.3 The 100 % rule
+### 7.3 The grand-total scope
 
-**Decided by the owner, 14 November 2026:** a **100% percentage** rule is a full
-scholarship and waives **every fee item** — tuition, development levy, books and
-one-time items. The total due becomes ₦0.
+**Decided by the owner, 14 November 2026:** the scope is an explicit choice — the
+**Apply to grand total** checkbox. When ticked, the percentage is taken off the
+**grand total due** (tuition + development levy + books + one-time items), so a
+100% award makes the total due ₦0. When unticked, every percentage and every fixed
+amount is a **tuition waiver**, capped at the tuition line. A 100% rule without the
+box still leaves the uniform and levies payable; a 99% rule never reaches them.
 
-Every other percentage and every fixed amount is still a **tuition waiver**,
-capped at the tuition line. A 99% rule does not reach the uniform or a levy.
+The checkbox exists in two places, because the decision belongs to two different
+people:
 
-The fees import follows the same calculator, so a full-scholarship pupil previews
-at ₦0 due and is not asked to pay a residual levy.
+| Where | Stored on | Scope |
+|---|---|---|
+| **Discount Rules** | `discount_type.applies_to_all` | The default for every pupil on the rule |
+| **Scholarship Board** (assign form) | `student_discount.applies_to_all` | That pupil only |
+
+The pupil column is nullable. `NULL` means "follow the rule", which is what every
+existing assignment got when the column was added, so nothing changed silently on
+deploy. `TRUE` is a deliberate widening for one child — a fully sponsored pupil on
+a tuition-only 100 % rule. `FALSE` narrows a grand-total rule back to tuition for
+one pupil; the form never writes it, but the entity allows it.
+
+The fees import follows the same calculator, so a full scholarship on the grand
+total previews at ₦0 due and is not asked to pay a residual levy.
 
 ### 7.4 One rule per pupil
 
@@ -444,9 +461,9 @@ as an invalid string and takes the whole batch down.
 2. Extract `TuitionInvoiceBuilder`; make `AdmissionService` and
    `QuickAdmissionController` use it.
 3. Skip `ONETIME` for `RETURNING`.
-4. Tests: new vs returning totals for the same class/term; a percentage below
-   100% applied to tuition only; a 100% rule applied to the whole bill; invoice
-   is not duplicated when one already exists.
+4. Tests: new vs returning totals for the same class/term; a 100% rule without
+   the scope flag applied to tuition only; a rule with **Apply to grand total**
+   applied to the whole bill; invoice is not duplicated when one already exists.
 
 ### Phase 2 — the import itself
 
@@ -470,8 +487,8 @@ as an invalid string and takes the whole batch down.
 ## 12. What this does **not** change
 
 - Fees remain per classroom + term + fee item. No new pricing table.
-- Scholarships remain tuition-only and capped at the tuition line, except a
-  100% percentage full scholarship, which covers every fee item.
+- Scholarships remain tuition-only and capped at the tuition line unless the rule
+  is marked **Apply to grand total**, which covers every fee item.
 - An already-issued invoice is historical: the import reuses it and adds
   payments; it does not recalculate a bill a family has already seen.
 - The parent portal keeps reading `invoice.total_amount` (net) and
@@ -489,7 +506,7 @@ as an invalid string and takes the whole batch down.
    per pupil; multiple instalments can be repeated rows if the CSV carries a
    `payment_date` and `reference`, but the duplicate-row rule then becomes a
    duplicate-(pupil, date, reference) rule.)
-4. ~~Is the 100 % scholarship intended to cover everything, or tuition only?~~
-   **Decided 14 Nov 2026: it covers everything.** A 100% percentage rule waives
-   every fee item; lower percentages remain tuition-only.
+4. ~~Is the 100% scholarship intended to cover everything, or tuition only?~~
+   **Decided 14 Nov 2026: the office chooses per rule.** Tick **Apply to all fee
+   items** to cover everything; otherwise the rule is tuition-only.
 5. Who signs off a reversal, and how long after the import is a reversal allowed?

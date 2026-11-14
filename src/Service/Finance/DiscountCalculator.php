@@ -39,15 +39,15 @@ class DiscountCalculator
         if ($rule->getMode() === 'PERCENTAGE') {
             $percentage = (float) $rule->getValue();
             $how = rtrim(rtrim(number_format($percentage, 2, '.', ''), '0'), '.') . '%';
-
-            // A 100% rule is a full scholarship: it covers every fee item, not
-            // just tuition. Say so on the bill so the parent can see why the
-            // balance is zero.
-            if (abs($percentage - 100.0) < 0.0001) {
-                $how .= ' — all fees';
-            }
         } else {
             $how = '₦' . number_format((float) $rule->getValue(), 0) . ' off';
+        }
+
+        // The office decides the scope — on the rule, or per pupil on the
+        // Scholarship Board. Say it on the bill so the parent can see why a
+        // levy or uniform was (or was not) reduced.
+        if ($assignment->coversAllFeeItems()) {
+            $how .= ' — all fees';
         }
 
         return sprintf('%s (%s)', $rule->getName(), $how);
@@ -58,10 +58,9 @@ class DiscountCalculator
      *
      * A 50% scholarship on the whole bill would quietly pay for uniforms, ID
      * cards and development levies as well — the owner's rule is that a waiver
-     * is a tuition waiver, whatever its mode (percentage or fixed amount).
+     * is a tuition waiver, whatever its mode (percentage or fixed amount),
+     * unless the office explicitly ticks **Apply to grand total**.
      *
-     * The single exception is a **100% percentage** rule, which is a full
-     * scholarship and waives every fee item; see {@see calculateDiscount()}.
      * Callers pass this tuition figure *and* the gross bill, so the calculator
      * can choose the right base without guessing.
      *
@@ -142,11 +141,10 @@ class DiscountCalculator
     /**
      * Returns the monetary value to subtract from the bill.
      *
-     * Every percentage or fixed rule is a TUITION waiver: `$tuitionBase` is the
-     * limit. The one exception is a **100% percentage** rule — a full
-     * scholarship — which waives the entire bill, every fee item, so
-     * `$grossTotal` is its base. A full-scholarship family must not be left
-     * owing the uniform or a levy.
+     * A percentage or fixed rule is a TUITION waiver by default: `$tuitionBase`
+     * is the limit. When the rule is marked **Apply to grand total**, the
+     * whole bill — `$grossTotal` — is the base instead, so a full scholarship
+     * does not leave the family owing the uniform or a levy.
      *
      * @param float $tuitionBase tuition lines only
      * @param float $grossTotal  every billed line before the discount
@@ -168,11 +166,11 @@ class DiscountCalculator
         }
 
         $percentage = (float) $rule->getValue();
-        $waivesTheWholeBill = $rule->getMode() === 'PERCENTAGE'
-            && abs($percentage - 100.0) < 0.0001;
 
-        // A 100% rule is the only one allowed to reach non-tuition lines.
-        $base = $waivesTheWholeBill ? $grossTotal : $tuitionBase;
+        // Only an explicitly scoped award may reach non-tuition lines. The
+        // scope is the pupil's own choice when one was made on the Scholarship
+        // Board, and the rule's setting otherwise.
+        $base = $assignment->coversAllFeeItems() ? $grossTotal : $tuitionBase;
 
         if ($base <= 0) {
             return 0.00;

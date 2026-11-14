@@ -39,7 +39,7 @@
 | Parents / guardians | **336** — 12 families have 2–3 children |
 | Student types | **72 New intake**, **288 Returning** (8 new + 32 returning per class) |
 | Invoices | **360**, all for First Term |
-| Invoice status | **4 PAID**, **3 PARTIAL**, **353 UNPAID** — one PAID bill is the 100% scholarship |
+| Invoice status | **4 PAID**, **3 PARTIAL**, **353 UNPAID** — one PAID bill is the grand-total scholarship |
 | Confirmed cash payments | **6** (₦253,500 total) — visible in the Payment Register |
 | Pending transfers | **3** (₦181,500 claimed) — waiting in **Verify Payments** |
 | Fee items | Tuition, Development Levy, Books & Stationery, Uniform & Sports Wear |
@@ -128,16 +128,17 @@ Every class has **8 New intake** and **32 Returning** pupils.
 Practise changing a pupil in **Students → Edit Profile → Student Type**, but only
 on an **unpaid** invoice; a bill with money on it is history.
 
-### 5. Discount rules — edit, delete and the 100% rule
+### 5. Discount rules — edit, delete and the grand-total rule
 
 **Finance → Discounts → Manage Rules** has one prepared rule:
 
-- **Demo 100% Scholarship** — a 100% percentage rule.
+- **Demo 100% Scholarship** — a 100% percentage rule with **Apply to all fee
+  items** ticked.
 - It is assigned to **Halima Umar (ADM/2026/0242, JSS 3A)**.
-- Her bill of **₦74,500** is **₦0** — the full scholarship covers every fee item.
+- Her bill of **₦74,500** is **₦0** — the rule covers every fee item.
 - Use it to show the difference:
-  - 50% would reduce **tuition only**;
-  - 100% waives **everything** and settles the bill.
+  - a 100% rule with the box **unticked** reduces **tuition only**;
+  - with the box **ticked** it waives **everything** and settles the bill.
 - Press **REVOKE** on the Scholarship Board and the bill returns to ₦74,500.
   Re-assign it to put the ₦0 scholarship back.
 
@@ -169,8 +170,10 @@ data on day one:
 5. **Fees Import** — open Batch #2, read the 12 rows, then post it.
 6. **Payment Terminal** — take a cash part payment and print the receipt.
 7. **Verify Payments** — approve one of the three pending transfers.
-8. **Discounts** — open the 100% rule, revoke it to restore the bill, then
-   re-assign it; try Edit and Delete on an unused rule.
+8. **Discounts** — open the grand-total 100% rule, revoke it to restore the bill,
+   then re-assign it; try Edit, the **Apply to grand total** checkbox on the
+   rule, the same box on the **Scholarship Board** (per pupil), and Delete on an
+   unused rule.
 9. **Reports** — run Daily Collections and Outstanding Fees.
 
 ---

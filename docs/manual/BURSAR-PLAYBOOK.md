@@ -615,14 +615,27 @@ Assign scholarships **before** the Fees Import.
    fixed amount). Editing a rule re-prices the open bills that use it; an
    assigned rule must be revoked from its pupils before it can be deleted.
 3. On the **Scholarship Board**, search the pupil, select the rule and confirm.
+   The **Apply to grand total** box on that form is the pupil's own scope:
+   ticked, this award is taken off the whole bill for this child; unticked, it
+   follows whatever the rule says. Two pupils can therefore share one rule and
+   still be treated differently.
 4. Read the **Bill effect** column:
    - a green `₦gross → ₦net` means the rule reached the bill;
    - "No open bill" means it will apply to the next bill;
    - "Not applied yet" means revoke and re-assign to re-price the bill.
 
-Scholarships reduce **tuition only**, not every fee line. The one exception is a
-**100% percentage** rule: that is a full scholarship and waives **every fee item**,
-so the bill becomes ₦0.
+Scholarships reduce **tuition only**, not every fee line, by default. There are
+two places to widen that:
+
+| Where | What it does |
+|---|---|
+| **Apply to grand total** on the *rule* | The default for every pupil on that rule |
+| **Apply to grand total** on the *Scholarship Board* | This pupil only — leaves the rest of the school alone |
+
+Either way the percentage is then taken off the **grand total due** — tuition,
+levies, books and one-time items together. A 100% award there makes the total due
+₦0; one that does not covers tuition only. Every row on the board is labelled
+**Grand total** or **Tuition only**, so you can see which scope is in force.
 
 In the Fees Import preview, a discounted pupil shows `Scholarship: <label>` and
 the **Due** is already net of the discount. If the discount is missing, stop and
@@ -787,8 +800,8 @@ manually add the same money again when the new bill appears.
 
 - Get the approved scholarship list from management before assigning.
 - Confirm the pupil by **admission number**, not by name alone.
-- A scholarship reduces **tuition** only, except a **100% percentage** rule,
-  which waives every fee item.
+- A scholarship reduces **tuition** only unless the rule has **Apply to all fee
+  items** ticked. A 100% rule with that box ticked waives every fee item.
 - Assign scholarships **before** generating invoices or running Fees Import.
 - To correct a wrong scholarship, revoke it and re-assign the correct rule; do
   not edit the invoice by hand.
@@ -1034,7 +1047,7 @@ Do these on a **training tenant**. Do not post test data on the live school.
 | 15 | Verify a pending transfer with a different bank amount | The confirmed amount is the bank amount; the invoice balance updates |
 | 16 | Run **Daily Collections** and **Payment Register** for today | The day's payments appear; a receipt can be reprinted |
 | 17 | Export **Outstanding Fees** | The debtor list downloads and agrees with the pupil balances |
-| 18 | Assign a **100% percentage** rule to a pupil with an unpaid bill | The bill becomes **₦0** and the status becomes PAID; **REVOKE** restores the gross bill |
+| 18 | Tick **Apply to grand total** on the Scholarship Board for one pupil on a 100% tuition-only rule | That pupil's bill becomes **₦0** and the status becomes PAID; another pupil on the same rule keeps their levies; **REVOKE** restores the gross bill |
 | 19 | Edit a rule's value from 10% to 20% | Every open bill using it re-prices immediately; a bill with money already paid does not change |
 | 20 | Create a temporary unused rule, then delete it; try to delete an assigned rule | The unused rule is deleted; the assigned rule is refused with a “revoke it from those pupils first” message |
 

@@ -64,6 +64,20 @@
                         {{ form_help(form.value) }}
                         {{ form_errors(form.value) }}
                     </div>
+
+                    <div class="rounded-lg border border-ink-200 bg-ink-50 p-3">
+                        <div class="flex items-start gap-3">
+                            {{ form_widget(form.appliesToAll, {'attr': {
+                                'class': 'mt-0.5 h-5 w-5 shrink-0 rounded border-ink-300 text-accent-600 focus:ring-accent-500'
+                            }}) }}
+                            <div class="min-w-0">
+                                {{ form_label(form.appliesToAll, null, {'label_attr': {
+                                    'class': 'flex min-h-[44px] cursor-pointer items-center text-sm font-semibold text-ink-900'
+                                }}) }}
+                            </div>
+                        </div>
+                        {{ form_errors(form.appliesToAll) }}
+                    </div>
                 </div>
 
                 <div class="mt-5 flex flex-col gap-2 sm:flex-row">
@@ -91,12 +105,13 @@
             </div>
 
             <div class="relative mt-3 overflow-x-auto rounded-lg border border-ink-200">
-                <table class="w-full min-w-[680px] text-left text-sm">
+                <table class="w-full min-w-[760px] text-left text-sm">
                     <thead class="border-b border-ink-200 bg-ink-50">
                         <tr>
                             <th class="p-3 font-bold text-ink-600">Rule</th>
                             <th class="p-3 font-bold text-ink-600">Mode</th>
                             <th class="p-3 text-right font-bold text-ink-600">Value</th>
+                            <th class="p-3 font-bold text-ink-600">Applies to</th>
                             <th class="p-3 text-center font-bold text-ink-600">Assigned</th>
                             <th class="p-3 text-right font-bold text-ink-600"><span class="sr-only">Actions</span></th>
                         </tr>
@@ -107,9 +122,6 @@
                             <tr class="hover:bg-ink-50/60">
                                 <td class="p-3">
                                     <p class="break-words font-bold text-ink-900">{{ type.name }}</p>
-                                    {% if type.mode == 'PERCENTAGE' and type.value|number_format(0) == '100' %}
-                                        <p class="mt-0.5 text-[11px] font-semibold text-paid">Full scholarship — waives every fee item</p>
-                                    {% endif %}
                                 </td>
                                 <td class="p-3">
                                     {% if type.mode == 'PERCENTAGE' %}
@@ -123,6 +135,13 @@
                                         {{ type.value|number_format(0) }}%
                                     {% else %}
                                         ₦{{ type.value|number_format(0) }}
+                                    {% endif %}
+                                </td>
+                                <td class="p-3">
+                                    {% if type.appliesToAll %}
+                                        <span class="rounded-full bg-paid/10 px-2 py-0.5 text-[11px] font-bold text-paid">Grand total</span>
+                                    {% else %}
+                                        <span class="rounded-full bg-ink-100 px-2 py-0.5 text-[11px] font-bold text-ink-600">Tuition only</span>
                                     {% endif %}
                                 </td>
                                 <td class="p-3 text-center">
@@ -161,7 +180,7 @@
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="5" class="p-8 text-center text-sm text-ink-600">
+                                <td colspan="6" class="p-8 text-center text-sm text-ink-600">
                                     No discount rules yet. Create the first rule on the left.
                                 </td>
                             </tr>
@@ -172,11 +191,14 @@
 
             <div class="mt-4 rounded-lg border border-accent-200 bg-accent-50 p-3 text-xs leading-relaxed text-ink-700">
                 <strong class="text-ink-900">How the rule reaches the bill:</strong>
-                a percentage or fixed rule comes off <strong>tuition only</strong>.
-                A <strong>100% percentage</strong> rule is a full scholarship and waives
-                <strong>every fee item</strong>, so the total due becomes ₦0.
-                Editing a rule re-prices open bills immediately; a bill with money already
-                paid is not changed.
+                by default a percentage or fixed rule comes off <strong>tuition only</strong>.
+                Tick <strong>Apply to grand total</strong> to take the percentage off the
+                whole bill instead, so a 100% rule makes the total due ₦0. This setting is
+                the default for every pupil on the rule —
+                <a href="{{ path('app_tenant_discount_assign') }}" class="font-bold text-accent-700 underline">the Scholarship Board</a>
+                can still apply it to one pupil's grand total without changing the rule for
+                the rest. Editing a rule re-prices open bills immediately; a bill with money
+                already paid is not changed.
             </div>
         </section>
     </div>

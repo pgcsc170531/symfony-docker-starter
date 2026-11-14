@@ -25,7 +25,7 @@ class Invoice
     /**
      * The settlement status for a bill at these amounts.
      *
-     * A zero-total bill is PAID: a 100% scholarship has settled it, and it must
+     * A zero-total bill is PAID: a full discount has settled it, and it must
      * not keep appearing as unpaid. A bill with money against it follows the
      * normal paid/partial/unpaid rules.
      */
