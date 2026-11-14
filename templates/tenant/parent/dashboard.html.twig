@@ -45,6 +45,61 @@
         </div>
     {% endif %}
 
+    {# 👨‍👩‍👧‍👦 FAMILY UPDATES — the school can add a pupil to this family (a
+       guardian, a sibling whose number was corrected). The parent is the only
+       person who can say whether the link is right, so it asks them directly. #}
+    {% if familyNotices is defined and familyNotices is not empty %}
+        <section id="family-notices" class="mb-8 space-y-3">
+            {% for notice in familyNotices %}
+                <div class="overflow-hidden rounded-xl border {{ notice.status == 'reported' ? 'border-failed/30' : 'border-accent-200' }} bg-white shadow-card">
+                    <div class="flex items-start gap-3 p-4 sm:p-5">
+                        <span class="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-accent-50 text-lg" aria-hidden="true">👨‍👩‍👧</span>
+                        <div class="min-w-0 flex-1">
+                            <h2 class="text-sm font-black uppercase tracking-wide text-accent-700">Family update</h2>
+                            <p class="mt-1 break-words text-sm leading-relaxed text-ink-800">{{ notice.message }}</p>
+
+                            {% if notice.status == 'reported' %}
+                                <div class="mt-3 rounded-lg border border-failed/20 bg-failed/5 p-3">
+                                    <p class="text-xs font-bold uppercase tracking-wide text-failed">Your note to the school</p>
+                                    <p class="mt-1 whitespace-pre-line break-words text-sm text-ink-800">{{ notice.note }}</p>
+                                </div>
+                                <p class="mt-2 text-xs font-semibold text-ink-500">
+                                    Sent — the school office will review this link.
+                                </p>
+                            {% else %}
+                                <form method="post" action="{{ path('app_parent_notice_confirm', {id: notice.id}) }}" class="mt-3">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('confirm_notice_' ~ notice.id) }}">
+                                    <button type="submit"
+                                            class="min-h-[44px] w-full rounded-lg bg-accent-600 px-4 text-sm font-bold text-white hover:bg-accent-700 sm:w-auto">
+                                        This is correct
+                                    </button>
+                                </form>
+
+                                <details class="mt-3 rounded-lg border border-ink-200 bg-ink-50">
+                                    <summary class="flex min-h-[44px] cursor-pointer list-none items-center px-3 text-sm font-semibold text-ink-700">
+                                        This is a mistake — write a note
+                                    </summary>
+                                    <form method="post" action="{{ path('app_parent_notice_report', {id: notice.id}) }}" class="border-t border-ink-200 p-3">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('report_notice_' ~ notice.id) }}">
+                                        <label for="notice-note-{{ notice.id }}" class="block text-xs font-semibold text-ink-700">
+                                            What is wrong? The school office will see this.
+                                        </label>
+                                        <textarea id="notice-note-{{ notice.id }}" name="note" rows="3" required
+                                                  class="mt-1 w-full rounded-lg border border-ink-300 bg-white px-3 py-2 text-base text-ink-900 focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500"></textarea>
+                                        <button type="submit"
+                                                class="mt-2 min-h-[44px] w-full rounded-lg border border-failed/40 px-4 text-sm font-bold text-failed hover:bg-failed/10 sm:w-auto">
+                                            Send note to the school
+                                        </button>
+                                    </form>
+                                </details>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </section>
+    {% endif %}
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
         {# === LEFT COLUMN: STUDENTS === #}

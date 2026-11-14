@@ -48,6 +48,14 @@ class StudentAdmissionType extends AbstractType
                 'widget' => 'single_text',
                 'label' => 'Date of Birth'
             ])
+            ->add('studentType', ChoiceType::class, [
+                'label' => 'Student Type',
+                'choices' => [
+                    'New intake' => Student::TYPE_NEW,
+                    'Returning' => Student::TYPE_RETURNING,
+                ],
+                'help' => 'Returning pupils are not billed one-time new-intake items.',
+            ])
 
             // --- SECTION 2: CLASSROOM ---
             ->add('currentClass', EntityType::class, [

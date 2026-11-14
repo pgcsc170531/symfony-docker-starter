@@ -13,20 +13,32 @@
                 <p class="text-gray-500">
                     {% if q %}
                         {{ guardians|length }} match{{ guardians|length == 1 ? '' : 'es' }} for “{{ q }}”.
-                        <a href="{{ path('app_tenant_parent_index') }}" class="font-semibold text-blue-600">Show all</a>
+                        <a href="{{ path('app_tenant_parent_index') }}" class="inline-flex min-h-[44px] items-center font-semibold text-accent-700">Show all</a>
                     {% else %}
                         {{ guardians|length }} parent{{ guardians|length == 1 ? '' : 's' }} linked to enrolled {{ learner.plural }}.
                     {% endif %}
                 </p>
             </div>
-            <a href="{{ path('app_tenant_admission_index') }}" class="flex min-h-[44px] items-center rounded bg-blue-600 px-4 py-2 font-bold text-white shadow hover:bg-blue-700">
-                <span class="mr-2">+</span> New Admission
-            </a>
+            <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                <a href="{{ path('app_tenant_parent_notices') }}"
+                   class="flex min-h-[44px] items-center justify-center rounded border border-accent-300 bg-white px-4 py-2 font-bold text-accent-700 shadow-sm hover:bg-accent-50">
+                    Family updates
+                </a>
+                {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_ADMISSION_OFFICER') %}
+                    <a href="{{ path('app_tenant_admission_index') }}"
+                       class="flex min-h-[44px] items-center justify-center rounded bg-accent-600 px-4 py-2 font-bold text-white shadow hover:bg-accent-700">
+                        <span class="mr-2">+</span> New Admission
+                    </a>
+                {% endif %}
+            </div>
         </div>
 
         {{ search.form(q, 'Search name, phone number, email or child') }}
 
-        <div class="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow">
+        {# `relative` keeps the table's absolutely-positioned sr-only labels
+           inside this scroll box; without it they escape the clip and create
+           a page-wide horizontal scroll on a phone. #}
+        <div class="relative overflow-x-auto rounded-lg border border-gray-200 bg-white shadow">
             <table class="w-full min-w-[720px] text-left text-sm">
                 <thead class="bg-gray-50 border-b">
                     <tr>
@@ -34,13 +46,15 @@
                         <th class="p-4 font-bold text-gray-600">Phone</th>
                         <th class="p-4 font-bold text-gray-600">Email / Login</th>
                         <th class="p-4 font-bold text-gray-600">Children</th>
+                        <th class="p-4 font-bold text-gray-600"><span class="sr-only">Actions</span></th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     {% for guardian in guardians %}
                     <tr class="hover:bg-gray-50 transition">
                         <td class="p-4 font-bold text-gray-800">
-                            {{ guardian.fullName }}
+                            <a href="{{ path('app_tenant_parent_family', {id: guardian.id}) }}"
+                               class="inline-flex min-h-[44px] items-center break-words text-accent-700 hover:underline">{{ guardian.fullName }}</a>
                             {% if guardian.relationshipToStudent %}
                                 <span class="block text-xs text-gray-400 font-normal">{{ guardian.relationshipToStudent }}</span>
                             {% endif %}
@@ -63,14 +77,20 @@
                                 <span class="text-gray-400">—</span>
                             {% endfor %}
                         </td>
+                        <td class="p-4">
+                            <a href="{{ path('app_tenant_parent_family', {id: guardian.id}) }}"
+                               class="inline-flex min-h-[44px] items-center whitespace-nowrap rounded-lg border border-accent-300 px-3 text-xs font-bold text-accent-700 hover:bg-accent-50">
+                                Manage family
+                            </a>
+                        </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="4" class="p-8 text-center text-gray-500">
+                        <td colspan="5" class="p-8 text-center text-gray-500">
                             {% if q %}
                                 No parent matches “{{ q }}”. Try a name, a phone number, an email
                                 or one of the children's names.
-                                <a href="{{ path('app_tenant_parent_index') }}" class="font-semibold text-blue-600">Show all parents</a>.
+                                <a href="{{ path('app_tenant_parent_index') }}" class="inline-flex min-h-[44px] items-center font-semibold text-accent-700">Show all parents</a>.
                             {% else %}
                                 No parents found.
                             {% endif %}

@@ -8,13 +8,8 @@ use App\Entity\Tenant\User;
 use App\Entity\Tenant\Enrollment;
 use App\Entity\Tenant\Term;
 use App\Entity\Tenant\Classroom;
-use App\Entity\Tenant\Invoice; 
-use App\Entity\Tenant\InvoiceItem;
-use App\Entity\Tenant\FeeStructure;
-use App\Service\Finance\DiscountCalculator;
-use App\Service\Finance\AdvancePaymentService;
 use App\Service\Admissions\AdmissionNumberGenerator;
-use App\Service\Finance\InvoiceNumberGenerator;
+use App\Service\Finance\TuitionInvoiceBuilder;
 use App\Service\Import\TextEncoding;
 use App\Service\Import\UniqueClashExplainer;
 use App\Service\Phone\PhoneNumber;
@@ -59,10 +54,8 @@ class QuickAdmissionController extends AbstractController
     private ?array $guardianPhoneIndex = null;
 
     public function __construct(
-        private readonly DiscountCalculator $discountCalculator,
-        private readonly InvoiceNumberGenerator $invoiceNumbers,
         private readonly AdmissionNumberGenerator $admissionNumbers,
-        private readonly AdvancePaymentService $advances,
+        private readonly TuitionInvoiceBuilder $invoices,
         // Turns "Duplicate entry 'X' for key 'Y'" into the row, name and class.
         private readonly UniqueClashExplainer $clashes,
         // Pupil or student, depending on the school.
@@ -108,7 +101,9 @@ class QuickAdmissionController extends AbstractController
                     'last_name'    => $row['last_name'],
                     'gender'       => $row['gender'],
                     'parent_name'  => $row['parent_name'],
-                    'parent_phone' => $row['parent_phone']
+                    'parent_phone' => $row['parent_phone'],
+                    // The manual grid has no type column; a walk-in is a new intake.
+                    'student_type' => Student::TYPE_NEW,
                 ];
 
                 if ($classroom) {
@@ -283,6 +278,9 @@ class QuickAdmissionController extends AbstractController
                     'admission_number' => trim($row[9]),  // 👈 NEW: Index 9
                     'parent_name'      => trim($row[11]), // 👈 SHIFTED: Index 11
                     'parent_phone'     => $parentPhone, // 👈 SHIFTED: Index 12
+                    // Optional 14th column; older files stop at index 12 and
+                    // keep the historical NEW default.
+                    'student_type'     => trim((string) ($row[13] ?? '')),
                 ],
                     'classroom' => $classMap[$cleanClass],
                     // Carried so a failure at flush can name the row instead of
@@ -600,6 +598,7 @@ class QuickAdmissionController extends AbstractController
     $student->setBloodGroup($data['blood_group']);
     $student->setGenotype($data['genotype']);
     $student->setHomeTown($data['home_town']);
+    $student->setStudentType($data['student_type'] ?? Student::TYPE_NEW);
     $student->setGuardian($guardian); 
     
     // Handle Date of Birth (Using \DateTime for DateType compatibility)
@@ -634,7 +633,7 @@ class QuickAdmissionController extends AbstractController
 
     // 4. OPTIONAL INVOICE
     if ($generateInvoice) { 
-        $this->createTuitionInvoice($em, $student, $classroom, $term); 
+        $this->createTuitionInvoice($student, $classroom, $term); 
     }
 }
     
@@ -661,7 +660,8 @@ class QuickAdmissionController extends AbstractController
                 'Admission Number (Leave blank to auto-generate)', // 👈 NEW COLUMN
                 'Class Name', 
                 'Parent Name', 
-                'Parent Phone'
+                'Parent Phone',
+                'Student Type (NEW/RETURNING)'
             ]);
             
             // 2. THE SAMPLE ROW (Matches the headers exactly)
@@ -678,7 +678,8 @@ class QuickAdmissionController extends AbstractController
                 '24/001',        // 👈 Sample Admission Number
                 'JSS 1',         // Class Name
                 'Mr. Richard Doe', 
-                '08012345678'
+                '08012345678',
+                'NEW'            // Student Type
             ]);
             
             fclose($handle);
@@ -689,54 +690,11 @@ class QuickAdmissionController extends AbstractController
         return $response;
     }
 
-    private function createTuitionInvoice($em, $student, $classroom, $term)
+    private function createTuitionInvoice(Student $student, Classroom $classroom, Term $term): void
     {
-        // Fetch fees for this class
-        $fees = $em->getRepository(FeeStructure::class)->findBy([
-            'classroom' => $classroom, 
-            'term' => $term
-        ]);
-
-        if (!$fees) return;
-
-        $invoice = new Invoice();
-        $invoice->setStudent($student);
-        $invoice->setTerm($term);
-        $invoice->setSession($term->getSession());
-        $invoice->setClassroom($classroom);
-        $invoice->setInvoiceNumber($this->invoiceNumbers->next($this->invoiceNumbers->yearFor($term->getSession())));
-        $invoice->setStatus(Invoice::STATUS_UNPAID);
-        $invoice->setPaidAmount("0");
-        // Was 'TUITION', which every fee report ignores. Bulk-imported pupils
-        // must land in the same academic ledger as walk-ins.
-        $invoice->setType(Invoice::TYPE_ACADEMIC);
-
-        $total = 0;
-        foreach ($fees as $fee) {
-            // ONLY bill compulsory items (Tuition, Exam, etc.)
-            // Skip "Admission Form" or "Uniform" if you flagged them as 'isOneTime' in your DB
-            if (!$fee->getFeeItem()->isOptional()) { 
-                $item = new InvoiceItem();
-                $item->setInvoice($invoice);
-                $item->setFeeItem($fee->getFeeItem());
-                $item->setDescription($fee->getFeeItem()->getName());
-                $item->setAmount((string)$fee->getAmount());
-                $em->persist($item);
-                $total += $fee->getAmount();
-            }
-        }
-
-        if ($total > 0) {
-            $discount = $this->discountCalculator->calculateDiscount(
-                $student,
-                $this->discountCalculator->tuitionBaseFromStructures($fees)
-            );
-            $invoice->setDiscountApplied((string) $discount);
-            $invoice->setDiscountLabel($this->discountCalculator->describe($student));
-            $invoice->setTotalAmount((string) max(0.0, (float) $total - $discount));
-            $em->persist($invoice);
-            $this->advances->applyTo($invoice);
-        }
+        // The shared builder skips one-time new-intake items for a returning
+        // pupil and applies scholarships to tuition only.
+        $this->invoices->build($student, $classroom, $term, $student->getStudentType());
     }
 
     // 👇 THE MAGIC STRING CLEANER

@@ -1,0 +1,99 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Contact details · {{ guardian.fullName ?: 'Parent' }}{% endblock %}
+
+{% block body %}
+<div class="px-4 py-4 sm:py-6">
+
+    <div class="mb-5">
+        <a href="{{ path('app_tenant_parent_family', {id: guardian.id}) }}"
+           class="inline-flex min-h-[44px] items-center text-xs font-semibold text-accent-700 hover:underline">
+            &larr; {{ guardian.fullName ?: 'Family' }}
+        </a>
+        <h1 class="mt-1 break-words text-2xl font-black tracking-tight text-ink-900 sm:text-3xl">Parent contact details</h1>
+        <p class="mt-1 text-sm text-ink-600">
+            Currently <span class="font-mono font-semibold text-ink-900">{{ original_phone ?: 'no phone number' }}</span>.
+            Changing it here changes the number every child in this family is reached on.
+        </p>
+    </div>
+
+    {{ form_start(form) }}
+
+    <div class="rounded-xl border border-ink-200 bg-white p-4 shadow-card sm:p-6">
+        {{ form_errors(form) }}
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {{ form_row(form.title) }}
+            {{ form_row(form.fullName) }}
+            {{ form_row(form.phoneNumber) }}
+            {{ form_row(form.alternatePhoneNumber) }}
+            {{ form_row(form.email) }}
+            {{ form_row(form.relationshipToStudent) }}
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {{ form_row(form.occupation) }}
+            {{ form_row(form.officeAddress) }}
+        </div>
+
+        {{ form_row(form.address) }}
+
+        {% if merge_preview %}
+            {# The phone belongs to another parent record and a child's name
+               proves they are one family. Nothing has been saved yet. #}
+            <div class="mt-5 rounded-xl border-2 border-pending/50 bg-pending/5 p-4" role="status">
+                <p class="text-xs font-black uppercase tracking-wide text-pending">Another child already has this number</p>
+                <p class="mt-2 text-sm leading-relaxed text-ink-800">
+                    <strong>{{ merge_preview.target.fullName ?: 'Another parent' }}</strong> already holds
+                    <span class="font-mono font-semibold">{{ guardian.phoneNumber }}</span> and has:
+                </p>
+                <ul class="mt-2 space-y-1 text-sm text-ink-800">
+                    {% for child in merge_preview.matches.targetChildren %}
+                        <li class="break-words">• <strong>{{ child.fullName }}</strong>
+                            {% if child.currentClass %} — {{ child.currentClass.name }}{% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+                <p class="mt-3 text-sm leading-relaxed text-ink-800">
+                    The names match on <strong>{{ merge_preview.matches.labels|join(' and ') }}</strong>, so the system
+                    treats these as one family. Saving will move
+                    {% for child in merge_preview.sourceChildren %}
+                        <strong>{{ child.fullName }}</strong>{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                    under {{ merge_preview.target.fullName ?: 'that parent' }}. The other parent record is removed and
+                    one family login is kept.
+                </p>
+                <p class="mt-2 text-xs font-semibold text-ink-600">
+                    Nothing has been saved yet. Tick the box below to confirm, then save.
+                </p>
+
+                <div class="mt-4 rounded-lg border border-ink-200 bg-white p-3">
+                    {{ form_row(form.confirmMerge) }}
+                </div>
+            </div>
+        {% else %}
+            <div class="mt-5 rounded-lg border border-accent-200 bg-accent-50 p-3 text-xs leading-relaxed text-ink-700">
+                <strong class="text-ink-900">Siblings are matched by phone number and name.</strong>
+                If this number already belongs to another parent record, the system only merges the two families when
+                a child shares a <strong>surname or middle name</strong>. If no name matches, nothing is saved and you
+                are told which children already have the number.
+            </div>
+
+            {# Render the checkbox so Symfony's form_end() does not append it
+               to the bottom of the card; it only becomes visible when a merge
+               preview is shown. #}
+            <div class="hidden" aria-hidden="true">{{ form_row(form.confirmMerge) }}</div>
+        {% endif %}
+
+        <div class="mt-6 flex flex-col gap-3 sm:flex-row-reverse sm:items-center sm:justify-between">
+            <button type="submit"
+                    class="min-h-[44px] w-full rounded-lg bg-accent-600 px-8 font-bold text-white shadow-sm hover:bg-accent-700 sm:w-auto">
+                {{ merge_preview ? 'Merge and save contact' : 'Save contact details' }}
+            </button>
+            <p class="text-xs text-ink-500">Nothing changes until you press save.</p>
+        </div>
+    </div>
+
+    {{ form_end(form) }}
+</div>
+{% endblock %}

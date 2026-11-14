@@ -1,0 +1,240 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Fees import batch #{{ batch.id }}{% endblock %}
+
+{% block body %}
+<div class="px-4 py-4 sm:py-6">
+
+    <div class="mb-5">
+        <a href="{{ path('app_tenant_fee_import_index') }}"
+           class="inline-flex min-h-[44px] items-center text-xs font-semibold text-accent-700 hover:underline">&larr; Fees import</a>
+        <h1 class="mt-1 text-2xl font-black tracking-tight text-ink-900 sm:text-3xl">Batch #{{ batch.id }}</h1>
+        <p class="mt-1 break-words text-sm text-ink-600">
+            {{ batch.term ? batch.term.name : 'No term' }}
+            {% if batch.term and batch.term.session %}· {{ batch.term.session.name }}{% endif %}
+            · {{ batch.originalFilename ?: 'CSV' }}
+        </p>
+    </div>
+
+    {# ── Summary ──────────────────────────────────────────────────────── #}
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div class="rounded-xl border border-ink-200 bg-white p-3 shadow-card">
+            <p class="text-[11px] font-black uppercase tracking-wide text-ink-500">Status</p>
+            <p class="mt-1 text-sm font-bold">
+                {% if batch.isPosted %}
+                    <span class="rounded-full bg-paid/10 px-2 py-0.5 text-paid">Posted</span>
+                {% elseif batch.isRolledBack %}
+                    <span class="rounded-full bg-failed/10 px-2 py-0.5 text-failed">Reversed</span>
+                {% else %}
+                    <span class="rounded-full bg-pending/10 px-2 py-0.5 text-pending">Preview only</span>
+                {% endif %}
+            </p>
+        </div>
+        <div class="rounded-xl border border-ink-200 bg-white p-3 shadow-card">
+            <p class="text-[11px] font-black uppercase tracking-wide text-ink-500">Due</p>
+            <p class="mt-1 money text-sm font-bold text-ink-900">₦{{ batch.totalDue|number_format(2) }}</p>
+        </div>
+        <div class="rounded-xl border border-ink-200 bg-white p-3 shadow-card">
+            <p class="text-[11px] font-black uppercase tracking-wide text-ink-500">Collected</p>
+            <p class="mt-1 money text-sm font-bold text-paid">₦{{ batch.totalPaid|number_format(2) }}</p>
+        </div>
+        <div class="rounded-xl border border-ink-200 bg-white p-3 shadow-card">
+            <p class="text-[11px] font-black uppercase tracking-wide text-ink-500">Outstanding</p>
+            <p class="mt-1 money text-sm font-bold {{ batch.outstanding > 0 ? 'text-pending' : 'text-ink-900' }}">₦{{ batch.outstanding|number_format(2) }}</p>
+        </div>
+    </div>
+
+    <p class="mt-3 text-xs text-ink-500">
+        {{ batch.rowCount }} row{{ batch.rowCount == 1 ? '' : 's' }}
+        {% if batch.isPreview %}
+            · {{ valid_count }} ready
+        {% elseif batch.isPosted %}
+            · {{ batch.postedCount }} posted
+        {% else %}
+            · reversed — nothing from this batch is posted
+        {% endif %}
+        {% if error_count > 0 %}· <span class="font-bold text-failed">{{ error_count }} skipped</span>{% endif %}
+        {% if warning_count > 0 %}· <span class="font-bold text-pending">{{ warning_count }} warning{{ warning_count == 1 ? '' : 's' }}</span>{% endif %}
+        · uploaded {{ batch.createdAt|date('j M Y, H:i') }}
+        {% if batch.uploadedBy %}by {{ batch.uploadedBy }}{% endif %}
+    </p>
+
+    {# ── Actions ──────────────────────────────────────────────────────── #}
+    <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+        {% if batch.isPreview %}
+            {% if other_posted_batch %}
+                <div class="w-full rounded-xl border border-pending/40 bg-pending/5 p-4 sm:max-w-2xl" role="status">
+                    <p class="text-sm font-bold text-ink-900">This term already has a posted opening balance.</p>
+                    <p class="mt-1 text-sm text-ink-700">
+                        Batch #{{ other_posted_batch.id }} is posted for {{ other_posted_batch.term ? other_posted_batch.term.name : 'this term' }}.
+                        Reverse it before posting this one.
+                    </p>
+                    <a href="{{ path('app_tenant_fee_import_batch', {batch: other_posted_batch.id}) }}"
+                       class="mt-2 inline-flex min-h-[44px] items-center text-sm font-bold text-accent-700 underline">
+                        Open batch #{{ other_posted_batch.id }} &rarr;
+                    </a>
+                </div>
+            {% elseif valid_count > 0 %}
+                <form method="post" action="{{ path('app_tenant_fee_import_commit', {batch: batch.id}) }}"
+                      class="w-full sm:w-auto">
+                    <input type="hidden" name="_token" value="{{ csrf_token('commit_fee_import_' ~ batch.id) }}">
+                    <button type="submit"
+                            class="min-h-[44px] w-full rounded-lg bg-accent-600 px-6 text-sm font-bold text-white shadow-sm hover:bg-accent-700 sm:w-auto">
+                        Post {{ valid_count }} row{{ valid_count == 1 ? '' : 's' }}
+                    </button>
+                </form>
+            {% endif %}
+        {% elseif batch.isPosted and is_granted('ROLE_TENANT_SUPER_ADMIN') %}
+            <form method="post" action="{{ path('app_tenant_fee_import_reverse', {batch: batch.id}) }}"
+                  onsubmit="return confirm('Reverse batch #{{ batch.id }}? Its payments and overpayment credits will be removed.');"
+                  class="w-full sm:w-auto">
+                <input type="hidden" name="_token" value="{{ csrf_token('reverse_fee_import_' ~ batch.id) }}">
+                <button type="submit"
+                        class="min-h-[44px] w-full rounded-lg border border-failed/40 px-5 text-sm font-bold text-failed hover:bg-failed/10 sm:w-auto">
+                    Reverse this batch
+                </button>
+            </form>
+        {% endif %}
+
+        <a href="{{ path('app_tenant_fee_import_rows_csv', {batch: batch.id}) }}"
+           class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-ink-300 bg-white px-4 text-sm font-bold text-ink-700 hover:border-accent-400 sm:w-auto">
+            Download rows CSV
+        </a>
+    </div>
+
+    {% if batch.isPosted %}
+        <p class="mt-3 text-xs text-ink-500">
+            Posted {{ batch.postedAt ? batch.postedAt|date('j M Y, H:i') : '' }}.
+            {{ batch.postedCount }} row{{ batch.postedCount == 1 ? '' : 's' }} posted,
+            {{ batch.skippedCount }} skipped.
+        </p>
+    {% elseif batch.isRolledBack %}
+        <p class="mt-3 text-xs text-ink-500">
+            Reversed {{ batch.rolledBackAt ? batch.rolledBackAt|date('j M Y, H:i') : '' }}
+            {% if batch.rolledBackBy %}by {{ batch.rolledBackBy }}{% endif %}.
+        </p>
+    {% endif %}
+
+    {# ── Rows: cards on a phone, table from sm upwards ────────────────── #}
+    <section class="mt-5">
+        <ul class="space-y-3 sm:hidden">
+            {% for row in rows %}
+                <li class="rounded-xl border p-4 shadow-card {{ (row.errors ?? []) is not empty ? 'border-failed/30 bg-failed/5' : 'border-ink-200 bg-white' }}">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0">
+                            <p class="break-words text-sm font-bold text-ink-900">
+                                {{ row.student_name ?? (row.first_name ~ ' ' ~ row.surname) }}
+                            </p>
+                            <p class="break-words text-xs text-ink-500">
+                                Row {{ row.row }} · {{ row.admission_number }} · {{ row.class_name }}
+                            </p>
+                        </div>
+                        <span class="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold
+                            {{ batch.isRolledBack ? 'bg-failed/10 text-failed' : ((row.errors ?? []) is not empty ? 'bg-failed/10 text-failed' : ((row.posted ?? false) ? 'bg-paid/10 text-paid' : 'bg-ink-100 text-ink-600')) }}">
+                            {% if batch.isRolledBack %}Reversed{% elseif (row.errors ?? []) is not empty %}Skipped{% elseif row.posted ?? false %}Posted{% else %}Ready{% endif %}
+                        </span>
+                    </div>
+
+                    <dl class="mt-3 grid grid-cols-3 gap-2 text-xs">
+                        <div>
+                            <dt class="font-bold uppercase tracking-wide text-ink-500">Type</dt>
+                            <dd class="mt-0.5 font-semibold text-ink-800">{{ row.student_type }}</dd>
+                        </div>
+                        <div>
+                            <dt class="font-bold uppercase tracking-wide text-ink-500">Due</dt>
+                            <dd class="mt-0.5 money font-semibold text-ink-800">₦{{ (row.due ?? 0)|number_format(2) }}</dd>
+                        </div>
+                        <div>
+                            <dt class="font-bold uppercase tracking-wide text-ink-500">Paid</dt>
+                            <dd class="mt-0.5 money font-semibold text-ink-800">₦{{ (row.amount_paid ?? 0)|number_format(2) }}</dd>
+                        </div>
+                        <div>
+                            <dt class="font-bold uppercase tracking-wide text-ink-500">Outstanding</dt>
+                            <dd class="mt-0.5 money font-semibold text-ink-800">₦{{ (row.outstanding ?? 0)|number_format(2) }}</dd>
+                        </div>
+                        <div class="col-span-2">
+                            <dt class="font-bold uppercase tracking-wide text-ink-500">Invoice</dt>
+                            <dd class="mt-0.5 break-all font-mono text-[11px] text-ink-700">{{ row.invoice_number ?? '—' }}</dd>
+                        </div>
+                    </dl>
+
+                    {% if row.discount_label %}
+                        <p class="mt-2 break-words text-xs font-semibold text-paid">Scholarship: {{ row.discount_label }}</p>
+                    {% endif %}
+                    {% for warning in row.warnings ?? [] %}
+                        <p class="mt-2 break-words text-xs font-semibold text-pending">⚠ {{ warning }}</p>
+                    {% endfor %}
+                    {% for error in row.errors ?? [] %}
+                        <p class="mt-2 break-words text-xs font-semibold text-failed">{{ error }}</p>
+                    {% endfor %}
+                </li>
+            {% else %}
+                <li class="rounded-xl border border-ink-200 bg-white p-6 text-center text-sm text-ink-600">
+                    This batch has no rows.
+                </li>
+            {% endfor %}
+        </ul>
+
+        <div class="relative hidden overflow-x-auto rounded-xl border border-ink-200 bg-white shadow-card sm:block">
+            <table class="w-full min-w-[900px] text-left text-sm">
+                <thead class="border-b border-ink-200 bg-ink-50">
+                    <tr>
+                        <th class="p-3 font-bold text-ink-600">Row</th>
+                        <th class="p-3 font-bold text-ink-600">{{ learner.capital }}</th>
+                        <th class="p-3 font-bold text-ink-600">Class</th>
+                        <th class="p-3 font-bold text-ink-600">Type</th>
+                        <th class="p-3 text-right font-bold text-ink-600">Due</th>
+                        <th class="p-3 text-right font-bold text-ink-600">Paid</th>
+                        <th class="p-3 text-right font-bold text-ink-600">Outstanding</th>
+                        <th class="p-3 font-bold text-ink-600">Invoice</th>
+                        <th class="p-3 font-bold text-ink-600">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-ink-100">
+                    {% for row in rows %}
+                        <tr class="{{ (row.errors ?? []) is not empty ? 'bg-failed/5' : '' }}">
+                            <td class="p-3 text-ink-500">{{ row.row }}</td>
+                            <td class="p-3">
+                                <p class="break-words font-bold text-ink-900">{{ row.student_name ?? (row.first_name ~ ' ' ~ row.surname) }}</p>
+                                <p class="break-words font-mono text-[11px] text-ink-500">{{ row.admission_number }}</p>
+                                {% if row.discount_label %}
+                                    <p class="mt-1 break-words text-[11px] font-semibold text-paid">{{ row.discount_label }}</p>
+                                {% endif %}
+                                {% for warning in row.warnings ?? [] %}
+                                    <p class="mt-1 break-words text-[11px] font-semibold text-pending">{{ warning }}</p>
+                                {% endfor %}
+                                {% for error in row.errors ?? [] %}
+                                    <p class="mt-1 break-words text-[11px] font-semibold text-failed">{{ error }}</p>
+                                {% endfor %}
+                            </td>
+                            <td class="p-3 text-ink-700">{{ row.class_name }}</td>
+                            <td class="p-3 text-ink-700">{{ row.student_type }}</td>
+                            <td class="p-3 text-right money text-ink-800">₦{{ (row.due ?? 0)|number_format(2) }}</td>
+                            <td class="p-3 text-right money text-ink-800">₦{{ (row.amount_paid ?? 0)|number_format(2) }}</td>
+                            <td class="p-3 text-right money font-semibold {{ (row.outstanding ?? 0) > 0 ? 'text-pending' : 'text-ink-800' }}">
+                                ₦{{ (row.outstanding ?? 0)|number_format(2) }}
+                            </td>
+                            <td class="p-3 break-all font-mono text-[11px] text-ink-600">{{ row.invoice_number ?? '—' }}</td>
+                            <td class="p-3">
+                                {% if batch.isRolledBack %}
+                                    <span class="rounded-full bg-failed/10 px-2 py-0.5 text-[11px] font-bold text-failed">Reversed</span>
+                                {% elseif (row.errors ?? []) is not empty %}
+                                    <span class="rounded-full bg-failed/10 px-2 py-0.5 text-[11px] font-bold text-failed">Skipped</span>
+                                {% elseif row.posted ?? false %}
+                                    <span class="rounded-full bg-paid/10 px-2 py-0.5 text-[11px] font-bold text-paid">Posted</span>
+                                {% else %}
+                                    <span class="rounded-full bg-ink-100 px-2 py-0.5 text-[11px] font-bold text-ink-600">Ready</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="9" class="p-6 text-center text-ink-600">This batch has no rows.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}

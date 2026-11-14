@@ -71,10 +71,16 @@ class Guardian
     #[ORM\OrderBy(['createdAt' => 'DESC'])]
     private Collection $applications;
 
+    /** @var Collection<int, FamilyLinkNotice> Pupils linked/merged into this family. */
+    #[ORM\OneToMany(mappedBy: 'guardian', targetEntity: FamilyLinkNotice::class)]
+    #[ORM\OrderBy(['createdAt' => 'DESC'])]
+    private Collection $familyNotices;
+
     public function __construct()
     {
         $this->students = new ArrayCollection();
         $this->applications = new ArrayCollection();
+        $this->familyNotices = new ArrayCollection();
     }
 
     public function getId(): ?int { return $this->id; }
@@ -164,6 +170,25 @@ class Guardian
                 $student->setGuardian(null);
             }
         }
+        return $this;
+    }
+
+    /** @return Collection<int, FamilyLinkNotice> */
+    public function getFamilyNotices(): Collection { return $this->familyNotices; }
+
+    public function addFamilyNotice(FamilyLinkNotice $notice): static
+    {
+        if (!$this->familyNotices->contains($notice)) {
+            $this->familyNotices->add($notice);
+            $notice->setGuardian($this);
+        }
+        return $this;
+    }
+
+    public function removeFamilyNotice(FamilyLinkNotice $notice): static
+    {
+        $this->familyNotices->removeElement($notice);
+
         return $this;
     }
 }

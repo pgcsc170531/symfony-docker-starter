@@ -34,6 +34,7 @@ class ParentRegistrationType extends AbstractType
                 'choices' => [
                     'Mr' => 'Mr', 'Mrs' => 'Mrs', 'Miss' => 'Miss', 'Dr' => 'Dr',
                     'Chief' => 'Chief', 'Engr' => 'Engr', 'Alhaji' => 'Alhaji', 'Hajiya' => 'Hajiya',
+                    'ALH' => 'ALH', 'HAJ' => 'HAJ', 'MAL' => 'MAL',
                 ],
             ])
             ->add('fullName', TextType::class, [

@@ -4,17 +4,13 @@ namespace App\Service;
 
 use App\Entity\Tenant\Classroom;
 use App\Entity\Tenant\Enrollment;
-use App\Entity\Tenant\FeeStructure;
 use App\Entity\Tenant\Invoice;
-use App\Entity\Tenant\InvoiceItem;
 use App\Entity\Tenant\School;
 use App\Entity\Tenant\Session;
 use App\Entity\Tenant\Student;
 use App\Entity\Tenant\Term;
-use App\Service\Finance\DiscountCalculator;
 use App\Service\Admissions\AdmissionNumberGenerator;
-use App\Service\Finance\AdvancePaymentService;
-use App\Service\Finance\InvoiceNumberGenerator;
+use App\Service\Finance\TuitionInvoiceBuilder;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -37,12 +33,10 @@ final class AdmissionService
 
     public function __construct(
         private EntityManagerInterface $em,
-        private DiscountCalculator $discountCalculator,
         private NotificationService $notifier,
         private SchoolMailer $mailer,
-        private InvoiceNumberGenerator $invoiceNumbers,
         private readonly AdmissionNumberGenerator $admissionNumbers,
-        private readonly AdvancePaymentService $advances,
+        private readonly TuitionInvoiceBuilder $invoices,
     ) {
     }
 
@@ -108,69 +102,19 @@ final class AdmissionService
 
     /**
      * Build the student's first academic invoice from the fee structure for
-     * this class + term, applying any discounts.
+     * this class + term, applying any discounts. The shared builder also
+     * excludes one-time new-intake items for a returning pupil.
      *
      * @return Invoice|null null when the class/term has no fee items configured
      */
     public function billStudent(Student $student, Classroom $classroom, Term $term): ?Invoice
     {
-        $fees = $this->em->getRepository(FeeStructure::class)->findBy([
-            'classroom' => $classroom,
-            'term' => $term,
-        ]);
-
-        if (count($fees) === 0) {
-            return null;
-        }
-
-        $invoice = new Invoice();
-        $invoice->setStudent($student);
-        $invoice->setTerm($term);
-        $invoice->setSession($term->getSession());
-        $invoice->setClassroom($classroom);
-        $invoice->setInvoiceNumber($this->invoiceNumbers->next($this->invoiceNumbers->yearFor($term->getSession())));
-        $invoice->setStatus(Invoice::STATUS_UNPAID);
-        $invoice->setType(Invoice::TYPE_ACADEMIC);
-        $invoice->setPaidAmount('0');
-        $invoice->setCreatedAt(new \DateTimeImmutable());
-
-        $total = 0.0;
-        foreach ($fees as $fee) {
-            if ($fee->getFeeItem()->isOptional()) {
-                continue;
-            }
-
-            $item = new InvoiceItem();
-            $item->setInvoice($invoice);
-            $item->setFeeItem($fee->getFeeItem());
-            $item->setDescription($fee->getFeeItem()->getName());
-            $item->setAmount((string) $fee->getAmount());
-            $this->em->persist($item);
-
-            $total += (float) $fee->getAmount();
-        }
-
-        if ($total <= 0) {
-            return null;
-        }
-
-        $discount = $this->discountCalculator->calculateDiscount(
+        return $this->invoices->build(
             $student,
-            $this->discountCalculator->tuitionBaseFromStructures($fees)
+            $classroom,
+            $term,
+            $student->getStudentType(),
         );
-
-        // `total_amount` is NET of the discount; `discount_applied` is kept
-        // separately so reports can show what the school waived.
-        $invoice->setDiscountApplied((string) $discount);
-        $invoice->setDiscountLabel($this->discountCalculator->describe($student));
-        $invoice->setTotalAmount((string) max(0.0, $total - $discount));
-        $this->em->persist($invoice);
-
-        // A family that paid ahead should not be shown a bill they already
-        // settled. This writes a real ADVANCE payment with the audit remark.
-        $this->advances->applyTo($invoice);
-
-        return $invoice;
     }
 
     /** "Admission successful" SMS + email — each honours its own school toggle. */

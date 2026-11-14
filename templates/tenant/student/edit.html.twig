@@ -14,9 +14,17 @@
                 {{ learner.capital }}: <span class="font-bold text-indigo-600">{{ student.fullName }}</span>
             </p>
         </div>
-        <a href="{{ path('app_tenant_student_profile', {'id': student.id}) }}" class="inline-flex items-center text-sm font-bold bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg transition-colors border border-gray-200 shadow-sm">
-            &larr; Back to Profile
-        </a>
+        <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            {% if student.guardian %}
+                <a href="{{ path('app_tenant_parent_family', {'id': student.guardian.id}) }}"
+                   class="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-accent-300 bg-white px-4 text-sm font-bold text-accent-700 shadow-sm transition-colors hover:bg-accent-50">
+                    Parent contact &amp; siblings
+                </a>
+            {% endif %}
+            <a href="{{ path('app_tenant_student_profile', {'id': student.id}) }}" class="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-gray-100 px-4 text-sm font-bold text-gray-800 shadow-sm transition-colors hover:bg-gray-200">
+                &larr; Back to Profile
+            </a>
+        </div>
     </div>
 
     {{ form_start(form) }}
@@ -44,6 +52,9 @@
                 {{ form_row(form.gender, {'attr': {'class': 'rounded-lg p-3 w-full'}}) }}
                 {{ form_row(form.dateOfBirth, {'attr': {'class': 'rounded-lg p-3 w-full'}}) }}
                 {{ form_row(form.religion, {'attr': {'class': 'rounded-lg p-3 w-full'}}) }}
+            </div>
+            <div class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
+                {{ form_row(form.studentType, {'attr': {'class': 'rounded-lg p-3 w-full'}}) }}
             </div>
         </div>
 

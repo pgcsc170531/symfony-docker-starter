@@ -18,6 +18,12 @@ use App\Entity\Tenant\Invoice; // 🟢 ADDED: Invoice import
 #[ORM\Table(name: 'student')]
 class Student
 {
+    /** First term at this school. */
+    public const TYPE_NEW = 'NEW';
+
+    /** Was on this school's roll before the current session. */
+    public const TYPE_RETURNING = 'RETURNING';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -38,6 +44,15 @@ class Student
 
     #[ORM\Column(name: 'admission_number', length: 20, unique: true, nullable: true)]
     private ?string $admissionNumber = null;
+
+    /**
+     * NEW or RETURNING. A returning pupil is not billed the one-time
+     * new-intake items (uniform, books, ID card, admission form). Stored
+     * explicitly because a mid-session transfer can have an old enrolment and
+     * still be new to this school.
+     */
+    #[ORM\Column(name: 'student_type', length: 12, options: ['default' => self::TYPE_NEW])]
+    private string $studentType = self::TYPE_NEW;
 
     #[ORM\Column(name: 'date_of_birth', type: 'date', nullable: true)]
     private ?\DateTimeInterface $dateOfBirth = null;
@@ -136,6 +151,20 @@ class Student
 
     public function getAdmissionNumber(): ?string { return $this->admissionNumber; }
     public function setAdmissionNumber(?string $admissionNumber): static { $this->admissionNumber = $admissionNumber; return $this; }
+
+    public function getStudentType(): string { return $this->studentType; }
+
+    public function setStudentType(string $studentType): static
+    {
+        $studentType = strtoupper(trim($studentType));
+        $this->studentType = $studentType === self::TYPE_RETURNING
+            ? self::TYPE_RETURNING
+            : self::TYPE_NEW;
+
+        return $this;
+    }
+
+    public function isReturning(): bool { return $this->studentType === self::TYPE_RETURNING; }
 
     public function getDateOfBirth(): ?\DateTimeInterface { return $this->dateOfBirth; }
     public function setDateOfBirth(?\DateTimeInterface $dateOfBirth): static { $this->dateOfBirth = $dateOfBirth; return $this; }

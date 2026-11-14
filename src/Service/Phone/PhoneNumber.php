@@ -60,6 +60,47 @@ final class PhoneNumber
         return $national === '' ? '' : $national;
     }
 
+    /**
+     * Every stored spelling a phone search should try.
+     *
+     * A bursar types the number they have on the admission form — usually with
+     * the trunk zero — while an imported parent may be stored in the national
+     * form without it (or vice versa). Searching only the typed string finds
+     * neither family. These variants let the SQL LIKE cover both.
+     *
+     * @return list<string>
+     */
+    public static function searchVariants(string $raw): array
+    {
+        $national = self::national($raw);
+
+        if ($national === '') {
+            return [];
+        }
+
+        $variants = [$national];
+
+        if (strlen($national) === 10) {
+            $variants[] = '0' . $national;
+            $variants[] = '234' . $national;
+        }
+
+        $digits = self::digits($raw);
+        if ($digits !== '') {
+            $variants[] = $digits;
+
+            // A partial search — "0803" — must also find a number stored
+            // without the trunk zero, and "803" must find one stored with it.
+            if (str_starts_with($digits, '0')) {
+                $variants[] = substr($digits, 1);
+            } elseif (strlen($digits) >= 3) {
+                $variants[] = '0' . $digits;
+            }
+        }
+
+        return array_values(array_unique($variants));
+    }
+
     /** The parent's sign-in address: 8039658200@edus.ng. */
     public static function loginEmail(string $raw): string
     {

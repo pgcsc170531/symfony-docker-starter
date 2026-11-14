@@ -2,6 +2,7 @@
 
 namespace App\Controller\Tenant;
 
+use App\Entity\Tenant\FamilyLinkNotice;
 use App\Entity\Tenant\Invoice;
 use App\Entity\Tenant\Student;
 use App\Entity\Tenant\Guardian;
@@ -57,6 +58,7 @@ class ParentController extends AbstractController
             return $this->render('tenant/parent/dashboard.html.twig', [
                 'studentData' => [],
                 'flashEvents' => [],
+                'familyNotices' => [],
                 'applications' => [],
                 'applicationCount' => 0,
                 'applicationsOpen' => $school?->isApplicationsOpen() ?? true,
@@ -75,6 +77,22 @@ class ParentController extends AbstractController
             ->setParameter('today', new \DateTime('today')) // 'today' ensures it shows events happening later today
             ->orderBy('e.startDate', 'ASC')
             ->setMaxResults(3) // Only show the 3 most urgent items
+            ->getQuery()
+            ->getResult();
+
+        // Family-link notices still waiting for the parent's answer, plus the
+        // ones they have already disputed. A confirmed link is history, not a
+        // task, so it drops off the dashboard.
+        $familyNotices = $em->getRepository(FamilyLinkNotice::class)->createQueryBuilder('n')
+            ->andWhere('n.guardian = :guardian')
+            ->andWhere('n.status IN (:statuses)')
+            ->setParameter('guardian', $guardian)
+            ->setParameter('statuses', [
+                FamilyLinkNotice::STATUS_PENDING,
+                FamilyLinkNotice::STATUS_REPORTED,
+            ])
+            ->orderBy('n.createdAt', 'DESC')
+            ->setMaxResults(5)
             ->getQuery()
             ->getResult();
 
@@ -105,6 +123,7 @@ class ParentController extends AbstractController
             'studentData' => $studentData,
             'term' => $term,
             'flashEvents' => $flashEvents, // 👈 Passed to the view
+            'familyNotices' => $familyNotices,
             'applications' => $applications,
             'applicationCount' => $applicationCount,
             'applicationsOpen' => $school?->isApplicationsOpen() ?? true,

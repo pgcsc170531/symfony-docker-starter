@@ -76,6 +76,16 @@
                 <i class="fas fa-pencil-alt mr-2"></i> Edit Profile
             </a>
 
+            {# The parent record is shared by every child in the family. Correcting
+               their number here is how a mistyped sibling is joined to the same
+               parent, so the door belongs next to Edit Profile. #}
+            {% if student.guardian %}
+                <a href="{{ path('app_tenant_parent_family', {'id': student.guardian.id}) }}"
+                   class="w-full sm:w-auto bg-accent-50 hover:bg-accent-100 text-accent-700 font-bold py-2.5 px-4 rounded-lg transition-colors border border-accent-200 flex items-center justify-center shadow-sm">
+                    <i class="fas fa-user-shield mr-2"></i> Parent &amp; Siblings
+                </a>
+            {% endif %}
+
             {# The admission number is not on the profile form on purpose (it is
                already printed on documents). The owner can still correct it from
                here, so nobody has to hunt for the settings screen. #}
@@ -269,7 +279,7 @@
                 <ul class="divide-y divide-gray-100">
                     {% for sibling in siblings %}
                         <li class="p-4 hover:bg-gray-50 transition-colors">
-                            <a href="{{ path('app_tenant_student_profile', {'id': sibling.id}) }}" class="flex justify-between items-center group">
+                            <a href="{{ path('app_tenant_student_profile', {'id': sibling.id}) }}" class="flex min-h-[44px] justify-between items-center group">
                                 <div>
                                     <p class="text-sm font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">{{ sibling.firstName }} {{ sibling.lastName }}</p>
                                     <p class="text-xs text-gray-500 mt-0.5">

@@ -90,6 +90,11 @@ class Payment
     #[ORM\JoinColumn(name: 'advance_id', nullable: true, onDelete: 'SET NULL')]
     private ?StudentAdvance $advance = null;
 
+    /** Set only when this payment came from an opening-balance CSV batch. */
+    #[ORM\ManyToOne(targetEntity: FeeImportBatch::class)]
+    #[ORM\JoinColumn(name: 'fee_import_batch_id', nullable: true, onDelete: 'SET NULL')]
+    private ?FeeImportBatch $importBatch = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -149,4 +154,7 @@ class Payment
 
     public function getAdvance(): ?StudentAdvance { return $this->advance; }
     public function setAdvance(?StudentAdvance $advance): static { $this->advance = $advance; return $this; }
+
+    public function getImportBatch(): ?FeeImportBatch { return $this->importBatch; }
+    public function setImportBatch(?FeeImportBatch $importBatch): static { $this->importBatch = $importBatch; return $this; }
 }

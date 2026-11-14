@@ -4,6 +4,7 @@ namespace App\Controller\Tenant;
 
 use App\Entity\Tenant\Guardian;
 use App\Entity\Tenant\Student;
+use App\Service\Phone\PhoneNumber;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -12,7 +13,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/parents')]
-#[IsGranted('ROLE_ADMIN')]
+#[IsGranted('ROLE_BURSAR')]
 class ParentDirectoryController extends AbstractController
 {
     #[Route('/', name: 'app_tenant_parent_index', methods: ['GET'])]
@@ -45,13 +46,24 @@ class ParentDirectoryController extends AbstractController
                 . ' OR LOWER(s.lastName) LIKE :q OR LOWER(s.middleName) LIKE :q'
                 . ' OR LOWER(s.admissionNumber) LIKE :q))';
 
-            $digits = preg_replace('/\D+/', '', $q) ?? '';
-            if (strlen($digits) >= 3) {
+            // A parent stored as 8031234567 must be found when the bursar
+            // types 08031234567, and the other way round. The variants cover
+            // the national form, the trunk-zero form and the 234 form.
+            $variants = PhoneNumber::searchVariants($q);
+            if ($variants !== []) {
+                $conditions = [];
+                $parameters = [];
+
+                foreach ($variants as $variant) {
+                    $conditions[] = "REPLACE(REPLACE(REPLACE(REPLACE(phone_number, ' ', ''), '-', ''), '+', ''), '.', '') LIKE ?"
+                        . " OR REPLACE(REPLACE(REPLACE(REPLACE(alternate_phone_number, ' ', ''), '-', ''), '+', ''), '.', '') LIKE ?";
+                    $parameters[] = '%' . $variant . '%';
+                    $parameters[] = '%' . $variant . '%';
+                }
+
                 $ids = $em->getConnection()->fetchFirstColumn(
-                    "SELECT id FROM guardian
-                      WHERE REPLACE(REPLACE(REPLACE(REPLACE(phone_number, ' ', ''), '-', ''), '+', ''), '.', '') LIKE ?
-                         OR REPLACE(REPLACE(REPLACE(REPLACE(alternate_phone_number, ' ', ''), '-', ''), '+', ''), '.', '') LIKE ?",
-                    ['%' . $digits . '%', '%' . $digits . '%']
+                    'SELECT id FROM guardian WHERE ' . implode(' OR ', $conditions),
+                    $parameters
                 );
 
                 if ($ids !== []) {

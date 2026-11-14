@@ -32,7 +32,14 @@ final class PaymentReferenceGenerator
         // Floor: the first sane number in this month (e.g. 2610001), so the very
         // first reference is not a single digit.
         $floor = (int) ($prefix . '000') + 1;
-        $next = max($floor, $this->highestInDatabase($prefix) + 1, $this->issued[$prefix] ?? 0);
+        // `issued + 1`, not `issued`: a bulk import mints several references
+        // before the first flush, and the old expression handed out the same
+        // number twice on the second call.
+        $next = max(
+            $floor,
+            $this->highestInDatabase($prefix) + 1,
+            ($this->issued[$prefix] ?? 0) + 1
+        );
 
         $this->issued[$prefix] = $next;
 

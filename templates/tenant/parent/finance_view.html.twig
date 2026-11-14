@@ -142,6 +142,11 @@
                                     <div class="font-bold text-gray-800">₦{{ payment.amount|number_format }}</div>
                                     <div class="text-xs text-gray-500">{{ payment.createdAt|date('d M Y') }}</div>
                                     <div class="text-[10px] text-gray-400 mt-0.5">{{ payment.method }}</div>
+                                    {% if payment.importBatch %}
+                                        <div class="mt-0.5 text-[10px] font-semibold text-ink-500">
+                                            Opening balance imported {{ payment.importBatch.createdAt|date('d M Y') }}
+                                        </div>
+                                    {% endif %}
                                 </div>
                                 <div class="text-right">
                                     {% if payment.status == 'CONFIRMED' %}

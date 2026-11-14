@@ -638,6 +638,10 @@
                                     ('quick_enroll' in route)) }}
                         {{ nav.item(path('app_tenant_student_index'), 'academic-cap', learner.pluralCapital,
                                     ('student' in route)) }}
+                        {% if is_granted('ROLE_BURSAR') %}
+                            {{ nav.item(path('app_tenant_parent_index'), 'users', 'Parents',
+                                        ('app_tenant_parent_' in route or route == 'app_tenant_parent_index')) }}
+                        {% endif %}
                         {{ nav.item(path('app_tenant_enrollment_promote'), 'trending-up', 'Promote ' ~ learner.pluralCapital,
                                     ('promote' in route)) }}
                     {% endif %}
@@ -652,8 +656,6 @@
                                     ('classroom' in route)) }}
                         {{ nav.item(path('app_tenant_staff_index'), 'identification', 'Staff',
                                     ('staff' in route)) }}
-                        {{ nav.item(path('app_tenant_parent_index'), 'users', 'Parents',
-                                    (route == 'app_tenant_parent_index')) }}
                         {{ nav.item(path('app_tenant_department_index'), 'building-office', 'Departments',
                                     ('department' in route)) }}
                         {{ nav.item(path('app_tenant_subject_index'), 'squares-2x2', 'Subjects',
@@ -696,6 +698,8 @@
                         {{ nav.section('Finance') }}
                         {{ nav.item(path('app_tenant_fee_schedule'), 'clipboard-list', 'Fee Schedule',
                                     ('fee_schedule' in route)) }}
+                        {{ nav.item(path('app_tenant_fee_import_index'), 'upload', 'Fees Import',
+                                    ('fee_import' in route)) }}
                         {{ nav.item(path('app_tenant_invoice_index'), 'receipt-percent', 'Invoices',
                                     (route == 'app_tenant_invoice_index' or 'academic_invoice' in route)) }}
                         {{ nav.item(path('app_tenant_payment_index'), 'clock', 'Payment Terminal',
