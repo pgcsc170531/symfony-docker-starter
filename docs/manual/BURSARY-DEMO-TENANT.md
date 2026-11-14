@@ -172,7 +172,7 @@ data on day one:
 7. **Verify Payments** — approve one of the three pending transfers.
 8. **Discounts** — open the grand-total 100% rule, revoke it to restore the bill,
    then re-assign it; try Edit, the **Apply to grand total** checkbox on the
-   rule, the same box on the **Scholarship Board** (per pupil), and Delete on an
+   rule (it applies to every pupil on it, not to one child), and Delete on an
    unused rule.
 9. **Reports** — run Daily Collections and Outstanding Fees.
 

@@ -21,16 +21,6 @@ class StudentDiscount
     #[ORM\JoinColumn(name: 'discount_type_id', nullable: false)]
     private ?DiscountType $discountType = null;
 
-    /**
-     * Per-pupil scope, decided on the Scholarship Board when the rule is given.
-     *
-     * NULL means "follow the rule" — the normal case. TRUE means this pupil's
-     * award is taken off the whole bill even when the rule itself is tuition
-     * only, which is what a fully sponsored child needs.
-     */
-    #[ORM\Column(name: 'applies_to_all', nullable: true)]
-    private ?bool $appliesToAll = null;
-
     public function getId(): ?int { return $this->id; }
 
     public function getStudent(): ?Student { return $this->student; }
@@ -39,24 +29,16 @@ class StudentDiscount
     public function getDiscountType(): ?DiscountType { return $this->discountType; }
     public function setDiscountType(?DiscountType $discountType): static { $this->discountType = $discountType; return $this; }
 
-    public function getAppliesToAll(): ?bool { return $this->appliesToAll; }
-
-    public function setAppliesToAll(?bool $appliesToAll): static
-    {
-        $this->appliesToAll = $appliesToAll;
-
-        return $this;
-    }
-
     /**
      * Whether this pupil's discount reaches non-tuition lines.
      *
-     * The pupil-level choice wins when it was made; otherwise the rule's own
-     * default applies. Kept in one place so the terminal, the admission engine
-     * and the re-pricer can never disagree about it.
+     * The scope is a property of the RULE, not of the award. One rule, one
+     * answer, so a bursar cannot create two half-scholarships that look the same
+     * on the board but price differently. This method exists only so the
+     * calculator, the re-pricer and the templates share that answer.
      */
     public function coversAllFeeItems(): bool
     {
-        return $this->appliesToAll ?? $this->discountType?->isAppliesToAll() ?? false;
+        return $this->discountType?->isAppliesToAll() ?? false;
     }
 }

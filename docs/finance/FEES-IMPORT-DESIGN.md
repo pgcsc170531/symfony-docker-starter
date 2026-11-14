@@ -60,7 +60,7 @@ scholarship.
 | It bills **every non-optional fee item** | `createTuitionInvoice()` — `if (!$fee->getFeeItem()->isOptional())` | One-time items are billed to returning pupils too. This is the bug the school is seeing. |
 | The admission path does the same | `AdmissionService::billStudent()` | Two copies of the same billing loop can drift. |
 | “New intake only” is encoded as `FeeItem.frequency = ONETIME` | `FeeItem`, `Form/Wizard/FeeItemRowType`, onboarding (`target = NEW → ONETIME`) | We already know which items a returning pupil must not pay; we just never ask for the pupil's type. |
-| A scholarship is one `StudentDiscount` → one `DiscountType` | `StudentDiscount`, `DiscountCalculator::assignmentFor()` | One rule per pupil, applied to **tuition only**, capped at the tuition line — unless the award is scoped to all fee items. The scope is the pupil's own choice (`StudentDiscount.applies_to_all`) when one was made on the Scholarship Board, and the rule's **Apply to grand total** setting otherwise (`StudentDiscount::coversAllFeeItems()`). |
+| A scholarship is one `StudentDiscount` → one `DiscountType` | `StudentDiscount`, `DiscountCalculator::assignmentFor()` | One rule per pupil, applied to **tuition only**, capped at the tuition line — unless the rule is marked **Apply to grand total**, in which case the whole bill is used. The scope is a property of the rule (`discount_type.applies_to_all`), never of the award. |
 | `Invoice.total_amount` is **net of the discount** | `Invoice::getNetBillable()`, `DiscountCalculator` | The invoice line items show the gross; `discount_applied` explains the gap; payments compare against the net. |
 | Fees are per classroom + term + item | `FeeStructure(classroom, term, feeItem, amount)` | The importer can compute the right bill from the pupil's class. |
 | A payment is a `Payment` row tied to an invoice | `PaymentController::payCash()` | `invoice.paid_amount` and `status` must be updated in the same transaction. Overpayment has a home: `StudentAdvance`. |
@@ -348,26 +348,22 @@ Then, **before** the fees CSV is uploaded:
 
 ### 7.3 The grand-total scope
 
-**Decided by the owner, 14 November 2026:** the scope is an explicit choice — the
-**Apply to grand total** checkbox. When ticked, the percentage is taken off the
-**grand total due** (tuition + development levy + books + one-time items), so a
-100% award makes the total due ₦0. When unticked, every percentage and every fixed
-amount is a **tuition waiver**, capped at the tuition line. A 100% rule without the
-box still leaves the uniform and levies payable; a 99% rule never reaches them.
+**Decided by the owner, 14 November 2026:** the scope is an explicit choice on the
+rule — the **Apply to grand total** checkbox. When ticked, the percentage is taken
+off the **grand total due** (tuition + development levy + books + one-time items),
+so a 100% award makes the total due ₦0. When unticked, every percentage and every
+fixed amount is a **tuition waiver**, capped at the tuition line. A 100% rule
+without the box still leaves the uniform and levies payable; a 99% rule never
+reaches them.
 
-The checkbox exists in two places, because the decision belongs to two different
-people:
+**Rule-level only (same day, owner's correction).** The scope lives on
+`discount_type.applies_to_all` and nowhere else. There is deliberately **no
+per-pupil override**: one rule means one answer, so two pupils on the same rule
+cannot price differently and the Scholarship Board cannot quietly contradict the
+rule it is attaching. A school that needs two treatments keeps two rules.
 
-| Where | Stored on | Scope |
-|---|---|---|
-| **Discount Rules** | `discount_type.applies_to_all` | The default for every pupil on the rule |
-| **Scholarship Board** (assign form) | `student_discount.applies_to_all` | That pupil only |
-
-The pupil column is nullable. `NULL` means "follow the rule", which is what every
-existing assignment got when the column was added, so nothing changed silently on
-deploy. `TRUE` is a deliberate widening for one child — a fully sponsored pupil on
-a tuition-only 100 % rule. `FALSE` narrows a grand-total rule back to tuition for
-one pupil; the form never writes it, but the entity allows it.
+(Names are not the problem a per-pupil flag would solve — a `StudentDiscount`
+still points at exactly one `DiscountType`; see 7.4.)
 
 The fees import follows the same calculator, so a full scholarship on the grand
 total previews at ₦0 due and is not asked to pay a residual levy.

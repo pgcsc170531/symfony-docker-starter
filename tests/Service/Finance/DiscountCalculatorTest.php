@@ -24,7 +24,7 @@ use PHPUnit\Framework\TestCase;
  */
 final class DiscountCalculatorTest extends TestCase
 {
-    private function calculator(?DiscountType $rule, ?bool $pupilScope = null): DiscountCalculator
+    private function calculator(?DiscountType $rule): DiscountCalculator
     {
         $student = (new Student())->setFirstName('Test')->setLastName('Pupil');
 
@@ -32,8 +32,7 @@ final class DiscountCalculatorTest extends TestCase
         if ($rule !== null) {
             $assignment = (new StudentDiscount())
                 ->setStudent($student)
-                ->setDiscountType($rule)
-                ->setAppliesToAll($pupilScope);
+                ->setDiscountType($rule);
         }
 
         $repository = $this->createMock(EntityRepository::class);
@@ -168,57 +167,35 @@ final class DiscountCalculatorTest extends TestCase
     }
 
     /**
-     * The Scholarship Board decides the scope per pupil, so the same rule can
-     * treat two families differently: one still owes the uniform, one owes
-     * nothing. This is the case that started it — a tuition-only 100% rule that
-     * a bursar widens for a fully sponsored child.
+     * The scope is a property of the RULE, never of the award. Two pupils on the
+     * same rule must price the same way — a per-pupil override is exactly what
+     * the owner rejected, because it makes the board look correct while two
+     * families on one rule pay differently.
      */
-    public function testAPupilCanWidenATuitionOnlyRuleToTheWholeBill(): void
+    public function testTwoPupilsOnTheSameRuleGetTheSameBase(): void
     {
-        $calculator = $this->calculator(
-            (new DiscountType())->setMode('PERCENTAGE')->setValue('100'),
-            true,
-        );
+        $rule = (new DiscountType())->setMode('PERCENTAGE')->setValue('100')->setAppliesToAll(true);
+        $calculator = $this->calculator($rule);
 
         self::assertSame(52_500.0, $calculator->calculateDiscount(new Student(), 40_000.0, 52_500.0));
-    }
 
-    public function testAPupilWithoutAPreferenceFollowsTheRule(): void
-    {
-        $allFees = $this->calculator(
-            (new DiscountType())->setMode('PERCENTAGE')->setValue('100')->setAppliesToAll(true)
-        );
-        $tuitionOnly = $this->calculator(
-            (new DiscountType())->setMode('PERCENTAGE')->setValue('100')
-        );
+        $tuitionOnly = $this->calculator((new DiscountType())->setMode('PERCENTAGE')->setValue('100'));
 
-        self::assertSame(52_500.0, $allFees->calculateDiscount(new Student(), 40_000.0, 52_500.0));
         self::assertSame(40_000.0, $tuitionOnly->calculateDiscount(new Student(), 40_000.0, 52_500.0));
     }
 
-    public function testAPupilCanNarrowAnAllFeesRuleBackToTuition(): void
+    public function testTheBillLabelSaysWhenTheRuleCoversTheGrandTotal(): void
     {
-        $calculator = $this->calculator(
-            (new DiscountType())->setMode('PERCENTAGE')->setValue('100')->setAppliesToAll(true),
-            false,
-        );
-
-        self::assertSame(40_000.0, $calculator->calculateDiscount(new Student(), 40_000.0, 52_500.0));
-    }
-
-    public function testTheBillLabelSaysWhenTheAwardCoversAllFees(): void
-    {
-        $allFees = $this->calculator(
-            (new DiscountType())->setName('Demo Scholarship')->setMode('PERCENTAGE')->setValue('100'),
-            true,
+        $grandTotal = $this->calculator(
+            (new DiscountType())->setName('Demo Scholarship')->setMode('PERCENTAGE')->setValue('100')->setAppliesToAll(true)
         );
         $tuitionOnly = $this->calculator(
-            (new DiscountType())->setName('Demo Scholarship')->setMode('PERCENTAGE')->setValue('100'),
+            (new DiscountType())->setName('Demo Scholarship')->setMode('PERCENTAGE')->setValue('100')
         );
 
         self::assertSame(
             'Demo Scholarship (100% — all fees)',
-            $allFees->describe(new Student()),
+            $grandTotal->describe(new Student()),
         );
         self::assertSame('Demo Scholarship (100%)', $tuitionOnly->describe(new Student()));
     }

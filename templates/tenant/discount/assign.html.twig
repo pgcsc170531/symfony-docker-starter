@@ -79,18 +79,12 @@
                     <div class="mb-5">
                         {{ form_label(form.discountType, 'Select Discount Rule', {'label_attr': {'class': 'block text-sm font-bold text-gray-700 mb-2'}}) }}
                         {{ form_widget(form.discountType, {'attr': {'class': 'w-full border-2 border-gray-300 rounded-md p-3 bg-white focus:border-green-500 focus:outline-none'}}) }}
-                    </div>
-
-                    {# Scope is a decision taken here, per pupil: the same rule can
-                       be tuition-only for one child and cover the grand total for a
-                       fully sponsored one. Unticked follows the rule. #}
-                    <div class="mb-5 p-4 rounded-lg border-2 border-gray-200 bg-gray-50">
-                        <div class="flex items-start gap-3">
-                            {{ form_widget(form.appliesToAll, {'attr': {'class': 'mt-0.5 h-5 w-5 shrink-0 accent-green-600'}}) }}
-                            <label for="{{ form.appliesToAll.vars.id }}" class="text-sm font-bold text-gray-800 leading-snug">
-                                {{ form.appliesToAll.vars.label }}
-                            </label>
-                        </div>
+                        {# The scope belongs to the rule. Say what it is beside the
+                           picker so nobody expects a per-pupil override here. #}
+                        <p class="mt-2 text-xs leading-relaxed text-gray-500">
+                            Whether a rule comes off tuition only or from the grand total is set on the rule itself
+                            (<a href="{{ path('app_tenant_discount_types') }}" class="font-bold text-green-700 underline">Manage Rules</a>).
+                        </p>
                     </div>
 
                     <button class="bg-green-600 text-white w-full py-3 rounded-md font-bold hover:bg-green-700 shadow-lg transform active:scale-95 transition">
