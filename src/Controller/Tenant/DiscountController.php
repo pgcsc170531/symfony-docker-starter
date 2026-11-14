@@ -11,6 +11,7 @@ use App\Service\Finance\DiscountRepricer;
 use App\Service\Wording\LearnerWording;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -40,11 +41,95 @@ class DiscountController extends AbstractController
             return $this->redirectToRoute('app_tenant_discount_types');
         }
 
-        $types = $em->getRepository(DiscountType::class)->findAll();
+        return $this->renderRuleBoard($em, $form);
+    }
+
+    // 1b. Edit an existing rule, then re-price the bills that use it.
+    #[Route('/types/{id}/edit', name: 'app_tenant_discount_type_edit', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
+    public function edit(DiscountType $discountType, Request $request, EntityManagerInterface $em): Response
+    {
+        $form = $this->createForm(DiscountTypeForm::class, $discountType);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $em->flush();
+
+            // The rule is the source of truth, so every open bill using it must
+            // move with it. This is what makes a change from 50% to 100% reach
+            // the families who already have a bill.
+            $repriced = $this->repricer->repriceRule($discountType);
+
+            $message = sprintf('Discount rule "%s" updated.', $discountType->getName() ?: 'Rule');
+            $message .= $repriced['invoices'] > 0
+                ? sprintf(
+                    ' %d open bill%s re-priced across %d pupil%s.',
+                    $repriced['invoices'],
+                    $repriced['invoices'] === 1 ? '' : 's',
+                    $repriced['students'],
+                    $repriced['students'] === 1 ? '' : 's',
+                )
+                : ' No open bills needed changing.';
+
+            $this->addFlash('success', $message);
+
+            return $this->redirectToRoute('app_tenant_discount_types');
+        }
+
+        return $this->renderRuleBoard($em, $form, $discountType);
+    }
+
+    // 1c. Delete an unused rule. An assigned rule must be revoked from its
+    // pupils first, because deleting it would silently re-open their bills.
+    #[Route('/types/{id}/delete', name: 'app_tenant_discount_type_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function delete(DiscountType $discountType, Request $request, EntityManagerInterface $em): Response
+    {
+        if (!$this->isCsrfTokenValid('delete_discount_type_' . $discountType->getId(), (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid security token.');
+        }
+
+        $assigned = $em->getRepository(StudentDiscount::class)->count(['discountType' => $discountType]);
+
+        if ($assigned > 0) {
+            $this->addFlash('error', sprintf(
+                'Rule "%s" is assigned to %d pupil%s. Revoke it from those pupils before deleting it.',
+                $discountType->getName() ?: 'This rule',
+                $assigned,
+                $assigned === 1 ? '' : 's',
+            ));
+
+            return $this->redirectToRoute('app_tenant_discount_types');
+        }
+
+        $name = $discountType->getName() ?: 'Discount rule';
+        $em->remove($discountType);
+        $em->flush();
+        $this->addFlash('success', sprintf('Discount rule "%s" deleted.', $name));
+
+        return $this->redirectToRoute('app_tenant_discount_types');
+    }
+
+    private function renderRuleBoard(EntityManagerInterface $em, FormInterface $form, ?DiscountType $editing = null): Response
+    {
+        $types = $em->getRepository(DiscountType::class)->findBy([], ['name' => 'ASC']);
+
+        // One query for the "in use" column, rather than a count per rule.
+        $assignmentCounts = [];
+        $rows = $em->getRepository(StudentDiscount::class)
+            ->createQueryBuilder('sd')
+            ->select('IDENTITY(sd.discountType) AS ruleId, COUNT(sd.id) AS total')
+            ->groupBy('sd.discountType')
+            ->getQuery()
+            ->getArrayResult();
+
+        foreach ($rows as $row) {
+            $assignmentCounts[(int) $row['ruleId']] = (int) $row['total'];
+        }
 
         return $this->render('tenant/discount/types.html.twig', [
-            'form' => $form,
-            'types' => $types
+            'form' => $form->createView(),
+            'types' => $types,
+            'assignmentCounts' => $assignmentCounts,
+            'editing' => $editing,
         ]);
     }
 
@@ -58,7 +143,7 @@ class DiscountController extends AbstractController
         if ($searchQuery) {
             $searchResults = $em->getRepository(Student::class)
                 ->createQueryBuilder('s')
-                ->where('s.firstName LIKE :q OR s.lastName LIKE :q OR s.admissionNumber LIKE :q')
+                ->where('s.firstName LIKE :q OR s.middleName LIKE :q OR s.lastName LIKE :q OR s.admissionNumber LIKE :q')
                 ->setParameter('q', '%' . $searchQuery . '%')
                 ->setMaxResults(20)
                 ->getQuery()

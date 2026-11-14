@@ -36,9 +36,19 @@ class DiscountCalculator
             return null;
         }
 
-        $how = $rule->getMode() === 'PERCENTAGE'
-            ? rtrim(rtrim(number_format((float) $rule->getValue(), 2, '.', ''), '0'), '.') . '%'
-            : '₦' . number_format((float) $rule->getValue(), 0) . ' off';
+        if ($rule->getMode() === 'PERCENTAGE') {
+            $percentage = (float) $rule->getValue();
+            $how = rtrim(rtrim(number_format($percentage, 2, '.', ''), '0'), '.') . '%';
+
+            // A 100% rule is a full scholarship: it covers every fee item, not
+            // just tuition. Say so on the bill so the parent can see why the
+            // balance is zero.
+            if (abs($percentage - 100.0) < 0.0001) {
+                $how .= ' — all fees';
+            }
+        } else {
+            $how = '₦' . number_format((float) $rule->getValue(), 0) . ' off';
+        }
 
         return sprintf('%s (%s)', $rule->getName(), $how);
     }
@@ -48,8 +58,12 @@ class DiscountCalculator
      *
      * A 50% scholarship on the whole bill would quietly pay for uniforms, ID
      * cards and development levies as well — the owner's rule is that a waiver
-     * is a tuition waiver, whatever its mode (percentage or fixed amount). Every
-     * caller must hand the calculator this figure, never the invoice total.
+     * is a tuition waiver, whatever its mode (percentage or fixed amount).
+     *
+     * The single exception is a **100% percentage** rule, which is a full
+     * scholarship and waives every fee item; see {@see calculateDiscount()}.
+     * Callers pass this tuition figure *and* the gross bill, so the calculator
+     * can choose the right base without guessing.
      *
      * @param iterable<\App\Entity\Tenant\InvoiceItem> $items
      */
@@ -99,17 +113,45 @@ class DiscountCalculator
     /** The discount on a saved invoice, measured against its tuition lines. */
     public function discountFor(Student $student, \App\Entity\Tenant\Invoice $invoice): float
     {
-        return $this->calculateDiscount($student, $this->tuitionBaseFromItems($invoice->getItems()));
+        return $this->calculateDiscount(
+            $student,
+            $this->tuitionBaseFromItems($invoice->getItems()),
+            $this->grossFromItems($invoice->getItems()),
+        );
+    }
+
+    /**
+     * The whole bill before any discount: every billed item, not just tuition.
+     *
+     * Only the 100% full-scholarship rule uses this base. It exists so a family
+     * on a full scholarship is not left owing the uniform, books or a levy.
+     *
+     * @param iterable<\App\Entity\Tenant\InvoiceItem> $items
+     */
+    public function grossFromItems(iterable $items): float
+    {
+        $gross = 0.0;
+
+        foreach ($items as $item) {
+            $gross += (float) $item->getAmount();
+        }
+
+        return round($gross, 2);
     }
 
     /**
      * Returns the monetary value to subtract from the bill.
      *
-     * `$tuitionBase` must be the TUITION total, not the invoice total — use
-     * {@see tuitionBaseFromItems()} / {@see tuitionBaseFromStructures()} to get
-     * it. A fixed rebate larger than the tuition is capped at the tuition.
+     * Every percentage or fixed rule is a TUITION waiver: `$tuitionBase` is the
+     * limit. The one exception is a **100% percentage** rule — a full
+     * scholarship — which waives the entire bill, every fee item, so
+     * `$grossTotal` is its base. A full-scholarship family must not be left
+     * owing the uniform or a levy.
+     *
+     * @param float $tuitionBase tuition lines only
+     * @param float $grossTotal  every billed line before the discount
      */
-    public function calculateDiscount(Student $student, float $tuitionBase): float
+    public function calculateDiscount(Student $student, float $tuitionBase, float $grossTotal): float
     {
         // 1. Check if student has an active scholarship
         $assignment = $this->assignmentFor($student);
@@ -125,8 +167,14 @@ class DiscountCalculator
             return 0.00;
         }
 
-        // No tuition on the bill — nothing for a tuition waiver to reduce.
-        if ($tuitionBase <= 0) {
+        $percentage = (float) $rule->getValue();
+        $waivesTheWholeBill = $rule->getMode() === 'PERCENTAGE'
+            && abs($percentage - 100.0) < 0.0001;
+
+        // A 100% rule is the only one allowed to reach non-tuition lines.
+        $base = $waivesTheWholeBill ? $grossTotal : $tuitionBase;
+
+        if ($base <= 0) {
             return 0.00;
         }
 
@@ -134,20 +182,18 @@ class DiscountCalculator
 
         // 2. Calculate based on Mode
         if ($rule->getMode() === 'PERCENTAGE') {
-            // Formula: (Tuition * Percentage) / 100
-            // Example: (50,000 * 50) / 100 = 25,000
-            $percentage = (float) $rule->getValue();
-            $discountValue = ($tuitionBase * $percentage) / 100;
+            // Formula: (Base * Percentage) / 100
+            // Example: (40,000 tuition * 50) / 100 = 20,000
+            $discountValue = ($base * $percentage) / 100;
         } else {
             // Formula: Flat Amount, and only ever against the tuition line
             $discountValue = (float) $rule->getValue();
         }
 
-        // 3. Safety Check: the waiver cannot exceed the tuition it applies to
-        // (we do not want to owe the family money, and we never discount the
-        // uniform, the ID card or a levy).
-        if ($discountValue > $tuitionBase) {
-            return $tuitionBase;
+        // 3. Safety Check: the waiver cannot exceed the base it applies to
+        // (we do not want to owe the family money).
+        if ($discountValue > $base) {
+            return $base;
         }
 
         return round(max(0.0, $discountValue), 2);

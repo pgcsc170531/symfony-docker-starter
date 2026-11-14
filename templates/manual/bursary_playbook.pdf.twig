@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Edus — Bursary Playbook</title>
+<style>
+    @page { size: A4 portrait; margin: 8mm 9mm 16mm 9mm; }
+
+    * { box-sizing: border-box; }
+
+    body {
+        margin: 0;
+        font-family: "DejaVu Sans", sans-serif;
+        font-size: 9.4pt;
+        line-height: 1.42;
+        color: #111827;
+    }
+
+    /* ── Cover ─────────────────────────────────────────────────────────── */
+    .cover { page-break-after: always; }
+
+    .cover-band { width: 100%; border-collapse: collapse; background: #16223C; color: #ffffff; }
+    .cover-band td { padding: 12pt 14pt; vertical-align: bottom; }
+    .brand-cell { width: 62%; }
+    .doc-cell { text-align: right; }
+
+    .wordmark {
+        font-family: "DejaVu Serif", serif;
+        font-size: 26pt;
+        font-weight: bold;
+        letter-spacing: -0.6pt;
+        color: #ffffff;
+        line-height: 1;
+    }
+    .wordmark .dot { color: #2563EB; }
+    .tagline {
+        display: block;
+        margin-top: 4pt;
+        font-size: 8pt;
+        color: #B8C4D8;
+        letter-spacing: .05em;
+    }
+
+    .doc-type {
+        display: block;
+        font-size: 8pt;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1.2pt;
+        color: #C3CFE2;
+    }
+    .doc-version {
+        display: block;
+        margin-top: 3pt;
+        font-size: 10pt;
+        font-weight: bold;
+        color: #ffffff;
+    }
+
+    .cover-body { padding: 18pt 14pt 0; }
+
+    .eyebrow {
+        margin: 0 0 4pt;
+        font-size: 8pt;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1.2pt;
+        color: #2563EB;
+    }
+
+    h1.cover-title {
+        margin: 0;
+        font-family: "DejaVu Serif", serif;
+        font-size: 30pt;
+        line-height: 1.05;
+        color: #16223C;
+    }
+
+    .cover-sub {
+        margin: 7pt 0 12pt;
+        font-size: 12pt;
+        line-height: 1.4;
+        color: #374151;
+    }
+
+    table.meta {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 8pt 0 12pt;
+        background: #F9FAFB;
+        border-top: .8pt solid #D1D5DB;
+        border-bottom: .8pt solid #D1D5DB;
+    }
+    table.meta td {
+        padding: 5pt 7pt;
+        vertical-align: top;
+        border-left: .6pt solid #E5E7EB;
+    }
+    table.meta td:first-child { border-left: 0; }
+
+    .label {
+        display: block;
+        font-size: 7pt;
+        text-transform: uppercase;
+        letter-spacing: .5pt;
+        color: #6B7280;
+        margin-bottom: 1pt;
+    }
+    .value { font-size: 9.2pt; font-weight: bold; }
+
+    .cover-note {
+        background: #F9FAFB;
+        border-left: 2.5pt solid #2563EB;
+        padding: 6pt 8pt;
+        margin: 10pt 0 12pt;
+        font-size: 9pt;
+    }
+    .cover-note strong { color: #16223C; }
+
+    .cover-section {
+        margin: 12pt 0 6pt;
+        padding-bottom: 2pt;
+        font-size: 11pt;
+        color: #16223C;
+        border-bottom: .8pt solid #D1D5DB;
+    }
+
+    table.toc { width: 100%; border-collapse: collapse; font-size: 8.9pt; }
+    table.toc td { padding: 2.1pt 4pt; vertical-align: top; border-bottom: .5pt solid #E5E7EB; }
+    table.toc td.num { width: 22pt; text-align: right; font-weight: bold; color: #2563EB; }
+
+    .cover-foot {
+        margin-top: 16pt;
+        padding-top: 3pt;
+        border-top: .5pt solid #E5E7EB;
+        font-size: 7.4pt;
+        color: #6B7280;
+    }
+
+    /* ── Contents ──────────────────────────────────────────────────────── */
+    .contents { padding-top: 2pt; }
+    .contents-title {
+        margin: 0 0 2pt;
+        font-family: "DejaVu Serif", serif;
+        font-size: 20pt;
+        color: #16223C;
+    }
+    .contents-note { margin: 0 0 10pt; font-size: 9pt; color: #6B7280; }
+
+    /* ── Body ──────────────────────────────────────────────────────────── */
+    h1 {
+        margin: 0 0 8pt;
+        font-family: "DejaVu Serif", serif;
+        font-size: 20pt;
+        color: #16223C;
+    }
+
+    h2 {
+        margin: 14pt 0 6pt;
+        padding-bottom: 3pt;
+        font-family: "DejaVu Serif", serif;
+        font-size: 15pt;
+        color: #16223C;
+        border-bottom: 1.6pt solid #2563EB;
+        page-break-after: avoid;
+    }
+
+    h2.part { page-break-before: always; }
+
+    h3 {
+        margin: 10pt 0 4pt;
+        font-size: 11pt;
+        color: #16223C;
+        page-break-after: avoid;
+    }
+
+    h4 {
+        margin: 8pt 0 3pt;
+        font-size: 10pt;
+        color: #16223C;
+        page-break-after: avoid;
+    }
+
+    p { margin: 0 0 5pt; }
+    strong { color: #111827; }
+
+    code {
+        font-family: "DejaVu Sans Mono", monospace;
+        font-size: 8pt;
+        background: #F3F4F6;
+        padding: 0 1pt;
+    }
+
+    pre.code {
+        margin: 6pt 0;
+        padding: 5pt 6pt;
+        background: #F3F4F6;
+        border: .6pt solid #D1D5DB;
+        font-family: "DejaVu Sans Mono", monospace;
+        font-size: 7.4pt;
+        line-height: 1.35;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+
+    blockquote {
+        margin: 6pt 0;
+        padding: 5pt 7pt;
+        background: #F9FAFB;
+        border-left: 2.5pt solid #2563EB;
+        font-size: 9pt;
+    }
+    blockquote p { margin: 0; }
+
+    hr { border: 0; border-top: .6pt solid #D1D5DB; margin: 9pt 0; }
+
+    ul, ol { margin: 3pt 0 6pt 16pt; padding: 0; }
+    li { margin: 0 0 2pt; }
+    li > ul, li > ol { margin: 2pt 0 2pt 12pt; }
+    .checkbox { font-family: "DejaVu Sans Mono", monospace; color: #2563EB; }
+
+    table.grid {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 6pt 0 8pt;
+        font-size: 8.2pt;
+        table-layout: auto;
+    }
+    table.grid th {
+        padding: 2.6pt 3pt;
+        background: #F3F4F6;
+        border: .6pt solid #D1D5DB;
+        text-align: left;
+        font-size: 7.6pt;
+        text-transform: uppercase;
+        letter-spacing: .2pt;
+        color: #374151;
+    }
+    table.grid td {
+        padding: 2.2pt 3pt;
+        border: .6pt solid #E5E7EB;
+        vertical-align: top;
+        word-wrap: break-word;
+    }
+    table.grid tbody tr:nth-child(even) td { background: #FAFAFA; }
+    table.grid th.num, table.grid td.num { text-align: right; white-space: nowrap; }
+    table.grid th.center, table.grid td.center { text-align: center; }
+    table.grid tr { page-break-inside: avoid; }
+    thead { display: table-header-group; }
+
+    /* ── Page footer ───────────────────────────────────────────────────── */
+    .page-footer {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 5mm;
+        padding: 2pt 9mm 0;
+        border-top: .5pt solid #E5E7EB;
+        font-size: 7pt;
+        color: #6B7280;
+        text-align: center;
+    }
+</style>
+</head>
+<body>
+
+{# ── Cover ─────────────────────────────────────────────────────────────── #}
+<div class="cover">
+    <table class="cover-band">
+        <tr>
+            <td class="brand-cell">
+                <span class="wordmark">Edus<span class="dot">.</span></span>
+                <span class="tagline">The school operating system</span>
+            </td>
+            <td class="doc-cell">
+                <span class="doc-type">Bursary playbook</span>
+                <span class="doc-version">Version 1.0</span>
+            </td>
+        </tr>
+    </table>
+
+    <div class="cover-body">
+        <p class="eyebrow">Bursary operations · training playbook</p>
+        <h1 class="cover-title">Bursary Playbook</h1>
+        <p class="cover-sub">
+            A practical guide to running the bursary desk in Edus — from finding a
+            family and keeping parent contacts correct, to importing fees already
+            collected, taking money, and closing the day.
+        </p>
+
+        <table class="meta">
+            <tr>
+                <td>
+                    <span class="label">For</span>
+                    <span class="value">Bursary, accounts office and school-fee staff</span>
+                </td>
+                <td>
+                    <span class="label">Role</span>
+                    <span class="value">ROLE_BURSAR</span>
+                </td>
+                <td>
+                    <span class="label">Version</span>
+                    <span class="value">1.0 · 14 November 2026</span>
+                </td>
+            </tr>
+        </table>
+
+        <div class="cover-note">
+            <strong>How to use this playbook.</strong> Read Part 1 before your first
+            login. Work through Parts 2–9 with a trainer on a training tenant, never
+            on the live school database. Keep Part 15 at the desk for daily reference.
+            The exercises in Part 16 are the sign-off.
+        </div>
+
+        <h2 class="cover-section">What is inside</h2>
+
+        <table class="toc">
+            {% for item in contents %}
+                <tr>
+                    <td class="num">{{ loop.index }}</td>
+                    <td>{{ item }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+
+        <p class="cover-foot">
+            This playbook includes the 14 November 2026 release: Fees Import, family
+            linking, parent titles ALH/HAJ/MAL, Student Type, phone search and the
+            mobile layouts. It is internal training material, not a school-issued
+            certificate or financial document.
+        </p>
+    </div>
+</div>
+
+{# ── Contents ──────────────────────────────────────────────────────────── #}
+<div class="contents">
+    <h2 class="contents-title">Contents</h2>
+    <p class="contents-note">
+        {{ contents|length }} sections. Each part explains what the screen is for,
+        then the steps, then what success looks like.
+    </p>
+
+    <table class="toc">
+        {% for item in contents %}
+            <tr>
+                <td class="num">{{ loop.index }}</td>
+                <td>{{ item }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+</div>
+
+{# ── Body ──────────────────────────────────────────────────────────────── #}
+{{ body|raw }}
+
+<div class="page-footer">
+    Edus · Bursary Playbook · v1.0 · 14 November 2026 · Internal training material
+</div>
+
+</body>
+</html>

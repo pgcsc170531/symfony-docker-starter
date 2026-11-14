@@ -53,7 +53,7 @@ class InvoiceController extends AbstractController
         }
         
         if ($searchQuery) {
-            $qb->andWhere('s.firstName LIKE :q OR s.lastName LIKE :q OR s.admissionNumber LIKE :q OR i.invoiceNumber LIKE :q')
+            $qb->andWhere('s.firstName LIKE :q OR s.middleName LIKE :q OR s.lastName LIKE :q OR s.admissionNumber LIKE :q OR i.invoiceNumber LIKE :q')
                ->setParameter('q', '%' . $searchQuery . '%');
         }
 
@@ -217,6 +217,7 @@ class InvoiceController extends AbstractController
         // `total_amount` is NET (see Invoice::getNetBillable). The discount is
         // kept separately so reports can show what was waived.
         $invoice->setTotalAmount((string) max(0.0, (float) $totalAmount - $discountAmount));
+        $invoice->setStatus(Invoice::statusFor(0.0, (float) $invoice->getTotalAmount()));
         
         // F. Save Everything
         $em->persist($invoice);

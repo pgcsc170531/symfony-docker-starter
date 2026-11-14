@@ -19,7 +19,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
  *     mandatory and stored. No silent accounts.
  *   • **One account per guardian** per school — the row is unique on guardian.
  *   • **No split.** A transfer lands in Edus's Paystack balance in full; the
- *     school's fee is paid out from there, so the parent's flat ₦650 charge can
+ *     school's fee is paid out from there, so the parent's flat ₦750 charge can
  *     be kept exactly (ONLINE-PAYMENT-LEDGER.md §6, §7). A split would pay the
  *     school the charge too.
  *   • The BVN is used **once** and never stored; only the last three digits are
@@ -125,7 +125,7 @@ final class VirtualAccountService
 
         // No subaccount: a transfer into this account lands in Edus's balance in
         // full, and the school's fee is paid out afterwards. Splitting here would
-        // hand the school the parent's ₦650 as well — see the class docblock of
+        // hand the school the parent's ₦750 as well — see the class docblock of
         // PaystackClient::createDedicatedAccount().
         $created = $this->client->createDedicatedAccount(
             $customerCode,

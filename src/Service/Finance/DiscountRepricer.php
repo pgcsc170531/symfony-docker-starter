@@ -2,9 +2,11 @@
 
 namespace App\Service\Finance;
 
+use App\Entity\Tenant\DiscountType;
 use App\Entity\Tenant\Invoice;
 use App\Entity\Tenant\InvoiceItem;
 use App\Entity\Tenant\Student;
+use App\Entity\Tenant\StudentDiscount;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -22,7 +24,9 @@ use Doctrine\ORM\EntityManagerInterface;
  *     collected must never be re-opened);
  *   - the gross is taken from the invoice items, so the discount is always a
  *     percentage of the fees actually billed, never of an already discounted
- *     total.
+ *     total;
+ *   - the base is tuition, except a 100% full scholarship, which covers every
+ *     fee item.
  *
  * Part-paid invoices are re-priced too, but the total is never pushed below what
  * the family has already paid.
@@ -49,32 +53,38 @@ class DiscountRepricer
         $changes = [];
 
         foreach ($invoices as $invoice) {
-            if ($invoice->getStatus() === Invoice::STATUS_PAID) {
+            $paid = (float) $invoice->getPaidAmount();
+
+            // Skip a bill that real money has settled. A 100% scholarship also
+            // makes the status PAID but leaves paid_amount at zero; removing or
+            // changing that rule must be able to re-open and re-price it.
+            if ($invoice->getStatus() === Invoice::STATUS_PAID && $paid > 0.005) {
                 continue;
             }
 
-            $paid = (float) $invoice->getPaidAmount();
             $oldTotal = (float) $invoice->getTotalAmount();
             $gross = $this->gross($invoice);
-            // A waiver is a TUITION waiver, so the base is the tuition lines on
-            // this invoice — not the gross bill.
             $discount = $this->calculator->calculateDiscount(
                 $student,
-                $this->calculator->tuitionBaseFromItems($invoice->getItems())
+                $this->calculator->tuitionBaseFromItems($invoice->getItems()),
+                $gross,
             );
+            $label = $discount > 0.005 ? $this->calculator->describe($student) : null;
+            $labelChanged = (string) $invoice->getDiscountLabel() !== (string) $label;
 
             // Never bill less than the family has already handed over.
             $newTotal = max($paid, max(0.0, $gross - $discount));
 
             if (abs($newTotal - $oldTotal) < 0.005
-                && abs((float) $invoice->getDiscountApplied() - $discount) < 0.005) {
+                && abs((float) $invoice->getDiscountApplied() - $discount) < 0.005
+                && !$labelChanged) {
                 continue;
             }
 
             $invoice->setDiscountApplied(number_format($discount, 2, '.', ''));
-            $invoice->setDiscountLabel($discount > 0.005 ? $this->calculator->describe($student) : null);
+            $invoice->setDiscountLabel($label);
             $invoice->setTotalAmount(number_format($newTotal, 2, '.', ''));
-            $invoice->setStatus($this->statusFor($paid, $newTotal));
+            $invoice->setStatus(Invoice::statusFor($paid, $newTotal));
 
             $changes[] = [
                 'number'   => (string) $invoice->getInvoiceNumber(),
@@ -89,6 +99,38 @@ class DiscountRepricer
         }
 
         return $changes;
+    }
+
+    /**
+     * Re-price every open bill that uses a rule, after the rule itself changes.
+     *
+     * Editing a rule's name, mode or value must not leave families on the old
+     * figure. Only open/zero-paid bills are touched; a bill with real money
+     * against it stays history.
+     *
+     * @return array{students: int, invoices: int}
+     */
+    public function repriceRule(DiscountType $rule): array
+    {
+        $assignments = $this->em->getRepository(StudentDiscount::class)->findBy([
+            'discountType' => $rule,
+        ]);
+
+        $students = 0;
+        $invoices = 0;
+
+        foreach ($assignments as $assignment) {
+            $student = $assignment->getStudent();
+
+            if ($student === null) {
+                continue;
+            }
+
+            ++$students;
+            $invoices += count($this->repriceOpenInvoices($student));
+        }
+
+        return ['students' => $students, 'invoices' => $invoices];
     }
 
     /**
@@ -119,7 +161,11 @@ class DiscountRepricer
 
         $open = null;
         foreach ($invoices as $invoice) {
-            if ($invoice->getStatus() !== Invoice::STATUS_PAID) {
+            $paid = (float) $invoice->getPaidAmount();
+
+            // A zero-paid PAID bill is a fully discounted bill, not a settled
+            // one; the scholarship board still needs to show its effect.
+            if ($invoice->getStatus() !== Invoice::STATUS_PAID || $paid <= 0.005) {
                 $open = $invoice;
                 break;
             }
@@ -132,7 +178,8 @@ class DiscountRepricer
         $gross = $this->gross($open);
         $discount = $this->calculator->calculateDiscount(
             $student,
-            $this->calculator->tuitionBaseFromItems($open->getItems())
+            $this->calculator->tuitionBaseFromItems($open->getItems()),
+            $gross,
         );
         $net = max((float) $open->getPaidAmount(), max(0.0, $gross - $discount));
         $stored = (float) $open->getDiscountApplied();
@@ -174,14 +221,6 @@ class DiscountRepricer
 
     private function statusFor(float $paid, float $total): string
     {
-        if ($paid <= 0.0) {
-            return Invoice::STATUS_UNPAID;
-        }
-
-        if ($paid + 0.005 >= $total) {
-            return Invoice::STATUS_PAID;
-        }
-
-        return Invoice::STATUS_PARTIAL;
+        return Invoice::statusFor($paid, $total);
     }
 }

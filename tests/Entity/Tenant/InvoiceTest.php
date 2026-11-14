@@ -43,4 +43,18 @@ final class InvoiceTest extends TestCase
         self::assertSame(0.0, $invoice->getGrossBilled());
         self::assertSame(0.0, $invoice->getOutstanding());
     }
+
+    public function testAZeroBalanceBillIsSettled(): void
+    {
+        // A 100% full scholarship leaves a ₦0 bill; it must not stay UNPAID.
+        self::assertSame(Invoice::STATUS_PAID, Invoice::statusFor(0.0, 0.0));
+    }
+
+    public function testTheNormalSettlementStatesAreUnchanged(): void
+    {
+        self::assertSame(Invoice::STATUS_UNPAID, Invoice::statusFor(0.0, 52_500.0));
+        self::assertSame(Invoice::STATUS_PARTIAL, Invoice::statusFor(20_000.0, 52_500.0));
+        self::assertSame(Invoice::STATUS_PAID, Invoice::statusFor(52_500.0, 52_500.0));
+        self::assertSame(Invoice::STATUS_PAID, Invoice::statusFor(60_000.0, 52_500.0));
+    }
 }

@@ -85,6 +85,7 @@ final class TuitionInvoiceBuilder
         $invoice->setDiscountApplied((string) $quote['discount']);
         $invoice->setDiscountLabel($quote['discountLabel']);
         $invoice->setTotalAmount((string) $quote['total']);
+        $invoice->setStatus(Invoice::statusFor(0.0, (float) $quote['total']));
 
         foreach ($quote['lines'] as $line) {
             $item = new InvoiceItem();
@@ -161,7 +162,8 @@ final class TuitionInvoiceBuilder
         $gross = round($gross, 2);
         $discount = $this->discountCalculator->calculateDiscount(
             $student,
-            $this->discountCalculator->tuitionBaseFromStructures($billable)
+            $this->discountCalculator->tuitionBaseFromStructures($billable),
+            $gross,
         );
 
         return [
@@ -210,7 +212,7 @@ final class TuitionInvoiceBuilder
         $invoice->setDiscountApplied((string) $quote['discount']);
         $invoice->setDiscountLabel($quote['discountLabel']);
         $invoice->setTotalAmount((string) $quote['total']);
-        $invoice->setStatus(Invoice::STATUS_UNPAID);
+        $invoice->setStatus(Invoice::statusFor((float) $invoice->getPaidAmount(), (float) $quote['total']));
     }
 
     /** The same rule the fee schedule uses to show or hide SESSION items. */

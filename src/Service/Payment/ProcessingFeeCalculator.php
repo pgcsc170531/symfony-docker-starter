@@ -27,9 +27,9 @@ namespace App\Service\Payment;
  * including our charge, so computing on the bare fee would quietly donate a few
  * naira of margin on every payment.
  *
- * ⚠️ The ₦650 covers a TRANSFER (1% capped ₦300). If an invoice is ever paid by
+ * ⚠️ The ₦750 covers a TRANSFER (1% capped ₦300). If an invoice is ever paid by
  * **card** on hosted checkout, Paystack takes up to 1.5% + ₦100 (₦913.75 on
- * ₦50,000) — more than the ₦650 — and Edus absorbs the difference. Invoice
+ * ₦50,000) — more than the ₦750 — and Edus absorbs the difference. Invoice
  * payments are therefore transfer-only once the dedicated account ships; the
  * school must not enable card checkout for them.
  *
@@ -173,7 +173,7 @@ final class ProcessingFeeCalculator
         return round($formFee + $this->applicationFeeFor($formFee), 2);
     }
 
-    /** "₦650.00" — the flat charge, for copy that must not drift from the constant. */
+    /** "₦750.00" — the flat charge, for copy that must not drift from the constant. */
     public function maxFeeLabel(): string
     {
         return '₦' . number_format(self::TRANSFER_CHARGE, 2, '.', '');
@@ -185,7 +185,7 @@ final class ProcessingFeeCalculator
      * A parent chooses the channel on the provider's own page, so this is the
      * only lever we have: tell them before they get there. Card is materially
      * dearer (1.5% + ₦100, capped ₦2,000, against 1% capped ₦300 for a transfer)
-     * — which is why invoice payments are transfer-only: a ₦650 charge cannot
+     * — which is why invoice payments are transfer-only: a ₦750 charge cannot
      * absorb a card fee of ₦913.75 on a ₦50,000 bill.
      *
      * @return array{card: string, transfer: string}

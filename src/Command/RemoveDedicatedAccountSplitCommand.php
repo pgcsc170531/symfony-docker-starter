@@ -20,7 +20,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
  * splitting (ONLINE-PAYMENT-LEDGER.md §6–§7).
  *
  * Why it matters: while an account still carries `split_config.subaccount`, every
- * transfer into it pays the **school** the parent's ₦650 as well as the fee, and
+ * transfer into it pays the **school** the parent's ₦750 as well as the fee, and
  * Edus receives nothing. This command closes that leak on accounts that already
  * exist; new accounts are created without a split.
  *

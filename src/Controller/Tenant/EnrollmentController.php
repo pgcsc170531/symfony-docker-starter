@@ -205,17 +205,19 @@ class EnrollmentController extends AbstractController
         }
 
         if ($total > 0) {
-            // A scholarship is a TUITION waiver: the base is the tuition lines
-            // only, never the total of the bill.
+            // A scholarship is a TUITION waiver, except a 100% full
+            // scholarship, which waives every fee item.
             $discountValue = $this->discountCalculator->calculateDiscount(
                 $student,
-                $this->discountCalculator->tuitionBaseFromStructures($fees)
+                $this->discountCalculator->tuitionBaseFromStructures($fees),
+                (float) $total,
             );
 
             // `total_amount` is NET of the discount (Invoice::getNetBillable()).
             $invoice->setDiscountApplied((string) $discountValue);
             $invoice->setDiscountLabel($this->discountCalculator->describe($student));
             $invoice->setTotalAmount((string) max(0.0, $total - $discountValue));
+            $invoice->setStatus(Invoice::statusFor(0.0, (float) $invoice->getTotalAmount()));
 
             $em->persist($invoice);
             $this->advances->applyTo($invoice);

@@ -53,7 +53,7 @@ class PaymentController extends AbstractController
             $students = $em->getRepository(Student::class)->createQueryBuilder('s')
                 ->leftJoin('s.currentClassroom', 'c')
                 ->addSelect('c')
-                ->where('s.firstName LIKE :q OR s.lastName LIKE :q OR s.admissionNumber LIKE :q')
+                ->where('s.firstName LIKE :q OR s.middleName LIKE :q OR s.lastName LIKE :q OR s.admissionNumber LIKE :q')
                 ->setParameter('q', '%'.$query.'%')
                 ->setMaxResults(10)
                 ->getQuery()
@@ -207,14 +207,16 @@ class PaymentController extends AbstractController
 
         // The terminal used to ignore scholarships entirely, so a discounted
         // pupil was billed the full amount from this screen. Same calculator as
-        // admissions, and the base is TUITION only.
+        // admissions: tuition only, unless the rule is a 100% full scholarship.
         $discount = $this->discountCalculator->calculateDiscount(
             $student,
-            $this->discountCalculator->tuitionBaseFromStructures($fees)
+            $this->discountCalculator->tuitionBaseFromStructures($fees),
+            (float) $total,
         );
         $invoice->setDiscountApplied((string) $discount);
         $invoice->setDiscountLabel($this->discountCalculator->describe($student));
         $invoice->setTotalAmount((string) max(0.0, (float) $total - $discount));
+        $invoice->setStatus(Invoice::statusFor(0.0, (float) $invoice->getTotalAmount()));
 
         $em->persist($invoice);
         $this->advances->applyTo($invoice);

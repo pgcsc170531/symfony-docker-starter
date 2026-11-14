@@ -23,7 +23,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  * ⚠️ Two things to confirm against the live account before going live:
  *   1. the split on a school's subaccount (see `splitParameters()`), and
  *   2. that the account's pricing for this channel matches the 1% assumption in
- *      `ProcessingFeeCalculator` — the ₦500 parent-paid cap depends on it.
+ *      `ProcessingFeeCalculator` — the flat ₦750 parent-paid charge depends on it.
  */
 final class PaystackGateway implements PaymentGatewayInterface
 {
@@ -206,14 +206,14 @@ final class PaystackGateway implements PaymentGatewayInterface
      * account** and the subaccount takes the rest — which is exactly our model for
      * a card payment:
      *
-     *   total ₦63,250  →  main (Edus) ₦650 flat, subaccount (school) ₦62,600
+     *   total ₦63,650  →  main (Edus) ₦750 flat, subaccount (school) ₦62,900
      *
      * That is only available on `transaction/initialize`, i.e. the card rail. An
      * incoming transfer to a dedicated account has no such parameter, which is why
      * the transfer rail settles to Edus and pays the school out instead
      * (docs/payments/ONLINE-PAYMENT-LEDGER.md §6).
      *
-     * `bearer: account` keeps Paystack's own fee on Edus, out of the ₦650, so the
+     * `bearer: account` keeps Paystack's own fee on Edus, out of the ₦750, so the
      * school still nets its full invoice.
      *
      * An **application fee** is Edus's own money end to end — no school, no split.

@@ -45,7 +45,7 @@ class StoreSalesController extends AbstractController
             if (!empty($query)) {
                 $students = $em->getRepository(Student::class)
                     ->createQueryBuilder('s')
-                    ->where('s.firstName LIKE :query OR s.lastName LIKE :query OR s.admissionNumber LIKE :query')
+                    ->where('s.firstName LIKE :query OR s.middleName LIKE :query OR s.lastName LIKE :query OR s.admissionNumber LIKE :query')
                     ->setParameter('query', '%' . $query . '%')
                     ->setMaxResults(50)
                     ->getQuery()

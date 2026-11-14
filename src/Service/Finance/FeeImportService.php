@@ -38,6 +38,7 @@ final class FeeImportService
         'admission_number' => ['admission_number', 'admission_no', 'adm_no', 'admission', 'adm'],
         'surname' => ['surname', 'last_name', 'lastname'],
         'first_name' => ['first_name', 'firstname', 'given_name'],
+        'middle_name' => ['middle_name', 'middlename', 'middle'],
         'class_name' => ['class_name', 'class', 'classroom', 'classroom_name'],
         'student_type' => ['student_type', 'studenttype', 'type', 'new_or_returning'],
         'amount_paid' => ['amount_paid', 'amountpaid', 'paid', 'amount'],
@@ -638,18 +639,20 @@ final class FeeImportService
         $student = $this->em->getRepository(Student::class)->findOneBy(['admissionNumber' => $admission]);
 
         if ($student instanceof Student) {
-            if (!$this->sameName($student->getLastName(), (string) $row['surname'])
-                || !$this->sameName($student->getFirstName(), (string) $row['first_name'])) {
+            // The admission number is the key. The name is the safety check:
+            // first name must agree, and either the middle name or the surname
+            // may do the work — the office sometimes swaps them.
+            if (!$this->sameName($student->getFirstName(), (string) $row['first_name'])
+                || !$this->middleOrSurnameMatches($student, $row)) {
                 return [
                     'student' => null,
                     'warnings' => [],
                     'error' => sprintf(
-                        'Row %d: %s belongs to %s, not %s %s. Check the row order.',
+                        'Row %d: admission number %s belongs to %s, but the row says %s. Check the row order.',
                         $row['row'],
                         $admission,
                         $student->getFullName(),
-                        $row['first_name'],
-                        $row['surname']
+                        $this->rowName($row)
                     ),
                 ];
             }
@@ -657,19 +660,21 @@ final class FeeImportService
             return ['student' => $student, 'warnings' => [], 'error' => null];
         }
 
-        $matches = $this->em->getRepository(Student::class)->createQueryBuilder('s')
-            ->andWhere('LOWER(s.lastName) = :surname')
+        // No admission number match: fall back to first name + either of the
+        // other two names, inside the same class. This keeps older files that
+        // left the number blank importable, with a warning on every such row.
+        $candidates = $this->em->getRepository(Student::class)->createQueryBuilder('s')
             ->andWhere('LOWER(s.firstName) = :firstName')
-            ->setParameter('surname', mb_strtolower((string) $row['surname']))
-            ->setParameter('firstName', mb_strtolower((string) $row['first_name']))
+            ->setParameter('firstName', mb_strtolower(trim((string) $row['first_name'])))
             ->getQuery()
             ->getResult();
 
         $matches = array_values(array_filter(
-            $matches,
-            fn (Student $candidate): bool => $this->normaliseClass(
-                $this->studentClassroom($candidate, $term)?->getName()
-            ) === $this->normaliseClass($classroom->getName())
+            $candidates,
+            fn (Student $candidate): bool => $this->middleOrSurnameMatches($candidate, $row)
+                && $this->normaliseClass(
+                    $this->studentClassroom($candidate, $term)?->getName()
+                ) === $this->normaliseClass($classroom->getName())
         ));
 
         if (count($matches) === 1) {
@@ -691,11 +696,10 @@ final class FeeImportService
                 'student' => null,
                 'warnings' => [],
                 'error' => sprintf(
-                    'Row %d: %s is not on roll, and %s %s in %s matches more than one pupil (%s). Use the admission number.',
+                    'Row %d: admission number %s is not on roll, and %s in %s matches more than one pupil (%s). Use the admission number.',
                     $row['row'],
                     $admission,
-                    $row['first_name'],
-                    $row['surname'],
+                    $this->rowName($row),
                     $classroom->getName(),
                     implode(', ', array_map(static fn (Student $s): string => $s->getFullName(), $matches))
                 ),
@@ -705,8 +709,42 @@ final class FeeImportService
         return [
             'student' => null,
             'warnings' => [],
-            'error' => sprintf('Row %d: %s is not on roll. Check the number.', $row['row'], $admission),
+            'error' => sprintf(
+                'Row %d: admission number %s is not on roll, and no pupil in %s matches %s by first name plus middle name or surname.',
+                $row['row'],
+                $admission,
+                $classroom->getName(),
+                $this->rowName($row)
+            ),
         ];
+    }
+
+    /**
+     * First name is checked separately; this is the second half of the safety
+     * check. The middle name and surname are interchangeable in the office's
+     * data, so any cross-match is accepted.
+     *
+     * @param array<string, mixed> $row
+     */
+    private function middleOrSurnameMatches(Student $student, array $row): bool
+    {
+        $surname = (string) ($row['surname'] ?? '');
+        $middleName = (string) ($row['middle_name'] ?? '');
+
+        return $this->sameName($student->getLastName(), $surname)
+            || $this->sameName($student->getLastName(), $middleName)
+            || $this->sameName($student->getMiddleName(), $surname)
+            || $this->sameName($student->getMiddleName(), $middleName);
+    }
+
+    /** @param array<string, mixed> $row */
+    private function rowName(array $row): string
+    {
+        return trim(implode(' ', array_filter([
+            (string) ($row['first_name'] ?? ''),
+            (string) ($row['middle_name'] ?? ''),
+            (string) ($row['surname'] ?? ''),
+        ], static fn (string $part): bool => trim($part) !== '')));
     }
 
     private function studentClassroom(Student $student, Term $term): ?Classroom
@@ -748,6 +786,7 @@ final class FeeImportService
             'admission_number' => $data['admission_number'] ?? '',
             'surname' => $data['surname'] ?? '',
             'first_name' => $data['first_name'] ?? '',
+            'middle_name' => $data['middle_name'] ?? '',
             'class_name' => $data['class_name'] ?? '',
             'student_type' => '',
             'amount_paid' => 0.0,
@@ -758,10 +797,17 @@ final class FeeImportService
             'errors' => [],
         ];
 
-        foreach (['admission_number', 'surname', 'first_name', 'class_name'] as $required) {
+        foreach (['admission_number', 'first_name', 'class_name'] as $required) {
             if (trim((string) $row[$required]) === '') {
                 $row['errors'][] = sprintf('Row %d: %s is required.', $rowNumber, $this->columnLabel($required));
             }
+        }
+
+        // The surname column may be blank, but only when a middle name is there
+        // to identify the pupil. Both blank leaves nothing to check against the
+        // admission-number match.
+        if (trim((string) $row['surname']) === '' && trim((string) $row['middle_name']) === '') {
+            $row['errors'][] = sprintf('Row %d: enter a surname or a middle name.', $rowNumber);
         }
 
         $type = $this->parseStudentType((string) ($data['student_type'] ?? ''));
@@ -964,6 +1010,7 @@ final class FeeImportService
             'admission_number' => 'Admission Number',
             'surname' => 'Surname',
             'first_name' => 'First Name',
+            'middle_name' => 'Middle Name',
             'class_name' => 'Class Name',
             'student_type' => 'Student Type',
             'amount_paid' => 'Amount Paid',

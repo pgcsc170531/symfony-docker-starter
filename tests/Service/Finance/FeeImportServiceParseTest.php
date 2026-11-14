@@ -79,6 +79,31 @@ CSV);
         self::assertSame(0.0, $result['rows'][0]['amount_paid']);
     }
 
+    public function test_a_blank_surname_is_allowed_when_a_middle_name_is_present(): void
+    {
+        $result = $this->parse(<<<'CSV'
+Admission Number,First Name,Middle Name,Surname,Class Name,Student Type,Amount Paid
+ADM/1,Aisha,Bello,,JSS 1A,NEW,0
+CSV);
+
+        self::assertSame([], $result['rows'][0]['errors']);
+        self::assertSame('Bello', $result['rows'][0]['middle_name']);
+        self::assertSame('', $result['rows'][0]['surname']);
+    }
+
+    public function test_a_blank_surname_and_blank_middle_name_are_rejected(): void
+    {
+        $result = $this->parse(<<<'CSV'
+Admission Number,First Name,Middle Name,Surname,Class Name,Student Type,Amount Paid
+ADM/1,Aisha,,,JSS 1A,NEW,0
+CSV);
+
+        self::assertStringContainsString(
+            'enter a surname or a middle name',
+            implode(' ', $result['rows'][0]['errors'])
+        );
+    }
+
     public function test_a_file_missing_a_required_column_is_rejected_whole(): void
     {
         $result = $this->parse(<<<'CSV'

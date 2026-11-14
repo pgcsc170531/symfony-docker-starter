@@ -60,7 +60,7 @@ scholarship.
 | It bills **every non-optional fee item** | `createTuitionInvoice()` — `if (!$fee->getFeeItem()->isOptional())` | One-time items are billed to returning pupils too. This is the bug the school is seeing. |
 | The admission path does the same | `AdmissionService::billStudent()` | Two copies of the same billing loop can drift. |
 | “New intake only” is encoded as `FeeItem.frequency = ONETIME` | `FeeItem`, `Form/Wizard/FeeItemRowType`, onboarding (`target = NEW → ONETIME`) | We already know which items a returning pupil must not pay; we just never ask for the pupil's type. |
-| A scholarship is one `StudentDiscount` → one `DiscountType` | `StudentDiscount`, `DiscountCalculator::assignmentFor()` | One rule per pupil, applied to **tuition only**, capped at the tuition line. |
+| A scholarship is one `StudentDiscount` → one `DiscountType` | `StudentDiscount`, `DiscountCalculator::assignmentFor()` | One rule per pupil, applied to **tuition only**, capped at the tuition line — except a **100% percentage** rule, which is a full scholarship and covers every fee item. |
 | `Invoice.total_amount` is **net of the discount** | `Invoice::getNetBillable()`, `DiscountCalculator` | The invoice line items show the gross; `discount_applied` explains the gap; payments compare against the net. |
 | Fees are per classroom + term + item | `FeeStructure(classroom, term, feeItem, amount)` | The importer can compute the right bill from the pupil's class. |
 | A payment is a `Payment` row tied to an invoice | `PaymentController::payCash()` | `invoice.paid_amount` and `status` must be updated in the same transaction. Overpayment has a home: `StudentAdvance`. |
@@ -80,24 +80,30 @@ scholarship.
 4. Add the fees columns below.
 
 > The score-sheet columns are a roster, not a bill. The import must match a row to
-> a pupil by **admission number first**, then by surname + first name + class. A
-> name alone is never enough to post money.
+> a pupil by **admission number first**, then by first name plus **either the
+> middle name or the surname** in the same class. The middle name and surname are
+> interchangeable, because the office sometimes types one in the other's column.
+> A name-only fallback is allowed only when the admission number is not found, and
+> it carries a warning on the row.
 
 ### 3.2 Columns
 
 | # | Column | Required | Example | Notes |
 |---|---|---|---|---|
 | 1 | `admission_number` | yes | `ADM/2026/0007` | Primary key for the row. Trimmed, case preserved. |
-| 2 | `surname` | yes | `Bello` | Used to verify the admission number and to catch a swapped row. |
-| 3 | `first_name` | yes | `Aisha` | Same. |
-| 4 | `class_name` | yes | `JSS 1A` | Must match the school's class exactly (the importer already normalises dots/spaces/case). |
-| 5 | `student_type` | yes | `NEW` \| `RETURNING` | `NEW` = first term at this school. `RETURNING` = was here before this session. |
-| 6 | `amount_paid` | yes | `25000` or `25000.00` | Money already collected by hand. Blank/0 means “nothing yet”. No thousands separators. |
-| 7 | `payment_date` | no | `2026-09-14` | Defaults to the import date when blank. |
-| 8 | `payment_method` | no | `CASH` \| `TRANSFER` \| `POS` \| `CHEQUE` | Defaults to `CASH`. |
-| 9 | `payment_reference` | no | `TRF/0914/0042` | Bank teller / POS slip number. Stored in `Payment.reference`. |
-| 10 | `note` | no | `Paid at the bursary, first instalment` | Stored on the payment; useful at audit. |
-| 11 | `scholarship` | read-only | `—` | Filled by the system in the preview, from the pre-import scholarship list. Not typed by the bursary. |
+| 2 | `first_name` | yes | `Aisha` | Must match the pupil record. |
+| 3 | `middle_name` | no | `Bello` | Used when the surname is blank, or when the office put the surname in this column. |
+| 4 | `surname` | yes* | `Bello` | The column is required; the value may be blank when a middle name is supplied. Used with first name to verify the admission number and catch a swapped row. |
+| 5 | `class_name` | yes | `JSS 1A` | Must match the school's class exactly (the importer already normalises dots/spaces/case). |
+| 6 | `student_type` | yes | `NEW` \| `RETURNING` | `NEW` = first term at this school. `RETURNING` = was here before this session. |
+| 7 | `amount_paid` | yes | `25000` or `25000.00` | Money already collected by hand. Blank/0 means “nothing yet”. No thousands separators. |
+| 8 | `payment_date` | no | `2026-09-14` | Defaults to the import date when blank. |
+| 9 | `payment_method` | no | `CASH` \| `TRANSFER` \| `POS` \| `CHEQUE` | Defaults to `CASH`. |
+| 10 | `payment_reference` | no | `TRF/0914/0042` | Bank teller / POS slip number. Stored in `Payment.reference`. |
+| 11 | `note` | no | `Paid at the bursary, first instalment` | Stored on the payment; useful at audit. |
+| 12 | `scholarship` | read-only | `—` | Filled by the system in the preview, from the pre-import scholarship list. Not typed by the bursary. |
+
+\* At least one of `middle_name` or `surname` must carry a value; both blank is a row error.
 
 **Deliberately absent:** `amount_due`. The due amount is computed by Edus from
 the fee schedule and the pupil's type. A bursary typing the due amount would
@@ -174,9 +180,14 @@ first upload seemed to hang.
 
 ### 4.3 Row matching
 
-1. `admission_number` exact (trimmed).
-2. If not found: `surname + first_name + class_name` must match exactly one pupil.
-3. If still ambiguous: row is **skipped**, with the candidates named in the error
+1. `admission_number` exact (trimmed). This is the key.
+2. For a found admission number, the **first name must match**, and **either the
+   middle name or the surname** must match. The two are interchangeable: a surname
+   typed in the middle-name column (or vice versa) is accepted. A blank surname
+   is fine when the middle name matches.
+3. If the admission number is not found: `first_name` plus **either**
+   `middle_name` or `surname`, inside `class_name`, must match exactly one pupil.
+4. If still ambiguous: row is **skipped**, with the candidates named in the error
    report. Never pick the first match.
 
 A row whose admission number belongs to a pupil in a different class is an
@@ -211,8 +222,8 @@ Rules:
 2. Skip `isOptional()` items (unchanged).
 3. Skip `ONETIME` items when `studentType === RETURNING`.
 4. Sum the rest to `gross`.
-5. Discount = `DiscountCalculator::calculateDiscount($student, tuitionBase)`
-   — **tuition only**, as today.
+5. Discount = `DiscountCalculator::calculateDiscount($student, tuitionBase, gross)`
+   — **tuition only**, except a **100% percentage** rule, which uses `gross`.
 6. `invoice.total_amount = gross − discount`; keep `discount_applied` and
    `discount_label`.
 7. If an invoice already exists for `student + term + type ACADEMIC`, **reuse it**
@@ -334,13 +345,15 @@ Then, **before** the fees CSV is uploaded:
 
 ### 7.3 The 100 % rule
 
-A 100 % scholarship waives **tuition**, not the whole bill. Uniform, books, ID
-card and levies are still payable. That is the owner's existing rule in
-`DiscountCalculator`; the fees import must not “helpfully” zero the whole invoice.
+**Decided by the owner, 14 November 2026:** a **100% percentage** rule is a full
+scholarship and waives **every fee item** — tuition, development levy, books and
+one-time items. The total due becomes ₦0.
 
-If the school intends a full waiver, that is a different discount scope and needs
-a decision (and probably a `DiscountType.appliesTo` field), not a silent change
-to the calculator.
+Every other percentage and every fixed amount is still a **tuition waiver**,
+capped at the tuition line. A 99% rule does not reach the uniform or a levy.
+
+The fees import follows the same calculator, so a full-scholarship pupil previews
+at ₦0 due and is not asked to pay a residual levy.
 
 ### 7.4 One rule per pupil
 
@@ -382,8 +395,9 @@ learned that lesson.
 
 | Error | Message the bursary reads |
 |---|---|
-| Unknown admission number | `Row 14: ADM/2026/0099 is not on roll. Check the number.` |
-| Name mismatch | `Row 14: ADM/2026/0099 belongs to Aisha Bello, not Musa Bello. Check the row order.` |
+| Unknown admission number | `Row 14: admission number ADM/2026/0099 is not on roll, and no pupil in JSS 1A matches Aisha Bello by first name plus middle name or surname.` |
+| Name mismatch | `Row 14: admission number ADM/2026/0099 belongs to Aisha Bello, but the row says Musa Bello. Check the row order.` |
+| No surname or middle name | `Row 14: enter a surname or a middle name.` |
 | Class mismatch | `Row 14: Aisha Bello is in JSS 1A, but the file says JSS 2B.` |
 | Unknown pupil type | `Row 14: student type “old” is not NEW or RETURNING.` |
 | Amount not a number | `Row 14: amount paid “25,000” has a thousands separator. Write 25000.` |
@@ -430,8 +444,9 @@ as an invalid string and takes the whole batch down.
 2. Extract `TuitionInvoiceBuilder`; make `AdmissionService` and
    `QuickAdmissionController` use it.
 3. Skip `ONETIME` for `RETURNING`.
-4. Tests: new vs returning totals for the same class/term; scholarship applied
-   to tuition only; invoice is not duplicated when one already exists.
+4. Tests: new vs returning totals for the same class/term; a percentage below
+   100% applied to tuition only; a 100% rule applied to the whole bill; invoice
+   is not duplicated when one already exists.
 
 ### Phase 2 — the import itself
 
@@ -455,7 +470,8 @@ as an invalid string and takes the whole batch down.
 ## 12. What this does **not** change
 
 - Fees remain per classroom + term + fee item. No new pricing table.
-- Scholarships remain tuition-only and capped at the tuition line.
+- Scholarships remain tuition-only and capped at the tuition line, except a
+  100% percentage full scholarship, which covers every fee item.
 - An already-issued invoice is historical: the import reuses it and adds
   payments; it does not recalculate a bill a family has already seen.
 - The parent portal keeps reading `invoice.total_amount` (net) and
@@ -473,6 +489,7 @@ as an invalid string and takes the whole batch down.
    per pupil; multiple instalments can be repeated rows if the CSV carries a
    `payment_date` and `reference`, but the duplicate-row rule then becomes a
    duplicate-(pupil, date, reference) rule.)
-4. Is the 100 % scholarship intended to cover everything, or tuition only? The
-   system currently treats it as tuition only.
+4. ~~Is the 100 % scholarship intended to cover everything, or tuition only?~~
+   **Decided 14 Nov 2026: it covers everything.** A 100% percentage rule waives
+   every fee item; lower percentages remain tuition-only.
 5. Who signs off a reversal, and how long after the import is a reversal allowed?

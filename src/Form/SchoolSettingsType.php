@@ -252,11 +252,11 @@ class SchoolSettingsType extends AbstractType
             ->add('onlineProcessingFeeEnabled', CheckboxType::class, [
                 'label' => 'Parent pays the online payment charge',
                 'required' => false,
-                'help' => 'On: the parent pays the fee plus the gateway charge — 1% capped at ₦300, '
-                    . 'plus 7.5% VAT on it, plus ₦200 handling, and never more than ₦500. '
-                    . 'The school receives the full fee. Off: the parent pays the fee exactly, '
-                    . 'and the gateway charge comes out of the school’s settlement instead. '
-                    . 'Applies to school fees and the application form fee alike.',
+                'help' => 'On: the parent pays the fee plus the online charge — a flat ₦750 '
+                    . 'on every school-fees payment (part or full), or Paystack’s card cost '
+                    . 'plus ₦350 on the application form fee. The school receives the full fee. '
+                    . 'Off: the parent pays the fee exactly, and the gateway charge comes out '
+                    . 'of the school’s settlement instead.',
             ])
             ->add('applicationRequireApproval', CheckboxType::class, [
                 'label' => 'A bursar must review every application',

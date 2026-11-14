@@ -279,8 +279,9 @@ final class FeeImportController extends AbstractController
 
             fputcsv($handle, [
                 'Admission Number',
-                'Surname',
                 'First Name',
+                'Middle Name',
+                'Surname',
                 'Class Name',
                 'Student Type',
                 'Amount Paid',
@@ -293,8 +294,9 @@ final class FeeImportController extends AbstractController
             foreach ($students as $student) {
                 fputcsv($handle, [
                     $student->getAdmissionNumber() ?? '',
-                    $student->getLastName() ?? '',
                     $student->getFirstName() ?? '',
+                    $student->getMiddleName() ?? '',
+                    $student->getLastName() ?? '',
                     $classroom?->getName() ?? '',
                     $student->getStudentType(),
                     '',

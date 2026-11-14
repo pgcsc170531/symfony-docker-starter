@@ -49,7 +49,7 @@ class StudentController extends AbstractController
             ->orderBy('s.id', 'DESC'); 
 
         if ($searchQuery) {
-            $qb->andWhere('s.firstName LIKE :query OR s.lastName LIKE :query OR s.admissionNumber LIKE :query')
+            $qb->andWhere('s.firstName LIKE :query OR s.middleName LIKE :query OR s.lastName LIKE :query OR s.admissionNumber LIKE :query')
                ->setParameter('query', '%' . $searchQuery . '%');
         }
 
@@ -332,7 +332,7 @@ class StudentController extends AbstractController
             ->orderBy('s.firstName', 'ASC'); 
 
         if ($searchQuery) {
-            $qb->andWhere('s.firstName LIKE :q OR s.lastName LIKE :q OR s.admissionNumber LIKE :q')
+            $qb->andWhere('s.firstName LIKE :q OR s.middleName LIKE :q OR s.lastName LIKE :q OR s.admissionNumber LIKE :q')
                ->setParameter('q', '%' . $searchQuery . '%');
         }
         if ($classId) {
@@ -353,7 +353,7 @@ class StudentController extends AbstractController
         $fp = fopen('php://temp', 'w');
 
         // 🟢 UPDATED: Excel Columns now show exact split debts!
-        fputcsv($fp, ['Admission No', 'First Name', 'Last Name', 'Gender', 'Class', 'Academic Debt', 'Store Debt', 'Total Debt', 'Guardian Name', 'Guardian Phone']);
+        fputcsv($fp, ['Admission No', 'First Name', 'Middle Name', 'Last Name', 'Gender', 'Class', 'Academic Debt', 'Store Debt', 'Total Debt', 'Guardian Name', 'Guardian Phone']);
 
         foreach ($students as $student) {
             $academicDebt = 0.0;
@@ -371,6 +371,7 @@ class StudentController extends AbstractController
             fputcsv($fp, [
                 $student->getAdmissionNumber() ?? 'PENDING',
                 $student->getFirstName(),
+                $student->getMiddleName() ?? '',
                 $student->getLastName(),
                 $student->getGender(),
                 $student->getCurrentClass() ? $student->getCurrentClass()->getName() : 'Unassigned',

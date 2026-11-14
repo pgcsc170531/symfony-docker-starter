@@ -14,11 +14,14 @@ use Doctrine\ORM\EntityRepository;
 use PHPUnit\Framework\TestCase;
 
 /**
- * The owner's rule: a discount — percentage OR fixed — comes off TUITION only.
+ * The owner's rule: a discount — percentage OR fixed — comes off TUITION only,
+ * except a 100% percentage rule, which is a full scholarship and waives every
+ * fee item.
  *
  * The failure this guards against is silent and expensive: a 50% scholarship
  * measured against the whole bill quietly pays for uniforms, ID cards and
- * development levies as well.
+ * development levies as well. A full scholarship, on the other hand, must not
+ * leave the family owing those same items.
  */
 final class DiscountCalculatorTest extends TestCase
 {
@@ -84,14 +87,14 @@ final class DiscountCalculatorTest extends TestCase
         $calculator = $this->calculator((new DiscountType())->setMode('PERCENTAGE')->setValue('50'));
 
         // 50% of the ₦40,000 tuition — NOT 50% of the ₦52,500 bill (₦26,250).
-        self::assertSame(20_000.0, $calculator->calculateDiscount(new Student(), 40_000.0));
+        self::assertSame(20_000.0, $calculator->calculateDiscount(new Student(), 40_000.0, 52_500.0));
     }
 
     public function testAFixedAmountComesOffTuitionOnly(): void
     {
         $calculator = $this->calculator((new DiscountType())->setMode('FIXED')->setValue('5000'));
 
-        self::assertSame(5_000.0, $calculator->calculateDiscount(new Student(), 40_000.0));
+        self::assertSame(5_000.0, $calculator->calculateDiscount(new Student(), 40_000.0, 52_500.0));
     }
 
     public function testAFixedAmountCannotExceedTheTuition(): void
@@ -99,14 +102,39 @@ final class DiscountCalculatorTest extends TestCase
         $calculator = $this->calculator((new DiscountType())->setMode('FIXED')->setValue('90000'));
 
         // The tuition is ₦40,000; the rest of the bill is never discounted.
-        self::assertSame(40_000.0, $calculator->calculateDiscount(new Student(), 40_000.0));
+        self::assertSame(40_000.0, $calculator->calculateDiscount(new Student(), 40_000.0, 52_500.0));
     }
 
     public function testNoTuitionMeansNoDiscount(): void
     {
         $calculator = $this->calculator((new DiscountType())->setMode('PERCENTAGE')->setValue('50'));
 
-        self::assertSame(0.0, $calculator->calculateDiscount(new Student(), 0.0));
+        self::assertSame(0.0, $calculator->calculateDiscount(new Student(), 0.0, 12_500.0));
+    }
+
+    public function testOneHundredPercentWaivesTheWholeBill(): void
+    {
+        $calculator = $this->calculator((new DiscountType())->setMode('PERCENTAGE')->setValue('100'));
+
+        // ₦40,000 tuition + ₦12,500 of levies and books: a full scholarship
+        // must leave the family owing nothing at all.
+        self::assertSame(52_500.0, $calculator->calculateDiscount(new Student(), 40_000.0, 52_500.0));
+    }
+
+    public function testNinetyNinePercentStillComesOffTuitionOnly(): void
+    {
+        $calculator = $this->calculator((new DiscountType())->setMode('PERCENTAGE')->setValue('99'));
+
+        // 99% of ₦40,000 = ₦39,600, not 99% of the ₦52,500 bill.
+        self::assertSame(39_600.0, $calculator->calculateDiscount(new Student(), 40_000.0, 52_500.0));
+    }
+
+    public function testOneHundredPercentWorksEvenWhenTheBillHasNoTuitionLine(): void
+    {
+        $calculator = $this->calculator((new DiscountType())->setMode('PERCENTAGE')->setValue('100'));
+
+        // A full scholarship is about the family, not about which line exists.
+        self::assertSame(12_500.0, $calculator->calculateDiscount(new Student(), 0.0, 12_500.0));
     }
 
     public function testTheStructureBaseSkipsOptionalAndNonTuitionLines(): void

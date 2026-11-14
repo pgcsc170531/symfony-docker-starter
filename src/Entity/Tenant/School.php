@@ -259,10 +259,11 @@ class School
     /**
      * Does the parent pay the online payment charge on top of the fee?
      *
-     * ON (default): the parent covers it — 1% capped at ₦300, plus 7.5% VAT on
-     * that, plus a ₦200 handling margin, and **never more than ₦500** — so the
-     * school receives its fee in full. OFF: the parent pays exactly the fee and
-     * the school's settlement is short by whatever the gateway takes.
+     * ON (default): the parent pays a **flat ₦750** on every online school-fees
+     * payment — part or full — so the school receives its fee in full. The
+     * application form fee uses Paystack's card cost plus ₦350 instead. OFF: the
+     * parent pays exactly the fee and the school's settlement is short by
+     * whatever the gateway takes.
      *
      * The number lives in ProcessingFeeCalculator; this flag is only the switch.
      */

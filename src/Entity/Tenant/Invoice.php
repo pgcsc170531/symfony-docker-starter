@@ -22,6 +22,28 @@ class Invoice
     public const STATUS_PARTIAL = 'PARTIAL';
     public const STATUS_PAID    = 'PAID';
 
+    /**
+     * The settlement status for a bill at these amounts.
+     *
+     * A zero-total bill is PAID: a 100% scholarship has settled it, and it must
+     * not keep appearing as unpaid. A bill with money against it follows the
+     * normal paid/partial/unpaid rules.
+     */
+    public static function statusFor(float $paidAmount, float $totalAmount): string
+    {
+        if ($totalAmount <= 0.005) {
+            return self::STATUS_PAID;
+        }
+
+        if ($paidAmount <= 0.0) {
+            return self::STATUS_UNPAID;
+        }
+
+        return $paidAmount + 0.005 >= $totalAmount
+            ? self::STATUS_PAID
+            : self::STATUS_PARTIAL;
+    }
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]

@@ -271,7 +271,7 @@ final class PaystackClient
      * **No split is attached, deliberately.** A transfer into this account lands
      * in Edus's Paystack balance in full, and the school's fee is paid out by us
      * afterwards (`app:payments:payout`). The alternative — splitting to the
-     * school's subaccount — cannot keep a **flat** ₦650: Paystack's DVA endpoints
+     * school's subaccount — cannot keep a **flat** ₦750: Paystack's DVA endpoints
      * accept `subaccount`/`split_code` only, never `transaction_charge`, and a
      * percentage share of a varying total is not a fixed amount
      * (docs/payments/ONLINE-PAYMENT-LEDGER.md §6, §7).
@@ -366,7 +366,7 @@ final class PaystackClient
     /**
      * Remove the split from an account that was issued before we stopped splitting.
      *
-     * Without this, an older NUBAN keeps paying the school the parent's ₦650 as
+     * Without this, an older NUBAN keeps paying the school the parent's ₦750 as
      * well as the fee — the exact leak this change exists to close.
      *
      * @return array{ok: bool, message?: string}
