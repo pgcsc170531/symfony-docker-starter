@@ -11,6 +11,7 @@ use App\Entity\Tenant\Term;
 use App\Form\StudentType; 
 use App\Form\StudentAdmissionType;
 use App\Form\PhotoUploadType; 
+use App\Service\Enrollment\ClassPlacement;
 use App\Service\Results\AssessmentSchemeResolver;
 use App\Service\Subjects\PupilSubjects;
 
@@ -54,7 +55,9 @@ class StudentController extends AbstractController
         }
 
         if ($classId) {
-            $qb->andWhere('s.currentClass = :classId')
+            // `current_class` is the column this list has always filtered on; the
+            // modern one answers for pupils admitted since it started being written.
+            $qb->andWhere('s.currentClass = :classId OR (s.currentClass IS NULL AND s.currentClassroom = :classId)')
                ->setParameter('classId', $classId);
         }
 
@@ -258,12 +261,23 @@ class StudentController extends AbstractController
     }
 
     #[Route('/{id}/edit', name: 'app_tenant_student_edit', methods: ['GET', 'POST'])]
-    public function edit(Student $student, Request $request, EntityManagerInterface $em): Response
-    {
+    public function edit(
+        Student $student,
+        Request $request,
+        EntityManagerInterface $em,
+        ClassPlacement $placement,
+    ): Response {
         $form = $this->createForm(StudentAdmissionType::class, $student);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            // A class change on this form must move the pupil out of the old class,
+            // not add him to a second one. ClassPlacement writes both class columns
+            // and drags this session's enrolment along, so every roster agrees.
+            if ($form->has('currentClass')) {
+                $placement->place($student, $form->get('currentClass')->getData());
+            }
+
             $em->flush();
 
             $this->addFlash('success', 'Student profile updated successfully!');
@@ -335,8 +349,9 @@ class StudentController extends AbstractController
             $qb->andWhere('s.firstName LIKE :q OR s.middleName LIKE :q OR s.lastName LIKE :q OR s.admissionNumber LIKE :q')
                ->setParameter('q', '%' . $searchQuery . '%');
         }
+
         if ($classId) {
-            $qb->andWhere('s.currentClass = :classId')
+            $qb->andWhere('s.currentClass = :classId OR (s.currentClass IS NULL AND s.currentClassroom = :classId)')
                ->setParameter('classId', $classId);
         }
 

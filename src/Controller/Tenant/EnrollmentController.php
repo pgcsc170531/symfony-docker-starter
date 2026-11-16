@@ -9,6 +9,7 @@ use App\Entity\Tenant\Invoice;
 use App\Entity\Tenant\InvoiceItem;
 use App\Entity\Tenant\FeeStructure;
 use App\Entity\Tenant\Term;
+use App\Service\Enrollment\ClassPlacement;
 use App\Service\Finance\DiscountCalculator; // 👈 ENSURE THIS IS HERE
 use App\Service\Finance\AdvancePaymentService;
 use App\Service\Finance\InvoiceNumberGenerator;
@@ -28,6 +29,7 @@ class EnrollmentController extends AbstractController
         private DiscountCalculator $discountCalculator,
         private InvoiceNumberGenerator $invoiceNumbers,
         private AdvancePaymentService $advances,
+        private ClassPlacement $placement,
     ) {}
 
     #[Route('/promote', name: 'app_tenant_enrollment_promote', methods: ['GET', 'POST'])]
@@ -73,8 +75,20 @@ class EnrollmentController extends AbstractController
                     'student' => $student,
                     'session' => $targetSession
                 ]);
-                
-                if ($existing) continue;
+
+                if ($existing) {
+                    // Promoting inside the same session is a class change, not a
+                    // promotion: move the one enrolment he already has instead of
+                    // leaving him in the class he was moved out of.
+                    if ((int) $sourceSessionId === (int) $targetSessionId) {
+                        $moved = in_array($student->getId(), $selectedStudentIds) ? $targetClass : $sourceClass;
+                        $existing->setClassroom($moved);
+                        $this->placement->place($student, $moved, $targetSession);
+                        $em->persist($student);
+                    }
+
+                    continue;
+                }
 
                 $newEnrollment = new Enrollment();
                 $newEnrollment->setStudent($student);
@@ -87,8 +101,8 @@ class EnrollmentController extends AbstractController
                     $newEnrollment->setClassroom($targetClass);
                     $newEnrollment->setIsRepeating(false);
                     
-                    // 🟢 SYNC: Update Student's "Quick Access" field
-                    $student->setCurrentClassroom($targetClass);
+                    // 🟢 SYNC: both class columns plus this session's enrolment
+                    $this->placement->place($student, $targetClass, $targetSession);
 
                     // 🚀 AUTOMATION: Bill them for the new class
                     $this->autoGenerateInvoice($em, $student, $targetClass, $targetSession);
@@ -99,8 +113,8 @@ class EnrollmentController extends AbstractController
                     $newEnrollment->setClassroom($sourceClass);
                     $newEnrollment->setIsRepeating(true); 
 
-                    // 🟢 SYNC: Update Student's "Quick Access" field
-                    $student->setCurrentClassroom($sourceClass);
+                    // 🟢 SYNC: both class columns plus this session's enrolment
+                    $this->placement->place($student, $sourceClass, $targetSession);
 
                     // 🚀 AUTOMATION: Bill them for the repeating class
                     $this->autoGenerateInvoice($em, $student, $sourceClass, $targetSession);

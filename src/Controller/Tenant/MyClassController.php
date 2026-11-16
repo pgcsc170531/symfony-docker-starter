@@ -20,6 +20,7 @@ use App\Service\SchoolLife\AttendanceSummary;
 use App\Service\SchoolLife\BehaviourTraitSeeder;
 use App\Service\SchoolLife\SchoolCalendar;
 use App\Service\SchoolLife\TermRelease;
+use App\Service\Subjects\PupilSubjects;
 use App\Service\Wording\LearnerWording;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -58,6 +59,7 @@ final class MyClassController extends AbstractController
         private ResultSheetBuilder $sheetBuilder,
         private RemarkSuggestion $suggestions,
         private LearnerWording $wording,
+        private PupilSubjects $pupils,
     ) {
     }
 
@@ -830,8 +832,10 @@ final class MyClassController extends AbstractController
     /**
      * Who is in this class, and from when.
      *
-     * Enrolment is authoritative for the session; `currentClassroom` is the fallback
-     * for a class that has not been promoted into enrolments yet.
+     * The roster is `PupilSubjects::roster()` — the same rule every mark sheet and
+     * score sheet uses — so a pupil who moved cannot be listed by one screen and
+     * dropped by another. The enrolment is read only to say *when* he joined this
+     * session; it no longer decides *who*.
      *
      * @return array<int, array{student: Student, from: \DateTimeImmutable}>
      */
@@ -840,29 +844,25 @@ final class MyClassController extends AbstractController
         $defaultFrom = $term->getStartDate() ?? new \DateTimeImmutable();
 
         $session = $term->getSession();
-        $enrollments = $session
-            ? $this->em->getRepository(Enrollment::class)->findBy([
+        $enrolledAt = [];
+        if ($session) {
+            foreach ($this->em->getRepository(Enrollment::class)->findBy([
                 'classroom' => $classroom,
                 'session' => $session,
-            ])
-            : [];
-
-        $roster = [];
-        foreach ($enrollments as $enrollment) {
-            $student = $enrollment->getStudent();
-            if (!$student) {
-                continue;
+            ]) as $enrollment) {
+                $student = $enrollment->getStudent();
+                if ($student) {
+                    $enrolledAt[(int) $student->getId()] = $enrollment->getEnrolledAt();
+                }
             }
-            $roster[(int) $student->getId()] = [
-                'student' => $student,
-                'from' => $enrollment->getEnrolledAt() ?? $defaultFrom,
-            ];
         }
 
-        if ($roster === []) {
-            foreach ($this->em->getRepository(Student::class)->findBy(['currentClassroom' => $classroom]) as $student) {
-                $roster[(int) $student->getId()] = ['student' => $student, 'from' => $defaultFrom];
-            }
+        $roster = [];
+        foreach ($this->pupils->roster($classroom) as $student) {
+            $roster[(int) $student->getId()] = [
+                'student' => $student,
+                'from' => $enrolledAt[(int) $student->getId()] ?? $defaultFrom,
+            ];
         }
 
         uasort($roster, static function (array $a, array $b) {

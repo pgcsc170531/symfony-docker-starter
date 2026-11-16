@@ -5,6 +5,7 @@ namespace App\Service\Subjects;
 use App\Entity\Tenant\ClassSubject;
 use App\Entity\Tenant\Classroom;
 use App\Entity\Tenant\Enrollment;
+use App\Entity\Tenant\Session;
 use App\Entity\Tenant\Staff;
 use App\Entity\Tenant\Student;
 use App\Entity\Tenant\StudentSubject;
@@ -37,28 +38,44 @@ final class PupilSubjects
     }
 
     /**
-     * Every pupil in an arm, however they were linked to it.
+     * Every pupil in an arm — and only that arm.
      *
-     * Three links exist in this schema and different screens wrote different
-     * ones: `current_classroom_id` (quick admission), `current_class_id` (older
-     * admissions) and an `enrollment` row per session. Taking only one of them
-     * silently empties a roster — a mark sheet with no pupils — so the union is
-     * the honest answer.
+     * Three links exist in this schema (`current_class_id`, `current_classroom_id`
+     * and an `enrollment` row per session). They were written by different screens,
+     * so a pupil could match a class through a link nobody had updated: change his
+     * class and he appeared on **two** blank score sheets, two mark sheets and two
+     * subject lists.
+     *
+     * The pupil's own class column is therefore the answer, in the same order
+     * `Student::getCurrentClass()` uses it. An enrolment is a fallback for pupils
+     * with no class column at all — never a second vote, and never for a session
+     * that has ended (a 2024 enrolment must not resurrect a 2026 roster).
      *
      * @return list<Student>
      */
     public function roster(Classroom $classroom): array
     {
-        /** @var list<Student> $students */
-        $students = $this->em->getRepository(Student::class)
-            ->createQueryBuilder('s')
-            ->leftJoin(Enrollment::class, 'e', 'WITH', 'e.student = s AND e.classroom = :classroom')
-            ->andWhere('s.currentClassroom = :classroom OR s.currentClass = :classroom OR e.id IS NOT NULL')
-            ->setParameter('classroom', $classroom)
+        $session = $this->em->getRepository(Session::class)->findOneBy(['isActive' => true]);
+
+        $qb = $this->em->getRepository(Student::class)->createQueryBuilder('s');
+
+        if ($session instanceof Session) {
+            // Only this year's enrolment counts; an old one must not resurrect a roster.
+            $qb->leftJoin(Enrollment::class, 'e', 'WITH', 'e.student = s AND e.classroom = :classroom AND e.session = :session')
+                ->setParameter('session', $session);
+        } else {
+            $qb->leftJoin(Enrollment::class, 'e', 'WITH', 'e.student = s AND e.classroom = :classroom');
+        }
+
+        $qb->setParameter('classroom', $classroom)
+            ->andWhere('s.currentClass = :classroom
+                OR (s.currentClass IS NULL AND s.currentClassroom = :classroom)
+                OR (s.currentClass IS NULL AND s.currentClassroom IS NULL AND e.id IS NOT NULL)')
             ->orderBy('s.firstName', 'ASC')
-            ->addOrderBy('s.lastName', 'ASC')
-            ->getQuery()
-            ->getResult();
+            ->addOrderBy('s.lastName', 'ASC');
+
+        /** @var list<Student> $students */
+        $students = $qb->getQuery()->getResult();
 
         $unique = [];
         foreach ($students as $student) {
