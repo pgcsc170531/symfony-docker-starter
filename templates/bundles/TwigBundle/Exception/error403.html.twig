@@ -1,5 +1,8 @@
 {% include 'error/_page.html.twig' with {
     code: 403,
     title: 'You do not have access to this page',
-    message: 'This page belongs to a different account or role. If you followed a link from the school, ask the office to check the permissions on your account.'
+    message: 'This page belongs to a different account or role. If you followed a link from the school, ask the office to check the permissions on your account.',
+    reason: exception is defined ? exception|error_reason : null,
+    reference: exception is defined ? exception|error_reference(app.request is defined ? app.request.pathinfo : null) : null,
+    hint: 'Ask the office to confirm the class or subject is assigned to your account for the term you are working in, and quote the code below.'
 } only %}

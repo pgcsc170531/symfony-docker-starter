@@ -1,5 +1,8 @@
 {% include 'error/_page.html.twig' with {
     code: 404,
     title: 'We could not find that page',
-    message: 'The link may be old, or the page may have moved. Check the address, or go back and try again from the dashboard.'
+    message: 'The link may be old, or the page may have moved. Check the address, or go back and try again from the dashboard.',
+    reason: exception is defined ? exception|error_reason : null,
+    reference: exception is defined ? exception|error_reference(app.request is defined ? app.request.pathinfo : null) : null,
+    hint: 'Open the page again from the dashboard. If you came here from a link inside Edus, report the page name and the code below — they point at the exact cause.'
 } only %}

@@ -1,5 +1,7 @@
 {% include 'error/_page.html.twig' with {
     code: 500,
     title: 'Something went wrong',
-    message: 'The school portal hit an unexpected problem. Nothing you entered has been lost. Please try again in a moment; if it keeps happening, contact the school office.'
+    message: 'The school portal hit an unexpected problem. Nothing you entered has been lost. Please try again in a moment; if it keeps happening, contact the school office.',
+    reference: exception is defined ? exception|error_reference(app.request is defined ? app.request.pathinfo : null) : null,
+    hint: 'Try the same action once more. If it fails again, send the office the code below — it tells us exactly which screen failed.'
 } only %}
