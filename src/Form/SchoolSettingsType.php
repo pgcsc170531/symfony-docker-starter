@@ -139,9 +139,9 @@ class SchoolSettingsType extends AbstractType
                     'Three CA tests — the teacher enters 3 fields (CA 1, CA 2, CA 3)' => AssessmentScheme::CA_COUNT_THREE,
                 ],
                 'help' => 'Pick what your school actually runs. The teacher’s score-entry screen shows exactly this many CA fields, '
-                    . 'and the report card prints exactly this many CA columns. Each CA is scored out of 20, and the examination '
-                    . 'carries the rest. Changing this does not delete marks already entered for a dropped CA — they are simply '
-                    . 'no longer counted.',
+                    . 'and the report card prints exactly this many CA columns. What each CA and the exam are marked out of is set '
+                    . 'on Reports ▸ Marking Scheme. Changing this does not delete marks already entered for a dropped CA — they are '
+                    . 'simply no longer counted.',
             ])
 
             // === 3. 🏦 BANKING DETAILS (New Section) ===

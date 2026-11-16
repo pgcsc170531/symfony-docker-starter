@@ -55,6 +55,13 @@
                 <div class="font-semibold text-ink-900">School Performance</div>
                 <div class="text-sm text-ink-500">The agency brief: averages, subjects, classes and what needs attention.</div>
             </a>
+
+            <a href="{{ path('app_tenant_result_settings') }}"
+               class="rounded-xl border border-accent-200 bg-white p-5 shadow-card transition hover:border-accent-400">
+                <div class="text-2xl mb-2">🧮</div>
+                <div class="font-semibold text-ink-900">Marking Scheme</div>
+                <div class="text-sm text-ink-500">How many CAs, each out of what, and what the exam carries.</div>
+            </a>
         {% endif %}
 
         {% if hasHod or isAdmin %}

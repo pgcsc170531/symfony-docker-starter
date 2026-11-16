@@ -29,6 +29,31 @@ The data behind it is much richer than the screen: the schema stores
 `ResultApproval` (form teacher → HOD → year-group master), `Enrollment`,
 `Term.startDate/endDate`, and the guardian link.
 
+### The marking scheme is the school's, not the code's (16 Nov 2026)
+
+`assessment_scheme` already existed and already sat at the head of the resolver's
+fallback chain (subject → class → school-wide), but **nothing ever wrote to it**,
+so every school silently got CA × 20 + exam 60 (+ practical 40), and the settings
+help text even said so.
+
+**Reports ▸ Marking Scheme** (`/results/settings`, `app_tenant_result_settings`,
+`ROLE_ADMIN`) now writes the school-wide row for **every term of the active
+session**:
+
+- how many CA tests (2 or 3),
+- the mark **per CA** (10, 15, 20, 30 — whatever the school uses),
+- one examination paper, or examination + practical,
+- the examination mark and the practical mark.
+
+The screen previews the resulting paper — `CA 1 (15) + CA 2 (15) + Exams (50) +
+Practical (20) / 100 marks in all` — because that string is exactly what the blank
+score sheet prints. One save keeps `School.caCount` in step, so the entry sheet
+and the report card can never disagree about how many CA columns exist.
+
+A class or subject that keeps its own `assessment_scheme` row still wins; the
+screen reports how many such overrides exist rather than pretending the save
+applied to them.
+
 So the problem is **presentation and computation, not data collection**. That is
 good news: most of the work below is arithmetic and one very good template.
 
