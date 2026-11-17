@@ -486,9 +486,39 @@ as an invalid string and takes the whole batch down.
 - Scholarships remain tuition-only and capped at the tuition line unless the rule
   is marked **Apply to grand total**, which covers every fee item.
 - An already-issued invoice is historical: the import reuses it and adds
-  payments; it does not recalculate a bill a family has already seen.
+  payments; it does not recalculate a bill a family has already seen — **unless
+  the bursar ticks “Apply these prices to bills already generated” on the Per-arm
+  fee screen**, which is the one deliberate path that re-prices existing bills
+  (`FeeRepricer`). That path recalculates items from the schedule, re-applies the
+  discount, never drops a bill below the amount already paid, and leaves a line
+  the schedule no longer prices at the amount the family was billed.
 - The parent portal keeps reading `invoice.total_amount` (net) and
   `invoice.paid_amount`; the outstanding figure appears without any new field.
+
+### 12.1 Money the family already holds (added 17 Nov 2026)
+
+A blank or `0` **Amount Paid** used to mean “this pupil has paid nothing”, which
+threw away a credit the family had handed over earlier. The preview now asks for
+the pupil's open **advance payment** (`AdvancePaymentService::openAdvanceFor()`)
+and, when the file carries no cash, settles the bill from it:
+
+- the row states it plainly — *“No amount paid in the file — settled from advance
+  ADV-2026-0001 (₦50,000.00 of ₦50,000.00 held)”*;
+- `amount_paid` and the batch totals include the draw, so **Collected** is honest;
+- at commit the draw-down is a **real `Payment`** with `method = ADVANCE`, the
+  advance's audit remark, and `fee_import_batch_id` set — so reversing the batch
+  removes it and the bill returns to its previous state.
+
+Nothing is drawn when the file does carry cash, when the advance is closed or
+spent, or when the invoice already has a balance of zero.
+
+### 12.2 One posted batch per term — but the button is always there
+
+The rule stands: two posted opening balances for one term would count the same
+cash twice. What changed is that the Post button is no longer *hidden* when the
+rule bites. The preview keeps the explanation and shows one button —
+**“Reverse #N & post these rows”** — which reverses the conflicting batch and
+posts this one in a single confirmed request, so the two never both stand.
 
 ---
 

@@ -67,20 +67,37 @@
                     <p class="text-sm font-bold text-ink-900">This term already has a posted opening balance.</p>
                     <p class="mt-1 text-sm text-ink-700">
                         Batch #{{ other_posted_batch.id }} is posted for {{ other_posted_batch.term ? other_posted_batch.term.name : 'this term' }}.
-                        Reverse it before posting this one.
+                        A term can only carry one, so posting this one reverses that one first — its payments are
+                        removed and these rows take their place.
                     </p>
                     <a href="{{ path('app_tenant_fee_import_batch', {batch: other_posted_batch.id}) }}"
                        class="mt-2 inline-flex min-h-[44px] items-center text-sm font-bold text-accent-700 underline">
                         Open batch #{{ other_posted_batch.id }} &rarr;
                     </a>
                 </div>
-            {% elseif valid_count > 0 %}
+            {% endif %}
+
+            {# The button is always here: hiding it left the bursar with a note and
+               no way forward. With a posted batch in the way, the same click reverses
+               that batch and then posts this one, in one confirmed step. #}
+            {% if valid_count > 0 %}
                 <form method="post" action="{{ path('app_tenant_fee_import_commit', {batch: batch.id}) }}"
-                      class="w-full sm:w-auto">
+                      class="w-full sm:w-auto"
+                      {% if other_posted_batch %}
+                      onsubmit="return confirm('Reverse batch #{{ other_posted_batch.id }} and post these {{ valid_count }} rows in its place? Payments from batch #{{ other_posted_batch.id }} will be removed.');"
+                      {% endif %}>
                     <input type="hidden" name="_token" value="{{ csrf_token('commit_fee_import_' ~ batch.id) }}">
+                    {% if other_posted_batch %}
+                        <input type="hidden" name="reverse_first" value="{{ other_posted_batch.id }}">
+                    {% endif %}
                     <button type="submit"
-                            class="min-h-[44px] w-full rounded-lg bg-accent-600 px-6 text-sm font-bold text-white shadow-sm hover:bg-accent-700 sm:w-auto">
-                        Post {{ valid_count }} row{{ valid_count == 1 ? '' : 's' }}
+                            class="min-h-[44px] w-full rounded-lg px-6 text-sm font-bold text-white shadow-sm sm:w-auto
+                                {{ other_posted_batch ? 'bg-pending hover:opacity-90' : 'bg-accent-600 hover:bg-accent-700' }}">
+                        {% if other_posted_batch %}
+                            Reverse #{{ other_posted_batch.id }} &amp; post {{ valid_count }} row{{ valid_count == 1 ? '' : 's' }}
+                        {% else %}
+                            Post {{ valid_count }} row{{ valid_count == 1 ? '' : 's' }}
+                        {% endif %}
                     </button>
                 </form>
             {% endif %}
@@ -161,6 +178,9 @@
                     {% if row.discount_label %}
                         <p class="mt-2 break-words text-xs font-semibold text-paid">Scholarship: {{ row.discount_label }}</p>
                     {% endif %}
+                    {% if row.advance_note %}
+                        <p class="mt-2 break-words text-xs font-semibold text-paid">{{ row.advance_note }}</p>
+                    {% endif %}
                     {% for warning in row.warnings ?? [] %}
                         <p class="mt-2 break-words text-xs font-semibold text-pending">⚠ {{ warning }}</p>
                     {% endfor %}
@@ -199,6 +219,9 @@
                                 <p class="break-words font-mono text-[11px] text-ink-500">{{ row.admission_number }}</p>
                                 {% if row.discount_label %}
                                     <p class="mt-1 break-words text-[11px] font-semibold text-paid">{{ row.discount_label }}</p>
+                                {% endif %}
+                                {% if row.advance_note %}
+                                    <p class="mt-1 break-words text-[11px] font-semibold text-paid">{{ row.advance_note }}</p>
                                 {% endif %}
                                 {% for warning in row.warnings ?? [] %}
                                     <p class="mt-1 break-words text-[11px] font-semibold text-pending">{{ warning }}</p>

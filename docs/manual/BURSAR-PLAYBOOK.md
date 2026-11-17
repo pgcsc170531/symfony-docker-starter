@@ -436,6 +436,14 @@ and confirm every class in your file has its tuition and other fee lines. Use
 a whole fee item is missing, ask the administrator. An empty schedule is the most
 common reason a whole Fees Import is skipped.
 
+**Changing a price after bills exist.** On **Per arm** the save button has a box
+below it: **Apply these prices to bills already generated**. Left unticked, only
+*future* bills use the new price. Ticked, every academic bill for that term in
+that level is re-priced from the schedule, and the flash tells you how many:
+`40 existing bills re-priced (₦2,196,000.00 → ₦2,236,000.00)`. Money already
+paid is never erased — a bill is not pushed below what the family handed over, and
+a line the schedule no longer prices stays at the amount they were billed.
+
 ### 6.3 Build the file from a class roster
 
 1. In **Fees Import**, find **Build the file from a class roster**.
@@ -493,7 +501,12 @@ The column headings are flexible (for example `Admission No`, `Last Name`,
 - Enter the **total** the school has collected for that pupil for that term.
   - Parent paid 20,000 in September and 17,500 in October → enter **37500**.
   - Do **not** enter 17500 as a second instalment.
-- Enter `0` or leave it blank if the pupil has paid nothing.
+- Enter `0` or leave it blank if the pupil has paid nothing **for this file**.
+  Before you panic at an outstanding figure, look at the preview: if the pupil is
+  already holding an **Advance Payment**, Edus settles the bill from that credit
+  and says so in the row (`No amount paid in the file — settled from advance
+  ADV-…`). The money is recorded as a real payment against the invoice, so the
+  receipt trail stays complete.
 - Do **not** use thousands separators: write `37500`, not `37,500`.
 - `₦` signs and spaces are ignored. Up to two decimal places are accepted.
 - A negative amount is rejected.
@@ -553,7 +566,9 @@ When the preview is correct, press **Post N rows**.
 - The posting runs as one transaction; a database failure rolls the whole batch
   back. A row whose pupil or class disappeared is skipped and named.
 - You cannot post a second opening-balance batch for the same term. If one
-  exists, Edus names the posted batch and tells you to reverse it first.
+  exists, Edus names the posted batch and the button becomes **Reverse #N & post
+  these rows**: one confirmation reverses the old batch (its payments are
+  removed) and posts this one in its place. Nothing is left posted twice.
 
 **Expected result:** the batch status becomes **Posted**, with counts of posted
 and skipped rows. Each posted pupil now has:
@@ -663,10 +678,10 @@ fix the scholarship before posting.
 | "… is in … but the file says …" | Pupil's class is different from the file | Correct the class or the enrolment |
 | "no fees are set for … this term" | Fee Schedule is empty for that class | Ask the administrator/bursar to complete the Fee Schedule |
 | "already has … recorded … which is more than the file says" | A previous payment or import is higher than this file | Reverse the earlier import/payment first |
-| "An opening-balance import for … was already posted" | One posted batch per term | Open the named batch and reverse it first |
+| "An opening-balance import for … was already posted" | One posted batch per term | Use the **Reverse #N & post these rows** button — it reverses the old batch and posts this one in a single step |
 | "This batch has already been posted or reversed" | You opened an old batch | Open the preview/current batch instead |
 | All rows skipped | Missing Fee Schedule, wrong term, or wrong class names | Read the red errors; start with the first one |
-| "Post" button missing | No valid rows | Fix the red errors and re-upload |
+| "Post" button missing | No valid rows | Fix the red errors and re-upload — a row-less preview has nothing to post |
 
 ### 6.15 Before you press Post — checklist
 
@@ -908,7 +923,7 @@ management decision; do not promote a whole class without the principal's list.
 | Child is under the wrong parent | Old admission or a data-entry error | **Add a pupil to this family** on the correct parent; parent confirms |
 | Parent says they never added a child | A staff member moved the pupil | **Parents → Family updates → Reported by parents**; read the note and fix |
 | Fees Import "Post" button missing | No valid rows | Read the red errors; fix and re-upload |
-| "One posted batch per term" | A batch is already posted | Open the named batch; reverse it first |
+| "One posted batch per term" | A batch is already posted | Press **Reverse #N & post these rows** — one confirmation does both |
 | "No fees are set for this class this term" | Fee Schedule incomplete | Complete the Fee Schedule, then re-preview |
 | Amount paid rejected | Comma, negative, or text | Write `37500` or `37500.00` |
 | Row skipped because admission number belongs to another pupil | Wrong number or rows out of order | Check the pupil record and the row |

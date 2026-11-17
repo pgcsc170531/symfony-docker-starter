@@ -7,6 +7,7 @@ use App\Entity\Tenant\FeeItem;
 use App\Entity\Tenant\FeeStructure;
 use App\Entity\Tenant\Term;
 use App\Service\Finance\ClassLevels;
+use App\Service\Finance\FeeRepricer;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -33,7 +34,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class FeeAmountsController extends AbstractController
 {
     #[Route('', name: '', methods: ['GET', 'POST'])]
-    public function amounts(Request $request, EntityManagerInterface $em): Response
+    public function amounts(Request $request, EntityManagerInterface $em, FeeRepricer $repricer): Response
     {
         $terms = $em->getRepository(Term::class)->createQueryBuilder('t')
             ->join('t.session', 's')
@@ -148,12 +149,39 @@ final class FeeAmountsController extends AbstractController
 
             $em->flush();
 
+            // Optional, and off by default: changing a price is not by itself a
+            // decision to reopen bills a family has already been shown. Ticked,
+            // every ACADEMIC bill for this term in these arms is re-priced from the
+            // schedule, with the discount re-applied and paid money untouched.
+            $reprice = $request->request->getBoolean('reprice');
+            $repriceResult = $reprice
+                ? $repricer->repriceTerm($term, $levels[$level] ?? [])
+                : null;
+
             $this->addFlash($changed + $removed > 0 ? 'success' : 'info', match (true) {
                 $changed > 0 && $removed > 0 => sprintf('%d amount%s set and %d cleared for %s.', $changed, $changed === 1 ? '' : 's', $removed, $level),
                 $changed > 0 => sprintf('%d amount%s set for %s.', $changed, $changed === 1 ? '' : 's', $level),
                 $removed > 0 => sprintf('%d amount%s cleared for %s.', $removed, $removed === 1 ? '' : 's', $level),
                 default => 'Nothing changed.',
             });
+
+            if ($repriceResult !== null) {
+                $this->addFlash(
+                    $repriceResult['changed'] > 0 ? 'success' : 'info',
+                    $repriceResult['changed'] > 0
+                        ? sprintf(
+                            '%d existing bill%s re-priced (₦%s → ₦%s).%s',
+                            $repriceResult['changed'],
+                            $repriceResult['changed'] === 1 ? '' : 's',
+                            number_format($repriceResult['from'], 2),
+                            number_format($repriceResult['to'], 2),
+                            $repriceResult['kept_lines'] > 0
+                                ? sprintf(' %d line%s kept the amount the family was already billed.', $repriceResult['kept_lines'], $repriceResult['kept_lines'] === 1 ? '' : 's')
+                                : ''
+                        )
+                        : sprintf('No existing bill needed re-pricing (%d checked).', $repriceResult['invoices'])
+                );
+            }
 
             return $this->redirectToRoute('app_tenant_fee_amounts', ['term' => $term->getId(), 'level' => $level]);
         }

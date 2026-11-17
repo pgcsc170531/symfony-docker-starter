@@ -140,10 +140,39 @@ final class FeeImportController extends AbstractController
     }
 
     #[Route('/{batch}/commit', name: 'app_tenant_fee_import_commit', requirements: ['batch' => '\d+'], methods: ['POST'])]
-    public function commit(FeeImportBatch $batch, Request $request): Response
+    public function commit(FeeImportBatch $batch, Request $request, EntityManagerInterface $em): Response
     {
         if (!$this->isCsrfTokenValid('commit_fee_import_' . $batch->getId(), (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid security token.');
+        }
+
+        // One term can only carry one opening balance. When the office asks to post
+        // this batch over an earlier one, the earlier one is reversed first — in the
+        // same request, so the two never both stand. Reversing is itself reversible.
+        $reverseFirst = (int) $request->request->get('reverse_first', 0);
+
+        if ($reverseFirst > 0) {
+            $previous = $em->getRepository(FeeImportBatch::class)->find($reverseFirst);
+
+            if ($previous === null || !$previous->isPosted()) {
+                $this->addFlash('error', 'That batch is not posted, so there is nothing to reverse. Reload the page and try again.');
+
+                return $this->redirectToRoute('app_tenant_fee_import_batch', ['batch' => $batch->getId()]);
+            }
+
+            try {
+                $reversed = $this->imports->reverse($previous, $this->getUser()?->getUserIdentifier() ?? 'system');
+                $this->addFlash('warning', sprintf(
+                    'Batch #%d was reversed first: %d payment%s removed, so this term starts clean.',
+                    $previous->getId(),
+                    $reversed['payments'] ?? 0,
+                    ($reversed['payments'] ?? 0) === 1 ? '' : 's'
+                ));
+            } catch (\Throwable $e) {
+                $this->addFlash('error', 'Batch #' . $previous->getId() . ' could not be reversed: ' . $e->getMessage() . ' Nothing was posted.');
+
+                return $this->redirectToRoute('app_tenant_fee_import_batch', ['batch' => $batch->getId()]);
+            }
         }
 
         try {

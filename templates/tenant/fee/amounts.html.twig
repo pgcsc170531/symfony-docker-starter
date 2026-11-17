@@ -117,6 +117,22 @@
                 Swipe the table sideways to reach the other arms.
             </p>
 
+            <div class="mt-4 rounded-lg border border-ink-200 bg-ink-50 p-3">
+                <label for="reprice" class="flex min-h-[44px] cursor-pointer items-start gap-3">
+                    <input type="checkbox" id="reprice" name="reprice" value="1"
+                           class="mt-1 h-5 w-5 shrink-0 rounded border-ink-300 text-accent-600 focus:ring-accent-500">
+                    <span class="min-w-0">
+                        <span class="block text-sm font-bold text-ink-900">Apply these prices to bills already generated</span>
+                        <span class="mt-1 block text-xs leading-relaxed text-ink-600">
+                            Every academic bill for {{ term.name }} in {{ level }} is re-priced from this schedule.
+                            Money already paid is kept, a discount is recalculated on the new total, and a line this
+                            schedule no longer prices stays at the amount the family was billed. Leave unticked to change
+                            future bills only.
+                        </span>
+                    </span>
+                </label>
+            </div>
+
             <div class="mt-4 flex flex-col gap-2 sm:flex-row">
                 <button type="submit"
                         class="min-h-[44px] w-full rounded-lg bg-accent-600 px-5 text-sm font-semibold text-white hover:bg-accent-700 sm:w-auto">

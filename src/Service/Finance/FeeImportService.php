@@ -175,6 +175,9 @@ final class FeeImportService
                 'warnings' => [],
                 'posted' => false,
                 'payment_amount' => 0.0,
+                'advance_id' => null,
+                'advance_reference' => null,
+                'advance_note' => null,
             ];
 
             $admission = (string) $row['admission_number'];
@@ -239,6 +242,20 @@ final class FeeImportService
                             );
                         }
                     }
+                }
+            }
+
+            // A blank or zero "Amount Paid" means "this file has no cash for this
+            // pupil" — it must not mean "this family has paid nothing". Money they
+            // handed over earlier as an advance is theirs, and the bill should be
+            // settled from it instead of being imported as fully unpaid.
+            if ($row['errors'] === []
+                && (float) $row['amount_paid'] <= 0.005
+                && (float) $row['due'] > 0.005) {
+                $advanceStudent = $this->em->find(Student::class, (int) ($row['student_id'] ?? 0));
+
+                if ($advanceStudent instanceof Student) {
+                    $this->fundFromAdvance($row, $advanceStudent);
                 }
             }
 
@@ -384,6 +401,31 @@ final class FeeImportService
                 $total = (float) $invoice->getTotalAmount();
                 $currentPaid = (float) $invoice->getPaidAmount();
                 $targetPaid = (float) $row['amount_paid'];
+
+                // Rows funded from an advance draw the money down for real: a
+                // CONFIRMED payment that names the advance, not cash "from the file"
+                // that nobody can match to a bank credit.
+                $advanceId = (int) ($row['advance_id'] ?? 0);
+                if ($advanceId > 0) {
+                    $advancePayment = $this->advances->applyTo($invoice);
+
+                    if ($advancePayment !== null) {
+                        // Tie the draw-down to the batch: reversing the import must
+                        // take this money back out of the bill too. Without the link
+                        // the advance payment would survive a reversal and leave the
+                        // invoice looking paid by money the batch no longer reports.
+                        $advancePayment->setImportBatch($batch);
+                        $advancePayment->setNote(trim((string) $advancePayment->getNote()
+                            . sprintf(' · opening balance import batch #%d', $batch->getId())));
+                        $row['payment_amount'] = (float) $advancePayment->getAmount();
+                        $row['payment_reference_code'] = $advancePayment->getReferenceCode();
+                    } else {
+                        $row['payment_amount'] = 0.0;
+                    }
+
+                    $currentPaid = (float) $invoice->getPaidAmount();
+                    $targetPaid = $currentPaid;
+                }
 
                 if ($targetPaid + 0.005 < $currentPaid) {
                     $student->setStudentType($previousType);
@@ -626,6 +668,44 @@ final class FeeImportService
         $row['discount'] = (float) $quote['discount'];
         $row['discount_label'] = $quote['discountLabel'];
         $row['scholarship'] = $quote['discountLabel'];
+    }
+
+    /**
+     * Settle an import row from the pupil's open advance payment.
+     *
+     * The file carries no cash for this pupil (blank or zero), so the money the
+     * family handed over earlier is used: the row is shown as paid from that
+     * advance, with the reference, and the outstanding figure drops accordingly.
+     * Nothing is written here — the draw-down happens at commit, as a real
+     * `Payment` that names the advance (see AdvancePaymentService).
+     *
+     * @param array<string, mixed> $row
+     */
+    private function fundFromAdvance(array &$row, Student $student): void
+    {
+        $advance = $this->advances->openAdvanceFor($student);
+
+        if ($advance === null) {
+            return;
+        }
+
+        $available = $this->advances->balance($advance);
+
+        if ($available <= 0.005) {
+            return;
+        }
+
+        $draw = round(min($available, (float) $row['due']), 2);
+
+        $row['amount_paid'] = $draw;
+        $row['advance_id'] = $advance->getId();
+        $row['advance_reference'] = $advance->getReference();
+        $row['advance_note'] = sprintf(
+            'No amount paid in the file — settled from advance %s (₦%s of ₦%s held).',
+            $advance->getReference(),
+            number_format($draw, 2),
+            number_format($available, 2)
+        );
     }
 
     /**
