@@ -80,13 +80,19 @@ final class FeeRepricer
         // arms whose prices were actually edited.
         $invoices = [];
         foreach ($arms as $classroom) {
-            foreach ($this->em->getRepository(Invoice::class)->findBy([
-                'term' => $term,
-                'type' => Invoice::TYPE_ACADEMIC,
-                'classroom' => $classroom,
-            ]) as $candidate) {
-                if ($candidate instanceof Invoice) {
-                    $invoices[$candidate->getId() ?? spl_object_id($candidate)] = $candidate;
+            // ACADEMIC is the current type; 'TUITION' is what older rows were
+            // written with before the constant existed. A school that has been
+            // running for a while has both, and a re-price that ignores half its
+            // bills is worse than no re-price at all.
+            foreach ([Invoice::TYPE_ACADEMIC, 'TUITION'] as $type) {
+                foreach ($this->em->getRepository(Invoice::class)->findBy([
+                    'term' => $term,
+                    'type' => $type,
+                    'classroom' => $classroom,
+                ]) as $candidate) {
+                    if ($candidate instanceof Invoice) {
+                        $invoices[$candidate->getId() ?? spl_object_id($candidate)] = $candidate;
+                    }
                 }
             }
         }

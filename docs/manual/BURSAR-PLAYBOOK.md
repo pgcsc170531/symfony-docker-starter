@@ -436,13 +436,19 @@ and confirm every class in your file has its tuition and other fee lines. Use
 a whole fee item is missing, ask the administrator. An empty schedule is the most
 common reason a whole Fees Import is skipped.
 
-**Changing a price after bills exist.** On **Per arm** the save button has a box
-below it: **Apply these prices to bills already generated**. Left unticked, only
-*future* bills use the new price. Ticked, every academic bill for that term in
-that level is re-priced from the schedule, and the flash tells you how many:
+**Changing a price after bills exist.** The box **Apply these prices to bills
+already generated** sits under the save button on **both** price screens — the
+**Edit Prices** button on the Fee Schedule (`/onboarding/fees/prices`) and
+**Per arm** (`/finance/fees/amounts`). Left unticked, only *future* bills use the
+new price. Ticked, every academic bill for that term is re-priced from the
+schedule, and the flash tells you how many:
 `40 existing bills re-priced (₦2,196,000.00 → ₦2,236,000.00)`. Money already
 paid is never erased — a bill is not pushed below what the family handed over, and
 a line the schedule no longer prices stays at the amount they were billed.
+
+If the flash says **“No existing bill was re-priced: 0 academic bills found”**,
+the bills you mean are not in that term, or carry no term at all. Check the
+invoice's term before assuming the price change failed.
 
 ### 6.3 Build the file from a class roster
 

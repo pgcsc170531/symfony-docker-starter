@@ -136,6 +136,21 @@
         </div>
 
         {# FOOTER ACTIONS #}
+        <div class="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-3">
+            <label for="reprice" class="flex min-h-[44px] cursor-pointer items-start gap-3">
+                <input type="checkbox" id="reprice" name="reprice" value="1"
+                       class="mt-1 h-5 w-5 shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                <span class="min-w-0">
+                    <span class="block text-sm font-bold text-gray-900">Apply these prices to bills already generated</span>
+                    <span class="mt-1 block text-xs leading-relaxed text-gray-600">
+                        Every academic bill for {{ term.name }} is re-priced from these prices. Money already paid is
+                        kept, a discount is recalculated on the new total, and a line no longer priced stays at the
+                        amount the family was billed. Leave unticked to change future bills only.
+                    </span>
+                </span>
+            </label>
+        </div>
+
         <div class="mt-8 pt-6 border-t border-gray-100 flex flex-col md:flex-row justify-end gap-3">
              {% if existingPrices|length > 0 %}
                 <a href="{{ path('app_tenant_fee_schedule') }}" class="w-full md:w-auto text-center px-6 py-3.5 rounded-lg font-bold text-gray-600 hover:bg-gray-100 border border-gray-300 transition-colors">

@@ -450,7 +450,7 @@ class OnboardingController extends AbstractController
     // ==========================================
    // STEP 5: FEE PRICING (Now Pre-fills Existing Prices!)
     #[Route('/fees/prices', name: 'app_tenant_onboarding_fee_prices')]
-    public function step5(Request $request, EntityManagerInterface $em, \Symfony\Component\Security\Csrf\CsrfTokenManagerInterface $csrfTokenManager): Response
+    public function step5(Request $request, EntityManagerInterface $em, \Symfony\Component\Security\Csrf\CsrfTokenManagerInterface $csrfTokenManager, \App\Service\Finance\FeeRepricer $repricer): Response
     {
         // 🧹 SAFETY CLEANUP
         $em->createQuery("DELETE FROM App\Entity\Tenant\FeeItem f WHERE f.name IS NULL OR f.name = ''")->execute();
@@ -518,6 +518,11 @@ class OnboardingController extends AbstractController
                             ]);
 
                             if ($amount !== null && $amount !== '') {
+                                // TYPE A PRICE, NOT A SENTENCE: "41,000" used to be
+                                // written straight into a decimal column, which
+                                // silently stored 41.00.
+                                $amount = number_format(round((float) preg_replace('/[^0-9.\-]/', '', (string) $amount), 2), 2, '.', '');
+
                                 // CASE A: WE HAVE A PRICE TO SAVE
                                 
                                 if (count($existingEntries) > 0) {
@@ -554,6 +559,32 @@ class OnboardingController extends AbstractController
                 
                 $em->flush();
                 $this->addFlash('success', 'Fees updated successfully!');
+
+                // This is the screen the Fee Schedule's "Edit Prices" button opens,
+                // so it needs the same option as Finance ▸ Fees ▸ Per arm. Without
+                // it a price change reached only future bills, which is exactly what
+                // the bursar reported on the live server.
+                if ($request->request->getBoolean('reprice')) {
+                    $result = $repricer->repriceTerm($term, $classrooms);
+
+                    $this->addFlash(
+                        $result['changed'] > 0 ? 'success' : 'info',
+                        $result['changed'] > 0
+                            ? sprintf(
+                                '%d existing bill%s re-priced (₦%s → ₦%s).',
+                                $result['changed'],
+                                $result['changed'] === 1 ? '' : 's',
+                                number_format($result['from'], 2),
+                                number_format($result['to'], 2)
+                            )
+                            : sprintf(
+                                'No existing bill was re-priced: %d academic bill%s found for %s. Bills from another term, or bills with no term, are not touched.',
+                                $result['invoices'],
+                                $result['invoices'] === 1 ? '' : 's',
+                                $term->getName() ?? 'this term'
+                            )
+                    );
+                }
                 
                 if ($returnTo === 'schedule') {
                 return $this->redirectToRoute('app_tenant_fee_schedule');
