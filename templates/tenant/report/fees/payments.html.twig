@@ -132,6 +132,7 @@
                         <th class="px-4 py-3 text-right">Amount</th>
                         <th class="px-4 py-3">Status</th>
                         <th class="px-4 py-3">Confirmed by</th>
+                        <th class="px-4 py-3 text-right">Receipt</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-ink-100">
@@ -176,6 +177,15 @@
                                 {% else %}<span class="badge-failed">{{ payment.status|capitalize }}</span>{% endif %}
                             </td>
                             <td class="break-all px-4 py-3 text-xs text-ink-500">{{ payment.confirmedBy ?: '—' }}</td>
+                            <td class="px-4 py-3 text-right">
+                                {# The bursar and admin open the same receipt the parent sees. #}
+                                {% if payment.status == 'CONFIRMED' %}
+                                    <a href="{{ path('app_tenant_payment_receipt', {id: payment.id}) }}" target="_blank" rel="noopener"
+                                       class="inline-flex min-h-[44px] items-center whitespace-nowrap text-xs font-semibold text-accent-700 hover:underline">View receipt</a>
+                                {% else %}
+                                    <span class="text-xs text-ink-400">—</span>
+                                {% endif %}
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -204,6 +214,10 @@
                         {% else %}<span class="badge-failed">{{ payment.status|capitalize }}</span>{% endif %}
                         <span class="text-xs text-ink-500">{{ payment.invoice.type }}</span>
                     </div>
+                    {% if payment.status == 'CONFIRMED' %}
+                        <a href="{{ path('app_tenant_payment_receipt', {id: payment.id}) }}" target="_blank" rel="noopener"
+                           class="mt-2 inline-flex min-h-[44px] items-center text-xs font-semibold text-accent-700">View receipt</a>
+                    {% endif %}
                     {% if payment.invoice.balanceDue > 0.005 %}
                         <p class="mt-1 text-[11px] font-semibold text-ink-600">
                             ₦{{ payment.invoice.balanceDue|number_format(2) }} still owing on {{ payment.invoice.invoiceNumber }}

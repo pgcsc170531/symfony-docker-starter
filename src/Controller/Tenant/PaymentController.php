@@ -3,14 +3,12 @@
 namespace App\Controller\Tenant;
 
 use App\Entity\Tenant\Invoice;
-use App\Entity\Tenant\InvoiceItem;
 use App\Entity\Tenant\Payment;
 use App\Entity\Tenant\Student;
 use App\Entity\Tenant\School;
 use App\Entity\Tenant\FeeStructure;
 use App\Entity\Tenant\Term;
 use App\Entity\Tenant\Enrollment;
-use App\Entity\Tenant\StudentDiscount;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -22,20 +20,15 @@ use Symfony\Component\ExpressionLanguage\Expression;
 use App\Repository\Tenant\PaymentRepository;
 // Updated: Using your custom Notification Service
 use App\Service\NotificationService; 
-use App\Service\Finance\DiscountCalculator;
-use App\Service\Finance\AdvancePaymentService;
-use App\Service\Finance\InvoiceNumberGenerator;
 use App\Service\Finance\PaymentReferenceGenerator;
+use App\Service\Finance\TuitionInvoiceBuilder;
 use App\Service\SchoolMailer;
 
 #[Route('/finance/payment')]
 class PaymentController extends AbstractController
 {
     public function __construct(
-        private readonly DiscountCalculator $discountCalculator,
-        private readonly InvoiceNumberGenerator $invoiceNumbers,
         private readonly PaymentReferenceGenerator $paymentReferences,
-        private readonly AdvancePaymentService $advances,
     ) {
     }
     // ==========================================
@@ -143,7 +136,7 @@ class PaymentController extends AbstractController
 
     #[Route('/generate-invoice/{studentId}', name: 'app_tenant_payment_generate_invoice', methods: ['POST'])]
     #[IsGranted('ROLE_BURSAR')]
-    public function generateInvoice(int $studentId, EntityManagerInterface $em): Response
+    public function generateInvoice(int $studentId, EntityManagerInterface $em, TuitionInvoiceBuilder $invoices): Response
     {
         $student = $em->getRepository(Student::class)->find($studentId);
         if (!$student) throw $this->createNotFoundException('Student not found');
@@ -169,16 +162,23 @@ class PaymentController extends AbstractController
         $exists = $em->getRepository(Invoice::class)->findOneBy(['student' => $student, 'term' => $term, 'type' => Invoice::TYPE_ACADEMIC]);
         if ($exists) return $this->redirectToRoute('app_tenant_payment_terminal', ['id' => $studentId]);
 
-        $invoice = new Invoice();
-        $invoice->setStudent($student);
-        $invoice->setTerm($term);
-        $invoice->setSession($term->getSession());
-        $invoice->setClassroom($classroom);
-        $invoice->setInvoiceNumber($this->invoiceNumbers->next($this->invoiceNumbers->yearFor($term->getSession())));
-        $invoice->setType(Invoice::TYPE_ACADEMIC);
-        $invoice->setStatus(Invoice::STATUS_UNPAID);
-        $invoice->setPaidAmount('0');
+        // One shared biller. This screen used to walk the fee schedule on its
+        // own, which billed a returning pupil for uniform, books and the ID card
+        // and ignored the pupil's type entirely. Admissions, the student importer
+        // and the fees import all use this builder for exactly that reason.
+        $invoice = $invoices->build($student, $classroom, $term, $student->getStudentType());
 
+        if ($invoice === null) {
+            $this->addFlash('error', sprintf(
+                'No fees are set for %s this term. Set the fee schedule first.',
+                $classroom->getName()
+            ));
+
+            return $this->redirectToRoute('app_tenant_payment_terminal', ['id' => $studentId]);
+        }
+
+        // The document snapshot, so a reprint after the school renames itself
+        // still shows what the parent was given.
         $school = $em->getRepository(School::class)->findOneBy([]);
         if ($school) {
             $invoice->setSchoolName($school->getName());
@@ -186,40 +186,8 @@ class PaymentController extends AbstractController
             $invoice->setSchoolLogo($school->getLogoFilename());
             $invoice->setSchoolEmail($school->getEmail());
         }
-        
-        $fees = $em->getRepository(FeeStructure::class)->findBy([
-            'classroom' => $classroom,
-            'term' => $term
-        ]);
 
-        $total = 0;
-        foreach ($fees as $fee) {
-            $item = new InvoiceItem();
-            $item->setInvoice($invoice);
-            // The fee item is what tells the discount engine which line is
-            // tuition; without it a scholarship could not find its base.
-            $item->setFeeItem($fee->getFeeItem());
-            $item->setDescription($fee->getFeeItem()->getName());
-            $item->setAmount((string)$fee->getAmount());
-            $em->persist($item);
-            $total += $fee->getAmount();
-        }
-
-        // The terminal used to ignore scholarships entirely, so a discounted
-        // pupil was billed the full amount from this screen. Same calculator as
-        // admissions: tuition only, unless the rule is a 100% full scholarship.
-        $discount = $this->discountCalculator->calculateDiscount(
-            $student,
-            $this->discountCalculator->tuitionBaseFromStructures($fees),
-            (float) $total,
-        );
-        $invoice->setDiscountApplied((string) $discount);
-        $invoice->setDiscountLabel($this->discountCalculator->describe($student));
-        $invoice->setTotalAmount((string) max(0.0, (float) $total - $discount));
-        $invoice->setStatus(Invoice::statusFor(0.0, (float) $invoice->getTotalAmount()));
-
-        $em->persist($invoice);
-        $this->advances->applyTo($invoice);
+        // build() already applied the pupil's advance and persisted the bill.
         $em->flush();
 
         $this->addFlash('success', 'Invoice generated successfully.');
@@ -510,23 +478,11 @@ class PaymentController extends AbstractController
         return $this->redirectToRoute('app_tenant_payment_slip', ['id' => $payment->getId()]);
     }
 
-    #[Route('/receipt/{id}', name: 'app_tenant_payment_receipt')]
+    #[Route('/receipt/{id}', name: 'app_tenant_payment_receipt', requirements: ['id' => '\d+'])]
     #[IsGranted(new Expression("is_granted('ROLE_BURSAR') or is_granted('ROLE_PARENT')"))]
     public function receipt(int $id, EntityManagerInterface $em): Response
     {
-        $payment = $em->getRepository(Payment::class)->createQueryBuilder('p')
-            ->addSelect('i', 's', 't') 
-            ->innerJoin('p.invoice', 'i')
-            ->innerJoin('i.student', 's')
-            ->leftJoin('i.term', 't') 
-            ->where('p.id = :id')
-            ->setParameter('id', $id)
-            ->getQuery()
-            ->getOneOrNullResult();
-
-        if (!$payment) throw $this->createNotFoundException('Receipt not found.');
-
-        $this->checkAccess($payment->getInvoice()->getStudent());
+        $payment = $this->loadReceiptPayment($id, $em);
 
         if ($payment->getStatus() !== Payment::STATUS_CONFIRMED) {
             $this->addFlash('error', 'Receipt is not available yet.');
@@ -538,9 +494,43 @@ class PaymentController extends AbstractController
             'student' => $payment->getInvoice()->getStudent(),
             'invoice' => $payment->getInvoice(),
             'liveSchool' => $em->getRepository(School::class)->findOneBy([]),
+            'classroom_name' => $this->classroomFor($payment),
         ]);
     }
-    
+
+    /** Load a fee payment with its invoice, pupil and term, and prove the caller may see it. */
+    private function loadReceiptPayment(int $id, EntityManagerInterface $em): Payment
+    {
+        $payment = $em->getRepository(Payment::class)->createQueryBuilder('p')
+            ->addSelect('i', 's', 't')
+            ->innerJoin('p.invoice', 'i')
+            ->innerJoin('i.student', 's')
+            ->leftJoin('i.term', 't')
+            ->where('p.id = :id')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        if (!$payment instanceof Payment) {
+            throw $this->createNotFoundException('Receipt not found.');
+        }
+
+        $this->checkAccess($payment->getInvoice()->getStudent());
+
+        return $payment;
+    }
+
+    /** The arm billed on the invoice, falling back to where the pupil sits today. */
+    private function classroomFor(Payment $payment): ?string
+    {
+        $invoice = $payment->getInvoice();
+        $student = $invoice?->getStudent();
+
+        return ($invoice?->getClassroom()
+            ?? $student?->getCurrentClassroom()
+            ?? $student?->getCurrentClass())?->getName();
+    }
+
     #[Route('/slip/{id}', name: 'app_tenant_payment_slip')]
     public function paymentSlip(int $id, EntityManagerInterface $em): Response
     {

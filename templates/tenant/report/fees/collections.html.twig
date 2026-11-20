@@ -112,7 +112,7 @@
                             </td>
                             <td class="px-4 py-3 text-right">
                                 {% if payment.status == 'CONFIRMED' %}
-                                    <a href="{{ path('app_tenant_payment_receipt', {id: payment.id}) }}"
+                                    <a href="{{ path('app_tenant_payment_receipt', {id: payment.id}) }}" target="_blank" rel="noopener"
                                        class="text-xs font-semibold text-accent-700 hover:underline">Receipt</a>
                                 {% endif %}
                             </td>
@@ -142,7 +142,7 @@
                     <div class="mt-2 flex items-center justify-between gap-2">
                         {% if payment.status == 'CONFIRMED' %}
                             <span class="badge-paid">Paid</span>
-                            <a href="{{ path('app_tenant_payment_receipt', {id: payment.id}) }}"
+                            <a href="{{ path('app_tenant_payment_receipt', {id: payment.id}) }}" target="_blank" rel="noopener"
                                class="inline-flex min-h-[44px] items-center text-xs font-semibold text-accent-700">Receipt</a>
                         {% elseif payment.status == 'PENDING' %}
                             <span class="badge-pending">Unverified</span>

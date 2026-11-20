@@ -201,10 +201,13 @@
                             <td class="py-3">
                                 {% if payment.status == 'CONFIRMED' %}
                                     <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Verified</span>
-                                
+                                    {# Opens the school's own receipt page, which prints with its own button. #}
+                                    <a href="{{ path('app_tenant_payment_receipt', {id: payment.id}) }}" target="_blank" rel="noopener"
+                                       class="mt-1 block min-h-[44px] text-[11px] font-bold text-blue-700 underline">🧾 View / print receipt</a>
+
                                 {% elseif payment.status == 'CANCELLED' or (payment.status == 'PENDING' and invoice.status == 'PAID') %}
                                     <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500 line-through">Void / Cancelled</span>
-                                
+
                                 {% else %}
                                     <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">Pending</span>
                                     <a href="{{ path('app_tenant_payment_slip', {id: payment.id}) }}" class="block text-[10px] text-blue-600 font-bold mt-1">📄 Slip / Upload Proof</a>

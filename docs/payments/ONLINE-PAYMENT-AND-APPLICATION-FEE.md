@@ -549,12 +549,33 @@ matches it word for word in spirit.
 
 ### 9.2 Where it appears
 
-- `templates/tenant/payment/receipt.html.twig` — the on-screen/printed fee receipt
-  (bursar and parent both reach it).
+- `templates/tenant/payment/receipt.html.twig` — **the receipt**, on screen and
+  printed. Its own **Print Receipt** button prints this layout (`window.print()`);
+  the bursar, the admin and the parent all reach the same page. There is no
+  separate PDF copy — a second file of the same receipt only ever drifted from it.
 - `templates/tenant/payment/walkin_receipt.html.twig` — one line of balance for a
   part-paid store sale.
 - Unchanged and already correct: the email receipt, the invoice list (`Due: ₦X`,
   `Partial` badge) and the PDF statement.
+
+### 9.4 The pupil's class on the receipt (owner, 20 Nov 2026)
+
+> "In the receipt the class of the student is important — it is not seen when you
+> print the receipt from the bursar side or the portal."
+
+A receipt that names only the pupil is ambiguous the moment a sibling joins the
+same school, and the class is the field the bursary files the paper under.
+
+- The receipt prints **Class** in the identity area, read from
+  `invoice.classroom` (the arm actually billed), falling back to the pupil's
+  current class for legacy bills that carry none.
+- The bursar reaches the receipt from the invoice's **Transaction history** (a
+  confirmed payment is no longer just a green "Verified" badge), from the
+  **payments register** (`/finance/reports/payments`, a "View receipt" link on
+  every confirmed row) and from the collections report; the parent reaches it
+  from the receipt list and dashboard. Staff and parents open the *same* page —
+  access is `ROLE_BURSAR` (admin inherits it) or the pupil's own guardian.
+- The receipt is the school's own design. Keep it that way.
 
 ### 9.3 Rules
 
