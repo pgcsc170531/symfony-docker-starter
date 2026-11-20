@@ -172,8 +172,10 @@ final class FeeImportService
                 'scholarship' => null,
                 'outstanding' => 0.0,
                 'overpayment' => 0.0,
+                'recorded_paid' => 0.0,
                 'warnings' => [],
                 'posted' => false,
+                'duplicate' => false,
                 'payment_amount' => 0.0,
                 'advance_id' => null,
                 'advance_reference' => null,
@@ -241,6 +243,28 @@ final class FeeImportService
                                 $row['student_type']
                             );
                         }
+
+                        // A file may be uploaded after the terminal already took the
+                        // same cash. Say so here, before anybody presses Post, rather
+                        // than refusing the row at commit time.
+                        if ($row['errors'] === [] && (float) $row['recorded_paid'] > 0.005) {
+                            $addsNothing = (float) $row['amount_paid'] <= (float) $row['recorded_paid'] + 0.005;
+                            $row['duplicate'] = $addsNothing;
+                            $row['warnings'][] = $addsNothing
+                                ? sprintf(
+                                    'Row %d: ₦%s is already recorded on %s, so this row adds nothing and will be skipped.',
+                                    $row['row'],
+                                    number_format((float) $row['recorded_paid'], 2),
+                                    $row['invoice_number'] ?? 'this term’s bill'
+                                )
+                                : sprintf(
+                                    'Row %d: ₦%s is already recorded on %s; this row will add the ₦%s difference.',
+                                    $row['row'],
+                                    number_format((float) $row['recorded_paid'], 2),
+                                    $row['invoice_number'] ?? 'this term’s bill',
+                                    number_format((float) $row['amount_paid'] - (float) $row['recorded_paid'], 2)
+                                );
+                        }
                     }
                 }
             }
@@ -248,10 +272,13 @@ final class FeeImportService
             // A blank or zero "Amount Paid" means "this file has no cash for this
             // pupil" — it must not mean "this family has paid nothing". Money they
             // handed over earlier as an advance is theirs, and the bill should be
-            // settled from it instead of being imported as fully unpaid.
+            // settled from it instead of being imported as fully unpaid. A bill the
+            // terminal already settled draws nothing: the advance is not a second
+            // way to pay the same invoice.
             if ($row['errors'] === []
                 && (float) $row['amount_paid'] <= 0.005
-                && (float) $row['due'] > 0.005) {
+                && (float) $row['due'] > 0.005
+                && (float) $row['recorded_paid'] + 0.005 < (float) $row['due']) {
                 $advanceStudent = $this->em->find(Student::class, (int) ($row['student_id'] ?? 0));
 
                 if ($advanceStudent instanceof Student) {
@@ -341,7 +368,7 @@ final class FeeImportService
     /**
      * Post every valid row in one transaction.
      *
-     * @return array{posted: int, skipped: int, total_due: float, total_paid: float, outstanding: float, error: ?string}
+     * @return array{posted: int, skipped: int, duplicates: int, total_due: float, total_paid: float, outstanding: float, error: ?string}
      */
     public function commit(FeeImportBatch $batch, string $actor): array
     {
@@ -350,20 +377,17 @@ final class FeeImportService
         }
 
         $term = $batch->getTerm();
-        $other = $this->postedBatchForTerm($term, $batch);
 
-        if ($other !== null) {
-            return $this->result(0, 0, 0.0, 0.0, 0.0, sprintf(
-                'An opening-balance import for %s was already posted (batch #%d). Reverse that batch first.',
-                $term?->getName() ?? 'this term',
-                $other->getId()
-            ));
-        }
-
+        // Several batches per term are allowed on purpose: two bursars may be
+        // working through two classes at the same time, and a school that keeps
+        // collecting by hand may post a second file a week later. What must not
+        // happen is the *same cash* being posted twice, so every row is checked
+        // against the bill it belongs to (see duplicateReason()).
         return $this->em->wrapInTransaction(function () use ($batch, $term, $actor): array {
             $rows = $batch->getPayload();
             $posted = 0;
             $skipped = 0;
+            $duplicates = 0;
             $totalDue = 0.0;
             $totalPaid = 0.0;
             $outstanding = 0.0;
@@ -398,9 +422,45 @@ final class FeeImportService
                     continue;
                 }
 
+                // `build()` only re-cuts a bill nobody has paid against. When the
+                // file corrects the pupil's type and the bill already carries money,
+                // re-price it too — a returning pupil must not keep the new-intake
+                // lines on a part-paid bill.
+                if ($previousType !== $student->getStudentType() && (float) $invoice->getPaidAmount() > 0.005) {
+                    $this->invoices->repriceForStudentType($invoice, $student->getStudentType());
+                }
+
                 $total = (float) $invoice->getTotalAmount();
                 $currentPaid = (float) $invoice->getPaidAmount();
                 $targetPaid = (float) $row['amount_paid'];
+                $reference = trim((string) ($row['payment_reference'] ?? ''));
+
+                // The money may already be on the bill — the payment terminal took
+                // it, or an earlier batch posted it. That is a skip, never a row
+                // error: the file is not wrong, it is simply a second record of
+                // cash that is already counted.
+                $duplicate = $this->duplicateReason($invoice, $reference, $currentPaid, $targetPaid);
+
+                if ($duplicate !== null) {
+                    $row['invoice_id'] = $invoice->getId();
+                    $row['invoice_number'] = $invoice->getInvoiceNumber();
+                    $row['due'] = $total;
+                    $row['outstanding'] = round(max(0.0, $total - $currentPaid), 2);
+                    $row['payment_amount'] = 0.0;
+                    $row['posted'] = false;
+                    $row['duplicate'] = true;
+                    $row['warnings'] = $row['warnings'] ?? [];
+                    $row['warnings'][] = sprintf(
+                        '%s: %s on %s. Nothing was added for this row — a further instalment of the same size is taken at the payment terminal.',
+                        $student->getFullName(),
+                        $duplicate,
+                        $invoice->getInvoiceNumber() ?? 'this term’s bill'
+                    );
+                    $rows[$index] = $row;
+                    ++$skipped;
+                    ++$duplicates;
+                    continue;
+                }
 
                 // Rows funded from an advance draw the money down for real: a
                 // CONFIRMED payment that names the advance, not cash "from the file"
@@ -425,19 +485,6 @@ final class FeeImportService
 
                     $currentPaid = (float) $invoice->getPaidAmount();
                     $targetPaid = $currentPaid;
-                }
-
-                if ($targetPaid + 0.005 < $currentPaid) {
-                    $student->setStudentType($previousType);
-                    $rows[$index]['errors'][] = sprintf(
-                        '%s already has %s recorded against this term, which is more than the file says (%s). '
-                        . 'Nothing was posted for this row — reverse the earlier payment or import first.',
-                        $student->getFullName(),
-                        number_format($currentPaid, 2),
-                        number_format($targetPaid, 2)
-                    );
-                    ++$skipped;
-                    continue;
                 }
 
                 $targetInvoicePaid = min($targetPaid, $total);
@@ -519,8 +566,39 @@ final class FeeImportService
 
             $this->em->flush();
 
-            return $this->result($posted, $skipped, $totalDue, $totalPaid, $outstanding, null);
+            $result = $this->result($posted, $skipped, $totalDue, $totalPaid, $outstanding, null, $duplicates);
+
+            return $result;
         });
+    }
+
+    /**
+     * Why this row adds no new money, or null when it does.
+     *
+     * Two ways a row is already counted: the file names a bank/POS reference
+     * that is already on the bill, or the bill already holds at least the amount
+     * the row states. A row with no cash against an unpaid bill (a debtor) is
+     * **not** a duplicate — it is the normal case.
+     */
+    private function duplicateReason(Invoice $invoice, string $reference, float $currentPaid, float $targetPaid): ?string
+    {
+        if ($reference !== '') {
+            foreach ($invoice->getPayments() as $payment) {
+                if ($payment->getReference() === $reference) {
+                    return sprintf('payment reference %s is already recorded', $reference);
+                }
+            }
+        }
+
+        if ($currentPaid > 0.005 && $targetPaid <= $currentPaid + 0.005) {
+            return sprintf(
+                '₦%s is already recorded, which covers the ₦%s in this row',
+                number_format($currentPaid, 2),
+                number_format($targetPaid, 2)
+            );
+        }
+
+        return null;
     }
 
     /**
@@ -603,20 +681,6 @@ final class FeeImportService
         });
     }
 
-    public function postedBatchForTerm(Term $term, ?FeeImportBatch $exclude = null): ?FeeImportBatch
-    {
-        $qb = $this->em->getRepository(FeeImportBatch::class)->createQueryBuilder('b')
-            ->andWhere('b.term = :term')->setParameter('term', $term)
-            ->andWhere('b.status = :status')->setParameter('status', FeeImportBatch::STATUS_POSTED)
-            ->setMaxResults(1);
-
-        if ($exclude?->getId() !== null) {
-            $qb->andWhere('b.id != :id')->setParameter('id', $exclude->getId());
-        }
-
-        return $qb->getQuery()->getOneOrNullResult();
-    }
-
     /** @param array<string, mixed> $row */
     private function priceRow(array &$row, Student $student, Classroom $classroom, Term $term): void
     {
@@ -625,6 +689,11 @@ final class FeeImportService
             'term' => $term,
             'type' => Invoice::TYPE_ACADEMIC,
         ]);
+
+        // What the bill already holds. The preview uses this to tell the bursar
+        // that a row is a second record of money already posted, before they
+        // commit anything.
+        $row['recorded_paid'] = $existing instanceof Invoice ? (float) $existing->getPaidAmount() : 0.0;
 
         if ($existing instanceof Invoice && !$this->invoiceIsUnpaid($existing)) {
             $row['invoice_id'] = $existing->getId();
@@ -1045,12 +1114,13 @@ final class FeeImportService
             ->setOutstanding(number_format($preview['outstanding'], 2, '.', ''));
     }
 
-    /** @return array{posted: int, skipped: int, total_due: float, total_paid: float, outstanding: float, error: ?string} */
-    private function result(int $posted, int $skipped, float $due, float $paid, float $outstanding, ?string $error): array
+    /** @return array{posted: int, skipped: int, duplicates: int, total_due: float, total_paid: float, outstanding: float, error: ?string} */
+    private function result(int $posted, int $skipped, float $due, float $paid, float $outstanding, ?string $error, int $duplicates = 0): array
     {
         return [
             'posted' => $posted,
             'skipped' => $skipped,
+            'duplicates' => $duplicates,
             'total_due' => round($due, 2),
             'total_paid' => round($paid, 2),
             'outstanding' => round($outstanding, 2),

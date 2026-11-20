@@ -166,10 +166,17 @@ first upload seemed to hang.
   status (`preview`, `posted`, `rolled_back`).
 - Re-uploading the exact same file returns the existing batch instead of
   posting twice.
-- A corrected file is a new batch. It must **replace** the previous opening
-  balance for the same pupil/term, not add to it. The safest rule:
-  **one opening-balance batch per term**. A second commit for the same term
-  refuses until the first is reversed.
+- **A term may carry any number of posted batches.** Two bursars can work on two
+  classes at the same time, and a school that keeps collecting by hand may post
+  a second file a week later; a “one batch per term” rule made the ordinary case
+  impossible. The file checksum still stops the *same file* being posted twice.
+- **A row is skipped, never rejected, when its money is already on the bill.**
+  That covers the payment terminal taking the cash before the bursary types the
+  CSV, an earlier batch for the same pupil, and a re-export of a file whose
+  bytes differ. The row is marked **Already recorded** with the figure the
+  invoice already holds. A row stating *more* than the invoice holds posts only
+  the difference. A row stating nothing against an unpaid bill is a normal
+  debtor, not a duplicate.
 - The reversal is a batch-level operation: delete the payments created by that
   batch, restore each invoice's `paid_amount` and status. No `Payment` is deleted
   outside its own batch.
@@ -256,6 +263,23 @@ An alternative is to derive “returning” from an earlier `Enrollment` row. Th
 is attractive, but it is wrong for a pupil transferring in mid-session with an
 old enrolment record from another school. The CSV is an explicit statement from
 the bursary; store it explicitly.
+
+### 5.3 Who may change the type — and what happens to bills already generated
+
+**Only a tenant super admin** may change a pupil between `NEW` and `RETURNING`
+on the profile screen. The field stays visible to everyone (it is on the bill)
+but is locked for a bursar, and `StudentController::edit()` re-checks the
+submitted value — editing the POST body is not a way round it.
+
+A change is not just a flag: `StudentTypeService::change()` re-prices **every
+academic bill for that pupil** (current and past terms, both `ACADEMIC` and the
+legacy `TUITION` type) through `TuitionInvoiceBuilder::repriceForStudentType()`.
+A returning pupil loses the `ONETIME` lines; a pupil corrected back to new gains
+them. Cash already received is never rewritten: if the corrected bill is smaller
+than what was paid, the invoice reads as overpaid and the super admin is warned
+with the exact credit to refund or hold. The import cannot repair a part-paid
+bill it did not rebuild, so it calls the same re-price when the file corrects a
+type on a bill that already holds money.
 
 ---
 
@@ -417,7 +441,8 @@ learned that lesson.
 | Negative amount | `Row 14: amount paid cannot be negative.` |
 | No fee schedule | `Row 14: no fees are set for JSS 1A this term. Set the fee schedule first.` |
 | Duplicate row | `Row 14 and row 22 both name ADM/2026/0099.` |
-| Pupil already has a posted opening balance | `Aisha Bello already has an opening balance for this term from batch #12. Reverse it first.` |
+| Pupil already has the money recorded | `Aisha Bello: ₦25,000.00 is already recorded, which covers the ₦25,000.00 in this row on INV-2026-0042. Nothing was added for this row — a further instalment of the same size is taken at the payment terminal.` |
+| Payment reference already on the bill | `Aisha Bello: payment reference TRF/0914/0042 is already recorded on INV-2026-0042. …` |
 
 Encoding is handled exactly as the student importer does it: `TextEncoding::row()`
 and a warning when a value had to be repaired. Excel saves CSV in Windows-1252
@@ -512,13 +537,18 @@ and, when the file carries no cash, settles the bill from it:
 Nothing is drawn when the file does carry cash, when the advance is closed or
 spent, or when the invoice already has a balance of zero.
 
-### 12.2 One posted batch per term — but the button is always there
+### 12.2 Many batches per term; duplicates are skipped
 
-The rule stands: two posted opening balances for one term would count the same
-cash twice. What changed is that the Post button is no longer *hidden* when the
-rule bites. The preview keeps the explanation and shows one button —
-**“Reverse #N & post these rows”** — which reverses the conflicting batch and
-posts this one in a single confirmed request, so the two never both stand.
+The old rule — one posted opening balance per term — was wrong for how a school
+actually works: two bursars, two classes, two files, same afternoon. Posting is
+now unlimited. What protects the money is not a batch counter but the bill
+itself: a row whose money is already on the invoice is skipped and reported as
+**Already recorded**, so the same cash is never counted twice. This is exactly
+the case where a parent paid at the terminal and the bursary later uploaded the
+CSV that also contains that payment.
+
+The batch screen shows the plain **Post** button; there is no batch to reverse
+first, because there is no longer a conflict to resolve.
 
 ---
 

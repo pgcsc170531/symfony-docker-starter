@@ -83,7 +83,7 @@ final class FeeImportController extends AbstractController
                 }
 
                 if ($created['already_posted']) {
-                    $this->addFlash('warning', 'This file was already posted for this term. Open the batch below; reverse it before importing it again.');
+                    $this->addFlash('info', 'This exact file was already posted for this term. Its rows are below; posting it again would not add anything.');
                 } elseif ($created['reused']) {
                     $this->addFlash('info', 'This exact file was already previewed for this term. The preview has been refreshed — nothing has been posted.');
                 }
@@ -118,7 +118,9 @@ final class FeeImportController extends AbstractController
         foreach ($rows as $row) {
             if (($row['errors'] ?? []) !== []) {
                 ++$errors;
-            } else {
+            } elseif (!($row['duplicate'] ?? false)) {
+                // A row whose money is already on the bill is not "ready": it
+                // would be skipped, so it must not inflate the Post count.
                 ++$valid;
             }
 
@@ -133,46 +135,14 @@ final class FeeImportController extends AbstractController
             'valid_count' => $valid,
             'error_count' => $errors,
             'warning_count' => $warnings,
-            'other_posted_batch' => $batch->isPreview()
-                ? $this->imports->postedBatchForTerm($batch->getTerm(), $batch)
-                : null,
         ]);
     }
 
     #[Route('/{batch}/commit', name: 'app_tenant_fee_import_commit', requirements: ['batch' => '\d+'], methods: ['POST'])]
-    public function commit(FeeImportBatch $batch, Request $request, EntityManagerInterface $em): Response
+    public function commit(FeeImportBatch $batch, Request $request): Response
     {
         if (!$this->isCsrfTokenValid('commit_fee_import_' . $batch->getId(), (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid security token.');
-        }
-
-        // One term can only carry one opening balance. When the office asks to post
-        // this batch over an earlier one, the earlier one is reversed first — in the
-        // same request, so the two never both stand. Reversing is itself reversible.
-        $reverseFirst = (int) $request->request->get('reverse_first', 0);
-
-        if ($reverseFirst > 0) {
-            $previous = $em->getRepository(FeeImportBatch::class)->find($reverseFirst);
-
-            if ($previous === null || !$previous->isPosted()) {
-                $this->addFlash('error', 'That batch is not posted, so there is nothing to reverse. Reload the page and try again.');
-
-                return $this->redirectToRoute('app_tenant_fee_import_batch', ['batch' => $batch->getId()]);
-            }
-
-            try {
-                $reversed = $this->imports->reverse($previous, $this->getUser()?->getUserIdentifier() ?? 'system');
-                $this->addFlash('warning', sprintf(
-                    'Batch #%d was reversed first: %d payment%s removed, so this term starts clean.',
-                    $previous->getId(),
-                    $reversed['payments'] ?? 0,
-                    ($reversed['payments'] ?? 0) === 1 ? '' : 's'
-                ));
-            } catch (\Throwable $e) {
-                $this->addFlash('error', 'Batch #' . $previous->getId() . ' could not be reversed: ' . $e->getMessage() . ' Nothing was posted.');
-
-                return $this->redirectToRoute('app_tenant_fee_import_batch', ['batch' => $batch->getId()]);
-            }
         }
 
         try {
@@ -198,6 +168,16 @@ final class FeeImportController extends AbstractController
                 number_format($result['outstanding'], 2),
                 $result['skipped'] > 0 ? sprintf(' %d row%s skipped.', $result['skipped'], $result['skipped'] === 1 ? '' : 's') : ''
             ));
+
+            // Duplicates are skipped on purpose, not an error: the same cash had
+            // already reached the bill (terminal, or an earlier batch).
+            if (($result['duplicates'] ?? 0) > 0) {
+                $this->addFlash('info', sprintf(
+                    '%d row%s were already recorded on the bill, so no money was added again.',
+                    $result['duplicates'],
+                    $result['duplicates'] === 1 ? '' : 's'
+                ));
+            }
         }
 
         return $this->redirectToRoute('app_tenant_fee_import_batch', ['batch' => $batch->getId()]);
@@ -275,7 +255,9 @@ final class FeeImportController extends AbstractController
                         ? 'Reversed'
                         : (($row['errors'] ?? []) !== []
                             ? 'Skipped'
-                            : (($row['posted'] ?? false) ? 'Posted' : 'Preview')),
+                            : (($row['duplicate'] ?? false)
+                                ? 'Already recorded'
+                                : (($row['posted'] ?? false) ? 'Posted' : 'Preview'))),
                     implode(' | ', $row['warnings'] ?? []),
                     implode(' | ', $row['errors'] ?? []),
                 ]);

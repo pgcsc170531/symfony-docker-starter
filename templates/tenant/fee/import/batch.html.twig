@@ -62,44 +62,26 @@
     {# ── Actions ──────────────────────────────────────────────────────── #}
     <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
         {% if batch.isPreview %}
-            {% if other_posted_batch %}
-                <div class="w-full rounded-xl border border-pending/40 bg-pending/5 p-4 sm:max-w-2xl" role="status">
-                    <p class="text-sm font-bold text-ink-900">This term already has a posted opening balance.</p>
-                    <p class="mt-1 text-sm text-ink-700">
-                        Batch #{{ other_posted_batch.id }} is posted for {{ other_posted_batch.term ? other_posted_batch.term.name : 'this term' }}.
-                        A term can only carry one, so posting this one reverses that one first — its payments are
-                        removed and these rows take their place.
-                    </p>
-                    <a href="{{ path('app_tenant_fee_import_batch', {batch: other_posted_batch.id}) }}"
-                       class="mt-2 inline-flex min-h-[44px] items-center text-sm font-bold text-accent-700 underline">
-                        Open batch #{{ other_posted_batch.id }} &rarr;
-                    </a>
-                </div>
-            {% endif %}
-
-            {# The button is always here: hiding it left the bursar with a note and
-               no way forward. With a posted batch in the way, the same click reverses
-               that batch and then posts this one, in one confirmed step. #}
+            {# Several batches per term are allowed: two bursars can work on two
+               classes at once, and a school can post a second file later. Rows
+               whose money is already on the bill are skipped, not rejected. #}
             {% if valid_count > 0 %}
                 <form method="post" action="{{ path('app_tenant_fee_import_commit', {batch: batch.id}) }}"
-                      class="w-full sm:w-auto"
-                      {% if other_posted_batch %}
-                      onsubmit="return confirm('Reverse batch #{{ other_posted_batch.id }} and post these {{ valid_count }} rows in its place? Payments from batch #{{ other_posted_batch.id }} will be removed.');"
-                      {% endif %}>
+                      class="w-full sm:w-auto">
                     <input type="hidden" name="_token" value="{{ csrf_token('commit_fee_import_' ~ batch.id) }}">
-                    {% if other_posted_batch %}
-                        <input type="hidden" name="reverse_first" value="{{ other_posted_batch.id }}">
-                    {% endif %}
                     <button type="submit"
-                            class="min-h-[44px] w-full rounded-lg px-6 text-sm font-bold text-white shadow-sm sm:w-auto
-                                {{ other_posted_batch ? 'bg-pending hover:opacity-90' : 'bg-accent-600 hover:bg-accent-700' }}">
-                        {% if other_posted_batch %}
-                            Reverse #{{ other_posted_batch.id }} &amp; post {{ valid_count }} row{{ valid_count == 1 ? '' : 's' }}
-                        {% else %}
-                            Post {{ valid_count }} row{{ valid_count == 1 ? '' : 's' }}
-                        {% endif %}
+                            class="min-h-[44px] w-full rounded-lg bg-accent-600 px-6 text-sm font-bold text-white shadow-sm hover:bg-accent-700 sm:w-auto">
+                        Post {{ valid_count }} row{{ valid_count == 1 ? '' : 's' }}
                     </button>
                 </form>
+            {% else %}
+                <div class="w-full rounded-xl border border-ink-200 bg-ink-50 p-4 sm:max-w-2xl" role="status">
+                    <p class="text-sm font-semibold text-ink-800">Nothing to post from this file.</p>
+                    <p class="mt-1 text-xs leading-relaxed text-ink-600">
+                        Every row is either already recorded on the bill — the terminal or an earlier file
+                        took that money — or could not be matched. Nothing here would add money twice.
+                    </p>
+                </div>
             {% endif %}
         {% elseif batch.isPosted and is_granted('ROLE_TENANT_SUPER_ADMIN') %}
             <form method="post" action="{{ path('app_tenant_fee_import_reverse', {batch: batch.id}) }}"
@@ -147,8 +129,8 @@
                             </p>
                         </div>
                         <span class="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold
-                            {{ batch.isRolledBack ? 'bg-failed/10 text-failed' : ((row.errors ?? []) is not empty ? 'bg-failed/10 text-failed' : ((row.posted ?? false) ? 'bg-paid/10 text-paid' : 'bg-ink-100 text-ink-600')) }}">
-                            {% if batch.isRolledBack %}Reversed{% elseif (row.errors ?? []) is not empty %}Skipped{% elseif row.posted ?? false %}Posted{% else %}Ready{% endif %}
+                            {{ batch.isRolledBack ? 'bg-failed/10 text-failed' : ((row.errors ?? []) is not empty ? 'bg-failed/10 text-failed' : ((row.duplicate ?? false) ? 'bg-pending/10 text-pending' : ((row.posted ?? false) ? 'bg-paid/10 text-paid' : 'bg-ink-100 text-ink-600'))) }}">
+                            {% if batch.isRolledBack %}Reversed{% elseif (row.errors ?? []) is not empty %}Skipped{% elseif row.duplicate ?? false %}Already recorded{% elseif row.posted ?? false %}Posted{% else %}Ready{% endif %}
                         </span>
                     </div>
 
@@ -243,6 +225,8 @@
                                     <span class="rounded-full bg-failed/10 px-2 py-0.5 text-[11px] font-bold text-failed">Reversed</span>
                                 {% elseif (row.errors ?? []) is not empty %}
                                     <span class="rounded-full bg-failed/10 px-2 py-0.5 text-[11px] font-bold text-failed">Skipped</span>
+                                {% elseif row.duplicate ?? false %}
+                                    <span class="rounded-full bg-pending/10 px-2 py-0.5 text-[11px] font-bold text-pending">Already recorded</span>
                                 {% elseif row.posted ?? false %}
                                     <span class="rounded-full bg-paid/10 px-2 py-0.5 text-[11px] font-bold text-paid">Posted</span>
                                 {% else %}
