@@ -231,6 +231,7 @@ final class FeeImportController extends AbstractController
                 'Pupil',
                 'Class',
                 'Student Type',
+                'Type Corrected',
                 'Due',
                 'Amount Paid',
                 'Outstanding',
@@ -247,6 +248,9 @@ final class FeeImportController extends AbstractController
                     $row['student_name'] ?? '',
                     $row['class_name'] ?? '',
                     $row['student_type'] ?? '',
+                    isset($row['type_from'], $row['type_to']) && $row['type_from'] !== $row['type_to']
+                        ? sprintf('%s -> %s', $row['type_from'], $row['type_to'])
+                        : '',
                     number_format((float) ($row['due'] ?? 0), 2, '.', ''),
                     number_format((float) ($row['amount_paid'] ?? 0), 2, '.', ''),
                     number_format((float) ($row['outstanding'] ?? 0), 2, '.', ''),

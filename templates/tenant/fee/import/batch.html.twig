@@ -163,6 +163,12 @@
                     {% if row.advance_note %}
                         <p class="mt-2 break-words text-xs font-semibold text-paid">{{ row.advance_note }}</p>
                     {% endif %}
+                    {# The file is the record of a type correction; say it in the past tense once posted. #}
+                    {% if row.type_from is defined and row.type_to is defined %}
+                        <p class="mt-2 break-words text-xs font-semibold text-ink-700">
+                            Student type corrected {{ row.type_from }} → {{ row.type_to }} by this import.
+                        </p>
+                    {% endif %}
                     {% for warning in row.warnings ?? [] %}
                         <p class="mt-2 break-words text-xs font-semibold text-pending">⚠ {{ warning }}</p>
                     {% endfor %}
@@ -213,7 +219,12 @@
                                 {% endfor %}
                             </td>
                             <td class="p-3 text-ink-700">{{ row.class_name }}</td>
-                            <td class="p-3 text-ink-700">{{ row.student_type }}</td>
+                            <td class="p-3 text-ink-700">
+                                {{ row.student_type }}
+                                {% if row.type_from is defined and row.type_to is defined %}
+                                    <span class="block text-[11px] text-ink-500">corrected from {{ row.type_from }}</span>
+                                {% endif %}
+                            </td>
                             <td class="p-3 text-right money text-ink-800">₦{{ (row.due ?? 0)|number_format(2) }}</td>
                             <td class="p-3 text-right money text-ink-800">₦{{ (row.amount_paid ?? 0)|number_format(2) }}</td>
                             <td class="p-3 text-right money font-semibold {{ (row.outstanding ?? 0) > 0 ? 'text-pending' : 'text-ink-800' }}">

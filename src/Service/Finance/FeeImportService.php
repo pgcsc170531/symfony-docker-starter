@@ -430,6 +430,15 @@ final class FeeImportService
                     $this->invoices->repriceForStudentType($invoice, $student->getStudentType());
                 }
 
+                // The file is the sanctioned way to correct a pupil's type — the
+                // profile field is super-admin-only precisely because a change
+                // here leaves a record. Keep the move on the row so the batch,
+                // the CSV export and a later reversal all name it.
+                if ($previousType !== $student->getStudentType()) {
+                    $row['type_from'] = $previousType;
+                    $row['type_to'] = $student->getStudentType();
+                }
+
                 $total = (float) $invoice->getTotalAmount();
                 $currentPaid = (float) $invoice->getPaidAmount();
                 $targetPaid = (float) $row['amount_paid'];

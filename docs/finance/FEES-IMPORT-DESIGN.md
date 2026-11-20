@@ -281,6 +281,15 @@ with the exact credit to refund or hold. The import cannot repair a part-paid
 bill it did not rebuild, so it calls the same re-price when the file corrects a
 type on a bill that already holds money.
 
+**The CSV is allowed to correct the type, and it is the preferred way.** The
+profile field is locked because a silent edit leaves nothing behind; a file
+leaves a batch. Each row it corrects keeps `type_from` / `type_to` in the batch
+payload, the batch screen says *“Student type corrected NEW → RETURNING by this
+import”*, the rows CSV exports a **Type Corrected** column, the batch records
+`uploaded_by`, and a reversal puts the type back (only if the pupil is still on
+the type that batch set). A bursar may therefore fix a wrong type through the
+import; only a super admin may do it on the profile.
+
 ---
 
 ## 6. Posting the money
