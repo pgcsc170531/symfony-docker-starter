@@ -55,6 +55,11 @@ class StudentAdmissionType extends AbstractType
                     'Returning' => Student::TYPE_RETURNING,
                 ],
                 'help' => 'Returning pupils are not billed one-time new-intake items.',
+                // Only a super admin may move a pupil between the two. A disabled
+                // field is not submitted, so the entity keeps its current value
+                // and the change cannot be made by editing the POST body either —
+                // StudentController re-checks the submitted value as well.
+                'disabled' => $options['lock_student_type'],
             ])
 
             // --- SECTION 2: CLASSROOM ---
@@ -181,6 +186,9 @@ class StudentAdmissionType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => Student::class,
+            'lock_student_type' => false,
         ]);
+
+        $resolver->setAllowedTypes('lock_student_type', 'bool');
     }
 }

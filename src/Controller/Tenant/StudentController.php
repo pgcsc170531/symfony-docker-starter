@@ -13,6 +13,7 @@ use App\Form\StudentAdmissionType;
 use App\Form\PhotoUploadType; 
 use App\Service\Enrollment\ClassPlacement;
 use App\Service\Results\AssessmentSchemeResolver;
+use App\Service\Students\StudentTypeService;
 use App\Service\Subjects\PupilSubjects;
 
 use Doctrine\ORM\EntityManagerInterface;
@@ -266,11 +267,55 @@ class StudentController extends AbstractController
         Request $request,
         EntityManagerInterface $em,
         ClassPlacement $placement,
+        StudentTypeService $types,
     ): Response {
-        $form = $this->createForm(StudentAdmissionType::class, $student);
+        // Whether a pupil is a new intake or a returning pupil decides whether
+        // they are billed for uniform, books and the ID card, so only a super
+        // admin may move them between the two. Everyone else still sees the
+        // value — it is on the bill — but the field is locked.
+        $mayChangeType = $this->isGranted('ROLE_TENANT_SUPER_ADMIN');
+        $originalType = $student->getStudentType();
+
+        $form = $this->createForm(StudentAdmissionType::class, $student, [
+            'lock_student_type' => !$mayChangeType,
+        ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            // The form maps straight onto the entity, so read the submitted value
+            // and then hand the entity back in its pre-edit state: the change (and
+            // the re-pricing that goes with it) belongs to StudentTypeService.
+            $submittedType = $student->getStudentType();
+            $student->setStudentType($originalType);
+
+            if ($submittedType !== $originalType) {
+                if (!$mayChangeType) {
+                    throw $this->createAccessDeniedException(
+                        'Only a super admin can change a pupil between new intake and returning.'
+                    );
+                }
+
+                $result = $types->change($student, $submittedType, $this->getUser()?->getUserIdentifier() ?? 'system');
+
+                $this->addFlash('success', $result['repriced'] > 0
+                    ? sprintf(
+                        'Student type changed to %s. %d bill%s re-priced, ₦%s → ₦%s.',
+                        $result['to'] === Student::TYPE_RETURNING ? 'returning' : 'new intake',
+                        $result['repriced'],
+                        $result['repriced'] === 1 ? '' : 's',
+                        number_format($result['from_total'], 2),
+                        number_format($result['to_total'], 2)
+                    )
+                    : sprintf(
+                        'Student type changed to %s. No bill needed re-pricing.',
+                        $result['to'] === Student::TYPE_RETURNING ? 'returning' : 'new intake'
+                    ));
+
+                foreach ($result['warnings'] as $warning) {
+                    $this->addFlash('warning', $warning);
+                }
+            }
+
             // A class change on this form must move the pupil out of the old class,
             // not add him to a second one. ClassPlacement writes both class columns
             // and drags this session's enrolment along, so every roster agrees.
@@ -286,7 +331,8 @@ class StudentController extends AbstractController
 
         return $this->render('tenant/student/edit.html.twig', [
             'form' => $form->createView(),
-            'student' => $student
+            'student' => $student,
+            'may_change_type' => $mayChangeType,
         ]);
     }
 

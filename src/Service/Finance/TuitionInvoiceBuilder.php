@@ -175,6 +175,41 @@ final class TuitionInvoiceBuilder
         ];
     }
 
+    /**
+     * Re-cut an existing bill for a pupil whose new-intake status has changed.
+     *
+     * The bill is rebuilt from the schedule as it stands, for the pupil's *new*
+     * type: a returning pupil loses the `ONETIME` lines (uniform, books, ID
+     * card, admission form), and a pupil corrected back to `NEW` gains them.
+     *
+     * Returns false, and changes nothing, when the schedule prices nothing for
+     * that class and term — an empty quote must never wipe a bill a family has
+     * already seen.
+     *
+     * Money already on the bill is left alone: `paid_amount` is the record of
+     * cash received, not a figure to be rewritten. When the corrected bill is
+     * smaller than what was paid, the invoice simply reads as overpaid and the
+     * caller reports the excess — the bursary refunds it or holds it as credit.
+     */
+    public function repriceForStudentType(Invoice $invoice, string $studentType): bool
+    {
+        $student = $invoice->getStudent();
+        $classroom = $invoice->getClassroom();
+        $term = $invoice->getTerm();
+
+        if (!$student instanceof Student || !$classroom instanceof Classroom || !$term instanceof Term) {
+            return false;
+        }
+
+        $quote = $this->quote($student, $classroom, $term, $studentType);
+
+        if ($quote['lines'] === []) {
+            return false;
+        }
+
+        return $this->replaceLines($invoice, $quote);
+    }
+
     /** A bill nobody has paid against can be recalculated safely. */
     private function isUnpaid(Invoice $invoice): bool
     {
@@ -191,9 +226,15 @@ final class TuitionInvoiceBuilder
         return true;
     }
 
-    /** @param array{lines: list<array{name: string, amount: float, feeItem: \App\Entity\Tenant\FeeItem}>, gross: float, discount: float, discountLabel: ?string, total: float} $quote */
-    private function replaceLines(Invoice $invoice, array $quote): void
+    /**
+     * @param array{lines: list<array{name: string, amount: float, feeItem: \App\Entity\Tenant\FeeItem}>, gross: float, discount: float, discountLabel: ?string, total: float} $quote
+     *
+     * @return bool whether the bill's total actually moved
+     */
+    private function replaceLines(Invoice $invoice, array $quote): bool
     {
+        $before = number_format((float) $invoice->getTotalAmount(), 2, '.', '');
+
         foreach ($invoice->getItems()->toArray() as $oldItem) {
             $this->em->remove($oldItem);
         }
@@ -213,6 +254,8 @@ final class TuitionInvoiceBuilder
         $invoice->setDiscountLabel($quote['discountLabel']);
         $invoice->setTotalAmount((string) $quote['total']);
         $invoice->setStatus(Invoice::statusFor((float) $invoice->getPaidAmount(), (float) $quote['total']));
+
+        return $before !== number_format((float) $quote['total'], 2, '.', '');
     }
 
     /** The same rule the fee schedule uses to show or hide SESSION items. */
