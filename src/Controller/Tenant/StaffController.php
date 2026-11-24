@@ -128,9 +128,39 @@ class StaffController extends AbstractController
                 }
             }
 
-            if ($email === '') {
+            // An existing parent is often the person being hired. Resolve them
+            // before the branch below, so a phone-only submission continues with
+            // their login instead of refusing it or opening a second account.
+            $existing = null;
+            $existingFromGuardian = false;
+            $sharedPhone = false;
+
+            if ($email !== '') {
+                $existing = $this->findExistingLogin($entityManager, $email);
+
+                // The parent's login may be a real inbox (ada@gmail.com), so the
+                // derived 803…@edus.ng will not match it. The guardian record is
+                // the reliable link between a phone and the person.
+                if ($existing === null && $phone !== '') {
+                    $guardians = $this->guardiansForPhone($entityManager, $phone);
+
+                    if (count($guardians) > 1) {
+                        // A handset can be shared by two families. Never guess which
+                        // person the office meant — ask for the staff email instead.
+                        $sharedPhone = true;
+                        $form->get('email')->addError(new FormError(
+                            'That phone number belongs to more than one family. Enter this staff member’s email address instead.'
+                        ));
+                    } elseif (count($guardians) === 1 && $guardians[0]->getUser() !== null) {
+                        $existing = $guardians[0]->getUser();
+                        $existingFromGuardian = true;
+                    }
+                }
+            }
+
+            if ($email === '' || $sharedPhone) {
                 // Already reported above; fall through to re-render.
-            } elseif (($existing = $this->findExistingLogin($entityManager, $email)) !== null) {
+            } elseif ($existing !== null) {
                 /*
                  * A teacher is very often already a parent here: their child was
                  * admitted first, so the phone number is already a login. Refusing
@@ -147,9 +177,11 @@ class StaffController extends AbstractController
 
                 if ($alreadyStaff) {
                     $form->get('email')->addError(new FormError(sprintf('Another staff account already uses %s.', $email)));
-                } elseif ($existing->getStudent() !== null || !in_array('ROLE_PARENT', $existing->getRoles(), true)) {
+                } elseif ($existing->getStudent() !== null
+                    || (!$existingFromGuardian && !in_array('ROLE_PARENT', $existing->getRoles(), true))) {
                     // A pupil login, or some other account, must not silently gain
-                    // a staff role from a typo in the office.
+                    // a staff role from a typo in the office. A login found through
+                    // a guardian record is a parent by definition.
                     $form->get('email')->addError(new FormError(sprintf(
                         '%s already belongs to a non-parent account. Use a different phone number or email address.',
                         $email
@@ -405,6 +437,32 @@ class StaffController extends AbstractController
     // ──────────────────────────────────────────────────────────────────
     //  Who may edit whom
     // ──────────────────────────────────────────────────────────────────
+
+    /**
+     * Guardian rows whose phone matches, in every stored spelling.
+     *
+     * Two rows mean a shared handset or two families on one number — the caller
+     * refuses to guess in that case. At most two are needed to answer the question.
+     *
+     * @return Guardian[]
+     */
+    private function guardiansForPhone(EntityManagerInterface $em, string $phone): array
+    {
+        $national = PhoneNumber::national($phone);
+
+        if ($national === '') {
+            return [];
+        }
+
+        return $em->getRepository(Guardian::class)->createQueryBuilder('g')
+            ->andWhere('g.phoneNumber IN (:numbers)')
+            ->setParameter('numbers', array_values(array_unique([
+                $national, '0' . $national, '+234' . $national, '234' . $national,
+            ])))
+            ->setMaxResults(2)
+            ->getQuery()
+            ->getResult();
+    }
 
     /**
      * Give a staff login the guardian record that already belongs to their phone.
