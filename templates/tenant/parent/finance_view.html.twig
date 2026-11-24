@@ -137,28 +137,44 @@
                 {% if payments|length > 0 %}
                     <div class="divide-y divide-gray-100">
                         {% for payment in payments %}
-                            <div class="p-4 hover:bg-gray-50 transition-colors flex justify-between items-center">
-                                <div>
-                                    <div class="font-bold text-gray-800">₦{{ payment.amount|number_format }}</div>
-                                    <div class="text-xs text-gray-500">{{ payment.createdAt|date('d M Y') }}</div>
-                                    <div class="text-[10px] text-gray-400 mt-0.5">{{ payment.method }}</div>
-                                    {% if payment.importBatch %}
-                                        <div class="mt-0.5 text-[10px] font-semibold text-ink-500">
-                                            Opening balance imported {{ payment.importBatch.createdAt|date('d M Y') }}
-                                        </div>
-                                    {% endif %}
+                            <div class="p-4 hover:bg-gray-50 transition-colors">
+                                <div class="flex justify-between items-center gap-3">
+                                    <div class="min-w-0">
+                                        <div class="font-bold text-gray-800">₦{{ payment.amount|number_format }}</div>
+                                        <div class="text-xs text-gray-500">{{ (payment.paidAt ?? payment.createdAt)|date('d M Y') }}</div>
+                                        <div class="text-[10px] text-gray-400 mt-0.5">{{ payment.methodLabel }}</div>
+                                        {% if payment.importBatch %}
+                                            <div class="mt-0.5 text-[10px] font-semibold text-ink-500">
+                                                Opening balance imported {{ payment.importBatch.createdAt|date('d M Y') }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="shrink-0 text-right">
+                                        {% if payment.status == 'CONFIRMED' %}
+                                            <span class="text-[10px] uppercase font-bold text-paid block mb-1">Confirmed</span>
+                                        {% elseif payment.status == 'DECLINED' %}
+                                            <span class="text-[10px] uppercase font-bold text-failed block mb-1">Rejected</span>
+                                        {% elseif payment.status == 'CANCELLED' %}
+                                            <span class="text-[10px] uppercase font-bold text-ink-500 block mb-1">Cancelled</span>
+                                        {% else %}
+                                            <span class="text-[10px] uppercase font-bold text-pending block mb-1">Awaiting verification</span>
+                                        {% endif %}
+
+                                        {% if payment.status == 'CONFIRMED' %}
+                                            <a href="{{ path('app_tenant_payment_receipt', {id: payment.id}) }}" target="_blank" class="inline-flex items-center justify-end min-h-[44px] text-indigo-600 hover:text-indigo-900 text-xs font-bold underline">
+                                                Receipt
+                                            </a>
+                                        {% endif %}
+                                    </div>
                                 </div>
-                                <div class="text-right">
-                                    {% if payment.status == 'CONFIRMED' %}
-                                        <span class="text-[10px] uppercase font-bold text-green-600 block mb-1">Confirmed</span>
-                                    {% else %}
-                                        <span class="text-[10px] uppercase font-bold text-yellow-600 block mb-1">Pending</span>
-                                    {% endif %}
-                                    
-                                    <a href="{{ path('app_tenant_payment_receipt', {id: payment.id}) }}" target="_blank" class="inline-flex items-center justify-end min-h-[44px] text-indigo-600 hover:text-indigo-900 text-xs font-bold underline">
-                                        Receipt
-                                    </a>
-                                </div>
+
+                                {# The bursar's reason is the whole point of rejecting: a parent must be able to read why. #}
+                                {% if payment.status == 'DECLINED' %}
+                                    <p class="mt-2 break-words rounded-lg border border-failed/20 bg-failed/5 px-3 py-2 text-xs leading-relaxed text-failed">
+                                        <span class="font-bold uppercase tracking-wide">Why this was rejected:</span>
+                                        {{ payment.rejectionReason ?: payment.note ?: 'Please contact the school office.' }}
+                                    </p>
+                                {% endif %}
                             </div>
                         {% endfor %}
                     </div>

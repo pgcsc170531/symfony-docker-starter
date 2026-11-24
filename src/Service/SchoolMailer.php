@@ -205,7 +205,7 @@ final class SchoolMailer
             template: 'emails/parent/payment_receipt.html.twig',
             context: [
                 'reference_code' => $payment->getReferenceCode(),
-                'method' => $payment->getMethod(),
+                'method' => $payment->getMethodLabel(),
                 'amount' => (float) $payment->getAmount(),
                 'paid_at' => $payment->getConfirmedAt() ?? $payment->getCreatedAt(),
                 'child_name' => $student?->getFullName(),
@@ -213,6 +213,9 @@ final class SchoolMailer
                 'invoice_total' => (float) ($invoice?->getTotalAmount() ?? 0),
                 'invoice_paid' => (float) ($invoice?->getPaidAmount() ?? 0),
                 'balance_due' => $invoice?->getBalanceDue() ?? 0.0,
+                // The school account the money arrived in, masked to the last four.
+                'bank_name' => $school->getBankName(),
+                'bank_account' => Payment::maskAccountNumber($school->getAccountNumber()),
             ],
             buttonLabel: $url ? 'View my receipts' : null,
             url: $url,

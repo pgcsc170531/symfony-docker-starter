@@ -12,6 +12,7 @@ use App\Entity\Tenant\YearGroupMaster;
 use App\Form\StaffEditType;
 use App\Form\StaffType;
 use App\Service\Staff\StaffImporter;
+use App\Service\Phone\PhoneNumber;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormError;
@@ -122,14 +123,60 @@ class StaffController extends AbstractController
                         'Give a phone number or an email address — the account signs in with one of them.'
                     ));
                 } else {
-                    $email = $phone . '@edus.ng';
+                    $email = PhoneNumber::loginEmail(PhoneNumber::national($phone));
                 }
             }
 
             if ($email === '') {
                 // Already reported above; fall through to re-render.
-            } elseif ($entityManager->getRepository(User::class)->findOneBy(['email' => $email]) !== null) {
-                $form->get('email')->addError(new FormError(sprintf('Another account already uses %s.', $email)));
+            } elseif (($existing = $this->findExistingLogin($entityManager, $email)) !== null) {
+                /*
+                 * A teacher is very often already a parent here: their child was
+                 * admitted first, so the phone number is already a login. Refusing
+                 * the second job because the address is taken locked the school out
+                 * of ever registering that teacher. Give the existing login a staff
+                 * profile instead and leave its password alone — it is the person's
+                 * own, and resetting it would lock them out of their children.
+                 *
+                 * The Staff row is looked up through the repository rather than
+                 * User::$staff: the inverse side may not be hydrated yet, and this
+                 * decision must not create a second profile for the same person.
+                 */
+                $alreadyStaff = $entityManager->getRepository(Staff::class)->findOneBy(['user' => $existing]) !== null;
+
+                if ($alreadyStaff) {
+                    $form->get('email')->addError(new FormError(sprintf('Another staff account already uses %s.', $email)));
+                } elseif ($existing->getStudent() !== null || !in_array('ROLE_PARENT', $existing->getRoles(), true)) {
+                    // A pupil login, or some other account, must not silently gain
+                    // a staff role from a typo in the office.
+                    $form->get('email')->addError(new FormError(sprintf(
+                        '%s already belongs to a non-parent account. Use a different phone number or email address.',
+                        $email
+                    )));
+                } else {
+                    $role = current(array_filter($user->getRoles(), static fn (string $r): bool => $r !== 'ROLE_USER'))
+                        ?: User::ROLE_TEACHER;
+                    $existing->setRoles(array_values(array_unique(array_filter(
+                        array_merge($existing->getRoles(), [$role, 'ROLE_PARENT']),
+                        static fn (string $r): bool => $r !== 'ROLE_USER'
+                    ))));
+                    $existing->setFullName($existing->getFullName() ?: (string) $user->getFullName());
+
+                    $staff = new Staff();
+                    $staff->setUser($existing)
+                        ->setPhone($phone !== '' ? $phone : null)
+                        ->setAddress($this->cleanOrNull($form->get('address')->getData(), 255))
+                        ->setEmployeeNumber($this->cleanOrNull($form->get('employeeNumber')->getData(), 50))
+                        ->setTitle(StaffImporter::titleFor('', $role));
+                    $entityManager->persist($staff);
+                    $entityManager->flush();
+
+                    $this->addFlash('success', sprintf(
+                        '%s is now also a staff member. Their existing parent login and password were kept.',
+                        $existing->getFullName()
+                    ));
+                    return $this->redirectToRoute('app_tenant_staff_index');
+                }
             } else {
                 $user->setEmail($email);
 
@@ -306,7 +353,7 @@ class StaffController extends AbstractController
             $email = mb_strtolower(trim((string) $user->getEmail()));
             $user->setEmail($email);
 
-            $clash = $entityManager->getRepository(User::class)->findOneBy(['email' => $email]);
+            $clash = $this->findExistingLogin($entityManager, $email);
             if ($clash !== null && $clash->getId() !== $user->getId()) {
                 $form->get('email')->addError(new FormError('Another account already uses that email address.'));
             } else {
@@ -354,6 +401,24 @@ class StaffController extends AbstractController
         $value = trim((string) $value);
 
         return $value === '' ? null : mb_substr($value, 0, $maxLength);
+    }
+
+    /**
+     * The account that owns this address, across every spelling of a phone login.
+     *
+     * A parent imported years ago may hold 08031234567@edus.ng while the office
+     * types 0803 123 4567 today and we build 8031234567@edus.ng. Same person, two
+     * strings — so a plain findOneBy miss here is what turned "also a teacher"
+     * into "account already exists".
+     */
+    private function findExistingLogin(EntityManagerInterface $em, string $email): ?User
+    {
+        return $em->getRepository(User::class)->createQueryBuilder('u')
+            ->andWhere('u.email IN (:emails)')
+            ->setParameter('emails', PhoneNumber::loginCandidates($email))
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 
     private function assertCanManage(User $target): void

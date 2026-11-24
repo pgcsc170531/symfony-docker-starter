@@ -52,7 +52,7 @@
                                     {{ student.firstName|first }}{{ student.lastName|first }}
                                 </div>
                                 <div>
-                                    <h3 class="font-bold text-gray-800 text-lg group-hover:text-indigo-700">{{ student.firstName }} {{ student.lastName }}</h3>
+                                    <h3 class="break-words font-bold text-gray-800 text-lg group-hover:text-indigo-700">{{ student.fullName }}</h3>
                                     <p class="text-sm text-gray-500">{{ student.admissionNumber }} • {{ student.currentClassroom ? student.currentClassroom.name : 'No Class' }}</p>
                                 </div>
                             </div>

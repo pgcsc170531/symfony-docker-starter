@@ -119,7 +119,7 @@
                                 <span class="block text-xs font-normal text-ink-500">{{ payment.createdAt ? payment.createdAt|date('M j, H:i') : '' }}</span>
                             </td>
                             <td class="px-5 py-3 text-xs text-ink-500">
-                                <span class="badge-neutral">{{ payment.method }}</span>
+                                <span class="badge-neutral">{{ payment.methodLabel }}</span>
                             </td>
                             <td class="money px-5 py-3 text-right font-semibold text-ink-900">
                                 ₦{{ payment.amount|number_format(2) }}

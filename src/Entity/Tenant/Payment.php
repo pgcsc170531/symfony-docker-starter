@@ -28,6 +28,15 @@ class Payment
     /** Settled from money the family paid ahead (see StudentAdvance). */
     public const METHOD_ADVANCE  = 'ADVANCE';
 
+    /** The words the desk, the receipt and the register print. */
+    public const METHOD_LABELS = [
+        self::METHOD_CASH     => 'Cash',
+        self::METHOD_TRANSFER => 'Bank transfer',
+        self::METHOD_POS      => 'POS',
+        self::METHOD_CHEQUE   => 'Cheque',
+        self::METHOD_ADVANCE  => 'Advance',
+    ];
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -74,6 +83,16 @@ class Payment
     #[ORM\Column(name: 'note', type: Types::TEXT, nullable: true)]
     private ?string $note = null;
 
+    /**
+     * Why a pending slip was turned down — written for the PARENT to read.
+     *
+     * The audit sentence (who rejected it, on which day) lives in `note`; this
+     * column holds only the explanation, so the portal can show it without
+     * exposing staff emails or the internal wording.
+     */
+    #[ORM\Column(name: 'rejection_reason', type: Types::TEXT, nullable: true)]
+    private ?string $rejectionReason = null;
+
     
 
     // RELATIONSHIP
@@ -119,6 +138,25 @@ class Payment
     public function getMethod(): ?string { return $this->method; }
     public function setMethod(string $method): static { $this->method = $method; return $this; }
 
+    /** "TRANSFER" is not a word a parent should read on a receipt. */
+    public function getMethodLabel(): string
+    {
+        return self::METHOD_LABELS[$this->method ?? '']
+            ?? ucfirst(strtolower((string) $this->method));
+    }
+
+    /** Last four digits only — what a receipt may show. */
+    public static function maskAccountNumber(?string $accountNumber): ?string
+    {
+        $digits = preg_replace('/\s+/', '', (string) $accountNumber) ?? '';
+
+        if ($digits === '') {
+            return null;
+        }
+
+        return mb_strlen($digits) <= 4 ? $digits : '••••' . mb_substr($digits, -4);
+    }
+
     public function getReferenceCode(): ?string { return $this->referenceCode; }
     public function setReferenceCode(?string $referenceCode): static { $this->referenceCode = $referenceCode; return $this; }
 
@@ -151,6 +189,15 @@ class Payment
 
     public function getNote(): ?string { return $this->note; }
     public function setNote(?string $note): static { $this->note = $note; return $this; }
+
+    public function getRejectionReason(): ?string { return $this->rejectionReason; }
+    public function setRejectionReason(?string $rejectionReason): static
+    {
+        $reason = trim((string) $rejectionReason);
+        $this->rejectionReason = $reason !== '' ? $reason : null;
+
+        return $this;
+    }
 
     public function getAdvance(): ?StudentAdvance { return $this->advance; }
     public function setAdvance(?StudentAdvance $advance): static { $this->advance = $advance; return $this; }

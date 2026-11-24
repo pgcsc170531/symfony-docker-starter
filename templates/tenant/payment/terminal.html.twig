@@ -19,12 +19,13 @@
 
     {# HEADER: Student Info #}
     <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex flex-col md:flex-row justify-between items-center mb-8">
-        <div class="flex items-center gap-4">
+        <div class="flex min-w-0 items-center gap-4">
             <div class="h-16 w-16 rounded-full bg-indigo-100 flex items-center justify-center text-2xl font-bold text-indigo-700">
                 {{ student.firstName|first }}{{ student.lastName|first }}
             </div>
             <div>
-                <h1 class="text-2xl font-bold text-gray-800">{{ student.firstName }} {{ student.lastName }}</h1>
+                {# Same name the receipt prints: first, middle and last when the pupil has one. #}
+                <h1 class="break-words text-2xl font-bold text-gray-800">{{ student.fullName }}</h1>
                 <p class="text-gray-500">
                     {{ student.admissionNumber }} • 
                     {% if classroom %}
@@ -230,37 +231,96 @@
                     </div>
                 {% endif %}
 
-                {# 💰 2. CASH PAYMENT FORM #}
-                <div class="bg-indigo-900 text-white p-6 rounded-lg shadow-lg sticky top-6">
-                    <h3 class="font-bold text-lg mb-4 border-b border-indigo-700 pb-2">💰 Record New Cash</h3>
-                    
-                    <form method="post" action="{{ path('app_tenant_payment_cash', {invoiceId: invoice.id}) }}" class="space-y-4" onsubmit="return confirm('Confirm Cash Payment?');">
+                {# 2. PAYMENT METHOD FORM #}
+                <div class="sticky top-6 rounded-lg bg-accent-900 p-6 text-white shadow-lg">
+                    <h3 class="mb-4 border-b border-accent-700 pb-2 text-lg font-bold">Record New Payment</h3>
+
+                    <form method="post" action="{{ path('app_tenant_payment_cash', {invoiceId: invoice.id}) }}"
+                          class="space-y-4" data-payment-form
+                          onsubmit="return confirm('Confirm this payment?');">
+                        <input type="hidden" name="_token" value="{{ csrf_token('payment_cash_' ~ invoice.id) }}">
                         <div>
-                            <label class="text-xs uppercase text-indigo-200 font-bold block mb-1">Amount to Pay</label>
+                            <label for="payment-amount" class="mb-1 block text-xs font-bold uppercase text-accent-200">Amount to Pay</label>
                             <div class="relative">
-                                <span class="absolute left-3 top-2.5 text-gray-500">₦</span>
-                                <input type="number" name="amount" step="0.01" 
-                                       value="{{ (invoice.totalAmount - invoice.paidAmount) }}" 
-                                       class="w-full pl-8 pr-3 py-3 rounded text-gray-900 font-bold font-mono focus:ring-2 focus:ring-indigo-400 shadow-inner">
+                                <span class="absolute left-3 top-2.5 text-ink-500">₦</span>
+                                <input id="payment-amount" type="number" name="amount" step="0.01" required
+                                       value="{{ (invoice.totalAmount - invoice.paidAmount) }}"
+                                       class="w-full rounded py-3 pl-8 pr-3 font-mono font-bold text-ink-900 shadow-inner focus:ring-2 focus:ring-accent-400">
                             </div>
                         </div>
+                        <div>
+                            <label for="payment-method" class="mb-1 block text-xs font-bold uppercase text-accent-200">Payment Method</label>
+                            <select id="payment-method" name="method" data-payment-method
+                                    class="w-full rounded px-3 py-3 text-base font-bold text-ink-900">
+                                <option value="CASH" selected>Cash</option>
+                                <option value="POS">POS</option>
+                                <option value="TRANSFER">Bank transfer</option>
+                            </select>
+                        </div>
 
-                        <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded shadow transition-colors flex items-center justify-center gap-2">
+                        <div>
+                            <label for="payment-date" class="mb-1 block text-xs font-bold uppercase text-accent-200">Payment date</label>
+                            <input id="payment-date" type="date" name="paid_on"
+                                   value="{{ 'now'|date('Y-m-d') }}" max="{{ 'now'|date('Y-m-d') }}"
+                                   class="w-full rounded px-3 py-3 text-base font-bold text-ink-900">
+                            <p class="mt-1 text-[11px] text-accent-300">Change it if the money was received on an earlier day.</p>
+                        </div>
+
+                        {# The school's account, straight from Settings: where the money was sent. #}
+                        <div data-bank-school hidden class="rounded-lg border border-accent-700 bg-accent-800 p-3 text-sm">
+                            <p class="text-xs font-bold uppercase text-accent-200">Paid into this account</p>
+                            {% if school and school.bankName %}
+                                <p class="mt-1 font-bold">{{ school.bankName }}</p>
+                                {% if school.accountNumber %}<p class="font-mono">{{ school.accountNumber }}</p>{% endif %}
+                                {% if school.accountName %}<p class="text-xs text-accent-200">{{ school.accountName }}</p>{% endif %}
+                            {% else %}
+                                <p class="mt-1 text-xs text-accent-200">
+                                    No bank details are saved yet. Add them in Settings so they print on receipts and slips.
+                                </p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="payment-reference" class="mb-1 block text-xs font-bold uppercase text-accent-200">
+                                Reference <span class="font-normal normal-case text-accent-300">(optional)</span>
+                            </label>
+                            <input id="payment-reference" type="text" name="reference" maxlength="255"
+                                   placeholder="Teller or transaction number"
+                                   class="w-full rounded px-3 py-3 text-base text-ink-900">
+                        </div>
+
+                        <button type="submit" class="flex w-full items-center justify-center gap-2 rounded bg-accent-600 py-3 font-bold text-white shadow transition-colors hover:bg-accent-500">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                            Confirm Cash Payment
+                            Confirm Payment
                         </button>
                     </form>
 
-                    <div class="mt-6 border-t border-indigo-800 pt-4 text-center">
-                        <p class="text-xs text-indigo-300 mb-2">Or via Bank Transfer?</p>
-                        {# Link to generate slip #}
+                    <div class="mt-6 border-t border-accent-800 pt-4 text-center">
+                        <p class="mb-2 text-xs text-accent-300">Or let the parent pay from the portal?</p>
                         <form method="post" action="{{ path('app_tenant_payment_initiate', {invoice_id: invoice.id}) }}">
-                             <button type="submit" class="text-sm font-bold text-white bg-indigo-800 hover:bg-indigo-700 py-2 px-4 rounded w-full transition-colors border border-indigo-600">
-                                 Generate Payment Slip
-                             </button>
+                            <button type="submit" class="w-full rounded border border-accent-600 bg-accent-800 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-accent-700">
+                                Generate Payment Slip
+                            </button>
                         </form>
                     </div>
                 </div>
+
+                <script>
+                    (function () {
+                        var form = document.querySelector('[data-payment-form]');
+                        if (!form) { return; }
+
+                        var method = form.querySelector('[data-payment-method]');
+                        var school = form.querySelector('[data-bank-school]');
+
+                        function sync() {
+                            school.hidden = method.value !== 'TRANSFER';
+                        }
+
+                        method.addEventListener('change', sync);
+                        sync();
+                    })();
+                </script>
             {% elseif invoice and invoice.status == 'PAID' %}
                 <div class="bg-green-50 border border-green-200 p-8 rounded-lg text-center">
                     <div class="text-green-600 text-5xl mb-4">🎉</div>

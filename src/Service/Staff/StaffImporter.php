@@ -125,12 +125,19 @@ final class StaffImporter
         // every one of them is forced to change it on first login.
         $defaultHash = $this->hasher->hashPassword(new User(), self::DEFAULT_PASSWORD);
 
-        // Emails already taken, in one query, so the per-row check is a lookup
-        // and not 1,000 SELECTs.
+        // Emails already taken, keyed by every spelling the login may be typed
+        // in. A parent imported before the national form was adopted holds
+        // 0803…@edus.ng, while today we build 803…@edus.ng — same person, two
+        // strings. Without this the CSV created a second account for them.
         $taken = [];
         foreach ($this->em->createQuery('SELECT LOWER(u.email) FROM ' . User::class . ' u')
                      ->getSingleColumnResult() as $email) {
-            $taken[(string) $email] = true;
+            $stored = mb_strtolower((string) $email);
+            $taken[$stored] ??= $stored;
+
+            foreach (PhoneNumber::loginCandidates($stored) as $spelling) {
+                $taken[$spelling] ??= $stored;
+            }
         }
 
         $header = fgetcsv($handle);
@@ -202,10 +209,14 @@ final class StaffImporter
                  * it, and leave their password alone: it is their own, chosen by
                  * them, and resetting it would lock them out of their children.
                  */
-                $existing = $this->em->getRepository(User::class)->findOneBy(['email' => $email]);
+                $existing = $this->em->getRepository(User::class)->findOneBy(['email' => $taken[$email]]);
                 $promoted = false;
 
-                if ($existing !== null && $existing->getStaff() === null) {
+                if ($existing !== null
+                    && $existing->getStudent() === null
+                    && in_array('ROLE_PARENT', $existing->getRoles(), true)
+                    && $this->em->getRepository(Staff::class)->findOneBy(['user' => $existing]) === null
+                ) {
                     $staff = new Staff();
                     $staff->setUser($existing)
                         ->setPhone($phone !== '' ? $phone : null)
@@ -229,8 +240,6 @@ final class StaffImporter
 
                     continue;
                 }
-
-                $taken[$email] = true;
 
                 continue;
             }
@@ -278,7 +287,7 @@ final class StaffImporter
 
             // Guard against the same address twice inside one file, which the
             // database lookup above cannot see until the first flush.
-            $taken[$email] = true;
+            $taken[$email] = $email;
             ++$result->created;
             ++$pending;
 
@@ -387,10 +396,12 @@ final class StaffImporter
         }
 
         return match ($role) {
+            User::ROLE_TENANT_SUPER_ADMIN => 'Super Admin',
             User::ROLE_ADMIN => 'Administrator',
             'ROLE_BURSAR' => 'Bursar',
             'ROLE_STORE' => 'Store Keeper',
             'ROLE_ADMISSION_OFFICER' => 'Admissions Officer',
+            'ROLE_HOD' => 'HOD',
             default => 'Class Teacher',
         };
     }

@@ -14,6 +14,8 @@
     {{ ui.rows({
         'Receipt / ref' : reference_code,
         'Method'        : method|title,
+        'Bank'          : bank_name|default(null),
+        'Account'       : bank_account|default(null),
         'Date'          : paid_at ? paid_at|date('j M Y, g:ia') : null,
         'Child'         : child_name,
         'Invoice'       : invoice_number,

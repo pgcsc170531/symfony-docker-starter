@@ -52,6 +52,9 @@
                     <tr>
                         <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Invoice No.</th>
                         <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">{{ learner.capital }} / Customer</th>
+                        {% if ledger_type == 'academic' %}
+                        <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Class</th>
+                        {% endif %}
                         <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Type & Date</th>
                         <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Total</th>
                         <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Paid</th>
@@ -79,6 +82,11 @@
                                 {{ invoice.buyerName }} <span class="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded ml-1 font-medium tracking-wide uppercase">Walk-in</span>
                             {% endif %}
                         </td>
+                        {% if ledger_type == 'academic' %}
+                        <td class="p-4 font-semibold text-gray-700">
+                            {{ invoice.classroom ? invoice.classroom.name : (invoice.student and invoice.student.currentClass ? invoice.student.currentClass.name : 'N/A') }}
+                        </td>
+                        {% endif %}
                         
                         <td class="p-4">
                             <div class="flex items-center gap-2">
@@ -121,7 +129,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="8" class="p-12 text-center">
+                        <td colspan="{{ ledger_type == 'academic' ? 9 : 8 }}" class="p-12 text-center">
                             <div class="flex flex-col items-center justify-center text-gray-400">
                                 <svg class="w-12 h-12 mb-3 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                                 <p class="text-base font-medium text-gray-500">No invoices found matching your criteria.</p>
@@ -138,7 +146,7 @@
                 <tfoot class="bg-gray-100 border-t-2 border-gray-300">
                     <tr>
                         {# Spans the first 3 columns #}
-                        <td colspan="3" class="p-4 text-right font-bold text-gray-600 uppercase tracking-wider text-xs">
+                        <td colspan="{{ ledger_type == 'academic' ? 4 : 3 }}" class="p-4 text-right font-bold text-gray-600 uppercase tracking-wider text-xs">
                             Filtered Totals:
                         </td>
                         

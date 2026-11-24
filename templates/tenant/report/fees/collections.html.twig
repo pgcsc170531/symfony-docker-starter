@@ -98,7 +98,7 @@
                                 {% endif %}
                             </td>
                             <td class="px-4 py-3 font-mono text-xs text-ink-600">{{ payment.invoice.invoiceNumber }}</td>
-                            <td class="px-4 py-3 text-ink-700">{{ payment.method|replace({'_': ' '}) }}</td>
+                            <td class="px-4 py-3 text-ink-700">{{ payment.methodLabel }}</td>
                             <td class="px-4 py-3 font-mono text-xs text-ink-500">{{ payment.referenceCode ?: '—' }}</td>
                             <td class="money px-4 py-3 text-right font-semibold text-ink-900">₦{{ payment.amount|number_format(2) }}</td>
                             <td class="px-4 py-3">
@@ -133,7 +133,7 @@
                             </p>
                             <p class="text-xs text-ink-500">
                                 {{ (payment.paidAt ?? payment.createdAt)|date('H:i') }} ·
-                                {{ payment.method|replace({'_': ' '}) }} ·
+                                {{ payment.methodLabel }} ·
                                 {{ payment.referenceCode ?: 'no ref' }}
                             </p>
                         </div>

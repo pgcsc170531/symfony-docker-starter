@@ -112,9 +112,26 @@
             </div>
             <div class="text-right">
                 <p class="text-gray-400 uppercase text-xs font-bold mb-1">Payment Method</p>
-                <p class="font-bold text-gray-800 uppercase">{{ payment.method }}</p>
+                <p class="font-bold text-gray-800">{{ payment.methodLabel }}</p>
                 {% if payment.reference %}
                     <p class="text-xs text-gray-500">Ref: {{ payment.reference }}</p>
+                {% endif %}
+                {#
+                    Bank details prove HOW the money arrived, not only that it did.
+                    The school's collection account, masked to the last four digits
+                    because a receipt is passed from hand to hand.
+                #}
+                {% if payment.method == 'TRANSFER' and liveSchool %}
+                    {% set bankName = liveSchool.bankName %}
+                    {% set schoolAccount = liveSchool.accountNumber %}
+                    {% set bankAccount = schoolAccount ? (schoolAccount|length > 4 ? '••••' ~ schoolAccount|slice(schoolAccount|length - 4) : schoolAccount) : null %}
+                    {% if bankName or bankAccount %}
+                        <p class="mt-2 text-xs text-gray-500">
+                            {% if bankName %}Bank: {{ bankName }}{% endif %}
+                            {% if bankName and bankAccount %}<br>{% endif %}
+                            {% if bankAccount %}<span class="font-mono">Account: {{ bankAccount }}</span>{% endif %}
+                        </p>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>

@@ -284,6 +284,17 @@
                                                 <a href="{{ path('app_tenant_payment_receipt', {id: lastPayment.id}) }}" target="_blank" class="inline-flex items-center gap-1.5 min-h-[44px] text-xs font-bold px-3 py-2 rounded-lg transition-colors bg-green-50 text-green-700 border border-green-200 hover:bg-green-100">
                                                     View Last Receipt 📄
                                                 </a>
+                                            {% elseif lastPayment.status == 'DECLINED' %}
+                                                {# The reason itself lives in Fees & Payments; this points the parent there. #}
+                                                <a href="{{ path('app_parent_finance_view', {id: student.id}) }}"
+                                                   class="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-failed/20 bg-failed/5 px-3 py-2 text-xs font-bold text-failed"
+                                                   title="{{ lastPayment.rejectionReason ?: lastPayment.note }}">
+                                                    ✕ Payment rejected — read why
+                                                </a>
+                                            {% elseif lastPayment.status == 'CANCELLED' %}
+                                                <div class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-lg bg-ink-50 text-ink-600 border border-ink-200">
+                                                    Payment cancelled
+                                                </div>
                                             {% else %}
                                                 <div class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-lg bg-yellow-50 text-yellow-700 border border-yellow-200 cursor-help" title="Payment is awaiting confirmation from the Bursar">
                                                     <svg class="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>

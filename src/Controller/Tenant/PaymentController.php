@@ -131,6 +131,7 @@ class PaymentController extends AbstractController
             'feePreview' => $feePreview,
             'previewTotal' => $previewTotal,
             'classroom' => $classroom,
+            'school' => $em->getRepository(School::class)->findOneBy([]),
         ]);
     }
 
@@ -205,7 +206,23 @@ class PaymentController extends AbstractController
         $invoice = $em->getRepository(Invoice::class)->find($invoiceId);
         if (!$invoice) throw $this->createNotFoundException();
 
+        // A recorded receipt is a money movement; it must carry a token so a
+        // third-party page cannot post one on the bursar's behalf.
+        if (!$this->isCsrfTokenValid('payment_cash_' . $invoice->getId(), (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'That form expired. Reload the terminal and try again.');
+
+            return $this->redirectToRoute('app_tenant_payment_terminal', [
+                'id' => $invoice->getStudent()->getId(),
+                'invoice_id' => $invoice->getId(),
+            ]);
+        }
+
         $amount = $request->request->get('amount');
+        $method = strtoupper(trim((string) $request->request->get('method', Payment::METHOD_CASH)));
+        if (!in_array($method, [Payment::METHOD_CASH, Payment::METHOD_POS, Payment::METHOD_TRANSFER], true)) {
+            $method = Payment::METHOD_CASH;
+        }
+        $reference = trim((string) $request->request->get('reference', ''));
 
         if (!$amount || $amount <= 0) {
             $this->addFlash('error', 'Invalid amount.');
@@ -215,10 +232,53 @@ class PaymentController extends AbstractController
             ]);
         }
 
+        /*
+         * The money may have been handed over days before it reached the desk.
+         * The bursar picks the day it was actually received so the cash book and
+         * the daily collection report file it on the right date. The row's
+         * created_at still records when it was entered — that audit trail is
+         * never rewritten.
+         */
+        $paidOn = trim((string) $request->request->get('paid_on', ''));
+        $paidAt = new \DateTimeImmutable();
+
+        if ($paidOn !== '') {
+            $parsed = \DateTimeImmutable::createFromFormat('!Y-m-d', $paidOn);
+
+            // createFromFormat happily rolls 2026-02-30 into March, so the
+            // round-trip check is the only reliable validation.
+            if (!$parsed instanceof \DateTimeImmutable || $parsed->format('Y-m-d') !== $paidOn) {
+                $this->addFlash('error', 'That payment date is not valid.');
+
+                return $this->redirectToRoute('app_tenant_payment_terminal', [
+                    'id' => $invoice->getStudent()->getId(),
+                    'invoice_id' => $invoice->getId(),
+                ]);
+            }
+
+            if ($parsed > (new \DateTimeImmutable('today'))) {
+                $this->addFlash('error', 'A payment cannot be dated in the future.');
+
+                return $this->redirectToRoute('app_tenant_payment_terminal', [
+                    'id' => $invoice->getStudent()->getId(),
+                    'invoice_id' => $invoice->getId(),
+                ]);
+            }
+
+            // Keep the time of day so several receipts for one day still order
+            // sensibly; only the calendar date is under the bursar's control.
+            $paidAt = $parsed->setTime(
+                (int) $paidAt->format('H'),
+                (int) $paidAt->format('i'),
+                (int) $paidAt->format('s')
+            );
+        }
+
         $payment = new Payment();
         $payment->setInvoice($invoice);
         $payment->setAmount((string)$amount);
-        $payment->setMethod(Payment::METHOD_CASH);
+        $payment->setMethod($method);
+        $payment->setReference($reference !== '' ? mb_substr($reference, 0, 255) : null);
         
         // Unique short numeric reference (e.g. 2610529). Must not be derived from
         // the invoice id: a cash part payment and a slip for the same invoice both
@@ -226,7 +286,7 @@ class PaymentController extends AbstractController
         $payment->setReferenceCode($this->paymentReferences->next());
         
         $payment->setStatus(Payment::STATUS_CONFIRMED);
-        $payment->setConfirmedAt(new \DateTimeImmutable());
+        $payment->setConfirmedAt($paidAt);
         $payment->setConfirmedBy($this->getUser()->getUserIdentifier());
 
         $em->persist($payment);
@@ -252,7 +312,7 @@ class PaymentController extends AbstractController
 
         $em->flush();
 
-        $this->addFlash('success', 'Cash payment recorded successfully!');
+        $this->addFlash('success', sprintf('%s payment recorded successfully!', $payment->getMethodLabel()));
         return $this->redirectToRoute('app_tenant_payment_receipt', ['id' => $payment->getId()]);
     }
 
@@ -422,6 +482,68 @@ class PaymentController extends AbstractController
     }
 
     /**
+     * Turn a pending slip down: the money never arrived, or it was not this
+     * school's transfer.
+     *
+     * The row is kept (never deleted) as DECLINED with the bursar's reason in
+     * the note, so the parent can read exactly why it was turned down from
+     * their portal and the desk still has a full audit trail. No invoice balance
+     * moves — a pending slip was never part of it.
+     */
+    #[Route('/reject/{id}', name: 'app_tenant_payment_reject', requirements: ['id' => '\d+'], methods: ['POST'])]
+    #[IsGranted('ROLE_BURSAR')]
+    public function reject(Payment $payment, Request $request, EntityManagerInterface $em): Response
+    {
+        if (!$this->isCsrfTokenValid('payment_reject_' . $payment->getId(), (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'That form expired. Reload the page and try again.');
+
+            return $this->redirectToRoute('app_tenant_payment_verify');
+        }
+
+        if ($payment->getStatus() !== Payment::STATUS_PENDING) {
+            $this->addFlash('error', sprintf(
+                'Only a pending payment can be rejected. This one is %s.',
+                $payment->getStatus()
+            ));
+
+            return $this->redirectToRoute('app_tenant_payment_verify');
+        }
+
+        // The reason is the point: it is what the parent reads on the portal,
+        // so an empty explanation is not a rejection. Trailing punctuation is
+        // trimmed because the note adds its own full stop.
+        $reason = rtrim(trim((string) $request->request->get('reason', '')), " .\t\n\r\0\x0B");
+        if ($reason === '') {
+            $this->addFlash('error', 'Give a reason — the parent will see it in their portal.');
+
+            return $this->redirectToRoute('app_tenant_payment_verify');
+        }
+
+        $actor = $this->getUser()?->getUserIdentifier() ?? 'system';
+        $existingNote = trim((string) ($payment->getNote() ?? ''));
+
+        $payment->setStatus(Payment::STATUS_DECLINED);
+        // The portal prints this column, so it holds the explanation alone;
+        // the note keeps the full audit sentence for the school.
+        $payment->setRejectionReason($reason);
+        $payment->setNote(trim($existingNote . sprintf(
+            ' Rejected by %s on %s: %s.',
+            $actor,
+            (new \DateTimeImmutable())->format('j M Y'),
+            mb_substr($reason, 0, 500)
+        )));
+
+        $em->flush();
+
+        $this->addFlash('success', sprintf(
+            'Payment %s rejected. Its reason is now visible to the parent in their portal.',
+            $payment->getReferenceCode() ?: '#' . $payment->getId()
+        ));
+
+        return $this->redirectToRoute('app_tenant_payment_verify');
+    }
+
+    /**
      * Return to the screen the bursar submitted from.
      */
     private function backFromConfirm(Request $request, Invoice $invoice): Response
@@ -476,6 +598,80 @@ class PaymentController extends AbstractController
         // Schools are only charged when the payment is officially CONFIRMED.
 
         return $this->redirectToRoute('app_tenant_payment_slip', ['id' => $payment->getId()]);
+    }
+
+    /**
+     * Reverse a payment without deleting or editing the original row.
+     *
+     * A wrong receipt is never erased: the row is kept and cancelled, the
+     * invoice is recomputed from the money that is still confirmed, and the
+     * desk records the correct payment fresh. No money is moved by this action
+     * — a refund to the payer (card, transfer or cash) is paid out by hand.
+     * Only the school's super administrator may do it.
+     */
+    #[Route('/{id}/reverse', name: 'app_tenant_payment_reverse', requirements: ['id' => '\d+'], methods: ['POST'])]
+    #[IsGranted('ROLE_TENANT_SUPER_ADMIN')]
+    public function reverse(Payment $payment, Request $request, EntityManagerInterface $em): Response
+    {
+        if (!$this->isCsrfTokenValid('reverse_payment_' . $payment->getId(), (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid security token.');
+        }
+
+        $back = $this->backFromReverse($request, $payment);
+
+        if (!in_array($payment->getStatus(), [Payment::STATUS_CONFIRMED, Payment::STATUS_PENDING], true)) {
+            $this->addFlash('info', 'This payment has already been reversed.');
+
+            return $back;
+        }
+
+        // Only a CONFIRMED row is inside the invoice's paid total. Subtracting a
+        // PENDING slip would take money off the bill that was never on it.
+        $wasConfirmed = $payment->getStatus() === Payment::STATUS_CONFIRMED;
+        $reason = rtrim(trim((string) $request->request->get('reason', '')), " .\t\n\r\0\x0B");
+        $actor = $this->getUser()?->getUserIdentifier() ?? 'system';
+        $existingNote = trim((string) ($payment->getNote() ?? ''));
+
+        $payment->setStatus(Payment::STATUS_CANCELLED);
+        $payment->setNote(trim($existingNote . sprintf(
+            ' Reversed by %s on %s%s.',
+            $actor,
+            (new \DateTimeImmutable())->format('j M Y'),
+            $reason !== '' ? ': ' . mb_substr($reason, 0, 500) : ''
+        )));
+
+        $invoice = $payment->getInvoice();
+        if ($invoice && $wasConfirmed) {
+            $confirmed = (float) $em->getRepository(Payment::class)->confirmedForInvoice($invoice);
+            // The reversed row is still CONFIRMED in the database until the
+            // flush below, so take its amount out of the recomputed total.
+            $confirmed = max(0.0, $confirmed - (float) $payment->getAmount());
+            $invoice->setPaidAmount(number_format($confirmed, 2, '.', ''));
+            $invoice->setStatus(Invoice::statusFor($confirmed, (float) $invoice->getTotalAmount()));
+        }
+
+        $em->flush();
+
+        $this->addFlash('success', sprintf(
+            'Payment %s reversed. The row is kept as cancelled and the bill reopened — no money was sent back automatically, so any refund is paid out by hand.',
+            $payment->getReferenceCode() ?: '#' . $payment->getId()
+        ));
+
+        return $back;
+    }
+
+    /** Where the super admin was standing when they reversed the payment. */
+    private function backFromReverse(Request $request, Payment $payment): Response
+    {
+        $invoice = $payment->getInvoice();
+
+        return match ((string) $request->request->get('return_to', '')) {
+            'queue' => $this->redirectToRoute('app_tenant_payment_verify'),
+            'invoice' => $invoice
+                ? $this->redirectToRoute('app_tenant_invoice_show', ['id' => $invoice->getId()])
+                : $this->redirectToRoute('app_tenant_report_payments'),
+            default => $this->redirectToRoute('app_tenant_report_payments'),
+        };
     }
 
     #[Route('/receipt/{id}', name: 'app_tenant_payment_receipt', requirements: ['id' => '\d+'])]

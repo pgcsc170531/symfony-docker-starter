@@ -188,14 +188,20 @@
                     <tbody>
                         {% for payment in invoice.payments %}
                         <tr class="border-b border-gray-200 last:border-0">
-                            <td class="py-3 text-gray-600">{{ payment.createdAt|date('d M Y, h:i A') }}</td>
+                            <td class="py-3 text-gray-600">
+                                {# The day the money was received, which a backdated terminal entry can differ from the day it was typed in. #}
+                                {{ (payment.paidAt ?? payment.createdAt)|date('d M Y, h:i A') }}
+                                {% if payment.confirmedAt and payment.createdAt and payment.confirmedAt|date('Y-m-d') != payment.createdAt|date('Y-m-d') %}
+                                    <span class="block text-[10px] text-gray-400">recorded {{ payment.createdAt|date('d M Y') }}</span>
+                                {% endif %}
+                            </td>
                             <td class="py-3 font-mono text-xs">
                                 {{ payment.referenceCode|default('-') }}
                                 {% if payment.reference %}
                                     <span class="block text-[10px] text-gray-400">Bank: {{ payment.reference }}</span>
                                 {% endif %}
                             </td>
-                            <td class="py-3">{{ payment.method }}</td>
+                            <td class="py-3">{{ payment.methodLabel }}</td>
                             
                             {# 🔴 VISUAL FIX: Correctly show Cancelled Slips #}
                             <td class="py-3">
@@ -205,8 +211,36 @@
                                     <a href="{{ path('app_tenant_payment_receipt', {id: payment.id}) }}" target="_blank" rel="noopener"
                                        class="mt-1 block min-h-[44px] text-[11px] font-bold text-blue-700 underline">🧾 View / print receipt</a>
 
+                                    {#
+                                        A wrong receipt is reversed, never deleted: the row is kept
+                                        and cancelled, the bill reopens, and the correct payment is
+                                        recorded fresh. Nothing is refunded automatically — that is
+                                        a manual payout to the payer.
+                                    #}
+                                    {% if is_granted('ROLE_TENANT_SUPER_ADMIN') %}
+                                        <form method="post" action="{{ path('app_tenant_payment_reverse', {id: payment.id}) }}"
+                                              class="mt-2 max-w-[220px]"
+                                              onsubmit="return confirm('Reverse this payment? The record stays as cancelled and the bill reopens. No money is refunded automatically.');">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('reverse_payment_' ~ payment.id) }}">
+                                            <input type="hidden" name="return_to" value="invoice">
+                                            <input type="text" name="reason" maxlength="500" required placeholder="Reason"
+                                                   class="mb-1 min-h-[44px] w-full rounded border border-ink-300 px-2 text-base text-ink-900">
+                                            <button type="submit" class="min-h-[44px] w-full rounded border border-failed px-3 text-xs font-bold text-failed">Reverse payment</button>
+                                            <span class="mt-1 block text-[10px] leading-snug text-gray-400">
+                                                No automatic refund. Card/online refunds are made from Paystack; cash and POS at the desk.
+                                            </span>
+                                        </form>
+                                    {% endif %}
+
+                                {% elseif payment.status == 'DECLINED' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Rejected</span>
+                                    <span class="mt-1 block max-w-[220px] break-words text-[10px] text-red-600">{{ payment.rejectionReason ?: payment.note }}</span>
+
                                 {% elseif payment.status == 'CANCELLED' or (payment.status == 'PENDING' and invoice.status == 'PAID') %}
                                     <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500 line-through">Void / Cancelled</span>
+                                    {% if payment.note %}
+                                        <span class="mt-1 block max-w-[220px] break-words text-[10px] text-gray-400">{{ payment.note }}</span>
+                                    {% endif %}
 
                                 {% else %}
                                     <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">Pending</span>
@@ -255,7 +289,7 @@
                     {% if is_granted('ROLE_BURSAR') %}
                     <a href="{{ path('app_tenant_payment_terminal', {'id': invoice.student.id, 'invoice_id': invoice.id}) }}" 
                        class="bg-gray-700 text-white px-5 py-2.5 rounded font-bold hover:bg-gray-800 shadow-sm flex items-center gap-2">
-                        <span>💵</span> Record Cash
+                        <span>�</span> Record Payment
                     </a>
                     {% endif %}
 

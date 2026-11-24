@@ -82,7 +82,7 @@
                             <p class="mt-1 flex flex-wrap items-center gap-2 text-xs text-ink-500">
                                 <span class="badge-neutral font-mono">{{ payment.referenceCode }}</span>
                                 <span class="badge-pending">Awaiting</span>
-                                <span>{{ payment.method }}</span>
+                                <span>{{ payment.methodLabel }}</span>
                                 <span>{{ payment.createdAt ? payment.createdAt|date('d M, H:i') : '' }}</span>
                             </p>
                             <p class="mt-1 text-xs">
@@ -137,6 +137,40 @@
                             <span>The bank shows a different amount from the slip — record the bank amount above.</span>
                         </label>
                     </form>
+
+                    {#
+                        The other outcome: the transfer never arrived, or it is not
+                        this school's money. The slip is kept as DECLINED with the
+                        reason, and that reason is what the parent reads in their
+                        portal — so it is required.
+                    #}
+                    <details class="mt-3 border-t border-ink-100 pt-3">
+                        <summary class="inline-flex min-h-[44px] cursor-pointer items-center text-sm font-semibold text-failed">
+                            Reject this payment
+                        </summary>
+
+                        <form method="post"
+                              action="{{ path('app_tenant_payment_reject', {id: payment.id}) }}"
+                              class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
+                              onsubmit="return confirm('Reject this payment? The parent will see your reason in their portal.');">
+                            <input type="hidden" name="_token" value="{{ csrf_token('payment_reject_' ~ payment.id) }}">
+
+                            <div>
+                                <label for="reject-reason-{{ payment.id }}" class="mb-1 block text-xs font-semibold text-ink-700">
+                                    Reason (the parent will see this)
+                                </label>
+                                <input id="reject-reason-{{ payment.id }}" name="reason" type="text"
+                                       maxlength="500" required
+                                       placeholder="e.g. no matching transfer appeared in the school account"
+                                       class="min-h-[44px] w-full rounded-lg border border-ink-200 px-3 text-base text-ink-900 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-200">
+                            </div>
+
+                            <button type="submit"
+                                    class="min-h-[44px] w-full rounded-lg border border-failed px-5 text-sm font-semibold text-failed transition-colors hover:bg-failed/5 sm:w-auto">
+                                Reject payment
+                            </button>
+                        </form>
+                    </details>
                 </li>
             {% endfor %}
         </ul>
