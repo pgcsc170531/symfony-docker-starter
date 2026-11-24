@@ -299,10 +299,17 @@
        compares the roles in the session token with the freshly loaded user on
        every request and logs the person out when they differ. #}
     {% set portal_dual = app.session.get('portal.dual') %}
+    {# A Staff profile means the staff shell unless this person explicitly chose
+       the parent door at /choose-portal. Falling back to is_granted('ROLE_PARENT')
+       first put teacher-parents inside the four-tab parent shell while the page
+       itself rendered the staff dashboard. #}
     {% set portal_mode = portal_dual
         ? (app.session.get('portal.mode') ?? 'staff')
-        : (is_granted('ROLE_PARENT') ? 'parent' : 'staff') %}
+        : ((app.user and app.user.staff) ? 'staff' : (is_granted('ROLE_PARENT') ? 'parent' : 'staff')) %}
     {% set parent_portal = portal_mode == 'parent' %}
+    {# The switch is available to anyone who can actually walk through both doors,
+       even before a sign-in has set the dual flag (e.g. promoted mid-session). #}
+    {% set can_switch_portal = portal_dual or (app.user and app.user.staff and is_granted('ROLE_PARENT')) %}
 
     {% if app.user and not public_site %}
         {#
@@ -408,7 +415,7 @@
                drawer, the school, the manual, the account and sign-out, and a
                "Parent portal" label pushed the whole row 21px past a 360px screen.
                The label appears from `sm` upward, where there is room for it. #}
-            {% if app.session.get('portal.dual') and not is_granted('ROLE_SUPER_ADMIN') and not is_granted('ROLE_AGENT') %}
+            {% if can_switch_portal and not is_granted('ROLE_SUPER_ADMIN') and not is_granted('ROLE_AGENT') %}
                 <a href="{{ path('app_portal_choose') }}"
                    aria-label="{{ parent_portal ? 'Switch to the staff portal' : 'Switch to the parent portal' }}"
                    title="{{ parent_portal ? 'Switch to the staff portal' : 'Switch to the parent portal' }}"

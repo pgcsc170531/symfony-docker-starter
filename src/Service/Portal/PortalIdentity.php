@@ -11,8 +11,14 @@ use Doctrine\ORM\EntityManagerInterface;
  *
  * A bursar whose own children attend the school is one person with one login and
  * two jobs: they work here *and* they are a parent here. This answers that
- * question from the two records that prove it — a Staff profile, and a Guardian
- * row that owns at least one pupil. Nothing is stored on the user.
+ * question from the two things that actually grant the second door — a staff
+ * role/profile, and ROLE_PARENT on the same login. Nothing is stored on the user.
+ *
+ * A Guardian row is deliberately NOT required. A teacher added to the school
+ * before their child was admitted (or a record whose guardian row was created
+ * without a login) still holds ROLE_PARENT, and hiding the choice from them is
+ * what left such accounts stuck in the parent shell with no way across. The
+ * parent portal itself handles an empty family gracefully.
  */
 final class PortalIdentity
 {
@@ -25,21 +31,10 @@ final class PortalIdentity
         return $this->em->getRepository(Guardian::class)->findOneBy(['user' => $user]);
     }
 
-    /**
-     * Staff who are also a parent of a pupil in this school.
-     *
-     * A guardian record with no children is not enough: an application that was
-     * never admitted would otherwise offer a parent portal with nothing in it.
-     */
     public function isDual(User $user): bool
     {
-        if (!$user->holdsStaffRole()) {
-            return false;
-        }
-
-        $guardian = $this->guardianOf($user);
-
-        return $guardian !== null && $guardian->getStudents()->count() > 0;
+        return $user->holdsStaffRole()
+            && in_array('ROLE_PARENT', $user->getRoles(), true);
     }
 
     /** The session key the shell and the provider read to place this person. */

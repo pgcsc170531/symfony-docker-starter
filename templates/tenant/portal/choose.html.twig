@@ -12,13 +12,13 @@
     <div class="max-w-2xl">
         <h1 class="text-xl font-bold text-ink-900 sm:text-2xl">How are you visiting today?</h1>
         <p class="mt-2 text-sm text-ink-600">
-            This account works at the school <span class="font-semibold text-ink-900">and</span> has
+            This account works at the school <span class="font-semibold text-ink-900">and</span>
             {% if guardian and guardian.students|length > 0 %}
-                {{ guardian.students|length == 1 ? 'a child' : guardian.students|length ~ ' children' }}
+                has {{ guardian.students|length == 1 ? 'a child' : guardian.students|length ~ ' children' }} here.
             {% else %}
-                children
+                is also registered as a parent here.
             {% endif %}
-            here. Choose a door — you can switch at any time from the header.
+            Choose a door — you can switch at any time from the header.
         </p>
     </div>
 

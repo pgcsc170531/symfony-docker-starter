@@ -4,6 +4,7 @@ namespace App\Controller\Tenant;
 
 use App\Entity\Tenant\DepartmentHead;
 use App\Entity\Tenant\FormTeacher;
+use App\Entity\Tenant\Guardian;
 use App\Entity\Tenant\Session;
 use App\Entity\Tenant\Staff;
 use App\Entity\Tenant\Term;
@@ -169,6 +170,11 @@ class StaffController extends AbstractController
                         ->setEmployeeNumber($this->cleanOrNull($form->get('employeeNumber')->getData(), 50))
                         ->setTitle(StaffImporter::titleFor('', $role));
                     $entityManager->persist($staff);
+
+                    // The parent record may exist with this phone but no login.
+                    // Claim it, or the person would be two unrelated accounts.
+                    $this->linkUnclaimedGuardian($entityManager, $existing, $phone);
+
                     $entityManager->flush();
 
                     $this->addFlash('success', sprintf(
@@ -192,6 +198,11 @@ class StaffController extends AbstractController
                 ));
 
                 $entityManager->persist($user);
+
+                // A teacher is very often already on file as a parent (an old
+                // application, an earlier admission). Give that guardian row this
+                // login and ROLE_PARENT, so sign-in offers both portals.
+                $this->linkUnclaimedGuardian($entityManager, $user, $phone);
 
                 $role = current(array_filter($user->getRoles(), static fn (string $r): bool => $r !== 'ROLE_USER'))
                     ?: User::ROLE_TEACHER;
@@ -394,6 +405,46 @@ class StaffController extends AbstractController
     // ──────────────────────────────────────────────────────────────────
     //  Who may edit whom
     // ──────────────────────────────────────────────────────────────────
+
+    /**
+     * Give a staff login the guardian record that already belongs to their phone.
+     *
+     * The office usually has the parent on file — from an application or an older
+     * admission — with no login of its own. Creating the staff account and leaving
+     * that record unclaimed is what made "teacher" and "parent" two different
+     * people. Linking it (and adding ROLE_PARENT) gives them both doors at sign-in.
+     */
+    private function linkUnclaimedGuardian(EntityManagerInterface $em, User $user, string $phone): bool
+    {
+        $national = PhoneNumber::national($phone);
+
+        if ($national === '') {
+            return false;
+        }
+
+        $guardian = $em->getRepository(Guardian::class)->createQueryBuilder('g')
+            ->andWhere('g.phoneNumber IN (:numbers)')
+            ->andWhere('g.user IS NULL')
+            ->setParameter('numbers', array_values(array_unique([
+                $national, '0' . $national, '+234' . $national, '234' . $national,
+            ])))
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        if (!$guardian instanceof Guardian) {
+            return false;
+        }
+
+        $guardian->setUser($user);
+
+        $user->setRoles(array_values(array_unique(array_filter(
+            array_merge($user->getRoles(), ['ROLE_PARENT']),
+            static fn (string $r): bool => $r !== 'ROLE_USER'
+        ))));
+
+        return true;
+    }
 
     /** Blank text from an optional field means "nothing", not an empty string. */
     private function cleanOrNull(mixed $value, int $maxLength): ?string
