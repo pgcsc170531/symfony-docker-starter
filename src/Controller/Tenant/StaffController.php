@@ -116,6 +116,12 @@ class StaffController extends AbstractController
             $phone = preg_replace('/\D+/', '', (string) $form->get('phone')->getData()) ?? '';
             $email = mb_strtolower(trim((string) $user->getEmail()));
 
+            // The office has told us this person is already a parent here.
+            // That is a statement of fact we can check: if nothing matches, say
+            // so instead of quietly opening the second login they asked us to
+            // avoid.
+            $theyAreParent = (bool) $form->get('existingParent')->getData();
+
             // The phone is the login when no inbox was given — same derivation
             // the student importer uses for parents.
             if ($email === '') {
@@ -189,6 +195,33 @@ class StaffController extends AbstractController
                 } else {
                     $role = current(array_filter($user->getRoles(), static fn (string $r): bool => $r !== 'ROLE_USER'))
                         ?: User::ROLE_TEACHER;
+
+                    // The office typed an address this person can actually read.
+                    // The parent login was found through the *guardian* record, so
+                    // its own address may be the derived 803…@edus.ng — keeping
+                    // that would leave the teacher unable to receive a reset mail.
+                    // Attach the real address when it is free; the password and
+                    // every family record stay exactly where they are.
+                    $addressChanged = false;
+                    if ($existingFromGuardian
+                        && $email !== ''
+                        && strcasecmp($email, (string) $existing->getEmail()) !== 0
+                        && $this->findExistingLogin($entityManager, $email) === null) {
+                        $previousAddress = (string) $existing->getEmail();
+                        $existing->setEmail($email);
+                        $addressChanged = true;
+
+                        // The family record carries its own contact address, and
+                        // every parent-facing email is sent to it. Left behind on
+                        // the old derived address, the teacher would still never
+                        // receive anything the school sends their family.
+                        foreach ($entityManager->getRepository(Guardian::class)->findBy(['user' => $existing]) as $guardian) {
+                            if (strcasecmp((string) $guardian->getEmail(), $previousAddress) === 0) {
+                                $guardian->setEmail($email);
+                            }
+                        }
+                    }
+
                     $existing->setRoles(array_values(array_unique(array_filter(
                         array_merge($existing->getRoles(), [$role, 'ROLE_PARENT']),
                         static fn (string $r): bool => $r !== 'ROLE_USER'
@@ -209,12 +242,26 @@ class StaffController extends AbstractController
 
                     $entityManager->flush();
 
-                    $this->addFlash('success', sprintf(
-                        '%s is now also a staff member. Their existing parent login and password were kept.',
-                        $existing->getFullName()
-                    ));
+                    $this->addFlash('success', $addressChanged
+                        ? sprintf(
+                            '%s is now also a staff member. Their existing parent login was kept, and now signs in as %s as well.',
+                            $existing->getFullName(),
+                            $email
+                        )
+                        : sprintf(
+                            '%s is now also a staff member. Their existing parent login and password were kept.',
+                            $existing->getFullName()
+                        ));
                     return $this->redirectToRoute('app_tenant_staff_index');
                 }
+            } elseif ($theyAreParent) {
+                // They told us this person is a parent here, but no parent login
+                // answered to that phone number or email. Creating a staff account
+                // now is exactly the split login the box exists to prevent.
+                $form->get('existingParent')->addError(new FormError(
+                    'No parent account matches that phone number or email. Check the number with the parent, '
+                    . 'or untick the box to create a new staff account.'
+                ));
             } else {
                 $user->setEmail($email);
 

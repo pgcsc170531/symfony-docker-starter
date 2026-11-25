@@ -138,21 +138,45 @@
                             </div>
                         {% endif %}
 
+                        {% for message in app.flashes('success') %}
+                            <div class="rounded-md border border-paid/30 bg-green-50 p-4 mb-4 text-sm text-ink-800" role="status">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                        {% for message in app.flashes('error') %}
+                            <div class="rounded-md border border-failed/30 bg-red-50 p-4 mb-4 text-sm text-ink-800" role="alert">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+
                         <div>
-                            <label for="email" class="block text-sm font-medium text-gray-700">Email Address</label>
+                            {# A phone number is a credential here — most parents are never
+                               given an address, they are given the number the school already
+                               has. `type="email"` refused to submit a number at all, which
+                               made the account unreachable on the one page that opens it.
+                               The provider accepts the number with or without its trunk
+                               zero, the derived address, or a real inbox. #}
+                            <label for="username" class="block text-sm font-medium text-ink-700">Email or phone number</label>
                             <div class="mt-1">
-                                <input id="email" name="_username" type="email" autocomplete="email" required 
+                                <input id="username" name="_username" type="text" autocomplete="username" required
+                                       inputmode="text" autocapitalize="none" spellcheck="false"
                                        value="{{ last_username }}"
-                                       placeholder="e.g. principal@school.com"
-                                       class="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none ring-brand focus:ring-1 focus:ring-indigo-500 sm:text-sm">
+                                       placeholder="e.g. 08031234567 or principal@school.com"
+                                       class="block w-full appearance-none rounded-md border border-ink-300 px-3 py-2 text-base text-ink-900 placeholder-ink-400 shadow-sm focus:border-accent-500 focus:outline-none ring-brand focus:ring-1 focus:ring-accent-500 sm:text-sm">
                             </div>
                         </div>
 
                         <div>
-                            <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                            <div class="flex items-center justify-between gap-3">
+                                <label for="password" class="block text-sm font-medium text-ink-700">Password</label>
+                                <a href="{{ path('app_forgot_password') }}"
+                                   class="inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 hover:underline">
+                                    Forgot password?
+                                </a>
+                            </div>
                             <div class="mt-1">
-                                <input id="password" name="_password" type="password" autocomplete="current-password" required 
-                                       class="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none ring-brand focus:ring-1 focus:ring-indigo-500 sm:text-sm">
+                                <input id="password" name="_password" type="password" autocomplete="current-password" required
+                                       class="block w-full appearance-none rounded-md border border-ink-300 px-3 py-2 text-base text-ink-900 shadow-sm focus:border-accent-500 focus:outline-none ring-brand focus:ring-1 focus:ring-accent-500 sm:text-sm">
                             </div>
                         </div>
 

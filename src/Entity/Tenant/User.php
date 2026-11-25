@@ -92,6 +92,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(name: 'must_change_password', options: ['default' => false])]
     private bool $mustChangePassword = false;
 
+    /**
+     * Password reset — the SHA-256 of the one-time token mailed to the person.
+     *
+     * Only the hash is stored: a copy of the database must not be replayable
+     * into somebody's account. Cleared the moment the link is used or a newer
+     * one is requested.
+     */
+    #[ORM\Column(name: 'reset_token_hash', length: 64, nullable: true)]
+    private ?string $resetTokenHash = null;
+
+    #[ORM\Column(name: 'reset_requested_at', type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $resetRequestedAt = null;
+
     public function getId(): ?int { return $this->id; }
 
     public function getEmail(): ?string { return $this->email; }
@@ -142,6 +155,22 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function isMustChangePassword(): bool { return $this->mustChangePassword; }
     public function setMustChangePassword(bool $mustChangePassword): static { $this->mustChangePassword = $mustChangePassword; return $this; }
+
+    // ── Password reset ────────────────────────────────────────────────
+    public function getResetTokenHash(): ?string { return $this->resetTokenHash; }
+    public function setResetTokenHash(?string $hash): static { $this->resetTokenHash = $hash; return $this; }
+
+    public function getResetRequestedAt(): ?\DateTimeImmutable { return $this->resetRequestedAt; }
+    public function setResetRequestedAt(?\DateTimeImmutable $at): static { $this->resetRequestedAt = $at; return $this; }
+
+    /** Forget any outstanding reset link. */
+    public function clearPasswordReset(): static
+    {
+        $this->resetTokenHash = null;
+        $this->resetRequestedAt = null;
+
+        return $this;
+    }
 
     // ── Two-factor authentication (TOTP) ──────────────────────────────
     public function getTotpSecret(): ?string { return $this->totpSecret; }

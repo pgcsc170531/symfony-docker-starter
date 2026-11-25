@@ -5,6 +5,7 @@ namespace App\Controller\Tenant;
 use App\Entity\Tenant\User;
 use App\Form\AccountProfileType;
 use App\Form\ChangePasswordType;
+use App\Service\Phone\PhoneNumber;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormError;
@@ -86,7 +87,13 @@ class AccountController extends AbstractController
                 return $this->renderPage($user, $user->isMustChangePassword(), $form);
             }
 
-            $clash = $this->em->getRepository(User::class)->findOneBy(['email' => $email]);
+            $clash = $this->em->getRepository(User::class)->createQueryBuilder('u')
+                ->andWhere('u.email IN (:emails)')
+                ->setParameter('emails', PhoneNumber::loginCandidates($email))
+                ->setMaxResults(1)
+                ->getQuery()
+                ->getOneOrNullResult();
+
             if ($clash !== null && $clash->getId() !== $user->getId()) {
                 $form->get('email')->addError(new FormError(sprintf('%s is already used by another account.', $email)));
 

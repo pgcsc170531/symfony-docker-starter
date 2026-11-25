@@ -1,0 +1,38 @@
+{# Shared shell for the standalone auth pages that are NOT the login form
+   (forgot password, reset password). Same rules as login.html.twig: the page
+   does not extend base.html.twig, so it must include the design tokens itself;
+   inputs are 16px so iOS does not zoom; actions are full width and 44px tall. #}
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-ink-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Account{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    {% include '_design_tokens.html.twig' %}
+    <link rel="icon" type="image/svg+xml" href="{{ asset('images/brand/edus-favicon.svg') }}">
+</head>
+<body class="min-h-full">
+<main class="mx-auto flex min-h-full w-full max-w-md flex-col justify-center px-4 py-8 sm:py-12">
+    {% import '_brand.html.twig' as brand %}
+    <div class="mb-6 text-center">{{ brand.wordmark('lg') }}</div>
+
+    <div class="rounded-xl border border-ink-200 bg-white p-5 shadow-card sm:p-6">
+        <h1 class="text-xl font-bold tracking-tight text-ink-900">{% block heading %}{% endblock %}</h1>
+        <p class="mt-1 text-sm text-ink-600">{% block lede %}{% endblock %}</p>
+        <div class="mt-5">{% block card %}{% endblock %}</div>
+    </div>
+
+    <p class="mt-6 text-center">
+        <a href="{{ path('app_login') }}"
+           class="inline-flex min-h-[44px] items-center text-sm font-semibold text-accent-700 hover:underline">
+            &larr; Back to sign in
+        </a>
+    </p>
+
+    <p class="mt-8 text-center text-[11px] text-ink-500">
+        Powered by Mu'ammil Web Services Limited
+    </p>
+</main>
+</body>
+</html>

@@ -7,6 +7,7 @@ use App\Entity\Tenant\User;
 use App\Service\Staff\StaffImporter;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\CallbackTransformer;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
@@ -35,8 +36,10 @@ class StaffType extends AbstractType
                 'required' => false,
                 // Most schools hand out a phone number, not an inbox. The office
                 // types the phone and the account gets <phone>@edus.ng — the same
-                // derivation the student importer uses for parents.
-                'help' => 'Optional. Leave it blank and the phone number becomes the login, e.g. 08031234567@edus.ng.',
+                // derivation the student importer uses for parents. The trunk zero
+                // is dropped, because PhoneNumber::national() is the one stored
+                // form; typing 0803… still signs in (loginCandidates tries both).
+                'help' => 'Optional. Leave it blank and the phone number becomes the login, e.g. 8031234567@edus.ng (08031234567@edus.ng also works).',
                 'attr' => ['placeholder' => 'staff@school.com', 'autocomplete' => 'email']
             ])
             /*
@@ -51,6 +54,22 @@ class StaffType extends AbstractType
                 'label' => 'Phone Number',
                 'data' => $staff?->getPhone(),
                 'attr' => ['placeholder' => 'e.g. 08031234567', 'inputmode' => 'tel'],
+            ])
+            /*
+             * The question the office already knows the answer to.
+             *
+             * A teacher is very often a parent here first, and the two logins
+             * must not stay separate: ticking this says "match them up". The
+             * matching itself (phone first, then email) is unchanged — this box
+             * makes the intent explicit and turns "no parent found" into a
+             * message instead of a silent second account.
+             */
+            ->add('existingParent', CheckboxType::class, [
+                'mapped' => false,
+                'required' => false,
+                'label' => 'This person already has a child in this school',
+                'help' => 'Tick if they already use the parent portal here. Their existing login gets staff access — the password they know keeps working — instead of a second account being created.',
+                'attr' => ['class' => 'h-5 w-5 rounded border-ink-300 text-accent-600 focus:ring-accent-500'],
             ])
             ->add('address', TextareaType::class, [
                 'mapped' => false,

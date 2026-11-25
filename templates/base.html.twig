@@ -299,17 +299,18 @@
        compares the roles in the session token with the freshly loaded user on
        every request and logs the person out when they differ. #}
     {% set portal_dual = app.session.get('portal.dual') %}
-    {# A Staff profile means the staff shell unless this person explicitly chose
-       the parent door at /choose-portal. Falling back to is_granted('ROLE_PARENT')
-       first put teacher-parents inside the four-tab parent shell while the page
-       itself rendered the staff dashboard. #}
+    {# A staff role OR a Staff profile means the staff shell unless this person
+       explicitly chose the parent door at /choose-portal. Both are checked through
+       holdsStaffRole(), the same rule PortalIdentity::isDual() and
+       DashboardController use — asking only for the profile left a role-only staff
+       account (no Staff row) in the parent shell with no way across. #}
     {% set portal_mode = portal_dual
         ? (app.session.get('portal.mode') ?? 'staff')
-        : ((app.user and app.user.staff) ? 'staff' : (is_granted('ROLE_PARENT') ? 'parent' : 'staff')) %}
+        : ((app.user and app.user.holdsStaffRole) ? 'staff' : (is_granted('ROLE_PARENT') ? 'parent' : 'staff')) %}
     {% set parent_portal = portal_mode == 'parent' %}
     {# The switch is available to anyone who can actually walk through both doors,
        even before a sign-in has set the dual flag (e.g. promoted mid-session). #}
-    {% set can_switch_portal = portal_dual or (app.user and app.user.staff and is_granted('ROLE_PARENT')) %}
+    {% set can_switch_portal = portal_dual or (app.user and app.user.holdsStaffRole and is_granted('ROLE_PARENT')) %}
 
     {% if app.user and not public_site %}
         {#

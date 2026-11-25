@@ -14,6 +14,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -237,6 +238,58 @@ final class GuardianController extends AbstractController
                 count($result['skipped']) === 1 ? 'that pupil' : 'those pupils'
             ));
         }
+
+        return $this->redirectToRoute('app_tenant_parent_family', ['id' => $guardian->getId()]);
+    }
+
+    /**
+     * The office's reset button for a parent login.
+     *
+     * A login built from a phone number (8039658200@edus.ng) has no mailbox, so
+     * the self-service "forgot password" link cannot reach it. The bursar sets a
+     * temporary password here instead, and the parent is forced to choose their
+     * own the moment they sign in — the office never learns the real one.
+     */
+    #[Route('/{id}/reset-login', name: 'app_tenant_parent_reset_login', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function resetLogin(
+        Guardian $guardian,
+        Request $request,
+        EntityManagerInterface $em,
+        UserPasswordHasherInterface $hasher,
+    ): Response {
+        if (!$this->isCsrfTokenValid('reset_login', (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'That form expired. Please try again.');
+
+            return $this->redirectToRoute('app_tenant_parent_family', ['id' => $guardian->getId()]);
+        }
+
+        $user = $guardian->getUser();
+
+        if ($user === null) {
+            $this->addFlash('error', 'This family has no portal login to reset.');
+
+            return $this->redirectToRoute('app_tenant_parent_family', ['id' => $guardian->getId()]);
+        }
+
+        $password = trim((string) $request->request->get('password'));
+
+        if (mb_strlen($password) < 8) {
+            $this->addFlash('error', 'Use at least 8 characters for the temporary password.');
+
+            return $this->redirectToRoute('app_tenant_parent_family', ['id' => $guardian->getId()]);
+        }
+
+        $user->setPassword($hasher->hashPassword($user, $password));
+        // A password somebody else chose is a doorway, not a credential.
+        $user->setMustChangePassword(true);
+        // Any link already in flight is now worthless.
+        $user->clearPasswordReset();
+        $em->flush();
+
+        $this->addFlash('success', sprintf(
+            'Temporary password set for %s. They will be asked to choose their own at next sign-in.',
+            (string) $user->getEmail()
+        ));
 
         return $this->redirectToRoute('app_tenant_parent_family', ['id' => $guardian->getId()]);
     }

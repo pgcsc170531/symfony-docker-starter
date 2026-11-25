@@ -44,7 +44,14 @@ class DashboardController extends AbstractController
         // A parent belongs in the parent portal. A parent who is *also* on staff
         // (a teacher with a child in the school) keeps the staff dashboard and
         // reaches the parent portal from the account menu.
-        if (!$user || ($this->isGranted('ROLE_PARENT') && $user->getStaff() === null)) {
+        //
+        // The test is `holdsStaffRole()`, not `getStaff() !== null`: a staff role
+        // is what /choose-portal and the header switch already read, and an
+        // account holding ROLE_TEACHER with no Staff row (created by
+        // `app:tenant:create-user`, or promoted before Staff profiles existed)
+        // used to be bounced straight back here — so choosing "staff" looked like
+        // it did nothing, and the person stayed in the parent portal.
+        if (!$user || ($this->isGranted('ROLE_PARENT') && !$user->holdsStaffRole())) {
             return $this->redirectToRoute('app_parent_dashboard');
         }
 

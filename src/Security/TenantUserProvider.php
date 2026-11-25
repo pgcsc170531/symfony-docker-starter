@@ -35,10 +35,10 @@ final class TenantUserProvider implements UserProviderInterface
 
     public function loadUserByIdentifier(string $identifier): UserInterface
     {
-        // 8039658200@edus.ng is what a parent is given now; 08039658200@edus.ng
-        // is what earlier imports created; 2348039658200@edus.ng is what people
-        // type. All three must reach the same account.
-        foreach (PhoneNumber::loginCandidates($identifier) as $email) {
+        // People sign in with whatever the school gave them: the phone number
+        // itself ("0803 123 4567"), the derived address, the legacy spelling
+        // with the trunk zero, or a real inbox. All of them name one account.
+        foreach (self::candidates($identifier) as $email) {
             $user = $this->em->getRepository(User::class)->findOneBy(['email' => $email]);
 
             if ($user !== null) {
@@ -49,6 +49,34 @@ final class TenantUserProvider implements UserProviderInterface
         // Same message for "no such account" and a wrong password — never
         // confirm which addresses exist.
         throw new UserNotFoundException(sprintf('User "%s" not found.', $identifier));
+    }
+
+    /**
+     * Every form a typed identifier may take, in the order we try them.
+     *
+     * A phone number is accepted in any shape the office or the parent writes it
+     * — `0803 123 4567`, `0803-123-4567`, `+234 803 123 4567`, `8031234567` —
+     * because that is the credential the school actually handed out. It is
+     * normalised to the stored national form and then expanded to the derived
+     * login spellings. A real mailbox passes through untouched.
+     *
+     * @return list<string>
+     */
+    public static function candidates(string $identifier): array
+    {
+        $identifier = trim($identifier);
+
+        if (!str_contains($identifier, '@')) {
+            $digits = PhoneNumber::digits($identifier);
+
+            if ($digits === '') {
+                return [$identifier];
+            }
+
+            $identifier = PhoneNumber::loginEmail($digits);
+        }
+
+        return PhoneNumber::loginCandidates($identifier);
     }
 
     public function refreshUser(UserInterface $user): UserInterface

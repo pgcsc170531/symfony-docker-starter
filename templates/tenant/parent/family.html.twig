@@ -58,6 +58,29 @@
                     </div>
                 {% endif %}
             </dl>
+
+            {% if guardian.user %}
+                {# A phone-derived login has no inbox, so the parent cannot reset it
+                   themselves. The bursar sets a temporary password; the parent is
+                   forced to change it on first sign-in. #}
+                <form method="post" action="{{ path('app_tenant_parent_reset_login', {id: guardian.id}) }}"
+                      class="mt-4 border-t border-ink-100 pt-4">
+                    <input type="hidden" name="_token" value="{{ csrf_token('reset_login') }}">
+                    <label for="reset-{{ guardian.id }}" class="block text-xs font-bold uppercase tracking-wide text-ink-500">
+                        Reset login password
+                    </label>
+                    <input id="reset-{{ guardian.id }}" name="password" type="text" required minlength="8"
+                           autocomplete="off" placeholder="Temporary password (min. 8)"
+                           class="mt-1 block w-full rounded-lg border border-ink-300 px-3 py-2.5 text-base text-ink-900 placeholder-ink-400 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-200">
+                    <p class="mt-1 text-[11px] leading-snug text-ink-500">
+                        Signs in as <span class="break-all">{{ guardian.user.email }}</span>. They are asked to change it next time.
+                    </p>
+                    <button type="submit"
+                            class="mt-2 flex min-h-[44px] w-full items-center justify-center rounded-lg border border-accent-300 px-3 text-sm font-semibold text-accent-700 hover:bg-accent-50">
+                        Set temporary password
+                    </button>
+                </form>
+            {% endif %}
         </section>
 
         {# ── Children in this family ──────────────────────────────────── #}

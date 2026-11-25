@@ -189,6 +189,12 @@ security:
         - { path: ^/agent/login, roles: PUBLIC_ACCESS }
         - { path: ^/login, roles: PUBLIC_ACCESS }
 
+        # Password reset. Public by definition: the person asking cannot sign in.
+        # The token in the URL is the credential, is single-use, expires, and
+        # only ever arrives by email — there is no lookup by identifier here.
+        - { path: ^/forgot-password, roles: PUBLIC_ACCESS }
+        - { path: ^/reset-password/, roles: PUBLIC_ACCESS }
+
         # 🔒 4. Landlord (Super Admin) area
         - { path: ^/admin, roles: ROLE_SUPER_ADMIN }
 
