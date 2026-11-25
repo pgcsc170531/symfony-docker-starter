@@ -2,6 +2,7 @@
 
 namespace App\Security;
 
+use App\Entity\Tenant\Guardian;
 use App\Entity\Tenant\User;
 use App\Service\Phone\PhoneNumber;
 use Doctrine\ORM\EntityManagerInterface;
@@ -43,6 +44,27 @@ final class TenantUserProvider implements UserProviderInterface
 
             if ($user !== null) {
                 return $user;
+            }
+        }
+
+        // The number stays a credential even after the login was changed to a real
+        // inbox: a teacher promoted from a parent account now signs in with
+        // aisha@gmail.com, but her family record still holds 0803 111 0002, and the
+        // office will keep telling her to use it. Resolve it through the family.
+        $digits = PhoneNumber::digits($identifier);
+
+        if (!str_contains($identifier, '@') && $digits !== '') {
+            $guardians = $this->em->getRepository(Guardian::class)->createQueryBuilder('g')
+                ->andWhere('g.phoneNumber IN (:numbers)')
+                ->andWhere('g.user IS NOT NULL')
+                ->setParameter('numbers', PhoneNumber::searchVariants($digits))
+                ->setMaxResults(2)
+                ->getQuery()
+                ->getResult();
+
+            // Two families on one handset: never guess which account is meant.
+            if (count($guardians) === 1 && $guardians[0]->getUser() !== null) {
+                return $guardians[0]->getUser();
             }
         }
 

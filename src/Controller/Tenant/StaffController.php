@@ -137,9 +137,14 @@ class StaffController extends AbstractController
             // An existing parent is often the person being hired. Resolve them
             // before the branch below, so a phone-only submission continues with
             // their login instead of refusing it or opening a second account.
+            //
+            // Either contact is enough: the same LOGIN address (any spelling of a
+            // phone-derived one), the same phone on their family record, or the
+            // same email on their family record. The office does not always know
+            // which of the three they typed last year.
             $existing = null;
             $existingFromGuardian = false;
-            $sharedPhone = false;
+            $ambiguousContact = false;
 
             if ($email !== '') {
                 $existing = $this->findExistingLogin($entityManager, $email);
@@ -153,7 +158,7 @@ class StaffController extends AbstractController
                     if (count($guardians) > 1) {
                         // A handset can be shared by two families. Never guess which
                         // person the office meant — ask for the staff email instead.
-                        $sharedPhone = true;
+                        $ambiguousContact = true;
                         $form->get('email')->addError(new FormError(
                             'That phone number belongs to more than one family. Enter this staff member’s email address instead.'
                         ));
@@ -162,9 +167,26 @@ class StaffController extends AbstractController
                         $existingFromGuardian = true;
                     }
                 }
+
+                // The office may only know the family's contact address — the one
+                // typed on the admission form, which was never their login. Same
+                // email is the same person just as much as the same phone is.
+                if ($existing === null && !$ambiguousContact) {
+                    $guardians = $this->guardiansForEmail($entityManager, $email);
+
+                    if (count($guardians) > 1) {
+                        $ambiguousContact = true;
+                        $form->get('email')->addError(new FormError(
+                            'That email address is shared by more than one family. Enter this staff member’s phone number instead.'
+                        ));
+                    } elseif (count($guardians) === 1 && $guardians[0]->getUser() !== null) {
+                        $existing = $guardians[0]->getUser();
+                        $existingFromGuardian = true;
+                    }
+                }
             }
 
-            if ($email === '' || $sharedPhone) {
+            if ($email === '' || $ambiguousContact) {
                 // Already reported above; fall through to re-render.
             } elseif ($existing !== null) {
                 /*
@@ -238,7 +260,7 @@ class StaffController extends AbstractController
 
                     // The parent record may exist with this phone but no login.
                     // Claim it, or the person would be two unrelated accounts.
-                    $this->linkUnclaimedGuardian($entityManager, $existing, $phone);
+                    $this->linkUnclaimedGuardian($entityManager, $existing, $phone, $email);
 
                     $entityManager->flush();
 
@@ -281,7 +303,7 @@ class StaffController extends AbstractController
                 // A teacher is very often already on file as a parent (an old
                 // application, an earlier admission). Give that guardian row this
                 // login and ROLE_PARENT, so sign-in offers both portals.
-                $this->linkUnclaimedGuardian($entityManager, $user, $phone);
+                $this->linkUnclaimedGuardian($entityManager, $user, $phone, $email);
 
                 $role = current(array_filter($user->getRoles(), static fn (string $r): bool => $r !== 'ROLE_USER'))
                     ?: User::ROLE_TEACHER;
@@ -486,6 +508,28 @@ class StaffController extends AbstractController
     // ──────────────────────────────────────────────────────────────────
 
     /**
+     * Guardian rows whose email matches, however it was capitalised.
+     *
+     * Two rows mean two families on one address (a shared office mailbox, or a
+     * copy-paste slip) — the caller refuses to guess in that case.
+     *
+     * @return Guardian[]
+     */
+    private function guardiansForEmail(EntityManagerInterface $em, string $email): array
+    {
+        if (trim($email) === '') {
+            return [];
+        }
+
+        return $em->getRepository(Guardian::class)->createQueryBuilder('g')
+            ->andWhere('LOWER(g.email) = :email')
+            ->setParameter('email', mb_strtolower(trim($email)))
+            ->setMaxResults(2)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Guardian rows whose phone matches, in every stored spelling.
      *
      * Two rows mean a shared handset or two families on one number — the caller
@@ -512,30 +556,43 @@ class StaffController extends AbstractController
     }
 
     /**
-     * Give a staff login the guardian record that already belongs to their phone.
+     * Give a staff login the guardian record that already belongs to their phone
+     * or their email.
      *
      * The office usually has the parent on file — from an application or an older
      * admission — with no login of its own. Creating the staff account and leaving
      * that record unclaimed is what made "teacher" and "parent" two different
      * people. Linking it (and adding ROLE_PARENT) gives them both doors at sign-in.
+     *
+     * Phone first: it is what the school collects for every family. The email is
+     * the fallback for a row whose number was typed differently or left blank.
      */
-    private function linkUnclaimedGuardian(EntityManagerInterface $em, User $user, string $phone): bool
+    private function linkUnclaimedGuardian(EntityManagerInterface $em, User $user, string $phone, string $email = ''): bool
     {
         $national = PhoneNumber::national($phone);
+        $guardian = null;
 
-        if ($national === '') {
-            return false;
+        if ($national !== '') {
+            $guardian = $em->getRepository(Guardian::class)->createQueryBuilder('g')
+                ->andWhere('g.phoneNumber IN (:numbers)')
+                ->andWhere('g.user IS NULL')
+                ->setParameter('numbers', array_values(array_unique([
+                    $national, '0' . $national, '+234' . $national, '234' . $national,
+                ])))
+                ->setMaxResults(1)
+                ->getQuery()
+                ->getOneOrNullResult();
         }
 
-        $guardian = $em->getRepository(Guardian::class)->createQueryBuilder('g')
-            ->andWhere('g.phoneNumber IN (:numbers)')
-            ->andWhere('g.user IS NULL')
-            ->setParameter('numbers', array_values(array_unique([
-                $national, '0' . $national, '+234' . $national, '234' . $national,
-            ])))
-            ->setMaxResults(1)
-            ->getQuery()
-            ->getOneOrNullResult();
+        if (!$guardian instanceof Guardian && $email !== '') {
+            $guardian = $em->getRepository(Guardian::class)->createQueryBuilder('g')
+                ->andWhere('LOWER(g.email) = :email')
+                ->andWhere('g.user IS NULL')
+                ->setParameter('email', mb_strtolower($email))
+                ->setMaxResults(1)
+                ->getQuery()
+                ->getOneOrNullResult();
+        }
 
         if (!$guardian instanceof Guardian) {
             return false;

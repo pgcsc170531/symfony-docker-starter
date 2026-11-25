@@ -140,6 +140,31 @@ final class StaffImporter
             }
         }
 
+        // The family's own contact address is not the parent's login, but it names
+        // the same person: a teacher whose child was admitted as "aisha@gmail.com"
+        // signs in as 803…@edus.ng. Map that address to the login so a row carrying
+        // it promotes the parent instead of opening a second account. Two families
+        // sharing one address is ambiguous, so that address is left unmatched.
+        $familyLogins = [];
+        foreach ($this->em->createQuery(
+            'SELECT LOWER(g.email) AS contact, LOWER(u.email) AS login FROM ' . Guardian::class . ' g JOIN g.user u'
+        )->getArrayResult() as $row) {
+            $contact = (string) ($row['contact'] ?? '');
+
+            if ($contact === '') {
+                continue;
+            }
+
+            $login = (string) $row['login'];
+
+            if (!array_key_exists($contact, $familyLogins)) {
+                $familyLogins[$contact] = $login;
+            } elseif ($familyLogins[$contact] !== $login) {
+                // Two families on one address — never guess which teacher it is.
+                $familyLogins[$contact] = null;
+            }
+        }
+
         $header = fgetcsv($handle);
         // The same Windows-1252 trap the student import hit: a name using Excel's
         // curly apostrophe would abort the whole staff list at flush time.
@@ -200,6 +225,13 @@ final class StaffImporter
 
             $jobTitle = trim((string) ($data['job_title'] ?? ''));
             $role = self::roleForTitle($jobTitle);
+
+            // A row that carries the family's contact address rather than the login
+            // itself: resolve it to that family's login before the check below, so
+            // the parent is promoted instead of duplicated.
+            if (!isset($taken[$email]) && $typedEmail !== '' && ($familyLogins[$typedEmail] ?? null) !== null) {
+                $taken[$email] = $familyLogins[$typedEmail];
+            }
 
             if (isset($taken[$email])) {
                 /*
@@ -274,15 +306,23 @@ final class StaffImporter
              */
             if ($phone !== '') {
                 $guardian = $this->unclaimedGuardianFor($phone);
+            } else {
+                $guardian = null;
+            }
 
-                if ($guardian !== null) {
-                    $guardian->setUser($user);
-                    // The login is now two things at once: this person works here
-                    // and is a parent here. Both roles are stored; which portal
-                    // they open is chosen at sign-in.
-                    $user->setRoles([$role, 'ROLE_PARENT']);
-                    ++$result->linked;
-                }
+            // No phone, or no family on that number: the address they gave is the
+            // other half of "the same person".
+            if ($guardian === null && $typedEmail !== '') {
+                $guardian = $this->unclaimedGuardianForEmail($typedEmail);
+            }
+
+            if ($guardian !== null) {
+                $guardian->setUser($user);
+                // The login is now two things at once: this person works here
+                // and is a parent here. Both roles are stored; which portal
+                // they open is chosen at sign-in.
+                $user->setRoles([$role, 'ROLE_PARENT']);
+                ++$result->linked;
             }
 
             // Guard against the same address twice inside one file, which the
@@ -365,6 +405,18 @@ final class StaffImporter
             ->setParameter('numbers', array_values(array_unique([
                 $national, '0' . $national, '+234' . $national, '234' . $national,
             ])))
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    /** The same, by the family's contact address. */
+    private function unclaimedGuardianForEmail(string $email): ?Guardian
+    {
+        return $this->em->getRepository(Guardian::class)->createQueryBuilder('g')
+            ->andWhere('LOWER(g.email) = :email')
+            ->andWhere('g.user IS NULL')
+            ->setParameter('email', mb_strtolower(trim($email)))
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();

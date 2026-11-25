@@ -68,7 +68,7 @@ class StaffType extends AbstractType
                 'mapped' => false,
                 'required' => false,
                 'label' => 'This person already has a child in this school',
-                'help' => 'Tick if they already use the parent portal here. Their existing login gets staff access — the password they know keeps working — instead of a second account being created.',
+                'help' => 'Tick if they already use the parent portal here. We match them by the phone number or email above, then give that login staff access — the password they know keeps working — instead of creating a second account.',
                 'attr' => ['class' => 'h-5 w-5 rounded border-ink-300 text-accent-600 focus:ring-accent-500'],
             ])
             ->add('address', TextareaType::class, [
