@@ -81,12 +81,12 @@
         a plain div with an <h2>, so a screen reader found no main landmark and
         no page heading at all.
     #}
-    <main class="flex flex-1 flex-col justify-center px-4 py-12 sm:px-6 lg:flex-none lg:px-20 xl:px-24 bg-ink-50">
-        <div class="mx-auto w-full max-w-sm lg:w-96">
+    <main class="flex min-w-0 flex-1 flex-col justify-center px-4 py-12 sm:px-6 lg:flex-none lg:px-20 xl:px-24 bg-ink-50">
+        <div class="mx-auto w-full min-w-0 max-w-sm lg:w-96">
             
             <div class="text-center lg:text-left">
                 {# The SCHOOL's identity only — the brand is in the footer below. #}
-                <div class="mb-4 flex flex-col items-center gap-2.5 lg:flex-row">
+                <div class="mb-4 flex w-full flex-col items-center gap-2.5 lg:flex-row">
                     {% if school is defined and school and school.logoFilename %}
                         <img src="{{ asset('uploads/logos/' ~ school.logoFilename) }}" alt=""
                              class="h-14 w-14 shrink-0 rounded-lg object-contain">
@@ -94,7 +94,7 @@
                         <span class="grid h-14 w-14 shrink-0 place-items-center rounded-lg bg-accent-600 text-xl font-bold text-white" aria-hidden="true">{{ school.name|slice(0, 1)|upper }}</span>
                     {% endif %}
 
-                    <div class="min-w-0">
+                    <div class="w-full min-w-0 lg:w-auto">
                         {% if school is defined and school %}
                             <p class="truncate text-lg font-semibold leading-tight text-ink-900">{{ school.name }}</p>
                             {% if school.typeTag %}
