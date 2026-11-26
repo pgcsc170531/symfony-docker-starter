@@ -204,7 +204,61 @@
         </div>
     {% endif %}
 
-    {% if formTeacherGroups is empty and hodGroups is empty and yearGroupGroups is empty %}
+    {# ==================== ADMINISTRATOR ====================
+       The unlock button used to live only inside a year-group master's list, so an
+       administrator who held no assignment saw an empty hub and could not send a
+       sheet back. This is the list that backs the promise. #}
+    {% if isAdmin and adminApprovals is not empty %}
+        <h2 class="mb-2 text-lg font-semibold">🛠️ Administrator / owner — unlock any subject</h2>
+        <p class="mb-3 max-w-3xl text-sm text-gray-600">
+            The school owner (Super Admin) and any administrator can open a submitted or released sheet here;
+            no staff profile or assignment is needed. Unlock resets the form-teacher, HOD and release decisions
+            for that sheet and puts the marks back in draft, so the subject teacher can edit them again.
+            The reason is not recorded — use the HOD’s <strong>Reject</strong> when you want the teacher told what to fix.
+        </p>
+        <div class="mb-8 relative overflow-x-auto rounded-lg bg-white shadow">
+            <table class="w-full min-w-[640px] text-sm">
+                <thead class="text-left text-gray-500">
+                    <tr class="border-b">
+                        <th class="p-2">Class</th>
+                        <th class="p-2">Subject</th>
+                        <th class="p-2">Term</th>
+                        <th class="p-2">Form teacher</th>
+                        <th class="p-2">HOD</th>
+                        <th class="p-2">Released</th>
+                        <th class="p-2"><span class="sr-only">Action</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for approval in adminApprovals %}
+                        <tr class="border-t align-top">
+                            <td class="p-2">{{ approval.classSubject.classroom.name|default('—') }}</td>
+                            <td class="p-2 font-semibold text-ink-900">{{ approval.classSubject.subject.name|default('—') }}</td>
+                            <td class="p-2 text-gray-600">{{ approval.term ? approval.term.name : '—' }}</td>
+                            {% for stage in [approval.formTeacherStatus, approval.hodStatus, approval.yearGroupStatus] %}
+                                <td class="p-2">
+                                    <span class="rounded-full px-2 py-0.5 text-xs {{ status_badge[stage]|default(status_badge.pending) }}">
+                                        {{ stage }}
+                                    </span>
+                                </td>
+                            {% endfor %}
+                            <td class="p-2">
+                                <form method="post" action="{{ path('tenant_approval_unlock', {id: approval.id}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('approval_action') }}">
+                                    <button type="submit"
+                                            class="min-h-[44px] rounded border border-gray-300 px-3 text-xs font-bold text-gray-700 hover:border-failed hover:text-failed">
+                                        Unlock
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+
+    {% if formTeacherGroups is empty and hodGroups is empty and yearGroupGroups is empty and adminApprovals is empty and adminApprovals is empty %}
         <div class="bg-white rounded-lg shadow p-6 text-gray-500">
             You have no approval assignments yet. Ask your admin to assign you as a
             Form Teacher, HOD, or Year Group Master.

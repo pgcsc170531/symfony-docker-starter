@@ -52,7 +52,32 @@ class ApprovalController extends AbstractController
             'formTeacherGroups' => $staff ? $this->formTeacherGroups($staff) : [],
             'hodGroups' => $staff ? $this->hodGroups($staff) : [],
             'yearGroupGroups' => $staff ? $this->yearGroupGroups($staff) : [],
+            // Administrators unlock any subject, but the button used to live only
+            // inside a year-group master's list — so an admin who held no assignment
+            // saw an empty hub and could not unlock anything. This is that list.
+            'adminApprovals' => $this->isGranted('ROLE_ADMIN') ? $this->recentApprovals() : [],
         ]);
+    }
+
+    /**
+     * Every result sheet that has entered the approval chain, newest term first.
+     *
+     * @return ResultApproval[]
+     */
+    private function recentApprovals(): array
+    {
+        return $this->em->getRepository(ResultApproval::class)->createQueryBuilder('a')
+            ->join('a.classSubject', 'cs')->addSelect('cs')
+            ->leftJoin('cs.subject', 'sub')->addSelect('sub')
+            ->leftJoin('cs.classroom', 'cr')->addSelect('cr')
+            ->leftJoin('a.term', 't')->addSelect('t')
+            ->leftJoin('a.hod', 'hod')->addSelect('hod')
+            ->orderBy('t.id', 'DESC')
+            ->addOrderBy('cr.name', 'ASC')
+            ->addOrderBy('sub.name', 'ASC')
+            ->setMaxResults(200)
+            ->getQuery()
+            ->getResult();
     }
 
     #[Route('/form-teacher/{id}/confirm', name: 'tenant_approval_form_teacher_confirm', methods: ['POST'])]
@@ -351,9 +376,21 @@ class ApprovalController extends AbstractController
     public function unlock(ResultApproval $approval, Request $request): Response
     {
         $this->assertCsrf($request);
-        $staff = $this->getStaff();
+
+        // An administrator — including the school's Super Admin / owner — unlocks
+        // without holding a Staff profile. The owner often has no timetable, and
+        // demanding one here is what made "the owner can unlock any subject" false:
+        // the request died on "No staff profile linked to your account" before the
+        // role check was ever reached. Attribution is not needed to reset a sheet.
+        /** @var \App\Entity\Tenant\User|null $user */
+        $user = $this->getUser();
+        $staff = $user?->getStaff();
 
         if (!$this->isGranted('ROLE_ADMIN')) {
+            if (!$staff instanceof Staff) {
+                throw $this->createAccessDeniedException('No staff profile linked to your account.');
+            }
+
             $this->assertHodOf($approval, $staff);
         }
 
