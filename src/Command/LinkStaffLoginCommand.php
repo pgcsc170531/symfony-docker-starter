@@ -6,7 +6,7 @@ use App\Entity\Tenant\Guardian;
 use App\Entity\Tenant\Staff;
 use App\Entity\Tenant\User;
 use App\Service\Phone\PhoneNumber;
-use App\Service\Students\FamilyLinker;
+use App\Service\Staff\StaffParentLinker;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -52,7 +52,7 @@ final class LinkStaffLoginCommand extends TenantAwareCommand
         #[Autowire(service: 'doctrine.dbal.default_connection')]
         Connection $tenantConnection,
         EntityManagerInterface $tenantEm,
-        private readonly FamilyLinker $familyLinker,
+        private readonly StaffParentLinker $linker,
     ) {
         parent::__construct($landlordEm, $tenantConnection, $tenantEm);
     }
@@ -167,32 +167,11 @@ final class LinkStaffLoginCommand extends TenantAwareCommand
         }
 
         $sources = $this->tenantEm->getRepository(Guardian::class)->findBy(['user' => $parentUser], ['id' => 'ASC']);
-        $target = $this->tenantEm->getRepository(Guardian::class)->findOneBy(['user' => $staffUser]);
 
         if ($sources === []) {
             $io->text(sprintf('  ✗ %s owns no parent record (Guardian row), so there are no children to move. Nothing changed.', $parentUser->getEmail()));
 
             return self::OUTCOME_FAILED;
-        }
-
-        // One Guardian row per login (it is a OneToOne), so a staff login that
-        // already owns a family row can only absorb the other by merging.
-        $repoint = null;
-        $merges = $sources;
-
-        if ($target === null) {
-            $repoint = array_shift($merges);
-            $target = $repoint;
-        }
-
-        foreach ($merges as $source) {
-            $reason = $this->familyLinker->mergeBlockedReason($source, $target);
-
-            if ($reason !== null) {
-                $io->text(sprintf('  ✗ %s cannot be merged into the staff family row: %s', $parentUser->getEmail(), $reason));
-
-                return self::OUTCOME_FAILED;
-            }
         }
 
         $io->table(
@@ -216,40 +195,24 @@ final class LinkStaffLoginCommand extends TenantAwareCommand
 
         if (!$apply) {
             $io->text('  → would add ROLE_PARENT to the staff login, move the family row(s), and delete the parent login.');
-            $io->text(sprintf('  → afterwards the person signs in ONLY as %s.', $staffUser->getEmail()));
+            $io->text(sprintf('  → afterwards the person signs in ONLY as %s (their phone number keeps working too).', $staffUser->getEmail()));
 
             return self::OUTCOME_LINKED;
         }
 
-        if ($repoint !== null) {
-            $repoint->setUser($staffUser);
-            $this->tenantEm->flush();
+        try {
+            $result = $this->linker->link($staffUser, $parentUser, 'app:tenant:link-staff-login');
+        } catch (\LogicException $e) {
+            $io->text('  ✗ ' . $e->getMessage());
+
+            return self::OUTCOME_FAILED;
         }
 
-        foreach ($merges as $source) {
-            $result = $this->familyLinker->merge($source, $target, 'app:tenant:link-staff-login');
-
-            if ($result['moved'] !== []) {
-                $io->text(sprintf('  + merged %s into the staff family row.', implode(', ', $result['moved'])));
-            }
+        foreach ($result['moved'] as $moved) {
+            $io->text(sprintf('  + moved %s into the staff family row.', $moved));
         }
 
-        $staffUser->setRoles(array_values(array_unique(array_filter(
-            array_merge($staffUser->getRoles(), ['ROLE_PARENT']),
-            static fn (string $role): bool => $role !== 'ROLE_USER'
-        ))));
-
-        $stillUsed = (int) $this->tenantEm->getRepository(Guardian::class)->count(['user' => $parentUser]);
-        $retired = false;
-
-        if ($stillUsed === 0) {
-            $this->tenantEm->remove($parentUser);
-            $retired = true;
-        }
-
-        $this->tenantEm->flush();
-
-        if ($retired) {
+        if ($result['retired']) {
             $io->success(sprintf(
                 '%s now holds both doors (staff + parent) and signs in as %s. %s no longer exists.',
                 $staffUser->getFullName() ?: $staffUser->getEmail(),
@@ -262,7 +225,7 @@ final class LinkStaffLoginCommand extends TenantAwareCommand
                 . 'Re-run after resolving those rows, or leave it — the person no longer needs it.',
                 (string) $staffUser->getEmail(),
                 (string) $parentUser->getEmail(),
-                $stillUsed
+                $result['stillUsed']
             ));
         }
 

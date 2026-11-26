@@ -13,6 +13,7 @@ use App\Entity\Tenant\YearGroupMaster;
 use App\Form\StaffEditType;
 use App\Form\StaffType;
 use App\Service\Staff\StaffImporter;
+use App\Service\Staff\StaffParentLinker;
 use App\Service\Phone\PhoneNumber;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -446,7 +447,8 @@ class StaffController extends AbstractController
         User $user,
         Request $request,
         EntityManagerInterface $entityManager,
-        UserPasswordHasherInterface $passwordHasher
+        UserPasswordHasherInterface $passwordHasher,
+        StaffParentLinker $parentLinker,
     ): Response {
         $this->assertCanManage($user);
 
@@ -496,11 +498,91 @@ class StaffController extends AbstractController
             }
         }
 
+        // Separate logins are what a school gets when the parent registered first
+        // and the staff account was created before this screen could join them.
+        // Show the office the candidate(s) so the join is a decision, not a guess.
+        $linkCandidates = [];
+        foreach ($parentLinker->candidates($user, (string) $user->getStaff()?->getPhone(), (string) $user->getEmail()) as $candidate) {
+            $linkCandidates[] = [
+                'user' => $candidate,
+                'family' => $entityManager->getRepository(Guardian::class)->findOneBy(['user' => $candidate]),
+            ];
+        }
+
         return $this->render('tenant/staff/edit.html.twig', [
             'form' => $form->createView(),
             'staffUser' => $user,
             'isSelf' => $isSelf,
+            'linkCandidates' => $linkCandidates,
         ]);
+    }
+
+    /**
+     * Join a separate parent login to this staff login.
+     *
+     * The two rows already exist because of history — the parent registered first,
+     * or the staff account was created by a command or an older import. This is the
+     * repair: the staff login survives (it carries the timetable and staff number),
+     * the family row and children move to it, it gains ROLE_PARENT, and the orphan
+     * parent login is removed. The parent's password is discarded, so the person
+     * signs in with the staff address from then on.
+     */
+    #[Route('/{id}/link-parent', name: 'app_tenant_staff_link_parent', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function linkParent(
+        User $user,
+        Request $request,
+        EntityManagerInterface $entityManager,
+        StaffParentLinker $parentLinker,
+    ): Response {
+        $this->assertCanManage($user);
+
+        $back = $this->redirectToRoute('app_tenant_staff_edit', ['id' => $user->getId()]);
+
+        if (!$this->isCsrfTokenValid('link_parent', (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'That form expired. Please try again.');
+
+            return $back;
+        }
+
+        $parent = $entityManager->find(User::class, (int) $request->request->get('parent_id'));
+
+        // The office may not know the login, only the contact they have on file.
+        // Same rule as everything else: a phone numbers OR an email finds them.
+        if (!$parent instanceof User && trim((string) $request->request->get('contact')) !== '') {
+            $contact = (string) $request->request->get('contact');
+
+            foreach ($parentLinker->familyRows($contact, $contact) as $row) {
+                $candidate = $row->getUser();
+
+                if ($candidate !== null && $parentLinker->isParentOnly($candidate)) {
+                    $parent = $candidate;
+                    break;
+                }
+            }
+        }
+
+        if (!$parent instanceof User) {
+            $this->addFlash('error', 'No separate parent login matches that phone number or email. Check the parent directory and try again.');
+
+            return $back;
+        }
+
+        try {
+            $result = $parentLinker->link($user, $parent, $this->getUser()?->getUserIdentifier());
+        } catch (\LogicException $e) {
+            $this->addFlash('error', $e->getMessage());
+
+            return $back;
+        }
+
+        $this->addFlash('success', sprintf(
+            '%s now holds one login for both jobs. They sign in as %s and open the parent portal from the account menu.%s',
+            $user->getFullName() ?: $user->getEmail(),
+            (string) $user->getEmail(),
+            $result['moved'] === [] ? '' : ' Moved across: ' . implode(', ', $result['moved']) . '.'
+        ));
+
+        return $this->redirectToRoute('app_tenant_staff_index');
     }
 
     // ──────────────────────────────────────────────────────────────────
