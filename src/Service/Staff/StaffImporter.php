@@ -6,6 +6,7 @@ use App\Entity\Tenant\Guardian;
 use App\Entity\Tenant\Staff;
 use App\Entity\Tenant\User;
 use App\Service\Import\TextEncoding;
+use App\Service\Phone\PhoneMatcher;
 use App\Service\Phone\PhoneNumber;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -90,6 +91,7 @@ final class StaffImporter
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly UserPasswordHasherInterface $hasher,
+        private readonly PhoneMatcher $phones,
     ) {
     }
 
@@ -394,20 +396,12 @@ final class StaffImporter
     /**
      * The guardian record that belongs to this phone and has no login yet.
      *
-     * Numbers are stored both with and without the trunk zero ("0803…" from the
-     * old admission form, "803…" from the importer), so both spellings are tried.
+     * Compared on digits, so "0803…" from the old admission form, "803…" from the
+     * importer and "+234 803…" from a pasted spreadsheet all find the same row.
      */
     private function unclaimedGuardianFor(string $national): ?Guardian
     {
-        return $this->em->getRepository(Guardian::class)->createQueryBuilder('g')
-            ->andWhere('g.phoneNumber IN (:numbers)')
-            ->andWhere('g.user IS NULL')
-            ->setParameter('numbers', array_values(array_unique([
-                $national, '0' . $national, '+234' . $national, '234' . $national,
-            ])))
-            ->setMaxResults(1)
-            ->getQuery()
-            ->getOneOrNullResult();
+        return $this->phones->guardiansByPhone($national, 1, true)[0] ?? null;
     }
 
     /** The same, by the family's contact address. */

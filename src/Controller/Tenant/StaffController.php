@@ -14,6 +14,7 @@ use App\Form\StaffEditType;
 use App\Form\StaffType;
 use App\Service\Staff\StaffImporter;
 use App\Service\Staff\StaffParentLinker;
+use App\Service\Phone\PhoneMatcher;
 use App\Service\Phone\PhoneNumber;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -29,6 +30,10 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_ADMIN')] // Only Principal can access
 class StaffController extends AbstractController
 {
+    public function __construct(private readonly PhoneMatcher $phones)
+    {
+    }
+
     /**
      * What the role filter accepts.
      *
@@ -621,20 +626,9 @@ class StaffController extends AbstractController
      */
     private function guardiansForPhone(EntityManagerInterface $em, string $phone): array
     {
-        $national = PhoneNumber::national($phone);
-
-        if ($national === '') {
-            return [];
-        }
-
-        return $em->getRepository(Guardian::class)->createQueryBuilder('g')
-            ->andWhere('g.phoneNumber IN (:numbers)')
-            ->setParameter('numbers', array_values(array_unique([
-                $national, '0' . $national, '+234' . $national, '234' . $national,
-            ])))
-            ->setMaxResults(2)
-            ->getQuery()
-            ->getResult();
+        // Digits only, in SQL: a number stored as "0803 965 8200", "+234-803…"
+        // or "803…" is the same subscriber, and a string IN() would miss it.
+        return $this->phones->guardiansByPhone($phone, 2);
     }
 
     /**
@@ -655,15 +649,8 @@ class StaffController extends AbstractController
         $guardian = null;
 
         if ($national !== '') {
-            $guardian = $em->getRepository(Guardian::class)->createQueryBuilder('g')
-                ->andWhere('g.phoneNumber IN (:numbers)')
-                ->andWhere('g.user IS NULL')
-                ->setParameter('numbers', array_values(array_unique([
-                    $national, '0' . $national, '+234' . $national, '234' . $national,
-                ])))
-                ->setMaxResults(1)
-                ->getQuery()
-                ->getOneOrNullResult();
+            // Digits only, in SQL — see PhoneMatcher.
+            $guardian = $this->phones->guardiansByPhone($national, 1, true)[0] ?? null;
         }
 
         if (!$guardian instanceof Guardian && $email !== '') {

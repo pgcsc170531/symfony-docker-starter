@@ -4,7 +4,7 @@ namespace App\Service\Staff;
 
 use App\Entity\Tenant\Guardian;
 use App\Entity\Tenant\User;
-use App\Service\Phone\PhoneNumber;
+use App\Service\Phone\PhoneMatcher;
 use App\Service\Students\FamilyLinker;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -29,6 +29,7 @@ final class StaffParentLinker
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly FamilyLinker $families,
+        private readonly PhoneMatcher $phones,
     ) {
     }
 
@@ -73,33 +74,32 @@ final class StaffParentLinker
     /**
      * Family rows matching either contact, in every stored spelling.
      *
+     * Phones are compared on digits (`0803 965 8200`, `+234803…`, `803…` are one
+     * number); emails case-insensitively.
+     *
      * @return list<Guardian>
      */
     public function familyRows(string $phone, string $email): array
     {
-        $national = PhoneNumber::national($phone);
+        $rows = [];
+
+        foreach ($this->phones->guardiansByPhone($phone, 20) as $guardian) {
+            $rows[(int) $guardian->getId()] = $guardian;
+        }
+
         $email = mb_strtolower(trim($email));
 
-        $qb = $this->em->getRepository(Guardian::class)->createQueryBuilder('g');
-        $matched = [];
-
-        if ($national !== '') {
-            $matched[] = 'g.phoneNumber IN (:numbers)';
-            $qb->setParameter('numbers', array_values(array_unique([
-                $national, '0' . $national, '+234' . $national, '234' . $national,
-            ])));
-        }
-
         if ($email !== '') {
-            $matched[] = 'LOWER(g.email) = :email';
-            $qb->setParameter('email', $email);
+            foreach ($this->em->getRepository(Guardian::class)->createQueryBuilder('g')
+                ->andWhere('LOWER(g.email) = :email')
+                ->setParameter('email', $email)
+                ->getQuery()
+                ->getResult() as $guardian) {
+                $rows[(int) $guardian->getId()] = $guardian;
+            }
         }
 
-        if ($matched === []) {
-            return [];
-        }
-
-        return $qb->andWhere(implode(' OR ', $matched))->getQuery()->getResult();
+        return array_values($rows);
     }
 
     /**

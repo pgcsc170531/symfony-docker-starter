@@ -2,8 +2,8 @@
 
 namespace App\Security;
 
-use App\Entity\Tenant\Guardian;
 use App\Entity\Tenant\User;
+use App\Service\Phone\PhoneMatcher;
 use App\Service\Phone\PhoneNumber;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
@@ -30,8 +30,10 @@ use Symfony\Component\Security\Core\User\UserProviderInterface;
  */
 final class TenantUserProvider implements UserProviderInterface
 {
-    public function __construct(private readonly EntityManagerInterface $em)
-    {
+    public function __construct(
+        private readonly EntityManagerInterface $em,
+        private readonly PhoneMatcher $phones,
+    ) {
     }
 
     public function loadUserByIdentifier(string $identifier): UserInterface
@@ -54,17 +56,12 @@ final class TenantUserProvider implements UserProviderInterface
         $digits = PhoneNumber::digits($identifier);
 
         if (!str_contains($identifier, '@') && $digits !== '') {
-            $guardians = $this->em->getRepository(Guardian::class)->createQueryBuilder('g')
-                ->andWhere('g.phoneNumber IN (:numbers)')
-                ->andWhere('g.user IS NOT NULL')
-                ->setParameter('numbers', PhoneNumber::searchVariants($digits))
-                ->setMaxResults(2)
-                ->getQuery()
-                ->getResult();
+            $guardians = $this->phones->guardiansByPhone($digits, 2);
+            $owner = $guardians === [] ? null : $guardians[0]->getUser();
 
             // Two families on one handset: never guess which account is meant.
-            if (count($guardians) === 1 && $guardians[0]->getUser() !== null) {
-                return $guardians[0]->getUser();
+            if (count($guardians) === 1 && $owner !== null) {
+                return $owner;
             }
         }
 
