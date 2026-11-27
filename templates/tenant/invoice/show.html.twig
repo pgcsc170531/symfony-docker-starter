@@ -270,16 +270,17 @@
                 </a>
             {% endif %}
             
-            <div class="flex flex-wrap gap-3 items-center justify-end">
+            <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
                 
-                <button onclick="window.print()" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded shadow-sm hover:bg-gray-50 font-medium">
+                <button type="button" onclick="window.print()"
+                        class="order-3 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-ink-300 bg-white px-4 text-sm font-semibold text-ink-700 hover:bg-ink-50 sm:order-1 sm:w-auto">
                     🖨️ Print
                 </button>
 
                 {% if invoice.type == 'STORE' and (is_granted('ROLE_BURSAR') or is_granted('ROLE_ADMIN')) %}
                     <a href="{{ path('app_tenant_store_cart_sale', {'studentId': invoice.student.id}) }}" 
-                       class="bg-purple-100 text-purple-700 px-4 py-2 rounded font-medium hover:bg-purple-200">
-                        + Add Items
+                       class="order-5 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-purple-200 bg-purple-50 px-4 text-sm font-semibold text-purple-700 hover:bg-purple-100 sm:w-auto">
+                        + Add items
                     </a>
                 {% endif %}
                 
@@ -288,8 +289,8 @@
                     
                     {% if is_granted('ROLE_BURSAR') %}
                     <a href="{{ path('app_tenant_payment_terminal', {'id': invoice.student.id, 'invoice_id': invoice.id}) }}" 
-                       class="bg-gray-700 text-white px-5 py-2.5 rounded font-bold hover:bg-gray-800 shadow-sm flex items-center gap-2">
-                        <span>�</span> Record Payment
+                       class="order-4 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg bg-ink-900 px-5 text-sm font-bold text-white shadow-sm hover:bg-ink-800 sm:w-auto">
+                        Record payment
                     </a>
                     {% endif %}
 
@@ -298,24 +299,24 @@
                        bank and upload proof. Only the family that owes the money sees
                        this — the controller decides, not the template. #}
                     {% if onlinePaymentAvailable %}
-                        <form method="post" action="{{ path('app_parent_payment_start', {id: invoice.id}) }}" class="inline-block w-full sm:w-auto">
+                        <form method="post" action="{{ path('app_parent_payment_start', {id: invoice.id}) }}" class="order-1 w-full sm:order-3 sm:w-auto">
                             <input type="hidden" name="_token" value="{{ csrf_token('pay_start_' ~ invoice.id) }}">
-                            <button type="submit" class="flex min-h-[44px] w-full items-center justify-center gap-2 rounded bg-accent-600 px-5 py-2.5 font-bold text-white shadow-md hover:bg-accent-700 sm:w-auto">
+                            <button type="submit" class="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg bg-accent-600 px-5 text-sm font-bold text-white shadow-sm hover:bg-accent-700 sm:w-auto">
                                 <span aria-hidden="true">💳</span> Pay ₦{{ onlineTotal|number_format(2) }} online
                             </button>
                         </form>
                     {% endif %}
 
-                    <form action="{{ path('app_tenant_payment_initiate', {invoice_id: invoice.id}) }}" method="post" class="inline-block">
+                    <form action="{{ path('app_tenant_payment_initiate', {invoice_id: invoice.id}) }}" method="post" class="order-2 w-full sm:order-4 sm:w-auto">
                         <input type="hidden" name="amount" value="{{ invoice.balanceDue }}">
-                        <button type="submit" class="bg-blue-600 text-white px-5 py-2.5 rounded font-bold hover:bg-blue-700 shadow-md flex items-center gap-2">
-                            <span>📄</span> Generate Payment Slip
+                        <button type="submit" class="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-accent-300 bg-white px-5 text-sm font-bold text-accent-700 hover:bg-accent-50 sm:w-auto">
+                            <span aria-hidden="true">📄</span> Generate payment slip
                         </button>
                     </form>
 
                 {% else %}
-                    <div class="bg-green-100 text-green-700 px-4 py-2 rounded font-bold border border-green-200 flex items-center gap-2">
-                        <span>✅</span> Payment Complete
+                    <div class="order-1 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-paid/20 bg-paid/5 px-4 text-sm font-bold text-paid sm:w-auto">
+                        <span aria-hidden="true">✅</span> Payment complete
                     </div>
                 {% endif %}
 
