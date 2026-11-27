@@ -312,8 +312,8 @@
                     <form action="{{ path('app_tenant_payment_initiate', {invoice_id: invoice.id}) }}" method="post" class="order-2 w-full sm:order-4 sm:w-auto">
                         <input type="hidden" name="amount" value="{{ invoice.balanceDue }}">
                         <button type="submit" class="flex min-h-[54px] w-full flex-col items-center justify-center rounded-lg border border-ink-300 bg-white px-4 py-2 text-center leading-tight hover:bg-ink-50 sm:w-auto">
-                            <span class="text-sm font-bold text-ink-800">📄 Payment slip</span>
-                            <span class="text-[11px] font-normal text-ink-500">To the school account · we confirm</span>
+                            <span class="text-sm font-bold text-ink-800">📄 Get payment slip</span>
+                            <span class="text-[11px] font-normal text-ink-500">Bank receipt · school confirms</span>
                         </button>
                     </form>
 
