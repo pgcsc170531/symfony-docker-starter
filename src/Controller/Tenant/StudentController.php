@@ -363,6 +363,7 @@ class StudentController extends AbstractController
                     'practical' => 'Practical',
                     default => 'CA ' . substr($key, 2),
                 },
+                'lastCa' => $key === 'ca' . $scheme['ca_count'],
                 'max' => match ($key) {
                     'theory' => $scheme['theory_max'],
                     'practical' => $scheme['practical_max'],
@@ -377,6 +378,7 @@ class StudentController extends AbstractController
             'tenant' => $tenant,
             'term' => $term,
             'columns' => $columns,
+            'caTotalMaximum' => $scheme['ca_max'] * $scheme['ca_count'],
             'maximum' => $this->schemes->maximum($scheme),
         ]);
     }

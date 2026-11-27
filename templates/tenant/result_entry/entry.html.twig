@@ -68,6 +68,11 @@
                     <template x-for="n in scheme.ca_count" :key="'ca'+n">
                         <th class="p-3" x-text="'CA' + n"></th>
                     </template>
+                    {# Three CAs and no subtotal leaves the teacher adding up in
+                       their head. One CA needs no subtotal. #}
+                    <template x-if="scheme.ca_count > 1">
+                        <th class="p-3 whitespace-nowrap">CA Total<br><span class="text-[10px] font-normal text-gray-500" x-text="'(' + (scheme.ca_max * scheme.ca_count) + ')'"></span></th>
+                    </template>
                     <th class="p-3">Exams</th>
                     <template x-if="scheme.exam_mode === 'dual'">
                         <th class="p-3">Practical</th>
@@ -86,15 +91,18 @@
                                        x-model.number="s['ca'+n]"
                                        :disabled="locked"
                                        @click.stop
-                                       @change="calcTotal(s)">
+                                       @input="calcTotal(s)" @change="calcTotal(s)">
                             </td>
+                        </template>
+                        <template x-if="scheme.ca_count > 1">
+                            <td class="p-3 font-semibold whitespace-nowrap" x-text="caTotal(s)"></td>
                         </template>
                         <td class="p-3">
                             <input type="number" class="w-16 border rounded p-1 text-center text-base"
                                    x-model.number="s.theory"
                                    :disabled="locked"
                                    @click.stop
-                                   @change="calcTotal(s)">
+                                   @input="calcTotal(s)" @change="calcTotal(s)">
                         </td>
                         <template x-if="scheme.exam_mode === 'dual'">
                             <td class="p-3">
@@ -102,7 +110,7 @@
                                        x-model.number="s.practical"
                                        :disabled="locked"
                                        @click.stop
-                                       @change="calcTotal(s)">
+                                       @input="calcTotal(s)" @change="calcTotal(s)">
                             </td>
                         </template>
                         {# A pupil with no marks entered yet is *unmarked*, not a fail.
@@ -209,6 +217,30 @@ function resultEntry() {
                 total += parseFloat(s.practical || 0);
             }
             s.total = this.hasScores(s) ? total : null;
+        },
+
+        /**
+         * The CAs added together. Null while no CA has been typed, so an
+         * unmarked pupil shows a dash instead of a zero.
+         */
+        caTotal(s) {
+            if (!s || this.scheme.ca_count < 2) {
+                return '—';
+            }
+
+            let sum = 0;
+            let any = false;
+
+            for (let i = 1; i <= this.scheme.ca_count; i++) {
+                const value = s['ca'+i];
+                if (value === '' || value === null || value === undefined) {
+                    continue;
+                }
+                sum += parseFloat(value || 0);
+                any = true;
+            }
+
+            return any ? Math.round(sum * 100) / 100 : '—';
         },
 
         grade(total) {

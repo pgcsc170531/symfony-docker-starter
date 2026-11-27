@@ -77,9 +77,14 @@
                 <div>
                     <p class="text-[10px] font-semibold uppercase tracking-wide text-ink-500">Assessment</p>
                     <p class="text-xs font-semibold leading-snug text-ink-900">
+                        {%- set parts = [] -%}
                         {%- for column in columns -%}
-                            {{ column.label }} ({{ column.max }}){{ not loop.last ? ' + ' : '' }}
+                            {%- set parts = parts|merge([column.label ~ ' (' ~ column.max ~ ')']) -%}
+                            {%- if column.lastCa -%}
+                                {%- set parts = parts|merge(['CA Total (' ~ caTotalMaximum ~ ')']) -%}
+                            {%- endif -%}
                         {%- endfor -%}
+                        {{ parts|join(' + ') }}
                     </p>
                     <p class="text-[11px] text-ink-500">
                         {{ maximum }} marks in all &middot;
@@ -97,6 +102,9 @@
                             <th class="w-64">{{ learner.capital }} name</th>
                             {% for column in columns %}
                                 <th class="w-12 text-center whitespace-nowrap">{{ column.label }}<br><span class="text-[9px] font-normal">({{ column.max }})</span></th>
+                                {% if column.lastCa %}
+                                    <th class="w-12 text-center whitespace-nowrap">CA Total<br><span class="text-[9px] font-normal">({{ caTotalMaximum }})</span></th>
+                                {% endif %}
                             {% endfor %}
                             <th class="w-12 text-center whitespace-nowrap">Total<br><span class="text-[9px] font-normal">({{ maximum }})</span></th>
                             <th class="w-12 text-center">Grade</th>
@@ -108,7 +116,10 @@
                             <td class="text-center text-ink-500">{{ loop.index }}</td>
                             <td class="font-mono text-xs">{{ student.admissionNumber ?: '—' }}</td>
                             <td class="text-[11px] font-semibold uppercase">{{ student.fullName }}</td>
-                            {% for column in columns %}<td></td>{% endfor %}
+                            {% for column in columns %}
+                                <td></td>
+                                {% if column.lastCa %}<td></td>{% endif %}
+                            {% endfor %}
                             <td></td>
                             <td></td>
                         </tr>

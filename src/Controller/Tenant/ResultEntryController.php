@@ -492,6 +492,7 @@ class ResultEntryController extends AbstractController
             $sheet[] = [
                 'student' => $student,
                 'scores' => $pupilScores,
+                'ca_total' => $this->schemes->caTotal($scheme, $pupilScores),
                 'total' => $total,
                 'grade' => $grade,
             ];
@@ -535,6 +536,8 @@ class ResultEntryController extends AbstractController
             'term' => $term,
             'components' => $components,
             'columns' => $this->schemes->columns($scheme),
+            'ca_count' => $scheme['ca_count'],
+            'ca_total_max' => $this->schemes->caTotalMaximum($scheme),
             'maximum' => $this->schemes->maximum($scheme),
             'sheet' => $sheet,
             'graded' => count($totals),

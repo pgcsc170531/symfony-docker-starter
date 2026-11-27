@@ -88,9 +88,14 @@
                 <div>
                     <p class="text-[10px] font-semibold uppercase tracking-wide text-ink-500">Assessment</p>
                     <p class="text-xs font-semibold leading-snug text-ink-900">
+                        {%- set parts = [] -%}
                         {%- for column in columns -%}
-                            {{ column.label }} ({{ column.max }}){{ not loop.last ? ' + ' : '' }}
+                            {%- set parts = parts|merge([column.label ~ ' (' ~ column.max ~ ')']) -%}
+                            {%- if ca_count > 1 and column.component == 'ca' ~ ca_count -%}
+                                {%- set parts = parts|merge(['CA Total (' ~ ca_total_max|number_format(0) ~ ')']) -%}
+                            {%- endif -%}
                         {%- endfor -%}
+                        {{ parts|join(' + ') }}
                     </p>
                     <p class="text-[11px] text-ink-500">
                         {{ maximum }} marks in all &middot;
@@ -108,6 +113,9 @@
                             <th class="w-56">{{ learner.capital }} name</th>
                             {% for column in columns %}
                                 <th class="w-12 mid whitespace-nowrap">{{ column.label }}<br><span class="text-[9px] font-normal">({{ column.max }})</span></th>
+                                {% if ca_count > 1 and column.component == 'ca' ~ ca_count %}
+                                    <th class="w-12 mid whitespace-nowrap">CA Total<br><span class="text-[9px] font-normal">({{ ca_total_max|number_format(0) }})</span></th>
+                                {% endif %}
                             {% endfor %}
                             <th class="w-12 mid whitespace-nowrap">Total<br><span class="text-[9px] font-normal">({{ maximum }})</span></th>
                             <th class="w-12 mid">Grade</th>
@@ -127,6 +135,9 @@
                                         <span class="text-ink-300">·</span>
                                     {%- endif -%}
                                 </td>
+                                {% if ca_count > 1 and column.component == 'ca' ~ ca_count %}
+                                    <td class="num font-bold">{{ row.ca_total is null ? '—' : row.ca_total|number_format(0) }}</td>
+                                {% endif %}
                             {% endfor %}
                             <td class="num font-bold">
                                 {{ row.total is null ? '—' : row.total|number_format(0) }}
@@ -135,7 +146,7 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="{{ 3 + columns|length + 2 }}" class="py-8 text-center italic text-ink-400">
+                            <td colspan="{{ 3 + columns|length + 2 + (ca_count > 1 ? 1 : 0) }}" class="py-8 text-center italic text-ink-400">
                                 No {{ learner.plural }} in this class yet.
                             </td>
                         </tr>

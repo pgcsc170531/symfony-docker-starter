@@ -76,6 +76,9 @@
                     <th class="p-3">{{ learner.capital }}</th>
                     {% for component in components %}
                         <th class="p-3 text-right">{{ component|upper }}</th>
+                        {% if ca_count > 1 and component == 'ca' ~ ca_count %}
+                            <th class="p-3 text-right whitespace-nowrap">CA Total<br><span class="text-[10px] font-normal normal-case">({{ ca_total_max|number_format(0) }})</span></th>
+                        {% endif %}
                     {% endfor %}
                     <th class="p-3 text-right">Total</th>
                     <th class="p-3 text-center">Grade</th>
@@ -93,6 +96,11 @@
                             <td class="p-3 text-right font-mono text-ink-700">
                                 {{ row.scores[component] is defined ? row.scores[component]|number_format(0) : '—' }}
                             </td>
+                            {% if ca_count > 1 and component == 'ca' ~ ca_count %}
+                                <td class="p-3 text-right font-mono font-semibold text-ink-800">
+                                    {{ row.ca_total is null ? '—' : row.ca_total|number_format(0) }}
+                                </td>
+                            {% endif %}
                         {% endfor %}
                         <td class="p-3 text-right font-bold text-ink-900">
                             {{ row.total is null ? '—' : row.total|number_format(0) }}
@@ -108,7 +116,7 @@
                         </td>
                     </tr>
                 {% else %}
-                    <tr><td colspan="{{ components|length + 4 }}" class="p-8 text-center text-ink-400">No {{ learner.plural }} in this class.</td></tr>
+                    <tr><td colspan="{{ components|length + 4 + (ca_count > 1 ? 1 : 0) }}" class="p-8 text-center text-ink-400">No {{ learner.plural }} in this class.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

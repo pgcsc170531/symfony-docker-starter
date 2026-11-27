@@ -194,6 +194,49 @@ final class AssessmentSchemeResolver
         return $sum;
     }
 
+    /**
+     * The CAs added together, which is the column a form teacher wants beside
+     * CA 1 / CA 2 / CA 3 before the exam.
+     *
+     * Null when the scheme keeps a single CA (the column would repeat itself) or
+     * when no CA has been entered — an unmarked pupil is blank, not a zero.
+     *
+     * @param array{ca_count: int} $scheme
+     * @param array<string, float|int|string> $components
+     */
+    public function caTotal(array $scheme, array $components): ?float
+    {
+        if ($scheme['ca_count'] < 2) {
+            return null;
+        }
+
+        $sum = 0.0;
+        $any = false;
+
+        for ($i = 1; $i <= $scheme['ca_count']; $i++) {
+            $value = $components['ca' . $i] ?? null;
+
+            if ($value === null || $value === '') {
+                continue;
+            }
+
+            $sum += (float) $value;
+            $any = true;
+        }
+
+        return $any ? round($sum, 2) : null;
+    }
+
+    /**
+     * What the CA Total column is out of: the mark per CA times how many CAs.
+     *
+     * @param array{ca_count: int, ca_max: int} $scheme
+     */
+    public function caTotalMaximum(array $scheme): float
+    {
+        return (float) ($scheme['ca_max'] * $scheme['ca_count']);
+    }
+
     private function normaliseCaCount(?int $count): int
     {
         return in_array($count, [AssessmentScheme::CA_COUNT_TWO, AssessmentScheme::CA_COUNT_THREE], true)
