@@ -1,0 +1,69 @@
+# The gate in front of the deploy.
+#
+# `deploy.yml` builds and ships the image on every push to main. This workflow is
+# what runs BEFORE that: the same checks we run locally (PHP syntax, config and
+# template lint, the unit suite), on a clean machine, so a broken Twig variable or
+# a typo cannot reach the box and surface as a 500 on a parent's phone.
+#
+# It is reusable (`workflow_call`) so `deploy.yml` can require it with
+# `needs: tests` instead of keeping a second copy of these steps.
+name: Tests
+
+on:
+  pull_request:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  php:
+    name: Lint and unit tests
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          # composer.lock pins the platform to 8.4; the Docker image runs 8.4.19.
+          php-version: '8.4'
+          extensions: ctype, iconv, intl, mbstring, zip, gd, dom, xml, curl
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      # Every PHP file, not just the ones a linter happens to include. `xargs`
+      # returns 123 when any `php -l` fails, and `set -e` lets that fail the job.
+      - name: PHP syntax
+        run: |
+          set -e
+          find src tests bin public -name '*.php' -print0 | xargs -0 -n1 -P4 php -l > /tmp/php-lint.log
+          grep -v '^No syntax errors detected' /tmp/php-lint.log || true
+
+      # Boots the kernel, so it also proves the container compiles without the
+      # server's environment (every env() has a default in config/services.yaml).
+      - name: Config and templates
+        run: |
+          php bin/console lint:yaml config --env=prod
+          php bin/console lint:twig templates --env=prod
+
+      - name: Unit tests
+        run: php bin/phpunit --no-coverage
+        env:
+          APP_ENV: test

@@ -5,7 +5,14 @@ on:
     branches: [ "main" ]
 
 jobs:
+  # The gate. Defined once in tests.yml (also run on pull requests) and called
+  # here, so a failing test stops the run before an image is built or the Oracle
+  # box is touched — instead of discovering it from a 500 in production.
+  tests:
+    uses: ./.github/workflows/tests.yml
+
   build-and-deploy:
+    needs: tests
     # Changed from ubuntu-latest to clear the migration warning
     runs-on: ubuntu-24.04 
     
