@@ -258,28 +258,36 @@
         {% endif %}
 
         {# === ACTIONS FOOTER === #}
-        <div class="bg-gray-100 p-6 flex flex-col md:flex-row justify-between items-center gap-4 no-print">
+        <div class="bg-ink-100 p-6 flex flex-col md:flex-row justify-between items-center gap-4 no-print">
             
             {% if is_granted('ROLE_BURSAR') or is_granted('ROLE_ADMIN') %}
-                <a href="{{ path('app_tenant_student_finance', {'id': invoice.student.id}) }}" class="inline-flex min-h-[44px] items-center font-bold text-sm text-gray-500 hover:text-gray-800">
+                <a href="{{ path('app_tenant_student_finance', {'id': invoice.student.id}) }}" class="inline-flex min-h-[44px] items-center font-bold text-sm text-ink-500 hover:text-ink-800">
                     &larr; Back to Finance Dashboard
                 </a>
             {% else %}
-                <a href="{{ path('app_parent_dashboard') }}" class="inline-flex min-h-[44px] items-center font-bold text-sm text-gray-500 hover:text-gray-800">
+                <a href="{{ path('app_parent_dashboard') }}" class="inline-flex min-h-[44px] items-center font-bold text-sm text-ink-500 hover:text-ink-800">
                     &larr; Back to Dashboard
                 </a>
             {% endif %}
             
-            <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+            {# One order, deliberately: the utilities first, the money last. DOM order does
+               the work, so no button needs an `order-` class fighting another — they used
+               to collide on the same value and the row reshuffled itself.
+               The invoice card is capped at 576px (it is a sheet of paper), so three
+               buttons can never share a line: from 640px they become a two-column grid
+               with the card payment spanning both columns underneath. On a phone every
+               button is full width and 54px tall with its explanation beneath; from
+               640px they collapse to a single 44px line so the footer does not tower. #}
+            <div class="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 md:flex-1">
                 
                 <button type="button" onclick="window.print()"
-                        class="order-3 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-ink-300 bg-white px-4 text-sm font-semibold text-ink-700 hover:bg-ink-50 sm:order-1 sm:w-auto">
+                        class="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-ink-300 bg-white px-4 text-sm font-semibold text-ink-700 hover:bg-ink-50">
                     🖨️ Print
                 </button>
 
                 {% if invoice.type == 'STORE' and (is_granted('ROLE_BURSAR') or is_granted('ROLE_ADMIN')) %}
                     <a href="{{ path('app_tenant_store_cart_sale', {'studentId': invoice.student.id}) }}" 
-                       class="order-5 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-purple-200 bg-purple-50 px-4 text-sm font-semibold text-purple-700 hover:bg-purple-100 sm:w-auto">
+                       class="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-accent-200 bg-accent-50 px-4 text-sm font-semibold text-accent-700 hover:bg-accent-100">
                         + Add items
                     </a>
                 {% endif %}
@@ -289,36 +297,40 @@
                     
                     {% if is_granted('ROLE_BURSAR') %}
                     <a href="{{ path('app_tenant_payment_terminal', {'id': invoice.student.id, 'invoice_id': invoice.id}) }}" 
-                       class="order-4 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg bg-ink-900 px-5 text-sm font-bold text-white shadow-sm hover:bg-ink-800 sm:w-auto">
+                       class="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg bg-ink-900 px-5 text-sm font-bold text-white shadow-sm hover:bg-ink-800">
                         Record payment
                     </a>
                     {% endif %}
+
+                    <form action="{{ path('app_tenant_payment_initiate', {invoice_id: invoice.id}) }}" method="post" class="w-full">
+                        <input type="hidden" name="amount" value="{{ invoice.balanceDue }}">
+                        <button type="submit" class="flex min-h-[54px] w-full flex-col items-center justify-center gap-0.5 rounded-lg border border-ink-300 bg-white px-4 py-2 text-center leading-tight hover:bg-ink-50 sm:min-h-[44px] sm:flex-row sm:gap-2">
+                            <span class="text-sm font-bold text-ink-800">📄 Get payment slip</span>
+                            <span class="text-[11px] font-normal text-ink-500 sm:hidden">Bank receipt · school confirms</span>
+                        </button>
+                    </form>
 
                     {# Paying by card is offered BEFORE the offline slip: a parent who
                        can settle now should not have to generate a slip, take it to a
                        bank and upload proof. Only the family that owes the money sees
                        this — the controller decides, not the template. The two labels
-                       exist so the difference is visible before either is pressed. #}
+                       exist so the difference is visible before either is pressed.
+                       It sits last and spans the row: the largest commitment is not
+                       the first button. #}
                     {% if onlinePaymentAvailable %}
-                        <form method="post" action="{{ path('app_parent_payment_start', {id: invoice.id}) }}" class="order-1 w-full sm:order-3 sm:w-auto">
+                        <form method="post" action="{{ path('app_parent_payment_start', {id: invoice.id}) }}" class="w-full sm:col-span-2">
                             <input type="hidden" name="_token" value="{{ csrf_token('pay_start_' ~ invoice.id) }}">
-                            <button type="submit" class="flex min-h-[54px] w-full flex-col items-center justify-center rounded-lg bg-accent-600 px-4 py-2 text-center leading-tight text-white shadow-sm hover:bg-accent-700 sm:w-auto">
+                            <button type="submit" class="flex min-h-[54px] w-full flex-col items-center justify-center gap-0.5 rounded-lg bg-accent-600 px-4 py-2 text-center leading-tight text-white shadow-sm hover:bg-accent-700 sm:min-h-[44px] sm:flex-row sm:gap-2">
                                 <span class="text-sm font-bold">💳 Pay online</span>
-                                <span class="text-[11px] font-normal text-white/85">₦{{ onlineTotal|number_format(2) }} · confirmed instantly</span>
+                                {# The card total differs from the balance once the charge is
+                                   added, so the amount stays visible at every width. #}
+                                <span class="text-[11px] font-normal text-white/85 sm:text-xs">₦{{ onlineTotal|number_format(2) }}<span class="sm:hidden"> · confirmed instantly</span></span>
                             </button>
                         </form>
                     {% endif %}
 
-                    <form action="{{ path('app_tenant_payment_initiate', {invoice_id: invoice.id}) }}" method="post" class="order-2 w-full sm:order-4 sm:w-auto">
-                        <input type="hidden" name="amount" value="{{ invoice.balanceDue }}">
-                        <button type="submit" class="flex min-h-[54px] w-full flex-col items-center justify-center rounded-lg border border-ink-300 bg-white px-4 py-2 text-center leading-tight hover:bg-ink-50 sm:w-auto">
-                            <span class="text-sm font-bold text-ink-800">📄 Get payment slip</span>
-                            <span class="text-[11px] font-normal text-ink-500">Bank receipt · school confirms</span>
-                        </button>
-                    </form>
-
                 {% else %}
-                    <div class="order-1 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-paid/20 bg-paid/5 px-4 text-sm font-bold text-paid sm:w-auto">
+                    <div class="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-paid/20 bg-paid/5 px-4 text-sm font-bold text-paid sm:col-span-2">
                         <span aria-hidden="true">✅</span> Payment complete
                     </div>
                 {% endif %}
