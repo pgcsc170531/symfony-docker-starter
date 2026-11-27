@@ -62,6 +62,8 @@ class ParentController extends AbstractController
                 'applications' => [],
                 'applicationCount' => 0,
                 'applicationsOpen' => $school?->isApplicationsOpen() ?? true,
+                'onlinePaymentAvailable' => false,
+                'onlineTotals' => [],
             ]);
         }
 
@@ -119,6 +121,19 @@ class ParentController extends AbstractController
             ];
         }
 
+        // What "Pay online" would actually charge — balance plus the (capped)
+        // processing charge, or the balance alone when the school switched the
+        // charge off. Same figure the Fees screen shows, so the two doors cannot
+        // disagree about the amount before the provider's page opens.
+        $onlineTotals = [];
+        foreach ($studentData as $row) {
+            $invoice = $row['invoice'];
+
+            if ($invoice !== null && $invoice->getBalanceDue() > 0) {
+                $onlineTotals[$invoice->getId()] = $this->charges->totalFor($school, (float) $invoice->getBalanceDue());
+            }
+        }
+
         return $this->render('tenant/parent/dashboard.html.twig', [
             'studentData' => $studentData,
             'term' => $term,
@@ -127,6 +142,9 @@ class ParentController extends AbstractController
             'applications' => $applications,
             'applicationCount' => $applicationCount,
             'applicationsOpen' => $school?->isApplicationsOpen() ?? true,
+            // The online button only appears when a payment could complete.
+            'onlinePaymentAvailable' => $this->onlinePaymentAvailable(),
+            'onlineTotals' => $onlineTotals,
         ]);
     }
     

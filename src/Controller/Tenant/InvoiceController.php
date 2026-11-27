@@ -13,6 +13,8 @@ use App\Entity\Tenant\School; // <--- 1. IMPORT ADDED
 use App\Service\Finance\DiscountCalculator;
 use App\Service\Finance\AdvancePaymentService;
 use App\Service\Finance\InvoiceNumberGenerator;
+use App\Service\Payment\OnlinePaymentAvailability;
+use App\Service\Payment\PaymentChargePolicy;
 use App\Service\SchoolMailer;
 use Symfony\Component\HttpFoundation\Request; // 🟢 ADD THIS LINE!
 use Doctrine\ORM\EntityManagerInterface;
@@ -248,17 +250,24 @@ class InvoiceController extends AbstractController
 
     // 2. The "View Invoice" Page
     #[Route('/{id}', name: 'app_tenant_invoice_show', methods: ['GET'])]
-    public function show(Invoice $invoice, EntityManagerInterface $em): Response
-    {
+    public function show(
+        Invoice $invoice,
+        EntityManagerInterface $em,
+        OnlinePaymentAvailability $availability,
+        PaymentChargePolicy $charges,
+    ): Response {
         // Parents reach this page from their own fee screen, so an id in the URL
         // must not be enough to read another family's invoice.
-        if (!$this->isGranted('ROLE_BURSAR') && !$this->isGranted('ROLE_ADMIN') && !$this->isGranted('ROLE_STORE')) {
-            $guardian = $em->getRepository(Guardian::class)->findOneBy(['user' => $this->getUser()]);
-            $student = $invoice->getStudent();
+        $guardian = $em->getRepository(Guardian::class)->findOneBy(['user' => $this->getUser()]);
+        $ownsInvoice = $guardian !== null
+            && $invoice->getStudent() !== null
+            && $guardian->getStudents()->contains($invoice->getStudent());
 
-            if ($guardian === null || $student === null || !$guardian->getStudents()->contains($student)) {
-                throw $this->createAccessDeniedException('This invoice belongs to another family.');
-            }
+        if (!$ownsInvoice
+            && !$this->isGranted('ROLE_BURSAR')
+            && !$this->isGranted('ROLE_ADMIN')
+            && !$this->isGranted('ROLE_STORE')) {
+            throw $this->createAccessDeniedException('This invoice belongs to another family.');
         }
 
         // === 3. FALLBACK LOGIC ADDED HERE ===
@@ -266,9 +275,22 @@ class InvoiceController extends AbstractController
         // is old and doesn't have the snapshot data.
         $liveSchool = $em->getRepository(School::class)->findOneBy([]);
 
+        // "Pay online" belongs to the family that owes the money, not to whichever
+        // staff member happens to be looking at the bill. Same rule as the Fees
+        // screen: gateway configured, school opted in, something still owed.
+        $onlineAvailable = $ownsInvoice
+            && $invoice->getBalanceDue() > 0
+            && $availability->isAvailable($liveSchool);
+
         return $this->render('tenant/invoice/show.html.twig', [
             'invoice' => $invoice,
             'liveSchool' => $liveSchool, // Passed as backup
+            'onlinePaymentAvailable' => $onlineAvailable,
+            // Balance plus the capped processing charge — the number the provider
+            // will actually take, shown before the parent leaves this page.
+            'onlineTotal' => $onlineAvailable
+                ? $charges->totalFor($liveSchool, (float) $invoice->getBalanceDue())
+                : null,
         ]);
     }
 }

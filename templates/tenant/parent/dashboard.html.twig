@@ -305,10 +305,22 @@
                                             <span></span>
                                         {% endif %}
                                         
-                                        <div class="flex items-center gap-2 ml-auto">
+                                        <div class="ml-auto flex flex-wrap items-center justify-end gap-2">
                                             <a href="{{ path('app_parent_finance_view', {id: student.id}) }}" class="inline-flex items-center min-h-[44px] bg-white border border-gray-300 text-gray-700 hover:border-indigo-500 hover:text-indigo-600 px-4 py-2 rounded-lg text-sm font-bold transition-colors shadow-sm">
                                                 History
                                             </a>
+                                            {% if invoice and debt > 0 and onlinePaymentAvailable %}
+                                                {# Paying by card before the office sees it: same POST the Fees
+                                                   screen uses, so the amount, the charge policy and the
+                                                   ownership check are decided server-side, once. #}
+                                                <form method="post" action="{{ path('app_parent_payment_start', {id: invoice.id}) }}" class="w-full sm:w-auto">
+                                                    <input type="hidden" name="_token" value="{{ csrf_token('pay_start_' ~ invoice.id) }}">
+                                                    <button type="submit"
+                                                            class="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-accent-300 bg-white px-4 text-sm font-bold text-accent-700 transition-colors hover:bg-accent-50 sm:w-auto">
+                                                        💳 Pay ₦{{ (onlineTotals[invoice.id] ?? invoice.balanceDue)|number_format(2) }} online
+                                                    </button>
+                                                </form>
+                                            {% endif %}
                                             {% if invoice and debt > 0 %}
                                                 <a href="{{ path('app_tenant_invoice_show', {id: invoice.id}) }}" class="inline-flex items-center justify-center min-h-[44px] bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 shadow-md transition-transform transform hover:-translate-y-0.5 gap-2">
                                                     <span>Pay Now</span>
