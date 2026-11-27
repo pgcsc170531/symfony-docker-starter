@@ -261,11 +261,11 @@
         <div class="bg-ink-100 p-6 flex flex-col md:flex-row justify-between items-center gap-4 no-print">
             
             {% if is_granted('ROLE_BURSAR') or is_granted('ROLE_ADMIN') %}
-                <a href="{{ path('app_tenant_student_finance', {'id': invoice.student.id}) }}" class="inline-flex min-h-[44px] items-center font-bold text-sm text-ink-500 hover:text-ink-800">
+                <a href="{{ path('app_tenant_student_finance', {'id': invoice.student.id}) }}" class="inline-flex min-h-[44px] items-center whitespace-nowrap font-bold text-sm text-ink-500 hover:text-ink-800">
                     &larr; Back to Finance Dashboard
                 </a>
             {% else %}
-                <a href="{{ path('app_parent_dashboard') }}" class="inline-flex min-h-[44px] items-center font-bold text-sm text-ink-500 hover:text-ink-800">
+                <a href="{{ path('app_parent_dashboard') }}" class="inline-flex min-h-[44px] items-center whitespace-nowrap font-bold text-sm text-ink-500 hover:text-ink-800">
                     &larr; Back to Dashboard
                 </a>
             {% endif %}
@@ -273,12 +273,13 @@
             {# One order, deliberately: the utilities first, the money last. DOM order does
                the work, so no button needs an `order-` class fighting another — they used
                to collide on the same value and the row reshuffled itself.
-               The invoice card is capped at 576px (it is a sheet of paper), so three
-               buttons can never share a line: from 640px they become a two-column grid
-               with the card payment spanning both columns underneath. On a phone every
-               button is full width and 54px tall with its explanation beneath; from
-               640px they collapse to a single 44px line so the footer does not tower. #}
-            <div class="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 md:flex-1">
+               From 640px this is a two-column grid with the card payment spanning both
+               columns underneath, but capped at max-w-md: spanning the row is right for
+               the hierarchy and wrong for the geometry — the card fills the whole content
+               column, so an unbounded span produced a 978px blue bar. The cluster sits
+               bottom-right, sized like a form. On a phone nothing is capped: the card is
+               the screen there, so full width is correct. #}
+            <div class="grid w-full grid-cols-1 gap-2 sm:max-w-md sm:grid-cols-2 md:ml-auto">
                 
                 <button type="button" onclick="window.print()"
                         class="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-ink-300 bg-white px-4 text-sm font-semibold text-ink-700 hover:bg-ink-50">
