@@ -310,36 +310,41 @@
                                                     Payment cancelled
                                                 </div>
                                             {% else %}
-                                                <div class="inline-flex items-center gap-1.5 rounded-lg border border-pending/20 bg-pending/5 px-3 py-2 text-xs font-bold text-pending" title="Payment is awaiting confirmation from the Bursar">
+                                                <a href="{{ path('app_parent_finance_view', {id: student.id}) }}"
+                                                   class="inline-flex items-center gap-1.5 rounded-lg border border-pending/20 bg-pending/5 px-3 py-2 text-xs font-bold text-pending"
+                                                   title="Your payment has been recorded and is waiting for the school office to confirm it.">
                                                     <svg class="h-4 w-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                                    Verifying…
-                                                </div>
+                                                    Waiting for the school to confirm
+                                                </a>
                                             {% endif %}
                                         </div>
                                     {% endif %}
 
                                     {# The financial column is narrow at every width (the card is
                                        split 1/3 + 2/3), so the actions stay a single
-                                       full-width stack. Primary first, nearest the thumb. #}
+                                       full-width stack. Each button names its OUTCOME:
+                                       online confirms itself, the bank path needs the school. #}
                                     <div class="grid grid-cols-1 gap-2">
-                                        {% if invoice and debt > 0 %}
-                                            <a href="{{ path('app_tenant_invoice_show', {id: invoice.id}) }}"
-                                               class="order-1 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg bg-accent-600 px-5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-accent-700">
-                                                Pay now
-                                            </a>
-                                        {% endif %}
-
                                         {% if invoice and debt > 0 and onlinePaymentAvailable %}
                                             {# Paying by card before the office sees it: same POST the Fees
                                                screen uses, so the amount, the charge policy and the
                                                ownership check are decided server-side, once. #}
-                                            <form method="post" action="{{ path('app_parent_payment_start', {id: invoice.id}) }}" class="order-2 w-full">
+                                            <form method="post" action="{{ path('app_parent_payment_start', {id: invoice.id}) }}" class="order-1 w-full">
                                                 <input type="hidden" name="_token" value="{{ csrf_token('pay_start_' ~ invoice.id) }}">
                                                 <button type="submit"
-                                                        class="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-accent-300 bg-white px-4 text-sm font-bold text-accent-700 transition-colors hover:bg-accent-50">
-                                                    💳 Pay ₦{{ (onlineTotals[invoice.id] ?? invoice.balanceDue)|number_format(2) }} online
+                                                        class="flex min-h-[54px] w-full flex-col items-center justify-center rounded-lg bg-accent-600 px-3 py-2 text-center leading-tight text-white shadow-sm transition-colors hover:bg-accent-700">
+                                                    <span class="text-sm font-bold">💳 Pay ₦{{ (onlineTotals[invoice.id] ?? invoice.balanceDue)|number_format(2) }} online</span>
+                                                    <span class="text-[11px] font-normal text-white/85">Confirmed instantly</span>
                                                 </button>
                                             </form>
+                                        {% endif %}
+
+                                        {% if invoice and debt > 0 %}
+                                            <a href="{{ path('app_tenant_invoice_show', {id: invoice.id}) }}"
+                                               class="order-2 flex min-h-[54px] w-full flex-col items-center justify-center rounded-lg border border-ink-300 bg-white px-3 py-2 text-center leading-tight transition-colors hover:border-accent-400 hover:bg-accent-50">
+                                                <span class="text-sm font-bold text-ink-800">🏦 Pay at the bank</span>
+                                                <span class="text-[11px] text-ink-500">Slip · school confirms</span>
+                                            </a>
                                         {% endif %}
 
                                         <a href="{{ path('app_parent_finance_view', {id: student.id}) }}"

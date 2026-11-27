@@ -297,20 +297,23 @@
                     {# Paying by card is offered BEFORE the offline slip: a parent who
                        can settle now should not have to generate a slip, take it to a
                        bank and upload proof. Only the family that owes the money sees
-                       this — the controller decides, not the template. #}
+                       this — the controller decides, not the template. The two labels
+                       exist so the difference is visible before either is pressed. #}
                     {% if onlinePaymentAvailable %}
                         <form method="post" action="{{ path('app_parent_payment_start', {id: invoice.id}) }}" class="order-1 w-full sm:order-3 sm:w-auto">
                             <input type="hidden" name="_token" value="{{ csrf_token('pay_start_' ~ invoice.id) }}">
-                            <button type="submit" class="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg bg-accent-600 px-5 text-sm font-bold text-white shadow-sm hover:bg-accent-700 sm:w-auto">
-                                <span aria-hidden="true">💳</span> Pay ₦{{ onlineTotal|number_format(2) }} online
+                            <button type="submit" class="flex min-h-[54px] w-full flex-col items-center justify-center rounded-lg bg-accent-600 px-4 py-2 text-center leading-tight text-white shadow-sm hover:bg-accent-700 sm:w-auto">
+                                <span class="text-sm font-bold">💳 Pay online</span>
+                                <span class="text-[11px] font-normal text-white/85">₦{{ onlineTotal|number_format(2) }} · confirmed instantly</span>
                             </button>
                         </form>
                     {% endif %}
 
                     <form action="{{ path('app_tenant_payment_initiate', {invoice_id: invoice.id}) }}" method="post" class="order-2 w-full sm:order-4 sm:w-auto">
                         <input type="hidden" name="amount" value="{{ invoice.balanceDue }}">
-                        <button type="submit" class="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-accent-300 bg-white px-5 text-sm font-bold text-accent-700 hover:bg-accent-50 sm:w-auto">
-                            <span aria-hidden="true">📄</span> Generate payment slip
+                        <button type="submit" class="flex min-h-[54px] w-full flex-col items-center justify-center rounded-lg border border-ink-300 bg-white px-4 py-2 text-center leading-tight hover:bg-ink-50 sm:w-auto">
+                            <span class="text-sm font-bold text-ink-800">📄 Get payment slip</span>
+                            <span class="text-[11px] font-normal text-ink-500">Bank slip · school confirms</span>
                         </button>
                     </form>
 
